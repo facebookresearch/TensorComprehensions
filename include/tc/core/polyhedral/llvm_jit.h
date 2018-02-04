@@ -34,12 +34,6 @@ class Jit {
   llvm::orc::RTDyldObjectLinkingLayer objectLayer_;
   llvm::orc::IRCompileLayer<decltype(objectLayer_), llvm::orc::SimpleCompiler>
       compileLayer_;
-  using OptimizeFunction = std::function<std::shared_ptr<llvm::Module>(
-      std::shared_ptr<llvm::Module>)>;
-
-  llvm::orc::IRTransformLayer<decltype(compileLayer_), OptimizeFunction>
-      optimizeLayer_;
-
  public:
   Jit();
 
@@ -47,7 +41,7 @@ class Jit {
       const std::string& specializedName,
       const polyhedral::Scop& scop);
 
-  using ModuleHandle = decltype(optimizeLayer_)::ModuleHandleT;
+  using ModuleHandle = decltype(compileLayer_)::ModuleHandleT;
   ModuleHandle addModule(std::unique_ptr<llvm::Module> M);
   void removeModule(ModuleHandle H);
 
@@ -55,9 +49,6 @@ class Jit {
   llvm::JITTargetAddress getSymbolAddress(const std::string name);
 
   llvm::TargetMachine& getTargetMachine();
-
- private:
-  std::shared_ptr<llvm::Module> optimizeModule(std::shared_ptr<llvm::Module> M);
 };
 
 } // namespace tc

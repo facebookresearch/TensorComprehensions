@@ -35,10 +35,7 @@ Jit::Jit()
     : TM_(EngineBuilder().selectTarget()),
       DL_(TM_->createDataLayout()),
       objectLayer_([]() { return std::make_shared<SectionMemoryManager>(); }),
-      compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)),
-      optimizeLayer_(compileLayer_, [this](std::shared_ptr<Module> M) {
-        return optimizeModule(std::move(M));
-      }) {
+      compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
   sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
 }
 
@@ -57,7 +54,7 @@ Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto Resolver = orc::createLambdaResolver(
       [&](const std::string& Name) {
-        if (auto Sym = optimizeLayer_.findSymbol(Name, false))
+        if (auto Sym = compileLayer_.findSymbol(Name, false))
           return Sym;
         return JITSymbol(nullptr);
       },
@@ -67,7 +64,7 @@ Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
         return JITSymbol(nullptr);
       });
 
-  auto res = optimizeLayer_.addModule(std::move(M), std::move(Resolver));
+  auto res = compileLayer_.addModule(std::move(M), std::move(Resolver));
   CHECK(res) << "Failed to jit compile.";
   return *res;
 }
@@ -76,7 +73,7 @@ JITSymbol Jit::findSymbol(const std::string Name) {
   std::string MangledName;
   raw_string_ostream MangledNameStream(MangledName);
   Mangler::getNameWithPrefix(MangledNameStream, Name, DL_);
-  return optimizeLayer_.findSymbol(MangledNameStream.str(), true);
+  return compileLayer_.findSymbol(MangledNameStream.str(), true);
 }
 
 JITTargetAddress Jit::getSymbolAddress(const std::string Name) {
@@ -124,5 +121,3 @@ std::shared_ptr<Module> Jit::optimizeModule(std::shared_ptr<Module> M) {
 
   return M;
 }
-
-} // namespace tc
