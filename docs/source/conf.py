@@ -62,8 +62,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Tensor Comprehensions'
-copyright = '2018, Tensor Comprehensions contributors and users'
-author = 'Tensor Comprehensions contributors and users'
+copyright = '2017-present, Facebook, Inc.'
+author = 'Tensor Comprehensions Contributors'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

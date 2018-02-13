@@ -2,7 +2,8 @@ Installing TC from docker image
 ===============================
 
 We provide docker runtime images for :code:`conda` and :code:`non-conda` environments both. TC officially supports
-running gcc 4.*, CUDA 8, CUDNN 6 and ubuntu14.04 and gcc 5.*, CUDA9, CUDNN6 on ubuntu16.04
+running gcc 4.*, CUDA 8, CUDNN 6 and ubuntu14.04 and gcc 5.*, CUDA9, CUDNN6 on ubuntu16.04. You can find all available images
+for Tensor Comprehensions at the `dockerhub <https://hub.docker.com/u/tensorcomprehensions/>`_
 
 The conda and non-conda images for each setup are below:
 
