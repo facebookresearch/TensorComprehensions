@@ -6,7 +6,7 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = TensorComprehensions
 SOURCEDIR     = source
-BUILDDIR      = build
+BUILDDIR      = ../../TensorComprehensions-docs
 
 # Put it first so that "make" without argument is like "make help".
 help:
