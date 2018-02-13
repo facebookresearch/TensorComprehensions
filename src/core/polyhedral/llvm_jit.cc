@@ -37,6 +37,8 @@ Jit::Jit()
       objectLayer_([]() { return std::make_shared<SectionMemoryManager>(); }),
       compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
   sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+  std::string err;
+  sys::DynamicLibrary::LoadLibraryPermanently("cilkrts", &err);
 }
 
 void Jit::codegenScop(
@@ -82,42 +84,4 @@ JITTargetAddress Jit::getSymbolAddress(const std::string Name) {
   return *res;
 }
 
-DEFINE_bool(llvm_no_opt, false, "Disable LLVM optimizations");
-DEFINE_bool(llvm_debug_passes, false, "Print pass debug info");
-DEFINE_bool(llvm_dump_optimized_ir, false, "Print optimized IR");
-
-std::shared_ptr<Module> Jit::optimizeModule(std::shared_ptr<Module> M) {
-  if (FLAGS_llvm_no_opt) {
-    return M;
-  }
-
-  PassBuilder PB(TM_.get());
-  AAManager AA;
-  CHECK(PB.parseAAPipeline(AA, "default"))
-      << "Unable to parse AA pipeline description.";
-  LoopAnalysisManager LAM(FLAGS_llvm_debug_passes);
-  FunctionAnalysisManager FAM(FLAGS_llvm_debug_passes);
-  CGSCCAnalysisManager CGAM(FLAGS_llvm_debug_passes);
-  ModuleAnalysisManager MAM(FLAGS_llvm_debug_passes);
-  FAM.registerPass([&] { return std::move(AA); });
-  PB.registerModuleAnalyses(MAM);
-  PB.registerCGSCCAnalyses(CGAM);
-  PB.registerFunctionAnalyses(FAM);
-  PB.registerLoopAnalyses(LAM);
-  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-  ModulePassManager MPM(FLAGS_llvm_debug_passes);
-  MPM.addPass(VerifierPass());
-  CHECK(PB.parsePassPipeline(MPM, "default<O3>", true, FLAGS_llvm_debug_passes))
-      << "Unable to parse pass pipline description.";
-  MPM.addPass(VerifierPass());
-
-  MPM.run(*M, MAM);
-
-  if (FLAGS_llvm_dump_optimized_ir) {
-    // M->dump(); // does not link
-    M->print(llvm::errs(), nullptr);
-  }
-
-  return M;
 }

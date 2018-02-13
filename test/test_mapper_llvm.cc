@@ -68,7 +68,7 @@ TEST(LLVMCodegen, MultiStmt) {
  {
    O1(i, j) +=! A(i, j, rk, rl) * B(i, j)
    O2(i, j) = C(i, j) * D(i, j)
-   O3(i, j) = O1(i, j) + O2(i, j)
+   O3(i, j) = O1(i, j) + O2(i, j) 
  }
  )TC";
 

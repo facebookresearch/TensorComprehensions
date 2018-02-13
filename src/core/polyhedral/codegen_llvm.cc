@@ -21,6 +21,7 @@
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
@@ -41,6 +42,10 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+
+#ifndef LLVM_VERSION_MAJOR
+#error LLVM_VERSION_MAJOR not set
+#endif
 
 using namespace Halide;
 
@@ -303,8 +308,8 @@ public:
     Halide::Internal::debug(3) << "Optimizing module\n";
 
     if (Halide::Internal::debug::debug_level() >= 3) {
-        #if LLVM_VERSION >= 50
-        module->print(dbgs(), nullptr, false, true);
+        #if LLVM_VERSION_MAJOR >= 5
+        module->print(llvm::dbgs(), nullptr, false, true);
         #else
         module->dump();
         #endif
@@ -338,8 +343,8 @@ public:
 
     llvm::PassManagerBuilder b;
     b.OptLevel = 3;
-    b.tapirTarget = new llvm::tapir::CilkABI();
-#if LLVM_VERSION >= 50
+    b.tapirTarget = new llvm::CilkABI();
+#if LLVM_VERSION_MAJOR >= 5
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
 #else
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0);
@@ -347,7 +352,7 @@ public:
     b.LoopVectorize = true;
     b.SLPVectorize = true;
 
-#if LLVM_VERSION >= 50
+#if LLVM_VERSION_MAJOR >= 5
     if (TM) {
         TM->adjustPassManager(b);
     }
@@ -366,8 +371,8 @@ public:
 
     Halide::Internal::debug(3) << "After LLVM optimizations:\n";
     if (Halide::Internal::debug::debug_level() >= 2) {
-        #if LLVM_VERSION >= 50
-        module->print(dbgs(), nullptr, false, true);
+        #if LLVM_VERSION_MAJOR >= 5
+        module->print(llvm::dbgs(), nullptr, false, true);
         #else
         module->dump();
         #endif
@@ -530,7 +535,8 @@ class LLVMCodegen {
         llvm::BasicBlock::Create(llvmCtx, "loop_latch", function);
     auto* loopExitBB = llvm::BasicBlock::Create(llvmCtx, "loop_exit", function);
 
-    bool parallel = true;
+    //TODO: integrate query ISL as to whether the relevant loop ought be parallelized
+    bool parallel = false;
 
     llvm::Value* SyncRegion = nullptr;
     if (parallel) {
