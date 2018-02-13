@@ -12,6 +12,13 @@ Tensor Comprehensions provides framework-Agnostic Abstractions for High-Performa
 
 .. toctree::
    :maxdepth: 1
+   :caption: Paper
+
+   report
+
+
+.. toctree::
+   :maxdepth: 1
    :caption: Index
 
    introduction
