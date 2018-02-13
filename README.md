@@ -84,6 +84,8 @@ BUILD_TYPE=Release WITH_CAFFE2=ON CLANG_PREFIX=$(llvm-config --prefix) ./build.s
 # License
 Tensor Comprehensions is distributed under a permissive Apache v2.0 license, see the [LICENSE](LICENSE) file for more details.
 
+# Code of Conduct
+See the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file for more details.
 
 # Contributing
 See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more details.
