@@ -56,7 +56,7 @@ After a few generations of autotuning on a 2-GPU P100 system, we see results res
 We have not yet characterized the precise fraction of peak performance we obtain but it is not uncommon to obtain 80%+ of peak shared memory bandwidth after autotuning. Solid register-level optimizations are still in the work but TC in its current form already addresses the productivity gap between the needs of research and the needs of production. Which is why we are excited to share it with the entire community and bring this collaborative effort in the open.
 
 # Documentation, Environment and Prerequisites
-We provide pre-built VM images in the docker subdirectory, they can be downloaded from dockerhub. We use and support those VMs as part of our continuous integration. Note that we can cross-compile CUDA (but not execute) even if the machine has no physical GPUs. In any case the CUDA toolkit and libraries should always be installed, for now.
+We provide pre-built docker images in the docker subdirectory, they can be downloaded from [dockerhub](https://hub.docker.com/u/tensorcomprehensions/). We use and support those images as part of our continuous integration. Note that we can cross-compile CUDA (but not execute) even if the machine has no physical GPUs. In any case the CUDA toolkit and libraries should always be installed, for now.
 
 To get started, see the [docs](master/docs) directory.
 
