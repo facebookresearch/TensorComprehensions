@@ -1,0 +1,5 @@
+#include <version.h>
+
+namespace tc {
+const char* git_version = "@GIT_DESCRIPTION@";
+}

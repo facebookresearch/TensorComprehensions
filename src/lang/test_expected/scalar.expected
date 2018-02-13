@@ -1,0 +1,20 @@
+(def
+  (ident fun)
+  (list
+    (param
+      (ident I)
+      (tensor_type
+        (float)
+        (list (ident M)))))
+  (list (param (ident O) (inferred)))
+  (list
+    (comprehension
+      (ident O)
+      (list)
+      (plus_eq_b)
+      (apply
+        (ident I)
+        (list (ident i)))
+      (list)
+      (option)
+      (list))))

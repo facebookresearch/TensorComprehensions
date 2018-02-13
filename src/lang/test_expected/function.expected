@@ -1,0 +1,9 @@
+(apply
+  (ident foo)
+  (list
+    (const 3 (int32))
+    (const 4 (int32))
+    (+
+      (const 5 (int32))
+      (const 6 (int32)))
+    (ident a)))

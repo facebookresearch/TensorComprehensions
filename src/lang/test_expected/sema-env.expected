@@ -1,0 +1,28 @@
+B: (int32)
+H: (int32)
+IP: (int32)
+KH: (int32)
+KW: (int32)
+OP: (int32)
+W: (int32)
+input: (tensor_type
+  (float)
+  (list
+    (ident B)
+    (ident IP)
+    (ident H)
+    (ident W)))
+output: (tensor_type
+  (float)
+  (list
+    (ident output.0)
+    (ident output.1)
+    (ident output.2)
+    (ident output.3)))
+weight: (tensor_type
+  (float)
+  (list
+    (ident OP)
+    (ident IP)
+    (ident KH)
+    (ident KW)))

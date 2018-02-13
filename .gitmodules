@@ -1,0 +1,35 @@
+# Development branches, we modify those heavily
+[submodule "third-party/islpp"]
+	path = third-party/islpp
+	url = git@github.com:nicolasvasilache/isl.git
+	branch = ntv_dev
+[submodule "third-party/cub"]
+	path = third-party/cub
+        url = git@github.com:nicolasvasilache/cub.git
+	branch = nvrtc-cub
+[submodule "third-party/halide"]
+	path = third-party/halide
+	url = https://github.com/halide/Halide.git
+
+# Mainstream branches, we don't modify those
+[submodule "third-party/caffe2"]
+	path = third-party/caffe2
+	url = git@github.com:caffe2/caffe2.git
+[submodule "third-party/gflags"]
+	path = third-party/gflags
+	url = https://github.com/gflags/gflags
+[submodule "third-party/glog"]
+	path = third-party/glog
+	url = https://github.com/google/glog.git
+[submodule "third-party/ATen"]
+	path = third-party/ATen
+	url = git@github.com:zdevito/aten.git
+[submodule "third-party/dlpack"]
+	path = third-party/dlpack
+	url = https://github.com/dmlc/dlpack.git
+[submodule "third-party/googletest"]
+	path = third-party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "third-party/pybind11"]
+ 	path = third-party/pybind11
+	url = https://github.com/pybind/pybind11.git

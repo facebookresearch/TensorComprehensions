@@ -1,0 +1,17 @@
+__pycache__/
+*.so
+*~
+build/*
+docs/build/*
+third-party/*_cache
+third-party/llvm_sources*
+third-party-install/*
+buck-out
+.buckd
+conda
+.nfs*
+*/.nfs*
+tensor_comprehensions.egg-info/
+tensor_comprehensions/version.py
+slurm-*
+examples/results*

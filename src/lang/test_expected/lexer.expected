@@ -1,0 +1,60 @@
+FOUND 'min'
+min min+max 1.4 .3 3 3.
+~~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'min'
+min min+max 1.4 .3 3 3.
+    ~~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND '+'
+min min+max 1.4 .3 3 3.
+       ~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'max'
+min min+max 1.4 .3 3 3.
+        ~~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+            ~~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+                ~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+                   ~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+                     ~~ <--- HERE
+3e-3 .5e-7 3E-5 foobar
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+3e-3 .5e-7 3E-5 foobar
+~~~~ <--- HERE
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+3e-3 .5e-7 3E-5 foobar
+     ~~~~~ <--- HERE
+---------
+FOUND 'number'
+min min+max 1.4 .3 3 3.
+3e-3 .5e-7 3E-5 foobar
+           ~~~~ <--- HERE
+---------
+FOUND 'ident'
+min min+max 1.4 .3 3 3.
+3e-3 .5e-7 3E-5 foobar
+                ~~~~~~ <--- HERE
+---------
