@@ -1,0 +1,466 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Semantics &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Range Inference" href="inference.html"/>
+        <link rel="prev" title="Examples of TC integration" href="aten_integration.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-multiply">Simple matrix-multiply</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="aten_integration.html">Examples of TC integration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implied-reductions">Implied Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#integrating-any-ml-framework">Integrating any ML framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_image.html">Installing TC from docker image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-get-protobuf3-4">Step 3: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-install-tc">Step 6: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-7-verify-tc-installation">Step 7: Verify TC installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Semantics</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/semantics.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="semantics">
+<h1>Semantics<a class="headerlink" href="#semantics" title="Permalink to this headline">¶</a></h1>
+<p>Tensor Comprehensions follows the follow semantics.</p>
+<div class="section" id="types">
+<h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
+<p>Values between statements are always tensors of primitive types (e.g. <code class="code docutils literal"><span class="pre">float(A,B)</span></code>, a tensor of rank 2).
+They can be 0-rank and omit the dimension list (e.g <code class="code docutils literal"><span class="pre">float</span></code>).
+Size variables (e.g. <code class="code docutils literal"><span class="pre">A</span></code> and <code class="code docutils literal"><span class="pre">B</span></code> in <code class="code docutils literal"><span class="pre">float(A,B)</span></code>) are used to represent the sizes of the dimensions.
+If a size variable is repeated it means that tensors of that type must share the same size in that dimension.
+Size variables evaluate to the size of the dimension when used in expressions.</p>
+<p>The type of output values is omitted and is inferred based on how it is defined as described below.</p>
+</div>
+<div class="section" id="data-layout">
+<h2>Data Layout<a class="headerlink" href="#data-layout" title="Permalink to this headline">¶</a></h2>
+<p>The memory layout implied by TC is row-major (C-like).</p>
+</div>
+<div class="section" id="variable-scoping">
+<h2>Variable Scoping<a class="headerlink" href="#variable-scoping" title="Permalink to this headline">¶</a></h2>
+<p>There are three different kinds of variables, which all share the same namespace:</p>
+<ol class="arabic simple">
+<li>size variables, introduced by tensor types in the type signature, which evaluate to the size of the dimension;</li>
+<li>tensor variables, introduced by tensor types in the type signature, with ranges either prescribed (input tensors) or inferred (output tensors);</li>
+<li>loop index variables, are implicitly defined when used in a statement.</li>
+</ol>
+<p>When an identifier is used in a statement but is otherwise not in scope, it is defined to be an index variable for that statement.
+Each index variable has an associated range <code class="code docutils literal"><span class="pre">[b,e)</span></code> over which it operates.
+That range is inferred by its use, as described below.
+Index variables go out of scope after the statement, allowing the reuse of short variable names like <code class="code docutils literal"><span class="pre">i</span></code>.</p>
+</div>
+<div class="section" id="implied-reductions">
+<h2>Implied Reductions<a class="headerlink" href="#implied-reductions" title="Permalink to this headline">¶</a></h2>
+<p>If an index variable appears on the right but not on the left of a statement,
+it is a reduction index for the statement.
+If a statement has one or more reduction variables then it must specify a <code class="code docutils literal"><span class="pre">reduction</span></code>
+operator such as <code class="code docutils literal"><span class="pre">+</span></code> or <code class="code docutils literal"><span class="pre">max</span></code>.
+There is only one reduction operator for the entire statement because
+combinations like <code class="code docutils literal"><span class="pre">max/+</span></code> on different dimensions have different mathematical meanings depending on loop order.
+All reduction operators are considered to be associative and commutative to
+allow for arbitrary order of evaluation.</p>
+</div>
+<div class="section" id="size-expressions">
+<h2>Size Expressions<a class="headerlink" href="#size-expressions" title="Permalink to this headline">¶</a></h2>
+<p>Size expressions are a subset of normal expressions that can be used in explicit range constraints and in pattern matching.
+They are any expression over integral scalars that do not include tensor reads <code class="code docutils literal"><span class="pre">T(...)</span></code> or any loop index variables.
+They may include size variables, or dimension specifiers <code class="code docutils literal"><span class="pre">T.1</span></code>, for tensors that have already been defined in previous statements.
+These values can be computed without performing any tensor-wide loops.</p>
+</div>
+<div class="section" id="statements">
+<h2>Statements<a class="headerlink" href="#statements" title="Permalink to this headline">¶</a></h2>
+<p>A statement specifies a new operation to define, an optional reduction, and a right hand side:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>v(index_variables) reduction=! rhs_expression
+</pre></div>
+</div>
+<p><code class="code docutils literal"><span class="pre">index_variabes</span></code> must be a list of index variables defined in the <code class="code docutils literal"><span class="pre">rhs_expressions</span></code>
+<code class="code docutils literal"><span class="pre">reduction</span></code> is optional if all index variables appear on the left hand side.
+The value computed for tensor <code class="code docutils literal"><span class="pre">v</span></code> is equivalent to first assigning all
+elements of <code class="code docutils literal"><span class="pre">v</span></code> to the identity value of <code class="code docutils literal"><span class="pre">reduction</span></code>, then
+evaluating <code class="code docutils literal"><span class="pre">rhs_expression</span></code> at all points in the iteration space defined
+by the ranges of the loop index variables and reducing into the entry of the
+tensor specified on the left-hand side. The order in which these expressions
+are evaluated should not change the result because the reduction is
+associative and commutative.</p>
+</div>
+<div class="section" id="expressions">
+<h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h2>
+<p>Mathematical expressions behave as expected, including built-in functions like <code class="code docutils literal"><span class="pre">log(...)</span></code>.</p>
+<p><code class="code docutils literal"><span class="pre">tensor_variable(exp_list)</span></code> represents a read of a tensor at the indices defined by evaluating <code class="code docutils literal"><span class="pre">exp_list</span></code>. <code class="code docutils literal"><span class="pre">exp_list</span></code> can include arbitrary expressions (pattern matching of indices is limited to linear expressions, but actual computation is not). The effect of reading outside of the valid range of the tensor results in undefined behavior.</p>
+</div>
+<div class="section" id="grammar">
+<h2>Grammar<a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h2>
+<p>The EBNF for the TC comprehension language is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">num</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">number</span> <span class="n">literal</span> <span class="k">with</span> <span class="n">C</span> <span class="n">syntax</span><span class="o">&gt;</span>
+<span class="nb">id</span> <span class="p">::</span><span class="o">=</span> <span class="p">[</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">*</span><span class="p">[</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z</span><span class="p">][</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">*</span>
+<span class="n">exp</span> <span class="p">::</span><span class="o">=</span> <span class="n">num</span>
+      <span class="o">|</span> <span class="p">(</span> <span class="s1">&#39;-&#39;</span> <span class="o">|</span> <span class="s1">&#39;!&#39;</span> <span class="o">|</span> <span class="o">...</span> <span class="p">)</span> <span class="n">exp</span>
+      <span class="o">|</span> <span class="n">exp</span> <span class="p">(</span> <span class="p">[</span><span class="o">+-*/%</span><span class="p">]</span> <span class="o">|</span> <span class="s1">&#39;==&#39;</span> <span class="o">|</span> <span class="s1">&#39;!=&#39;</span> <span class="o">|</span> <span class="s1">&#39;&lt;=&#39;</span> <span class="o">|</span> <span class="o">...</span> <span class="p">)</span> <span class="n">exp</span>
+      <span class="o">|</span> <span class="n">exp</span> <span class="s1">&#39;?&#39;</span> <span class="n">exp</span> <span class="s1">&#39;:&#39;</span> <span class="n">exp</span>
+      <span class="o">|</span> <span class="nb">id</span> <span class="s1">&#39;.&#39;</span> <span class="n">num</span> <span class="c1"># range of num-th dimension of id</span>
+      <span class="o">|</span> <span class="nb">id</span> <span class="s1">&#39;(&#39;</span> <span class="n">exp_list</span> <span class="s1">&#39;)&#39;</span> <span class="c1"># builtin call or tensor access</span>
+
+<span class="n">reduction</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">associative</span> <span class="n">reduction</span> <span class="n">operator</span><span class="o">&gt;</span>
+            <span class="o">|</span> <span class="s1">&#39;+=&#39;</span>  <span class="o">|</span> <span class="s1">&#39;*=&#39;</span>  <span class="o">|</span> <span class="s1">&#39;min=&#39;</span>  <span class="o">|</span> <span class="s1">&#39;max=&#39;</span>
+            <span class="o">|</span> <span class="s1">&#39;+=!&#39;</span> <span class="o">|</span> <span class="s1">&#39;*=!&#39;</span> <span class="o">|</span> <span class="s1">&#39;min=!&#39;</span> <span class="o">|</span> <span class="s1">&#39;max=!&#39;</span>
+
+<span class="n">range_constraint</span> <span class="p">::</span><span class="o">=</span> <span class="nb">id</span> <span class="s1">&#39;in&#39;</span> <span class="n">exp</span> <span class="s1">&#39;:&#39;</span> <span class="n">exp</span>
+
+<span class="n">stmt</span> <span class="p">::</span><span class="o">=</span> <span class="nb">id</span> <span class="s1">&#39;(&#39;</span> <span class="n">id_list</span> <span class="s1">&#39;)&#39;</span> <span class="p">[</span> <span class="s1">&#39;=&#39;</span> <span class="o">|</span> <span class="n">reduction</span> <span class="p">]</span> <span class="n">exp</span>
+           <span class="p">[</span> <span class="s1">&#39;where&#39;</span> <span class="n">range_constraint_list</span> <span class="p">]</span>
+       <span class="o">|</span> <span class="n">id_list</span> <span class="o">=</span> <span class="nb">id</span> <span class="s1">&#39;(&#39;</span><span class="n">id_list</span> <span class="s1">&#39;)&#39;</span> <span class="c1"># TC function call</span>
+
+<span class="n">arg</span> <span class="p">::</span><span class="o">=</span> <span class="nb">type</span> <span class="nb">id</span>
+<span class="k">return</span> <span class="p">::</span><span class="o">=</span> <span class="nb">id</span> <span class="c1"># inferred return type and range</span>
+
+<span class="n">scalar_type</span> <span class="p">::</span><span class="o">=</span> <span class="s1">&#39;double&#39;</span> <span class="o">|</span> <span class="s1">&#39;float&#39;</span> <span class="o">|</span> <span class="s1">&#39;half&#39;</span>
+              <span class="o">|</span> <span class="s1">&#39;int&#39;</span> <span class="o">|</span> <span class="s1">&#39;byte&#39;</span> <span class="o">|</span> <span class="s1">&#39;uint32&#39;</span> <span class="o">|</span> <span class="o">...</span>
+
+<span class="nb">type</span> <span class="p">::</span><span class="o">=</span> <span class="n">scalar_type</span> <span class="p">[</span> <span class="s1">&#39;(&#39;</span> <span class="n">id_list</span> <span class="s1">&#39;)&#39;</span> <span class="p">]</span>
+
+<span class="n">func</span> <span class="p">::</span><span class="o">=</span> <span class="c1"># TC function definition</span>
+  <span class="s1">&#39;def&#39;</span> <span class="nb">id</span> <span class="s1">&#39;(&#39;</span> <span class="n">arg_list</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;-&gt;&#39;</span> <span class="s1">&#39;(&#39;</span> <span class="n">return_list</span> <span class="s1">&#39;)&#39;</span> <span class="s1">&#39;{&#39;</span>
+    <span class="n">stmt_list</span>
+  <span class="s1">&#39;}&#39;</span>
+
+<span class="n">id_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">comma</span> <span class="n">separated</span> <span class="nb">id</span> <span class="nb">list</span><span class="o">&gt;</span>
+<span class="n">exp_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">comma</span> <span class="n">separated</span> <span class="n">exp</span> <span class="nb">list</span><span class="o">&gt;</span>
+<span class="n">arg_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">comma</span> <span class="n">separated</span> <span class="n">arg</span> <span class="nb">list</span><span class="o">&gt;</span>
+<span class="n">stmt_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">whitespace</span> <span class="n">separated</span> <span class="n">stmt</span> <span class="nb">list</span><span class="o">&gt;</span>
+<span class="n">return_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">comma</span> <span class="n">separated</span> <span class="k">return</span> <span class="nb">list</span><span class="o">&gt;</span>
+<span class="n">range_constraint_list</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">non</span><span class="o">-</span><span class="n">empty</span> <span class="n">comma</span> <span class="n">separated</span>
+                           <span class="n">range_constraint</span> <span class="nb">list</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="inference.html" class="btn btn-neutral float-right" title="Range Inference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="aten_integration.html" class="btn btn-neutral" title="Examples of TC integration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Tensor Comprehensions contributors and users.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

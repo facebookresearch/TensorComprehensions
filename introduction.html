@@ -1,0 +1,434 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>What is Tensor Comprehensions? &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Examples of TC integration" href="aten_integration.html"/>
+        <link rel="prev" title="Tensor Comprehensions documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simple-matrix-multiply">Simple matrix-multiply</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="aten_integration.html">Examples of TC integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantics.html">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#implied-reductions">Implied Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#integrating-any-ml-framework">Integrating any ML framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_image.html">Installing TC from docker image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-get-protobuf3-4">Step 3: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-install-tc">Step 6: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-7-verify-tc-installation">Step 7: Verify TC installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>What is Tensor Comprehensions?</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="what-is-tensor-comprehensions">
+<h1>What is Tensor Comprehensions?<a class="headerlink" href="#what-is-tensor-comprehensions" title="Permalink to this headline">¶</a></h1>
+<p>Tensor Comprehensions(TC) is a notation based on generalized Einstein notation for computing on
+multi-dimensional arrays. TC greatly simplifies ML framework implementations by
+providing a concise and powerful syntax which can be efficiently translated to
+high-performance computation kernels, automatically.</p>
+<p>TC are supported both in Python and C++, we also provide
+lightweight integration with Caffe2. More generally the only
+requirement to integrate TC into a workflow is to use a simple tensor library
+with a few basic functionalities.</p>
+<div class="section" id="tensor-comprehension-notation">
+<h2>Tensor Comprehension Notation<a class="headerlink" href="#tensor-comprehension-notation" title="Permalink to this headline">¶</a></h2>
+<p>TC borrow three ideas from Einstein notation that make expressions concise:</p>
+<ol class="arabic simple">
+<li>loop index variables are defined implicitly by using them in an expression and their range is aggressively inferred based on what they index,</li>
+<li>indices that appear on the right of an expression but not on the left are assumed to be reduction dimensions,</li>
+<li>the evaluation order of points in the iteration space does not affect the output.</li>
+</ol>
+<p>Let&#8217;s start with a simple example is a matrix vector product:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">C</span><span class="p">)</span> <span class="n">A</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">C</span><span class="p">)</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">o</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+=</span> <span class="n">A</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="o">*</span> <span class="n">b</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal"><span class="pre">A</span></code> and <code class="code docutils literal"><span class="pre">x</span></code> are input tensors. <code class="code docutils literal"><span class="pre">o</span></code> is an output tensor.
+The statement <code class="code docutils literal"><span class="pre">o(i)</span> <span class="pre">+=</span> <span class="pre">A(i,j)*b(j)</span></code> introduces two index variables <code class="code docutils literal"><span class="pre">i</span></code> and <code class="code docutils literal"><span class="pre">j</span></code>.
+Their range is inferred by their use indexing <code class="code docutils literal"><span class="pre">A</span></code> and <code class="code docutils literal"><span class="pre">b</span></code>. <code class="code docutils literal"><span class="pre">i</span> <span class="pre">=</span> <span class="pre">[0,R)</span></code>, <code class="code docutils literal"><span class="pre">j</span> <span class="pre">=</span> <span class="pre">[0,C)</span></code>.
+Because <code class="code docutils literal"><span class="pre">j</span></code> only appears on the right side,
+stores into <code class="code docutils literal"><span class="pre">o</span></code> will reduce over <code class="code docutils literal"><span class="pre">j</span></code> with the reduction specified for the loop.
+Reductions can occur across multiple variables, but they all share the same kind of associative reduction (e.g. <code class="code docutils literal"><span class="pre">+=</span></code>)
+to maintain invariant (3). <code class="code docutils literal"><span class="pre">mv</span></code> computes the same thing as this C++ loop:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">R</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">o</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="n">f</span><span class="p">;</span>
+  <span class="k">for</span><span class="p">(</span><span class="nb">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">C</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">o</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+=</span> <span class="n">A</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="o">*</span> <span class="n">b</span><span class="p">(</span><span class="n">j</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The loop order <code class="code docutils literal"><span class="pre">[i,j]</span></code> here is arbitrarily chosen because the computed value of a TC is always independent of the loop order.</p>
+</div>
+<div class="section" id="examples-of-tc">
+<h2>Examples of TC<a class="headerlink" href="#examples-of-tc" title="Permalink to this headline">¶</a></h2>
+<p>We provide a few basic examples.</p>
+<div class="section" id="simple-matrix-vector">
+<h3>Simple matrix-vector<a class="headerlink" href="#simple-matrix-vector" title="Permalink to this headline">¶</a></h3>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">R</span><span class="p">,</span><span class="n">C</span><span class="p">)</span> <span class="n">A</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">C</span><span class="p">)</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">o</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+=</span> <span class="n">A</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="o">*</span> <span class="n">b</span><span class="p">(</span><span class="n">j</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simple-matrix-multiply">
+<h3>Simple matrix-multiply<a class="headerlink" href="#simple-matrix-multiply" title="Permalink to this headline">¶</a></h3>
+<p>Note the layout for B is transposed and matches the traditional layout of the weight matrix in a linear layer):</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mm</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">X</span><span class="p">,</span><span class="n">Y</span><span class="p">)</span> <span class="n">A</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">Y</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span> <span class="n">B</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">R</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">R</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="o">+=</span> <span class="n">A</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="o">*</span> <span class="n">B</span><span class="p">(</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simple-2-d-convolution-no-stride-no-padding">
+<h3>Simple 2-D convolution (no stride, no padding)<a class="headerlink" href="#simple-2-d-convolution-no-stride-no-padding" title="Permalink to this headline">¶</a></h3>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">conv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="n">IP</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">OP</span><span class="p">,</span><span class="n">IP</span><span class="p">,</span><span class="n">KH</span><span class="p">,</span><span class="n">KW</span><span class="p">)</span> <span class="n">weight</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">output</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span> <span class="o">+=</span> <span class="nb">input</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">ip</span><span class="p">,</span> <span class="n">h</span> <span class="o">+</span> <span class="n">kh</span><span class="p">,</span> <span class="n">w</span> <span class="o">+</span> <span class="n">kw</span><span class="p">)</span> <span class="o">*</span> <span class="n">weight</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">ip</span><span class="p">,</span> <span class="n">kh</span><span class="p">,</span> <span class="n">kw</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="simple-2d-max-pooling">
+<h3>Simple 2D max pooling<a class="headerlink" href="#simple-2d-max-pooling" title="Permalink to this headline">¶</a></h3>
+<p>Note the similarity with a convolution with a
+&#8220;select&#8221;-style kernel):</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">maxpool2x2</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">B</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="nb">input</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">output</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">output</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="nb">max</span><span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="n">b</span><span class="p">,</span><span class="n">c</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="n">i</span> <span class="o">+</span> <span class="n">kw</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">j</span> <span class="o">+</span> <span class="n">kh</span><span class="p">)</span>
+    <span class="n">where</span> <span class="n">kw</span> <span class="ow">in</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="n">kh</span> <span class="ow">in</span> <span class="mi">0</span><span class="p">:</span><span class="mi">2</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="aten_integration.html" class="btn btn-neutral float-right" title="Examples of TC integration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Tensor Comprehensions documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Tensor Comprehensions contributors and users.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

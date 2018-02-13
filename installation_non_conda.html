@@ -1,0 +1,518 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Building from Source in Non-Conda Environment &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
+        <link rel="prev" title="Building from Source in Conda Environment" href="installation_conda.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-multiply">Simple matrix-multiply</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="aten_integration.html">Examples of TC integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantics.html">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#implied-reductions">Implied Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#integrating-any-ml-framework">Integrating any ML framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_image.html">Installing TC from docker image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-get-protobuf3-4">Step 3: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-install-tc">Step 6: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-7-verify-tc-installation">Step 7: Verify TC installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Building from Source in Non-Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-6-python-install">Step 6: Python install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-7-install-tc">Step 7: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Building from Source in Non-Conda Environment</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/installation_non_conda.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="building-from-source-in-non-conda-environment">
+<h1>Building from Source in Non-Conda Environment<a class="headerlink" href="#building-from-source-in-non-conda-environment" title="Permalink to this headline">¶</a></h1>
+<p>For native development in non-conda environment, you have to build TC and all of
+its dependencies from source. Follow the installation instructions below for that.</p>
+<p>On <code class="code docutils literal"><span class="pre">Ubuntu</span> <span class="pre">16.04</span></code>, for installation from source, follow the following instructions <strong>step-wise</strong>. If you wish to install
+on <code class="code docutils literal"><span class="pre">Ubuntu</span> <span class="pre">14.04</span></code>, make the changes where you see 1604.</p>
+<div class="section" id="step-1-install-some-build-dependencies">
+<h2>Step 1: Install some build dependencies<a class="headerlink" href="#step-1-install-some-build-dependencies" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ apt-get update
+$ apt-get install -y libgoogle-glog-dev curl build-essential cmake git automake libgmp3-dev libtool ssh libyaml-dev realpath wget valgrind software-properties-common unzip
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">You might additionally need to install <code class="code docutils literal"><span class="pre">cmake3</span></code> and <code class="code docutils literal"><span class="pre">libz-dev</span></code>, if these packages are not found by apt-get, you can proceed otherwise install them by running <code class="code docutils literal"><span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">libz-dev</span></code></p>
+</div>
+</div>
+<div class="section" id="step-2-setup-gcc-g">
+<h2>Step 2: Setup gcc / g++<a class="headerlink" href="#step-2-setup-gcc-g" title="Permalink to this headline">¶</a></h2>
+<p>For building TC, you also need to install a custom clang+llvm. For that, follow the instructions below:</p>
+<p>First, check your gcc/g++ and make sure they are in system path, somewhere like <code class="code docutils literal"><span class="pre">/usr/bin</span></code>. Also, check your gcc/g++ version. Currently, TC officially supports gcc 4.8, gcc 4.9 and gcc 5.*</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ which gcc
+$ which g++
+</pre></div>
+</div>
+<p>If you don&#8217;t have correct gcc, g++, follow the instructions below, otherwise skip:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ add-apt-repository ppa:ubuntu-toolchain-r/test
+$ apt-get update
+$ apt-get install -y --no-install-recommends gcc-5 g++-5
+</pre></div>
+</div>
+<p><em>Optionally</em>, you can configure the gcc versions available on your machine and set up higher priority for the version you want.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 <span class="m">50</span>
+$ update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 <span class="m">50</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-3-install-clang-llvm">
+<h2>Step 3: Install Clang+LLVM<a class="headerlink" href="#step-3-install-clang-llvm" title="Permalink to this headline">¶</a></h2>
+<p>Now, you have the correct gcc, g++, we will move on and install CLANG+LLVM.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please note that we use a special configuration of LLVM and also build the Tapir project. Therefore, system or separately built LLVM is unlikely to be suitable.</p>
+</div>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">CC</span><span class="o">=</span><span class="k">$(</span>which gcc<span class="k">)</span>
+$ <span class="nb">export</span> <span class="nv">CXX</span><span class="o">=</span><span class="k">$(</span>which g++<span class="k">)</span>
+$ <span class="nb">export</span> <span class="nv">CORES</span><span class="o">=</span><span class="k">$(</span>nproc<span class="k">)</span>
+$ <span class="nb">export</span> <span class="nv">LLVM_SOURCES</span><span class="o">=</span><span class="nv">$HOME</span>/llvm_sources-tapir5.0
+$ <span class="nb">export</span> <span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="nv">$HOME</span>/clang+llvm-tapir5.0  <span class="c1"># change this to whatever path you want</span>
+$ <span class="nb">export</span> <span class="nv">CMAKE_VERSION</span><span class="o">=</span>cmake
+$ mkdir -p <span class="nv">$LLVM_SOURCES</span> <span class="o">&amp;&amp;</span> <span class="nb">cd</span> <span class="nv">$LLVM_SOURCES</span>
+</pre></div>
+</div>
+<p>Now, clone the repo, build and install LLVM+Tapir:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ git clone --recursive https://github.com/wsmoses/Tapir-LLVM llvm
+$ mkdir -p <span class="si">${</span><span class="nv">LLVM_SOURCES</span><span class="si">}</span>/llvm_build <span class="o">&amp;&amp;</span> <span class="nb">cd</span> <span class="si">${</span><span class="nv">LLVM_SOURCES</span><span class="si">}</span>/llvm_build
+$ <span class="si">${</span><span class="nv">CMAKE_VERSION</span><span class="si">}</span> -DCMAKE_INSTALL_PREFIX<span class="o">=</span><span class="si">${</span><span class="nv">CLANG_PREFIX</span><span class="si">}</span> -DLLVM_TARGETS_TO_BUILD<span class="o">=</span>X86 -DCOMPILER_RT_BUILD_CILKTOOLS<span class="o">=</span>OFF -DLLVM_ENABLE_CXX1Y<span class="o">=</span>ON -DLLVM_ENABLE_TERMINFO<span class="o">=</span>OFF -DLLVM_BUILD_TESTS<span class="o">=</span>OFF -DLLVM_ENABLE_ASSERTIONS<span class="o">=</span>ON -DCMAKE_BUILD_TYPE<span class="o">=</span>Release -DLLVM_BUILD_LLVM_DYLIB<span class="o">=</span>ON  -DLLVM_ENABLE_RTTI<span class="o">=</span>ON ../llvm/
+$ make -j <span class="nv">$CORES</span> -s <span class="o">&amp;&amp;</span> make install -j <span class="nv">$CORES</span> -s
+$ <span class="nb">cd</span> <span class="nv">$HOME</span> <span class="o">&amp;&amp;</span> rm -rf <span class="nv">$LLVM_SOURCES</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-4-get-cuda-and-cudnn">
+<h2>Step 4: Get CUDA and CUDNN<a class="headerlink" href="#step-4-get-cuda-and-cudnn" title="Permalink to this headline">¶</a></h2>
+<p>In order to build TC, you also need to have <code class="code docutils literal"><span class="pre">CUDA</span></code> and <code class="code docutils literal"><span class="pre">CUDNN</span></code>. If you already have it
+you can just export the <code class="code docutils literal"><span class="pre">PATH</span></code>, <code class="code docutils literal"><span class="pre">LD_LIBRARY_PATH</span></code> (see the end of this step). If you don&#8217;t have CUDA/CUDNN, then follow the instructions below:</p>
+<p>First, install <code class="code docutils literal"><span class="pre">CUDA</span></code> Toolkit v8.0 (skip if you have it):</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nv">CUDA_REPO_PKG</span><span class="o">=</span><span class="s2">&quot;cuda-repo-ubuntu1604_8.0.61-1_amd64.deb&quot;</span>
+$ wget http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/<span class="si">${</span><span class="nv">CUDA_REPO_PKG</span><span class="si">}</span>
+$ dpkg -i <span class="si">${</span><span class="nv">CUDA_REPO_PKG</span><span class="si">}</span>
+$ rm -f <span class="si">${</span><span class="nv">CUDA_REPO_PKG</span><span class="si">}</span>
+$ apt-get update
+$ apt-get -y install cuda
+</pre></div>
+</div>
+<p>Now, Install cuDNN v6.0 (skip if you have it already):</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nv">CUDNN_TAR_FILE</span><span class="o">=</span><span class="s2">&quot;cudnn-8.0-linux-x64-v6.0.tgz&quot;</span>
+$ wget http://developer.download.nvidia.com/compute/redist/cudnn/v6.0/<span class="si">${</span><span class="nv">CUDNN_TAR_FILE</span><span class="si">}</span>
+$ tar -xzvf <span class="si">${</span><span class="nv">CUDNN_TAR_FILE</span><span class="si">}</span>
+$ sudo cp -P cuda/include/cudnn.h /usr/local/cuda/include
+$ sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
+$ sudo chmod a+r /usr/local/cuda/lib64/libcudnn*
+</pre></div>
+</div>
+<p>Set environment variables:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:<span class="nv">$LD_LIBRARY_PATH</span>
+$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/usr/local/bin:/usr/local/cuda/bin:<span class="nv">$PATH</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-5-get-protobuf3-4">
+<h2>Step 5: Get Protobuf3.4<a class="headerlink" href="#step-5-get-protobuf3-4" title="Permalink to this headline">¶</a></h2>
+<p>TC officially support protobuf3.4 at the moment. Please follow the below instructions
+to install the protobuf.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ mkdir -p /tmp/proto-install <span class="o">&amp;&amp;</span> <span class="nb">cd</span> /tmp/proto-install
+$ wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip <span class="o">&amp;&amp;</span> unzip -qq proto.zip -d .
+$ <span class="nb">cd</span> protobuf-3.4.0 <span class="o">&amp;&amp;</span> ./autogen.sh <span class="o">&amp;&amp;</span> ./configure <span class="o">&amp;&amp;</span> make -j <span class="m">8</span> <span class="o">&amp;&amp;</span> sudo make install <span class="o">&amp;&amp;</span> sudo ldconfig
+</pre></div>
+</div>
+<p>Now check your proto version by running:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ protoc --version
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-6-python-install">
+<h2>Step 6: Python install<a class="headerlink" href="#step-6-python-install" title="Permalink to this headline">¶</a></h2>
+<p>TC officially has support for Python3. Python2 should also work fine but it is
+not something we will support. Follow these instructions below to get Python specific
+dependencies and updating your Python:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ sudo apt-get install -y python3-dev python3-pip python3-setuptools
+$ pip3 install --upgrade pip
+$ pip3 install numpy pyyaml
+</pre></div>
+</div>
+<p>Now, check your yaml import works. If it doesn&#8217;t, make sure you ran earlier steps.</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ python3 -c <span class="s1">&#39;import yaml&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-7-install-tc">
+<h2>Step 7: Install TC<a class="headerlink" href="#step-7-install-tc" title="Permalink to this headline">¶</a></h2>
+<p>Now, you need to install TC from source. For installing
+TC from source, checkout the TensorComprehensions repo and run the following commands:</p>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> <span class="nv">$HOME</span> <span class="o">&amp;&amp;</span> git clone git@github.com:facebookresearch/TensorComprehensions.git --recursive
+$ <span class="nb">cd</span> TensorComprehensions
+$ git submodule update --init --recursive
+$ <span class="nb">export</span> <span class="nv">TC_DIR</span><span class="o">=</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>
+$ <span class="nv">BUILD_TYPE</span><span class="o">=</span>Release <span class="nv">PYTHON</span><span class="o">=</span><span class="k">$(</span>which python3<span class="k">)</span> <span class="nv">WITH_CAFFE2</span><span class="o">=</span>OFF <span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="nv">$HOME</span>/clang+llvm-tapir5.0 ./build.sh --all
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please make sure that you don&#8217;t have gflags or glog in your system path. Those might conflict with the TC gflags/glog.</p>
+</div>
+</div>
+<div class="section" id="step-8-verify-tc-installation">
+<h2>Step 8: Verify TC installation<a class="headerlink" href="#step-8-verify-tc-installation" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> <span class="nv">$HOME</span>/TensorComprehensions
+$ ./test.sh                   <span class="c1"># if you have GPU</span>
+$ ./test_cpu.sh               <span class="c1"># if you have only CPU</span>
+</pre></div>
+</div>
+<p>Make sure all the tests pass here. Now you are ready to start contributing to the C++/Python API of TC.</p>
+</div>
+<div class="section" id="build-with-basic-caffe2-integration">
+<h2>Build with Basic Caffe2 Integration<a class="headerlink" href="#build-with-basic-caffe2-integration" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>If you want to install TC with Caffe2 as well, run the following:</li>
+</ol>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nv">BUILD_TYPE</span><span class="o">=</span>Release <span class="nv">PYTHON</span><span class="o">=</span><span class="k">$(</span>which python3<span class="k">)</span> <span class="nv">WITH_PYTHON_C2</span><span class="o">=</span>OFF <span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="nv">$HOME</span>/clang+llvm-tapir5.0 ./build.sh --all
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This turns off the Caffe2 python build. If you want to turn on the Caffe2 python build, see next step:</p>
+</div>
+<ol class="arabic simple" start="2">
+<li>For installing python binaries as well of Caffe2 with TC:</li>
+</ol>
+<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nv">BUILD_TYPE</span><span class="o">=</span>Release <span class="nv">PYTHON</span><span class="o">=</span><span class="k">$(</span>which python3<span class="k">)</span> <span class="nv">WITH_PYTHON_C2</span><span class="o">=</span>ON <span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="nv">$HOME</span>/clang+llvm-tapir5.0 ./build.sh --all
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Caffe2 doesn&#8217;t provide support for pip/conda at the moment and this means in order to use the caffe2 python, you might need to set $PYTHONPATH. Normally, it could be <code class="code docutils literal"><span class="pre">${TC_DIR}/third-party-install/</span></code></p>
+</div>
+<p>However, please check caffe2 official instructions <a class="reference external" href="https://caffe2.ai/docs/getting-started.html?platform=mac&amp;configuration=compile#test-the-caffe2-installation">here</a> . TC doesn&#8217;t yet provide support for caffe2 python usage.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="installation_conda.html" class="btn btn-neutral" title="Building from Source in Conda Environment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Tensor Comprehensions contributors and users.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

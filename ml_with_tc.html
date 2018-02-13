@@ -1,0 +1,436 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Positioning of TC in ML Software stacks &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Installation Guide" href="installation.html"/>
+        <link rel="prev" title="Performance of TC" href="performance.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-multiply">Simple matrix-multiply</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="aten_integration.html">Examples of TC integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantics.html">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#implied-reductions">Implied Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#integrating-any-ml-framework">Integrating any ML framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_image.html">Installing TC from docker image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-get-protobuf3-4">Step 3: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-install-tc">Step 6: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-7-verify-tc-installation">Step 7: Verify TC installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Positioning of TC in ML Software stacks</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/ml_with_tc.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="positioning-of-tc-in-ml-software-stacks">
+<h1>Positioning of TC in ML Software stacks<a class="headerlink" href="#positioning-of-tc-in-ml-software-stacks" title="Permalink to this headline">¶</a></h1>
+<p>TC is a concise notation which can easily be used to write ML layers.
+The positioning of TC in the ML ecosystem aims at achieving the following:</p>
+<ol class="arabic simple">
+<li>Easy to integrate with any ML framework and any tensor library.</li>
+<li>Carry the minimal amount of information to write layers concisely.</li>
+<li>Be automatically translated to HPC implementations on various runtimes / HW.</li>
+<li>Carry the minimal amount of information to support automatic transformation to HPC implementations.</li>
+<li>Be usable by our intended target audience.</li>
+<li>Be non-ambiguous and non-surprising.</li>
+</ol>
+<p>For now, we detail the first two points below:</p>
+<div class="section" id="integrating-any-ml-framework">
+<h2>Integrating any ML framework<a class="headerlink" href="#integrating-any-ml-framework" title="Permalink to this headline">¶</a></h2>
+<p>The simple fact that TC wants to be ML-framework agnostic has deeper
+implications that we will look into lifting in the future.</p>
+<div class="section" id="one-tc-function-one-kernel">
+<h3>One TC function one kernel<a class="headerlink" href="#one-tc-function-one-kernel" title="Permalink to this headline">¶</a></h3>
+<p>A single TC function must correspond to exactly one synthesized HPC
+kernel. If TC doesn&#8217;t guarantee that invariant, it will have to handle the
+integration of kernel launches and their proper synchronization in each
+framework it targets. This is off the table for now because it is
+counter-productive; the moment one operates at this level of control, one is
+effectively competing with frameworks and wants to write one&#8217;s own.</p>
+</div>
+<div class="section" id="no-variable-allocations">
+<h3>No Variable Allocations<a class="headerlink" href="#no-variable-allocations" title="Permalink to this headline">¶</a></h3>
+<p>TC cannot allocate memory and handle <code class="code docutils literal"><span class="pre">host</span> <span class="pre">&lt;-&gt;</span> <span class="pre">accelerator</span></code> copies. This is
+for the same reason stated above. As a consequence there is never a notion of TC variable definition, local
+scope in a TC, allocations etc (i.e. all the basic stuff you expect from a
+Programming Language). As a consequence TC is not a Programming Language but a concise
+notation. For now, it should not try to be a Programming Language.</p>
+</div>
+<div class="section" id="graph-level">
+<h3>Graph Level<a class="headerlink" href="#graph-level" title="Permalink to this headline">¶</a></h3>
+<p>For allocations, variable definitions, unique names, SSA etc. one probably wants
+to work at the <code class="code docutils literal"><span class="pre">NNVM</span> <span class="pre">/</span> <span class="pre">XLA</span></code> level which is not what TC wants to work at for now.
+Probably if one wants function calls (i.e. TC <code class="code docutils literal"><span class="pre">def</span></code> functions calling other
+TC def functions) then the TC notation is probably not where it should
+happen. TC calling built-in functions with side effects is fine though.</p>
+</div>
+</div>
+<div class="section" id="minimal-information-to-write-ml-layers-concisely">
+<h2>Minimal information to write ML layers concisely<a class="headerlink" href="#minimal-information-to-write-ml-layers-concisely" title="Permalink to this headline">¶</a></h2>
+<p>This should be as simple as possible but no simpler. Let&#8217;s discuss TC in the context of alternative solutions:</p>
+<div class="section" id="c-style-loops">
+<h3>C-style loops<a class="headerlink" href="#c-style-loops" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal"><span class="pre">C</span></code> loops over multi-dimensional arrays are non-ambiguous and general.
+For the purpose of writing programs operating on dense tensors, they are
+quite verbose and generally quite tedious to write and maintain code in.
+Still <code class="code docutils literal"><span class="pre">C</span></code> loops are very informative because they are understandable by anyone
+who wants to program a layer. So <code class="code docutils literal"><span class="pre">C</span></code> loops are a good fit for emitting a
+baseline implementation and debugging. TC must be able to emit simple <code class="code docutils literal"><span class="pre">C</span></code> loops
+that compiles and run.</p>
+</div>
+<div class="section" id="halide">
+<h3>Halide<a class="headerlink" href="#halide" title="Permalink to this headline">¶</a></h3>
+<p>Halide could be viewed as a specialization of <code class="code docutils literal"><span class="pre">C</span></code> loops for image
+processing. This specialization is a trade-off, you can only express box
+regions within boxes (no triangular loops). This specialization fits our
+application domain and we are using it heavily. Halide&#8217;s backwards shape
+inference allows removing much of the boilerplate specification for
+intermediate tensors. The tradeoff is you need to specify input tensor shapes
+(also in TC), output tensor shapes (omitted in TC) and the ranges of all
+reduction indices (omitted in TC).</p>
+</div>
+<div class="section" id="tc">
+<h3>TC<a class="headerlink" href="#tc" title="Permalink to this headline">¶</a></h3>
+<p>The current TC implementation sits somewhere here; less verbose than Halide,
+more verbose than matrix algebra. The biggest current negative point is its
+non-intuitive behavior that depends on the inference procedure. But this
+inference procedure can be described properly and follows an intuitive enough
+mental model, see <a class="reference internal" href="inference.html#inference"><span class="std std-ref">Range Inference</span></a>.</p>
+</div>
+<div class="section" id="matrix-languages">
+<h3>Matrix Languages<a class="headerlink" href="#matrix-languages" title="Permalink to this headline">¶</a></h3>
+<p>Matrix languages such as Matlab are very concise and make sense mathematically
+but don&#8217;t naturally extend to tensors (what does the operator <code class="code docutils literal"><span class="pre">*</span></code> mean on 3-D
+tensors?). As a consequence loops need to be introduced prematurely; TC avoid
+this pit-hole.</p>
+</div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="performance.html" class="btn btn-neutral" title="Performance of TC" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Tensor Comprehensions contributors and users.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

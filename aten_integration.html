@@ -1,0 +1,384 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Examples of TC integration &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Semantics" href="semantics.html"/>
+        <link rel="prev" title="What is Tensor Comprehensions?" href="introduction.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.0
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="introduction.html#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-matrix-multiply">Simple matrix-multiply</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="introduction.html#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Examples of TC integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="semantics.html">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#implied-reductions">Implied Reductions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="semantics.html#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#integrating-any-ml-framework">Integrating any ML framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_image.html">Installing TC from docker image</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-get-protobuf3-4">Step 3: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-install-tc">Step 6: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-7-verify-tc-installation">Step 7: Verify TC installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Examples of TC integration</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/aten_integration.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="examples-of-tc-integration">
+<h1>Examples of TC integration<a class="headerlink" href="#examples-of-tc-integration" title="Permalink to this headline">¶</a></h1>
+<p>TC greatly simplifies ML framework implementations by providing a concise and
+powerful syntax which can be efficiently translated to high-performance computation kernels, automatically.</p>
+<p>We provide lightweight integration with Caffe2 and a C++ Tensor library called ATen.
+The integration API looks as simple as below:</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;ATen/ATen.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;tc/aten/aten_compiler.h&quot;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&quot;tc/core/mapping_options.h&quot;</span><span class="cp"></span>
+
+<span class="c1">// 1. Define and setup the TC compilation unit with CUDA memory management backed by ATen.</span>
+<span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">tc</span> <span class="o">=</span> <span class="sa">R</span><span class="s">&quot;</span><span class="dl">TC(</span><span class="s"></span>
+<span class="s">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s">  C(i, j) +=! A(i, k) * B(k, j)</span>
+<span class="s">}</span><span class="dl">)TC</span><span class="s">&quot;</span><span class="p">;</span>
+
+<span class="c1">// 2. Allocate tensors with random data</span>
+<span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">A</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">CUDA</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">kFloat</span><span class="p">).</span><span class="n">rand</span><span class="p">({</span><span class="mi">12</span><span class="p">,</span> <span class="mi">34</span><span class="p">});</span>
+<span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">B</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">CUDA</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">kFloat</span><span class="p">).</span><span class="n">rand</span><span class="p">({</span><span class="mi">34</span><span class="p">,</span> <span class="mi">56</span><span class="p">});</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">outputs</span><span class="p">;</span>
+
+<span class="c1">// 3. Chose mapping options</span>
+<span class="k">auto</span> <span class="n">mappingOptions</span> <span class="o">=</span> <span class="n">tc</span><span class="o">::</span><span class="n">MappingOptions</span><span class="o">::</span><span class="n">makeNaiveMappingOptions</span><span class="p">();</span>
+
+<span class="c1">// 4. Compile and run the TC</span>
+<span class="n">tc</span><span class="o">::</span><span class="n">ATenCompilationUnit</span> <span class="n">atCompl</span><span class="p">;</span>
+<span class="n">atCompl</span><span class="p">.</span><span class="n">define</span><span class="p">(</span><span class="n">tc</span><span class="p">);</span>
+<span class="k">auto</span> <span class="n">handle</span> <span class="o">=</span> <span class="n">atCompl</span><span class="p">.</span><span class="n">compile</span><span class="p">(</span><span class="s">&quot;matmul&quot;</span><span class="p">,</span> <span class="p">{</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">},</span> <span class="n">mappingOptions</span><span class="p">);</span>
+<span class="n">atCompl</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="s">&quot;matmul&quot;</span><span class="p">,</span> <span class="p">{</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">},</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">handle</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="semantics.html" class="btn btn-neutral float-right" title="Semantics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="introduction.html" class="btn btn-neutral" title="What is Tensor Comprehensions?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2018, Tensor Comprehensions contributors and users.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'v0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
