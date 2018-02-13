@@ -1,0 +1,31 @@
+(def
+  (ident fun)
+  (list
+    (param
+      (ident I)
+      (tensor_type
+        (float)
+        (list (ident M)))))
+  (list (param (ident O) (inferred)))
+  (list
+    (comprehension
+      (ident O)
+      (list)
+      (plus_eq_b)
+      (built-in
+        log
+        (list
+          (built-in
+            tanh
+            (list
+              (access
+                (ident I)
+                (list (ident i))))
+            (float)))
+        (float))
+      (list)
+      (option)
+      (list (ident i)))))
+I: (tensor_type (float) (list (ident M)))
+M: (int32)
+O: (tensor_type (float) (list))

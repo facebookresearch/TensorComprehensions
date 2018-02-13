@@ -1,0 +1,14 @@
+(comprehension
+  (ident R)
+  (list (ident i) (ident j))
+  (plus_eq_b)
+  (*
+    (apply
+      (ident A)
+      (list (ident i) (ident j)))
+    (apply
+      (ident B)
+      (list (ident j) (ident k))))
+  (list)
+  (option)
+  (list))
