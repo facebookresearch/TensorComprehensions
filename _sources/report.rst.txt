@@ -14,4 +14,4 @@ Tech Report
 `Albert Cohen <https://who.rocq.inria.fr/Albert.Cohen>`_ (Inria & DI ENS & FAIR)
 
 We provide more details about Tensor Comprehensions in our tech report which can be found
-here on `ArXiV <link>`_
+here on `arXiv <link>`_
