@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Autotuner &mdash; Tensor Comprehensions v0.1.0 documentation</title>
+  <title>Contacts &mdash; Tensor Comprehensions v0.1.0 documentation</title>
   
 
   
@@ -38,8 +38,8 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="Tensor Comprehensions v0.1.0 documentation" href="index.html"/>
-        <link rel="next" title="Performance of TC" href="performance.html"/>
-        <link rel="prev" title="Mapping Options" href="mapping_options.html"/> 
+        <link rel="next" title="What is Tensor Comprehensions?" href="introduction.html"/>
+        <link rel="prev" title="Tech Report" href="report.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -100,17 +100,17 @@
 <li class="toctree-l1"><a class="reference internal" href="report.html">Tech Report</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Support</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="contacts.html">Contacts</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contacts.html#bugs-and-features">Bugs and features</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contacts.html#mailing-list">Mailing list</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contacts.html#contributions">Contributions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contacts.html#slack-channel">Slack channel</a></li>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contacts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#bugs-and-features">Bugs and features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mailing-list">Mailing list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#contributions">Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#slack-channel">Slack channel</a></li>
 </ul>
 </li>
 </ul>
 <p class="caption"><span class="caption-text">Index</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#examples-of-tc">Examples of TC</a><ul>
@@ -159,9 +159,9 @@
 <li class="toctree-l2"><a class="reference internal" href="mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
 </ul>
 </li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Autotuner</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#parameters-for-autotuning">Parameters for Autotuning</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#caching">Caching</a></li>
+<li class="toctree-l1"><a class="reference internal" href="autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuner.html#caching">Caching</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
@@ -270,13 +270,13 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Autotuner</li>
+      <li>Contacts</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
-            <a href="_sources/autotuner.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/contacts.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -289,39 +289,25 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="autotuner">
-<h1>Autotuner<a class="headerlink" href="#autotuner" title="Permalink to this headline">¶</a></h1>
-<p>The genetic-algorithm-based autotuner tries to optimize a TC by tuning the available mapping options.</p>
-<p>Each autotuning session starts with a set (<code class="code docutils literal"><span class="pre">population</span></code>) of candidate options
-which can be initialized randomly and/or from known starting points. Each
-candidate is benchmarked and the best ones have a higher chance of surviving
-and breeding to produce the next generation of candidates. This procedure is
-repeated for a pre-defined number of generations. In the end, the best candidate
-is returned.</p>
-<p>At the end of each generation new candidates must be selected. Each candidate
-is either a combination of parent candidates (<code class="code docutils literal"><span class="pre">crossover</span></code>) or one that survives
-from the previous generation. Both types are potentially randomly changed
-(mutation). The top candidates (<code class="code docutils literal"><span class="pre">elites</span></code>) survive intact (without mutations)
-between generations.</p>
-<div class="section" id="parameters-for-autotuning">
-<h2>Parameters for Autotuning<a class="headerlink" href="#parameters-for-autotuning" title="Permalink to this headline">¶</a></h2>
-<p>The parameters that control the autotuner&#8217;s behavior are the following:</p>
-<ul class="simple">
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">generations</span></code>: The number of tuning generation to be run.</li>
-<li><code class="code docutils literal"><span class="pre">Population</span> <span class="pre">size</span></code>: The number of candidates in each generation.</li>
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">elites</span></code>: The number of best candidates that are preserved intact between generations (without any mutations).</li>
-<li><code class="code docutils literal"><span class="pre">Crossover</span> <span class="pre">rate</span></code>: The rate at which new candidates are bred instead of just surviving across generations.</li>
-<li><code class="code docutils literal"><span class="pre">Mutation</span> <span class="pre">rate</span></code>: The rate at which candidate options are randomly changed (mutated).</li>
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">threads</span></code>: The number of threads that are used to compile different candidates in parallel.</li>
-<li><code class="code docutils literal"><span class="pre">GPUs</span></code>: A comma separated list of GPUs (ids) to use for evaluating candidates (e.g., &#8220;0,1,2,3&#8221;).</li>
-<li><code class="code docutils literal"><span class="pre">RNG</span> <span class="pre">state</span></code>: The state used to seed the tuner&#8217;s RNG.</li>
-<li><code class="code docutils literal"><span class="pre">Proto</span></code>: A protobuf filename to (re)store compilation results and profiling information of the candidate solutions.</li>
-<li><code class="code docutils literal"><span class="pre">min_launch_total_threads</span></code>: Prune out kernels mapped to fewer than this many threads and block. Set this to <code class="code docutils literal"><span class="pre">1</span></code> to avoid pruning.</li>
-</ul>
+  <div class="section" id="contacts">
+<h1>Contacts<a class="headerlink" href="#contacts" title="Permalink to this headline">¶</a></h1>
+<p>Tensor Comprehensions are in active development and constant improvement.  We welcome your feedback and contributions.  Tensor Comprehensions team is accessible through different channels, choose the one you prefer or the one that seems most appropriate for your communication.</p>
+<div class="section" id="bugs-and-features">
+<h2>Bugs and features<a class="headerlink" href="#bugs-and-features" title="Permalink to this headline">¶</a></h2>
+<p>Found a bug?  Want a feature?  Open an <a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/issues">issue on GitHub</a>.</p>
 </div>
-<div class="section" id="caching">
-<h2>Caching<a class="headerlink" href="#caching" title="Permalink to this headline">¶</a></h2>
-<p>After each autotuning session the best candidates&#8217; profiling information and compilation results are stored in a cache. They can be subsequently retrieved to seed a new autotuning session.</p>
+<div class="section" id="mailing-list">
+<h2>Mailing list<a class="headerlink" href="#mailing-list" title="Permalink to this headline">¶</a></h2>
+<p>Not sure whether the behavior you see is a bug or a feature?  Want to contact the team about something else than code, like an idea for collaboration?  Drop us an email at <a class="reference external" href="mailto:tensorcomp&#37;&#52;&#48;fb&#46;com">tensorcomp<span>&#64;</span>fb<span>&#46;</span>com</a>.</p>
+</div>
+<div class="section" id="contributions">
+<h2>Contributions<a class="headerlink" href="#contributions" title="Permalink to this headline">¶</a></h2>
+<p>Want to contribute?  Open a <a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/pulls">pull request on Github</a>.</p>
+<p>Don&#8217;t forget to read the <a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/blob/master/CONTRIBUTING.md">contributor&#8217;s instructions</a>.  Different parts of Tensor Comprehensions are managed by different people, make sure to tag the <a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/blob/master/CodeOwners.md">code owners</a> of the part your are modifying.</p>
+</div>
+<div class="section" id="slack-channel">
+<h2>Slack channel<a class="headerlink" href="#slack-channel" title="Permalink to this headline">¶</a></h2>
+<p>For a faster and tighter interaction, join our team on Slack: <a class="reference external" href="https://tensorcomprehensions.slack.com">TensorComprehensions.slack.com</a>.  You may need an invitation to join, contact us by email to get one.</p>
 </div>
 </div>
 
@@ -335,10 +321,10 @@ between generations.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="performance.html" class="btn btn-neutral float-right" title="Performance of TC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="introduction.html" class="btn btn-neutral float-right" title="What is Tensor Comprehensions?" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="mapping_options.html" class="btn btn-neutral" title="Mapping Options" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="report.html" class="btn btn-neutral" title="Tech Report" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   

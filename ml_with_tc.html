@@ -95,7 +95,21 @@
               
             
             
-              <p class="caption"><span class="caption-text">Index</span></p>
+              <p class="caption"><span class="caption-text">Paper</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="report.html">Tech Report</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Support</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="contacts.html">Contacts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#bugs-and-features">Bugs and features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#mailing-list">Mailing list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#contributions">Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contacts.html#slack-channel">Slack channel</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Index</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">What is Tensor Comprehensions?</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
@@ -345,10 +359,9 @@ reduction indices (omitted in TC).</p>
 <div class="section" id="tc">
 <h3>TC<a class="headerlink" href="#tc" title="Permalink to this headline">¶</a></h3>
 <p>The current TC implementation sits somewhere here; less verbose than Halide,
-more verbose than matrix algebra. The biggest current negative point is its
-non-intuitive behavior that depends on the inference procedure. But this
-inference procedure can be described properly and follows an intuitive enough
-mental model, see <a class="reference internal" href="inference.html#inference"><span class="std std-ref">Range Inference</span></a>.</p>
+more verbose than matrix algebra. The inference procedure has been one subtle
+tradeoff in TC. It has been designed to follow an intuitive enough mental model,
+but may still evolve in the future towards greater expressiveness, see <a class="reference internal" href="inference.html#inference"><span class="std std-ref">Range Inference</span></a>.</p>
 </div>
 <div class="section" id="matrix-languages">
 <h3>Matrix Languages<a class="headerlink" href="#matrix-languages" title="Permalink to this headline">¶</a></h3>
@@ -382,7 +395,7 @@ this pit-hole.</p>
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright Copyright (c) 2017-present, Facebook, Inc..
+        &copy; Copyright 2017-present, Facebook, Inc..
 
     </p>
   </div>
