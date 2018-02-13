@@ -8,7 +8,7 @@ Tech Report
 `Theodoros Theodoridis <theodort@student.ethz.ch>`_ (ETH Zürich),
 `Priya Goyal <https://scholar.google.com/citations?user=-9yiQMsAAAAJ&hl=en>`_ (FAIR),
 `Zachary DeVito <zdevito@fb.com>`_ (FAIR),
-`William S. Moses <https://wsmoses.com>`_ (MIT CSAIL),
+`William S. Moses <http://wsmoses.com>`_ (MIT CSAIL),
 `Sven Verdoolaege <sven@cs.kuleuven.be>`_ (FAIR),
 `Andrew Adams <https://andrew.adams.pub/>`_ (FAIR),
 `Albert Cohen <https://who.rocq.inria.fr/Albert.Cohen>`_ (Inria & DI ENS & FAIR)

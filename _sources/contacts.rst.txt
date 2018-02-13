@@ -19,7 +19,7 @@ Contributions
 
 Want to contribute?  Open a `pull request on Github <https://github.com/facebookresearch/TensorComprehensions/pulls>`_.
 
-Don't forget to read the `contributor's instructions <https://github.com/facebookresearch/TensorComprehensions/blob/master/CONTRIBUTING.md>`_.  Different parts of Tensor Comprehensions are managed by different people, make sure to tag the `code owners <https://github.com/facebookresearch/TensorComprehensions/blob/master/CodeOwners.md>`_ of the part your are modifying.
+Don't forget to read the `contributor's instructions <https://github.com/facebookresearch/TensorComprehensions/blob/master/CONTRIBUTING.md>`_.  Different parts of Tensor Comprehensions are managed by different people, make sure to tag the `code owners <https://github.com/facebookresearch/TensorComprehensions/blob/master/CodeOwners.md>`_ of the part you are modifying.
 
 
 Slack channel
