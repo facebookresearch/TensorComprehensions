@@ -79,10 +79,9 @@ TC
 ^^
 
 The current TC implementation sits somewhere here; less verbose than Halide,
-more verbose than matrix algebra. The biggest current negative point is its
-non-intuitive behavior that depends on the inference procedure. But this
-inference procedure can be described properly and follows an intuitive enough
-mental model, see :ref:`inference`.
+more verbose than matrix algebra. The inference procedure has been one subtle 
+tradeoff in TC. It has been designed to follow an intuitive enough mental model,
+but may still evolve in the future towards greater expressiveness, see :ref:`inference`.
 
 Matrix Languages
 ^^^^^^^^^^^^^^^^

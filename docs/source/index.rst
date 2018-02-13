@@ -38,3 +38,15 @@ Tensor Comprehensions provides framework-Agnostic Abstractions for High-Performa
    installation_conda_dep
    installation_conda
    installation_non_conda
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Paper
+
+   report
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Support
+
+   contacts
