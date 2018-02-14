@@ -25,4 +25,4 @@ Don't forget to read the `contributor's instructions <https://github.com/faceboo
 Slack channel
 -------------
 
-For a faster and tighter interaction, join our team on Slack: `TensorComprehensions.slack.com <https://tensorcomprehensions.slack.com>`_.  You may need an invitation to join, contact us by email at tensorcomp@fb.com to get one.
+For a faster and tighter interaction, join our team on Slack: `TensorComprehensions.slack.com <https://tensorcomprehensions.herokuapp.com/>`_. 
