@@ -87,5 +87,5 @@ Matrix Languages
 ^^^^^^^^^^^^^^^^
 Matrix languages such as Matlab are very concise and make sense mathematically
 but don't naturally extend to tensors (what does the operator :code:`*` mean on 3-D
-tensors?). As a consequence loops need to be introduced prematurely; TC avoid
+tensors?). As a consequence loops need to be introduced prematurely; TC avoids
 this pit-hole.

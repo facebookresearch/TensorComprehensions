@@ -61,7 +61,7 @@ A statement specifies a new operation to define, an optional reduction, and a ri
 
     v(index_variables) reduction=! rhs_expression
 
-:code:`index_variabes` must be a list of index variables defined in the :code:`rhs_expressions`
+:code:`index_variables` must be a list of index variables defined in the :code:`rhs_expressions`
 :code:`reduction` is optional if all index variables appear on the left hand side.
 The value computed for tensor :code:`v` is equivalent to first assigning all
 elements of :code:`v` to the identity value of :code:`reduction`, then
