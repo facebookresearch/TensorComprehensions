@@ -530,8 +530,8 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   auto scop = Scop::makeScop(mappedScop.scop());
 
   // In this particular specialized Scop, we can add a context just below root.
-  // Context node is the schedule tree use _set_ spaces rather than _parameter_
-  // space because they may depend on outer schedule dimensions.  In this
+  // Context nodes in the schedule tree use _set_ spaces rather than _parameter_
+  // spaces because they may depend on outer schedule dimensions.  In this
   // particular case, the "root is domain" invariant guarantees there are no
   // outer schedule dimensions, so the space of a parameter context code is that
   // of a zero-dimensional space.
