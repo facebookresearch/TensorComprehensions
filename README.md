@@ -52,7 +52,7 @@ You can find documentation [here](https://facebookresearch.github.io/TensorCompr
 # Communication
 
 * **GitHub issues**: bug reports, feature requests, install issues, RFCs, thoughts, etc.
-* **Slack**: For discussion around framework integration, build support, collaboration, etc. join our slack channel https://tensorcomprehensions.slack.com. You may need an invitation to join, contact us by email at tensorcomp@fb.com to get one.
+* **Slack**: For discussion around framework integration, build support, collaboration, etc. join our slack channel https://tensorcomprehensions.herokuapp.com/. You may need an invitation to join, contact us by email at tensorcomp@fb.com to get one.
 
 # Code of Conduct
 See the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file for more details.
