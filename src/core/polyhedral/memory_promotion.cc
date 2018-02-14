@@ -23,6 +23,7 @@
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
+#include "tc/core/utils/error.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -121,7 +122,7 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
     std::stringstream ss;
     ss << "could not compute rectangular overapproximation of: "
        << scopedAccess;
-    throw promotion::GroupingError(ss.str());
+    reportError<promotion::GroupingError>(ss.str());
   }
 
   return group;
@@ -145,7 +146,7 @@ isl::set ScopedFootprint::footprint(isl::set domain) const {
 
 isl::multi_aff ScopedFootprint::lowerBounds() const {
   if (size() == 0) {
-    throw promotion::PromotionNYI("promotion for scalars");
+    reportError<promotion::PromotionNYI>("promotion for scalars");
   }
   auto space = at(0).lowerBound.get_space();
   space = space.add_dims(isl::dim_type::out, size() - 1);
@@ -171,7 +172,7 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
       scopedAccesses().get_space().range().reset_tuple_id(isl::dim_type::set);
   auto sizes = approximationSizes();
   if (sizes.size() != space.dim(isl::dim_type::set)) {
-    throw promotion::GroupingError("unexpected dimensionality mismatch");
+    reportError<promotion::GroupingError>("unexpected dimensionality mismatch");
   }
 
   isl::set footprint = isl::set::universe(space);
@@ -198,7 +199,7 @@ isl::map referenceScopedAccessesImpl(
     const TensorReferenceGroup& group,
     AccessType type) {
   if (group.references.size() == 0) {
-    throw promotion::GroupingError("no references in the group");
+    reportError<promotion::GroupingError>("no references in the group");
   }
   auto accesses =
       isl::map::empty(group.references.front()->scopedAccess.get_space());
@@ -235,7 +236,7 @@ isl::union_map referenceOriginalAccessesImpl(
     const TensorReferenceGroup& group,
     AccessType type) {
   if (group.references.size() == 0) {
-    throw promotion::GroupingError("no references in the group");
+    reportError<promotion::GroupingError>("no references in the group");
   }
   auto accesses = isl::union_map::empty(
       group.references.front()->originalAccess.get_space());
@@ -456,7 +457,7 @@ ScheduleTree* insertCopiesUnder(
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
   if (groupId.is_null()) {
-    throw promotion::GroupingError("expected group id");
+    reportError<promotion::GroupingError>("expected group id");
   }
   auto promotion =
       isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
