@@ -5,7 +5,7 @@ Tech Report
 
 `Nicolas Vasilache <https://scholar.google.com/citations?user=vIGcvLsAAAAJ&hl=en&oi=ao>`_ (FAIR),
 `Oleksandr Zinenko <https://ozinenko.com>`_ (Inria & DI ENS),
-`Theodoros Theodoridis <theodort@student.ethz.ch>`_ (ETH Zürich),
+`Theodoros Theodoridis <theodoros.theodoridis@inf.ethz.ch>`_ (ETH Zürich),
 `Priya Goyal <https://scholar.google.com/citations?user=-9yiQMsAAAAJ&hl=en>`_ (FAIR),
 `Zachary DeVito <zdevito@fb.com>`_ (FAIR),
 `William S. Moses <http://wsmoses.com>`_ (MIT CSAIL),
