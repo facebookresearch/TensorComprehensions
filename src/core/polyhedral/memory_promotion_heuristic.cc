@@ -23,6 +23,7 @@
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/polyhedral/unroll.h"
+#include "tc/core/utils/error.h"
 
 #include <algorithm>
 #include <numeric>
@@ -56,13 +57,13 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       std::stringstream ss;
       ss << "read/write filter not followed by a single band" << std::endl
          << *node;
-      throw promotion::PromotionLogicError(ss.str());
+      reportError<promotion::PromotionLogicError>(ss.str());
     }
 
     auto bandNode = node->child({0});
     auto band = bandNode->elemAs<ScheduleTreeElemBand>();
     if (!band) {
-      throw promotion::PromotionLogicError("no copy band");
+      reportError<promotion::PromotionLogicError>("no copy band");
     }
 
     // Check that we are not mapping to threads below other thread mappings.
@@ -71,7 +72,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       if (auto filterNode = n->elemAs<ScheduleTreeElemMappingFilter>()) {
         for (auto id : filterNode->mappingIds) {
           if (id.isThreadId()) {
-            throw promotion::PromotionBelowThreadsException(
+            reportError<promotion::PromotionBelowThreadsException>(
                 "attempted to map memory copies to threads below "
                 "another thread mapping");
           }
@@ -96,7 +97,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
             if (mscop.scop().promotedDecls().count(groupId) != 1) {
               std::stringstream ss;
               ss << "promoted group " << groupId << " has no declaration";
-              throw promotion::PromotionLogicError(ss.str());
+              reportError<promotion::PromotionLogicError>(ss.str());
             }
             auto decl = mscop.scop().promotedDecls().at(groupId);
             return i >= decl.sizes.size() || decl.sizes[i] == 1;
@@ -130,7 +131,8 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
   using namespace tc::polyhedral::detail;
 
   if (!root->elemAs<ScheduleTreeElemDomain>()) {
-    throw promotion::PromotionLogicError("expected root to be a domain node");
+    reportError<promotion::PromotionLogicError>(
+        "expected root to be a domain node");
   }
 
   std::function<bool(const ScheduleTree* tree)> isLeaf =
@@ -164,7 +166,7 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
       std::stringstream ss;
       ss << "schedules must be single-valued " << schedule << std::endl
          << *root;
-      throw promotion::PromotionLogicError(ss.str());
+      reportError<promotion::PromotionLogicError>(ss.str());
     }
   }
   return schedule;
@@ -179,7 +181,7 @@ isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
     std::stringstream ss;
     ss << nDims << "  is out of [0, " << map.dim(isl::dim_type::in)
        << ") range";
-    throw promotion::OutOfRangeException(ss.str());
+    reportError<promotion::OutOfRangeException>(ss.str());
   }
 
   auto fixedMap = map;
@@ -232,7 +234,7 @@ isl::map makeNextElementMap(isl::space setSpace, int dim) {
     std::stringstream ss;
     ss << dim << "  is out of [0, " << setSpace.dim(isl::dim_type::set)
        << ") range";
-    throw promotion::OutOfRangeException(ss.str());
+    reportError<promotion::OutOfRangeException>(ss.str());
   }
 
   auto mapSpace = setSpace.map_from_set();
@@ -258,7 +260,7 @@ size_t computeThreadIdxxScheduleDepth(
     std::stringstream ss;
     ss << "threadIdx.x depth " << (depths.size() == 0 ? "unknown" : "diverged")
        << " for " << s;
-    throw promotion::PromotionLogicError(ss.str());
+    reportError<promotion::PromotionLogicError>(ss.str());
   }
   return *depths.begin();
 }
@@ -292,7 +294,8 @@ bool isCoalesced(
       auto partialScheduleUMap =
           schedule.intersect_domain(domainUMap.universe());
       if (partialScheduleUMap.n_map() != 1) {
-        throw promotion::PromotionLogicError("expected single schedule space");
+        reportError<promotion::PromotionLogicError>(
+            "expected single schedule space");
       }
       auto partialSchedule = isl::map::from_union_map(partialScheduleUMap);
       auto scheduleToNextX = makeNextElementMap(
@@ -331,7 +334,7 @@ void promoteToSharedGreedy(
   using namespace tc::polyhedral::detail;
 
   if (depth == 0) {
-    throw promotion::PromotionNYI("promotion before any band");
+    reportError<promotion::PromotionNYI>("promotion before any band");
   }
 
   auto root = scop.scheduleRoot();
@@ -420,7 +423,8 @@ void promoteToSharedGreedy(
       for (auto& group : tensorGroups.second) {
         auto sizes = group->approximationSizes();
         if (sizes.size() == 0) {
-          throw promotion::PromotionLogicError("cannot promote a scalar");
+          reportError<promotion::PromotionLogicError>(
+              "cannot promote a scalar");
         }
         if (sizes.back() % 2 == 0) {
           sizes.back() += 1;
