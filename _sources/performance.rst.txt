@@ -2,7 +2,7 @@ Performance of TC
 =================
 
 TC can generate competitive code in a variety of cases thanks to its
-Autotuner (see our companion paper: `arXiv <link>`_).
+Autotuner (see our companion paper: `arXiv <https://arxiv.org/abs/1802.04730>`_).
 We will provide a set of benchmarks to illustrate the cases in
 which it is recommended to use TC.
 
