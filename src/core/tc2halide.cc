@@ -162,6 +162,24 @@ Expr translateExpr(
           {cond, true_val, false_val},
           Call::Intrinsic);
     }
+    case lang::TK_EQ:
+      return t(0) == t(1);
+    case lang::TK_NE:
+      return t(0) != t(1);
+    case lang::TK_LE:
+      return t(0) <= t(1);
+    case lang::TK_GE:
+      return t(0) >= t(1);
+    case '<':
+      return t(0) < t(1);
+    case '>':
+      return t(0) > t(1);
+    case '!':
+      return !t(0);
+    case lang::TK_AND:
+      return t(0) && t(1);
+    case lang::TK_OR:
+      return t(0) || t(1);
     case lang::TK_BUILT_IN: {
       auto b = lang::BuiltIn(expr);
       vector<Expr> exprs;

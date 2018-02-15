@@ -45,7 +45,7 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   }
 };
 
-TEST_F(ATenCompilationUnitTest, DISABLED_Concat) {
+TEST_F(ATenCompilationUnitTest, Concat) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   at::Tensor b = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a, b};
@@ -53,7 +53,7 @@ TEST_F(ATenCompilationUnitTest, DISABLED_Concat) {
 
   Check(
       R"(
-      def concat(float(M, N) A, float(M, N) B) -> (O1, O2) {
+      def concat(float(M, N) A, float(M, N) B) -> (O1) {
         O1(n, i, m) = i == 0 ? A(m, n) : B(m, n) where i in 0:2
       }
     )",
