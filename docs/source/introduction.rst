@@ -67,7 +67,7 @@ Note the layout for B is transposed and matches the traditional layout of the we
 .. code::
 
     def mm(float(X,Y) A, float(Y,Z) B) -> (R) {
-      R(i,j) += A(i,j) * B(j,k)
+      R(i,j) += A(i,k) * B(k,j)
     }
 
 Simple 2-D convolution (no stride, no padding)
