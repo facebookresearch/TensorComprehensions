@@ -2,7 +2,7 @@ version: 2
 jobs:
   "build-1404":
     working_directory: ~/TensorComprehensions
-    resource_class: xlarge
+    resource_class: large
     docker:
       - image: tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86
 
@@ -123,7 +123,7 @@ jobs:
 
   "build-1604":
     working_directory: ~/TensorComprehensions
-    resource_class: xlarge
+    resource_class: large
     docker:
       - image: tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86
 
