@@ -35,9 +35,9 @@ The conda and non-conda images for each setup are below:
 TC runtime image with nvidia-docker
 -----------------------------------
 
-We also provide a runtime nvidia-docker image for `Ubuntu 14.04`, gcc 4.8, CUDA 8 and CUDNN 6. Using this image,
-you can also run gpu tests. To run the image, make sure you have `nvidia-docker` installed. Then run the image using
-following command:
+We also provide a runtime nvidia-docker image for :code:`Ubuntu 14.04`, :code:`gcc 4.8`, :code:`CUDA 8` and :code:`CUDNN 6`.
+Using this image, you can also run gpu tests. To run the image, make sure you
+have :code:`nvidia-docker` installed. Then run the image using following command:
 
 * :code:`NVIDIA-Docker Ubuntu 14.04 conda environment`
 
