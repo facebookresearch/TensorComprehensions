@@ -24,7 +24,7 @@ Let's start with a simple example is a matrix vector product:
 .. code::
 
     def mv(float(R,C) A, float(C) x) -> (o) {
-      o(i) += A(i,j) * b(j)
+      o(i) += A(i,j) * x(j)
     }
 
 :code:`A` and :code:`x` are input tensors. :code:`o` is an output tensor.
