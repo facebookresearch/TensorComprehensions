@@ -1,6 +1,8 @@
 Installation Guide
 ==================
 
+**Author**: `Priya Goyal <https://github.com/prigoyal>`_
+
 The following instructions are provided for developers who would like to
 experiment with the library.
 
@@ -16,4 +18,4 @@ Some users might prefer building TC in :code:`non-conda` enviroment and some mig
 
 Further, we also provide runtime :code:`docker` images for both :code:`conda` and :code:`non-conda` environment and also an :code:`nvidia-docker` runtime image for TC to have access to GPUs.
 
-You can chose whatever build settings suit your requirements best and follow the instructions to build.
+You can chose whatever build settings suit your requirements best and follow the instructions to build. Please feel free to contact us in case you need help with build.

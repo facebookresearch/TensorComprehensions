@@ -38,6 +38,21 @@ scope in a TC, allocations etc (i.e. all the basic stuff you expect from a
 Programming Language). As a consequence TC is not a Programming Language but a concise
 notation. For now, it should not try to be a Programming Language.
 
+As a result of this, everything in TC should be either an input or output. For example:
+consider the TC definition below:
+
+.. code::
+
+    def softmax(float(N, D) I) -> (O, expsum) {
+      expsum(n) +=! exp(I(n, d))
+      O(n, d) = exp(I(n, d)) / expsum(n)
+    }
+
+In this TC, :code:`expsum` is a temporary variable that needs to be computed but
+since TC doesn't do allocations itself, we set it as another output. User can chose
+to ignore this output. We will work on enhancing this and deal with temporary
+allocations better in future.
+
 Graph Level
 ^^^^^^^^^^^
 
@@ -79,7 +94,7 @@ TC
 ^^
 
 The current TC implementation sits somewhere here; less verbose than Halide,
-more verbose than matrix algebra. The inference procedure has been one subtle 
+more verbose than matrix algebra. The inference procedure has been one subtle
 tradeoff in TC. It has been designed to follow an intuitive enough mental model,
 but may still evolve in the future towards greater expressiveness, see :ref:`inference`.
 
