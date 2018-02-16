@@ -24,7 +24,7 @@ namespace tc {
 using namespace dlutils;
 
 // Under object lock, fill parse the language and fill the underlying map
-void ExecutionEngine::define(const std::string& language) {
+void CudaExecutionEngine::define(const std::string& language) {
   lang::Parser parser(language);
   std::lock_guard<std::mutex> lg(executorInfoMutex);
   while (parser.L.cur().kind != lang::TK_EOF) {
@@ -35,7 +35,7 @@ void ExecutionEngine::define(const std::string& language) {
 }
 
 // support define if we pass the parsed TreeRefs.
-void ExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
+void CudaExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
   std::lock_guard<std::mutex> lg(executorInfoMutex);
   for (auto& ref : treeRefs) {
     auto name = lang::Def(ref).name().name();
@@ -45,7 +45,7 @@ void ExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
 
 // Under object lock, retrieve the TreeRef at name and infer the output
 // tensors informations
-std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
+std::vector<const DLTensor*> CudaExecutionEngine::inferOutputTensorInfo(
     const std::string& name,
     const std::vector<const DLTensor*>& inputs) {
   {
@@ -83,7 +83,7 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
 
 // Steal ExecutorInfo and give it back under lock
 // Run outside of lock on owning ExecutorInfo.
-Duration ExecutionEngine::run(
+Duration CudaExecutionEngine::run(
     size_t handle,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
@@ -123,7 +123,7 @@ Duration ExecutionEngine::run(
 
 // Steal ExecutorInfo and give it back under lock
 // Run outside of lock on owning ExecutorInfo.
-void ExecutionEngine::uncheckedRun(
+void CudaExecutionEngine::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
@@ -156,13 +156,13 @@ void ExecutionEngine::uncheckedRun(
 
 // Steal ExecutorInfo, clear the underlying RTC object and give it back under
 // lock.
-void ExecutionEngine::clear(size_t handle) {
+void CudaExecutionEngine::clear(size_t handle) {
   std::lock_guard<std::mutex> lg(executorInfoMutex);
   executors_[handle]->clear();
   executors_[handle] = std::unique_ptr<ExecutorInfo>(nullptr);
 }
 
-size_t ExecutionEngine::getHandle(
+size_t CudaExecutionEngine::getHandle(
     const std::string& name,
     const std::vector<const DLTensor*>& inputsInfo,
     const MappingOptions& options) {
@@ -184,8 +184,8 @@ size_t ExecutionEngine::getHandle(
   return TcExecutor::InvalidHandle;
 }
 
-std::unique_ptr<ExecutionEngine::ExecutorInfo>
-ExecutionEngine::makeExecutorInfo(
+std::unique_ptr<CudaExecutionEngine::ExecutorInfo>
+CudaExecutionEngine::makeExecutorInfo(
     const std::string& name,
     const std::vector<const DLTensor*>& inputsInfo,
     const MappingOptions& options) {
@@ -199,7 +199,7 @@ ExecutionEngine::makeExecutorInfo(
       TcExecutor::InvalidHandle);
 }
 
-size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
+size_t CudaExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
   // Insert in vector under lock
   std::lock_guard<std::mutex> lg(executorInfoMutex);
   size_t handle = uidCounter++;
@@ -211,7 +211,7 @@ size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
   return handle;
 }
 
-size_t ExecutionEngine::compile(
+size_t CudaExecutionEngine::compile(
     const std::string& name,
     const std::vector<const DLTensor*>& inputs,
     const MappingOptions& options) {

@@ -71,7 +71,7 @@ class ATenCompilationUnit {
       size_t handle);
 
  private:
-  std::unique_ptr<ExecutionEngine> executionEngine_;
+  std::unique_ptr<CudaExecutionEngine> executionEngine_;
 };
 
 std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
