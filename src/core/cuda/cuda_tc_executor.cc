@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/tc_executor.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 
 #include "tc/core/compilation_cache.h"
 #include "tc/core/halide_utils.h"
