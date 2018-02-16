@@ -116,22 +116,12 @@ int64_t islIdToInt(isl::ast_expr e, isl::set context) {
 }
 
 int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
-  if (context.get_space().is_params()) {
-    context = context.from_params();
-  }
   // isl will take care of substituting parameter values if they are known and
   // simplifying the expression.
-  auto pwAff =
-      isl::pw_aff(halide2isl::makeIslAffFromExpr(context.get_space(), e));
-  pwAff = pwAff.intersect_params(context);
-  isl::PA pwAffs(pwAff);
-  CHECK_EQ(pwAffs.size(), 1);
-  isl::map m(pwAffs[0].second);
-  auto r = m.range();
-  r = r.project_out(isl::dim_type::param, 0, r.n_dim());
-  CHECK(r.is_singleton());
-  auto p = r.sample_point();
-  return toSInt(p.get_coordinate_val(isl::dim_type::out, 0));
+  auto aff = halide2isl::makeIslAffFromExpr(context.get_space(), e);
+  auto p = context.sample_point();
+  CHECK(context.is_equal(p));
+  return toSInt(aff.eval(p));
 }
 
 std::vector<int64_t> getTensorSizesWithoutLeadingDim(
