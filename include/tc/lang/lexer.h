@@ -83,7 +83,9 @@ namespace lang {
   _(TK_EQ, "eq", "==")                           \
   _(TK_NE, "neq", "!=")                          \
   _(TK_AND, "and", "&&")                         \
-  _(TK_OR, "or", "||")
+  _(TK_OR, "or", "||")                           \
+  _(TK_LET, "let", "")                           \
+  _(TK_EXISTS, "exists", "exists")
 
 static const char* valid_single_char_tokens = "+-*/()[]?:,={}><!";
 
@@ -380,9 +382,20 @@ struct Lexer {
     next();
     return true;
   }
+  Token lookahead() {
+    if (!lookahead_) {
+      lookahead_.reset(new Token(lex()));
+    }
+    return *lookahead_;
+  }
   Token next() {
     auto r = cur_;
-    cur_ = lex();
+    if (lookahead_) {
+      cur_ = *lookahead_;
+      lookahead_.reset();
+    } else {
+      cur_ = lex();
+    }
     return r;
   }
   void reportError(const std::string& what, const Token& t);
@@ -416,6 +429,7 @@ struct Lexer {
   }
   size_t pos;
   Token cur_;
+  std::unique_ptr<Token> lookahead_;
   SharedParserData& shared;
 };
 } // namespace lang

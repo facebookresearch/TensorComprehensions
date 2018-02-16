@@ -75,34 +75,19 @@ struct Tree : std::enable_shared_from_this<Tree> {
   virtual TreeRef map(std::function<TreeRef(TreeRef)> fn) {
     return shared_from_this();
   }
-  template <typename... Args>
-  void match(int k, Args&... args) {
-    matchD(k, "unknown", 0, args...);
+  void expect(int k) {
+    expect(k, trees().size());
   }
-  template <typename... Args>
-  void matchD(int k, const char* filename, int lineno, Args&... args) {
-    if (kind() != k) {
+  void expect(int k, int numsubtrees) {
+    if (kind() != k || trees().size() != numsubtrees) {
       std::stringstream ss;
-      ss << filename << ":" << lineno << ": expecting kind '" << kindToString(k)
-         << "' but found '" << kind() << "'\n";
+      ss << "expected kind '" << kindToString(k) << "' with " << numsubtrees
+         << " subtrees but found '" << kindToString(kind()) << "' with "
+         << trees().size() << " subtrees.\n";
       range().highlight(ss);
       throw std::runtime_error(ss.str());
     }
-    std::initializer_list<TreeRef*> vars = {&args...};
-    if (vars.size() > trees().size()) {
-      std::stringstream ss;
-      ss << filename << ":" << lineno << ": trying to match " << vars.size()
-         << " variables against " << trees().size() << " values in list.\n";
-      range().highlight(ss);
-      throw std::runtime_error(ss.str());
-    }
-    size_t i = 0;
-    for (TreeRef* v : vars) {
-      *v = trees()[i++];
-    }
   }
-
- private:
   int kind_;
 };
 

@@ -111,13 +111,19 @@ void translateOutput(
 Expr translateExpr(
     const lang::TreeRef& expr,
     const map<string, Parameter>& params,
-    const map<string, Function>& funcs) {
+    const map<string, Function>& funcs,
+    const map<string, Expr>& lets) {
   auto t = [&](int idx) {
-    return translateExpr(expr->tree(idx), params, funcs);
+    return translateExpr(expr->tree(idx), params, funcs, lets);
   };
   switch (expr->kind()) {
-    case lang::TK_IDENT:
-      return Var(lang::Ident(expr).name());
+    case lang::TK_IDENT: {
+      const auto& name = lang::Ident(expr).name();
+      auto it = lets.find(name);
+      if (it != lets.end())
+        return it->second;
+      return Var(name);
+    }
     case lang::TK_ACCESS: {
       auto a = lang::Access(expr);
       string tensorName = a.name().name();
@@ -125,7 +131,7 @@ Expr translateExpr(
       auto funcIt = funcs.find(tensorName);
       vector<Expr> args;
       for (auto e : a.arguments()) {
-        args.push_back(translateExpr(e, params, funcs));
+        args.push_back(translateExpr(e, params, funcs, lets));
       }
       if (paramIt != params.end()) {
         // Accessing an input tensor
@@ -184,7 +190,7 @@ Expr translateExpr(
       auto b = lang::BuiltIn(expr);
       vector<Expr> exprs;
       for (auto a : b.arguments()) {
-        exprs.push_back(translateExpr(a, params, funcs));
+        exprs.push_back(translateExpr(a, params, funcs, lets));
       }
       auto output_type = translateScalarType(b.type()->kind());
       return Call::make(output_type, b.name(), exprs, Call::PureExtern);
@@ -201,7 +207,7 @@ Expr translateExpr(
     }
     case lang::TK_CAST: {
       auto c = lang::Cast(expr);
-      auto v = translateExpr(c.value(), params, funcs);
+      auto v = translateExpr(c.value(), params, funcs, lets);
       return cast(translateScalarType(c.type()->kind()), v);
     }
     default:
@@ -249,7 +255,7 @@ vector<const Variable*> unboundVariables(const vector<Var>& lhs, Expr rhs) {
 typedef map<Function, map<string, Interval>, Function::Compare> FunctionBounds;
 
 void forwardBoundsInference(
-    Expr rhs,
+    const std::vector<Expr>& exprs,
     const FunctionBounds& bounds,
     const lang::TreeRef& comprehension,
     bool throwWarnings,
@@ -316,8 +322,9 @@ void forwardBoundsInference(
     const FunctionBounds& bounds;
     CreateConstraints(const FunctionBounds& b) : bounds(b) {}
   } constraints(bounds);
-  rhs.accept(&constraints);
-
+  for (auto& expr : exprs) {
+    expr.accept(&constraints);
+  }
   // Use Halide tools for solving the system. If this falls down in
   // some way we should swap in ISL, but if it doesn't, it's
   // convenient to stay in Halide IR and not convert Exprs back and
@@ -512,7 +519,26 @@ void translateComprehension(
     lhs_as_exprs.push_back(lhs.back());
   }
 
-  Expr rhs = translateExpr(c.rhs(), params, *funcs);
+  // we currently inline all of the let bindings generated in where clauses
+  // in the future we may consider using Halide Let bindings when they
+  // are supported later
+  map<string, Expr> lets;
+  for (auto wc : c.whereClauses()) {
+    if (wc->kind() == lang::TK_LET) {
+      auto let = lang::Let(wc);
+      lets[let.name().name()] = translateExpr(let.rhs(), params, *funcs, lets);
+    }
+  }
+
+  Expr rhs = translateExpr(c.rhs(), params, *funcs, lets);
+
+  std::vector<Expr> all_exprs;
+  for (auto wc : c.whereClauses()) {
+    if (wc->kind() == lang::TK_EXISTS) {
+      all_exprs.push_back(
+          translateExpr(lang::Exists(wc).exp(), params, *funcs, lets));
+    }
+  }
 
   // Halide doesn't have first-class reductions. We map reductions to recursion.
   bool added_implicit_initialization = false;
@@ -589,6 +615,9 @@ void translateComprehension(
   } bindParams(params);
 
   rhs = bindParams.mutate(rhs);
+  for (auto& exp : all_exprs) {
+    exp = bindParams.mutate(exp);
+  }
 
   // TODO: When the LHS incorporates general expressions we'll need to
   // bind params there too.
@@ -604,10 +633,13 @@ void translateComprehension(
   Scope<Interval> solution;
 
   // Put anything explicitly specified with a 'where' class in the solution
-  for (auto constraint : c.rangeConstraints()) {
+  for (auto constraint_ : c.whereClauses()) {
+    if (constraint_->kind() != lang::TK_RANGE_CONSTRAINT)
+      continue;
+    auto constraint = lang::RangeConstraint(constraint_);
     Interval i;
-    i.min = translateExpr(constraint.start(), params, *funcs);
-    i.max = translateExpr(constraint.end(), params, *funcs) - 1;
+    i.min = translateExpr(constraint.start(), params, *funcs, lets);
+    i.max = translateExpr(constraint.end(), params, *funcs, lets) - 1;
 
     // TODO: In the future we'll want to make any non-trivial bounds
     // into hidden scalar parameters, and just pass variables to the
@@ -621,7 +653,8 @@ void translateComprehension(
   }
 
   // Infer the rest
-  forwardBoundsInference(rhs, *bounds, c, throwWarnings, &solution);
+  all_exprs.push_back(rhs);
+  forwardBoundsInference(all_exprs, *bounds, c, throwWarnings, &solution);
 
   // TODO: What if subsequent updates have incompatible bounds
   // (e.g. an in-place stencil)?. The .bound directive will use the
