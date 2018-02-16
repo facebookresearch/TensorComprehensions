@@ -76,7 +76,7 @@ std::vector<MappingOptions> GeneticAutotuner::load(
   enableOrLoadCache(cacheFileName);
   tc::FLAGS_tuner_gen_restore_number =
       std::min(numCandidates, size_t(FLAGS_tuner_gen_pop_size) - 1);
-  ExecutionEngine ee;
+  CudaExecutionEngine ee;
   ee.define(tc_);
   auto outputs = ee.inferOutputTensorInfo(tcName, inputs);
   return tc::autotune::restoreCandidates(tcName, inputs, outputs);
@@ -165,7 +165,7 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
     storeCaches(cacheFileName);
   }
 
-  ExecutionEngine ee;
+  CudaExecutionEngine ee;
   ee.define(tc_);
   auto outputPtrs = ee.inferOutputTensorInfo(tcName, inputs.begin()->second);
 

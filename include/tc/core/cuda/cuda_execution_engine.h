@@ -31,7 +31,7 @@ namespace tc {
 /// able to execute the kernels for multiple TC i.e. given the language which
 /// can have multiple TCs, people should be able to run things by just calling
 /// out the run function with the name of function and the inputs to run on.
-class ExecutionEngine {
+class CudaExecutionEngine {
  public:
   struct ExecutorInfo {
     ExecutorInfo(
@@ -59,13 +59,13 @@ class ExecutionEngine {
     size_t objectLocalHandle;
   };
 
-  ExecutionEngine() = default;
+  CudaExecutionEngine() = default;
 
-  /// Create the ExecutionEngine::tcNameMap_ using the language passed
+  /// Create the CudaExecutionEngine::tcNameMap_ using the language passed
   /// to it - should support many TC.
   void define(const std::string& language);
 
-  /// Create the ExecutionEngine::tcNameMap_ from the parsed TC
+  /// Create the CudaExecutionEngine::tcNameMap_ from the parsed TC
   /// string - supports many TC.
   void define(const std::vector<lang::TreeRef>& treeRefs);
 

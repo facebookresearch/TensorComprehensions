@@ -358,5 +358,5 @@ TC_REFERENCE_IMPLEMENTATION(
 
 REGISTER_CUDA_OPERATOR(TcOp, TcOp<float, CUDAContext>);
 REGISTER_GRADIENT(TcOp, GetTcOpGradient);
-OPERATOR_SCHEMA(TcOp).SetDoc(R"DOC(Generic Op using ExecutionEngine)DOC");
+OPERATOR_SCHEMA(TcOp).SetDoc(R"DOC(Generic Op using CudaExecutionEngine)DOC");
 }; // namespace caffe2
