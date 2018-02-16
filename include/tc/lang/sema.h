@@ -194,6 +194,16 @@ struct Sema {
     }
     return e;
   }
+  void expectBool(TreeRef anchor, int token) {
+    if (token != TK_BOOL) {
+      throw ErrorReport(anchor)
+          << "expected boolean but found " << kindToString(token);
+    }
+  }
+  TreeRef expectBool(TreeRef exp) {
+    expectBool(exp, typeOfExpr(exp)->kind());
+    return exp;
+  }
   TreeRef checkExp(TreeRef exp, bool allow_access) {
     switch (exp->kind()) {
       case TK_APPLY: {
@@ -205,6 +215,7 @@ struct Sema {
           throw ErrorReport(exp)
               << "tensor accesses cannot be used in this context";
         }
+
         // also handle built-in functions log, exp, etc.
         auto ident = a.name();
         if (builtin_functions.count(ident.name()) > 0) {
@@ -276,6 +287,35 @@ struct Sema {
             exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
         return withType(nexp, matchAllTypes(nexp));
       } break;
+      case TK_EQ:
+      case TK_NE:
+      case TK_GE:
+      case TK_LE:
+      case '<':
+      case '>': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        // make sure the types match but the return type
+        // is always bool
+        matchAllTypes(nexp);
+        return withType(nexp, boolType(exp));
+      } break;
+      case TK_AND:
+      case TK_OR:
+      case '!': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        expectBool(exp, matchAllTypes(nexp)->kind());
+        return withType(nexp, boolType(exp));
+      } break;
+      case '?': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        expectBool(nexp->tree(0));
+        auto rtype =
+            match_types(typeOfExpr(nexp->tree(1)), typeOfExpr(nexp->tree(2)));
+        return withType(nexp, rtype);
+      }
       case TK_CONST: {
         auto c = Const(exp);
         return withType(exp, c.type());
@@ -321,6 +361,9 @@ struct Sema {
   }
   TreeRef floatType(TreeRef anchor) {
     return c(TK_FLOAT, anchor->range(), {});
+  }
+  TreeRef boolType(TreeRef anchor) {
+    return c(TK_BOOL, anchor->range(), {});
   }
   void checkDim(const Ident& dim) {
     insert(env, dim, dimType(dim), false);
