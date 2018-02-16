@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/execution_engine.h"
+#include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/utils/memory.h"
 

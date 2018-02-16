@@ -29,7 +29,7 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/compilation_cache.h"
 #include "tc/core/cuda.h"
-#include "tc/core/execution_engine.h"
+#include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapping_types.h"

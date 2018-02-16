@@ -10,7 +10,6 @@ add_library(
   flags.cc
   compilation_cache.cc
   cuda.cc
-  execution_engine.cc
   tc_executor.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
@@ -21,6 +20,8 @@ add_library(
 
   halide2isl.cc
   halide_utils.cc
+
+  cuda/cuda_execution_engine.cc
 
   utils/cuda_info.cc
 
