@@ -12,7 +12,10 @@ When submitting a bug report, please include the following information (where re
 - Python version:
 - CUDA/cuDNN version:
 - Conda version (is using conda):
+- Docker image (if using docker):
 - GCC/GXX version (if compiling from source):
+- Add LLVM/Tapir version:
+- Commit hash of our repo and submodules [if from source]:
 
 In addition, including the following information will also be very helpful for us to diagnose the problem:
 - A script to reproduce the issue (highly recommended if its a build issue)
