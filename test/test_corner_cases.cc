@@ -175,6 +175,66 @@ TEST(FailTest, DISABLED_E14) {
       {I(10)});
 }
 
+TEST(FailTest, E15){
+#define GEN_COMPARATOR(op)                                       \
+  {                                                              \
+    auto a = F();                                                \
+    auto b = F();                                                \
+    auto c = F(1);                                               \
+    Succeed(                                                     \
+        "def f(float a, float b) -> (c) { c(i) = float(a " #op   \
+        " b) where i in 0:1 }",                                  \
+        {a, b},                                                  \
+        {c});                                                    \
+    auto r = at::Scalar(a).toFloat() op at::Scalar(b).toFloat(); \
+    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                     \
+  }
+
+    GEN_COMPARATOR(<=) GEN_COMPARATOR(>=) GEN_COMPARATOR(==) GEN_COMPARATOR(!=)
+        GEN_COMPARATOR(<) GEN_COMPARATOR(>)
+
+}
+
+TEST(FailTest, E16){
+#define GEN_BOOLS(op)                                                         \
+  {                                                                           \
+    auto a = F();                                                             \
+    auto b = F();                                                             \
+    auto c = F(1);                                                            \
+    Succeed(                                                                  \
+        "def f(float a, float b) -> (c) { c(i) = float(!(a < .5) " #op        \
+        " b > .5) where i in 0:1 }",                                          \
+        {a, b},                                                               \
+        {c});                                                                 \
+    auto r = !(at::Scalar(a).toFloat() < .5) op at::Scalar(b).toFloat() > .5; \
+    ;                                                                         \
+    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                                  \
+  }
+
+    GEN_BOOLS(||) GEN_BOOLS(&&)}
+
+TEST(FailTest, E17) {
+  auto r = F(1);
+  Succeed(
+      "def f(float(1) a) -> (b) { b(i) = 4.0 where a(i) exists }", {F(1)}, {r});
+  CHECK_EQ(at::Scalar(r[0]).toFloat(), 4);
+}
+
+TEST(FailTest, E18) {
+  auto a = F(1);
+  auto r = F(1);
+  Succeed(
+      "def f(float(1) a) -> (b) { b(i) = 2*foo where foo = a(i) }", {a}, {r});
+  CHECK_EQ(at::Scalar(r[0]).toFloat(), at::Scalar(a[0]).toFloat() * 2);
+}
+TEST(FailTest, E19) {
+  Fail(
+      "undefined variable",
+      "def f(float(1) a) -> (b) { b(i) = 2*foo where foo = a(i), foo in 1:2 }",
+      {F(1)},
+      {F(1)});
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

@@ -194,6 +194,27 @@ struct Sema {
     }
     return e;
   }
+  void expectBool(TreeRef anchor, int token) {
+    if (token != TK_BOOL) {
+      throw ErrorReport(anchor)
+          << "expected boolean but found " << kindToString(token);
+    }
+  }
+  TreeRef expectBool(TreeRef exp) {
+    expectBool(exp, typeOfExpr(exp)->kind());
+    return exp;
+  }
+  TreeRef lookupVarOrCreateIndex(Ident ident) {
+    TreeRef type = lookup(ident, false);
+    if (!type) {
+      // variable exp is not defined, so a reduction variable is created
+      // a reduction variable index i
+      type = indexType(ident);
+      insert(index_env, ident, type, true);
+      reduction_variables.push_back(ident);
+    }
+    return type;
+  }
   TreeRef checkExp(TreeRef exp, bool allow_access) {
     switch (exp->kind()) {
       case TK_APPLY: {
@@ -205,6 +226,7 @@ struct Sema {
           throw ErrorReport(exp)
               << "tensor accesses cannot be used in this context";
         }
+
         // also handle built-in functions log, exp, etc.
         auto ident = a.name();
         if (builtin_functions.count(ident.name()) > 0) {
@@ -239,14 +261,7 @@ struct Sema {
       } break;
       case TK_IDENT: {
         auto ident = Ident(exp);
-        TreeRef type = lookup(ident, false);
-        if (!type) {
-          // variable exp is not defined, so a reduction variable is created
-          // a reduction variable index i
-          type = indexType(exp);
-          insert(index_env, ident, type, true);
-          reduction_variables.push_back(exp);
-        }
+        auto type = lookupVarOrCreateIndex(ident);
         if (type->kind() == TK_TENSOR_TYPE) {
           auto tt = TensorType(type);
           if (tt.dims().size() != 0) {
@@ -276,6 +291,35 @@ struct Sema {
             exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
         return withType(nexp, matchAllTypes(nexp));
       } break;
+      case TK_EQ:
+      case TK_NE:
+      case TK_GE:
+      case TK_LE:
+      case '<':
+      case '>': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        // make sure the types match but the return type
+        // is always bool
+        matchAllTypes(nexp);
+        return withType(nexp, boolType(exp));
+      } break;
+      case TK_AND:
+      case TK_OR:
+      case '!': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        expectBool(exp, matchAllTypes(nexp)->kind());
+        return withType(nexp, boolType(exp));
+      } break;
+      case '?': {
+        auto nexp =
+            exp->map([&](TreeRef c) { return checkExp(c, allow_access); });
+        expectBool(nexp->tree(0));
+        auto rtype =
+            match_types(typeOfExpr(nexp->tree(1)), typeOfExpr(nexp->tree(2)));
+        return withType(nexp, rtype);
+      }
       case TK_CONST: {
         auto c = Const(exp);
         return withType(exp, c.type());
@@ -322,6 +366,9 @@ struct Sema {
   TreeRef floatType(TreeRef anchor) {
     return c(TK_FLOAT, anchor->range(), {});
   }
+  TreeRef boolType(TreeRef anchor) {
+    return c(TK_BOOL, anchor->range(), {});
+  }
   void checkDim(const Ident& dim) {
     insert(env, dim, dimType(dim), false);
   }
@@ -354,6 +401,33 @@ struct Sema {
     }
     return List::create(list->range(), std::move(r));
   }
+  TreeRef checkRangeConstraint(RangeConstraint rc) {
+    // RCs are checked _before_ the rhs of the TC, so
+    // it is possible the index is not in the environment yet
+    // calling lookupOrCreate ensures it exists
+    lookupVarOrCreateIndex(rc.ident());
+    // calling looking directly in the index_env ensures that
+    // we are actually constraining an index and not some other variable
+    lookup(index_env, rc.ident(), true);
+    auto s = expectIntegral(checkExp(rc.start(), false));
+    auto e = expectIntegral(checkExp(rc.end(), false));
+    return RangeConstraint::create(rc.range(), rc.ident(), s, e);
+  }
+  TreeRef checkLet(Let l) {
+    auto rhs = checkExp(l.rhs(), true);
+    insert(let_env, l.name(), typeOfExpr(rhs), true);
+    return Let::create(l.range(), l.name(), rhs);
+  }
+  TreeRef checkWhereClause(TreeRef ref) {
+    if (ref->kind() == TK_LET) {
+      return checkLet(Let(ref));
+    } else if (ref->kind() == TK_EXISTS) {
+      auto exp = checkExp(Exists(ref).exp(), true);
+      return Exists::create(ref->range(), exp);
+    } else {
+      return checkRangeConstraint(RangeConstraint(ref));
+    }
+  }
   TreeRef checkStmt(TreeRef stmt_) {
     auto stmt = Comprehension(stmt_);
 
@@ -373,6 +447,11 @@ struct Sema {
           Ident::create(stmt.range(), name + "." + std::to_string(i));
       output_indices.push_back(new_var);
     }
+
+    // where clauses are checked _before_ the rhs because they
+    // introduce let bindings that are in scope for the rhs
+    auto where_clauses_ = stmt.whereClauses().map(
+        [&](const TreeRef& rc) { return checkWhereClause(rc); });
 
     TreeRef rhs_ = checkExp(stmt.rhs(), true);
     TreeRef scalar_type = typeOfExpr(rhs_);
@@ -408,14 +487,6 @@ struct Sema {
     // if we redefined an input, it is no longer valid for range expressions
     live_input_names.erase(stmt.ident().name());
 
-    auto range_constraints =
-        stmt.rangeConstraints().map([&](const RangeConstraint& rc) {
-          lookup(index_env, rc.ident(), true);
-          auto s = expectIntegral(checkExp(rc.start(), false));
-          auto e = expectIntegral(checkExp(rc.end(), false));
-          return RangeConstraint::create(rc.range(), rc.ident(), s, e);
-        });
-
     auto equivalent_statement_ =
         stmt.equivalent().map([&](const Equivalent& eq) {
           auto indices_ = eq.accesses().map(
@@ -446,10 +517,13 @@ struct Sema {
         stmt.indices(),
         stmt.assignment(),
         rhs_,
-        range_constraints,
+        where_clauses_,
         equivalent_statement_,
         reduction_variable_list);
+    // clear the per-statement environments to get ready for the next statement
     index_env.clear();
+    let_env.clear();
+
     return result;
   }
   bool isNotInplace(const TreeRef& assignment) {
@@ -496,6 +570,8 @@ struct Sema {
   TreeRef lookup(const Ident& ident, bool required) {
     TreeRef v = lookup(index_env, ident, false);
     if (!v)
+      v = lookup(let_env, ident, false);
+    if (!v)
       v = lookup(env, ident, required);
     return v;
   }
@@ -517,6 +593,7 @@ struct Sema {
 
   std::vector<TreeRef> reduction_variables; // per-statement
   Env index_env; // per-statement
+  Env let_env; // per-statement, used for where i = <exp>
 
   Env env; // name -> type
   Env annotated_output_types; // name -> type, for all annotated returns types
