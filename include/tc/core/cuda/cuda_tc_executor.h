@@ -25,20 +25,20 @@
 
 namespace tc {
 
-class TcExecutor {
+class CudaTcExecutor {
  public:
-  TcExecutor(
+  CudaTcExecutor(
       const std::string& TCDefinition,
       const std::vector<const DLTensor*>& inputsInfo);
-  TcExecutor(
+  CudaTcExecutor(
       lang::TreeRef TCDefinition,
       const std::vector<const DLTensor*>& inputsInfo);
-  ~TcExecutor();
+  ~CudaTcExecutor();
 
-  TcExecutor(TcExecutor&&) = delete;
-  TcExecutor& operator=(TcExecutor&&) = delete;
-  TcExecutor(const TcExecutor&) = delete;
-  TcExecutor& operator=(const TcExecutor&) = delete;
+  CudaTcExecutor(CudaTcExecutor&&) = delete;
+  CudaTcExecutor& operator=(CudaTcExecutor&&) = delete;
+  CudaTcExecutor(const CudaTcExecutor&) = delete;
+  CudaTcExecutor& operator=(const CudaTcExecutor&) = delete;
 
   // Given a Tc and a list of input tensors that match the definition in the
   // Tc in positional order, this generates the output tensor infos issued
@@ -51,7 +51,7 @@ class TcExecutor {
   // set up as constructor argument and output sizes are inferred.
   //
   // If you need another kernel for another Tc or another inputs, outputs,
-  // options then just instantiate another TcExecutor.
+  // options then just instantiate another CudaTcExecutor.
   // This is because for the time being we fully specialize all the sizes and
   // strides at runtime.
   void compile(const tc::MappingOptions& options);

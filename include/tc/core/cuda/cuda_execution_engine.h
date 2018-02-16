@@ -53,7 +53,7 @@ class CudaExecutionEngine {
     std::string identifier;
     std::vector<dlutils::DLTensorUPtr> inputsInfo;
     std::unique_ptr<MappingOptions> options;
-    TcExecutor exec;
+    CudaTcExecutor exec;
     /// When run is called this is used to find the most recently compiled
     /// version.
     size_t objectLocalHandle;

@@ -32,14 +32,14 @@ namespace tc {
 
 using namespace dlutils;
 
-const size_t TcExecutor::InvalidHandle;
+const size_t CudaTcExecutor::InvalidHandle;
 
 lang::TreeRef parseOneFunction(const std::string& def) {
   lang::Parser parser(def);
   auto r = parser.parseFunction();
   if (parser.L.cur().kind != lang::TK_EOF) {
     throw lang::ErrorReport(parser.L.cur().range)
-        << "More than one TCs were passed to TcExecutor.";
+        << "More than one TCs were passed to CudaTcExecutor.";
   }
   return r;
 }
@@ -49,10 +49,10 @@ int toTypeToken(DLDataType dtype) {
       .toScalarToken();
 }
 
-TcExecutor::TcExecutor(
+CudaTcExecutor::CudaTcExecutor(
     const std::string& TcDefinition,
     const std::vector<const DLTensor*>& inputsInfo)
-    : TcExecutor(parseOneFunction(TcDefinition), inputsInfo) {}
+    : CudaTcExecutor(parseOneFunction(TcDefinition), inputsInfo) {}
 
 // TODO: make sure that the empty stride arrays (in DLTensor) are not a problem
 void checkSizesAndStridesAreCompliant(
@@ -99,7 +99,7 @@ void checkSizesAndStridesAreCompliant(
   }
 }
 
-void TcExecutor::checkInputsCompliant(
+void CudaTcExecutor::checkInputsCompliant(
     const std::vector<const DLTensor*>& inputsInfo) const {
   if (inputsInfo.size() != halideComponents_.inputs.size()) {
     throw lang::ErrorReport(halideComponents_.getDef())
@@ -133,7 +133,7 @@ void TcExecutor::checkInputsCompliant(
   }
 }
 
-TcExecutor::TcExecutor(
+CudaTcExecutor::CudaTcExecutor(
     lang::TreeRef TcDefinition,
     const std::vector<const DLTensor*>& inputsInfo)
     : tcTree_(TcDefinition), ctx_(isl_ctx_alloc()) {
@@ -146,11 +146,11 @@ TcExecutor::TcExecutor(
       tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
-TcExecutor::~TcExecutor() {
+CudaTcExecutor::~CudaTcExecutor() {
   isl_ctx_free(ctx_.release());
 }
 
-std::vector<const DLTensor*> TcExecutor::inferOutputTensorInfo() {
+std::vector<const DLTensor*> CudaTcExecutor::inferOutputTensorInfo() {
   return extractRawPtrs(execInfo_.outputsInfo);
 }
 
@@ -168,10 +168,10 @@ std::string appendOptionsAndGitHash(
 
 } // namespace
 
-void TcExecutor::compile(const tc::MappingOptions& options) {
+void CudaTcExecutor::compile(const tc::MappingOptions& options) {
   if (execInfo_.rtcFun) {
     throw std::runtime_error{
-        "TcExecutor::compile cannot be called multiple tines."};
+        "CudaTcExecutor::compile cannot be called multiple tines."};
   }
   execInfo_.options =
       std::unique_ptr<MappingOptions>(new MappingOptions(options));
@@ -193,7 +193,7 @@ void TcExecutor::compile(const tc::MappingOptions& options) {
     }
     CHECK(execInfo_.options)
         << "Isl Kernel options are NULL, are you trying compile "
-        << "a dummy TcExecutor?";
+        << "a dummy CudaTcExecutor?";
     return CudaCache::getCache()->retrieveKernel(
         execInfo_.kernelName, // TODO:replace this with pretty printed TC
         *execInfo_.options,
@@ -272,7 +272,7 @@ std::vector<int> narrowParamsVector(const std::vector<long>& params) {
 }
 } // namespace
 
-void TcExecutor::compileWithTcMapper() {
+void CudaTcExecutor::compileWithTcMapper() {
   // A bit chicken-and-eggy, need scop from TC to have the space to build the
   // context to specialize the scop..
   auto scopTmp = polyhedral::Scop::makeScop(ctx_, halideComponents_);
@@ -305,7 +305,7 @@ void TcExecutor::compileWithTcMapper() {
   LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << execInfo_.cudaSource;
 }
 
-Duration TcExecutor::run(
+Duration CudaTcExecutor::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile) const {
@@ -349,7 +349,7 @@ Duration TcExecutor::run(
   return res;
 }
 
-void TcExecutor::uncheckedRun(
+void CudaTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) const {
   cudaStream_t stream = 0;

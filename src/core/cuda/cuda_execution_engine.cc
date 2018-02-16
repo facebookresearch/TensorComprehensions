@@ -53,7 +53,7 @@ std::vector<const DLTensor*> CudaExecutionEngine::inferOutputTensorInfo(
     CHECK_EQ(1, tcNameMap_.count(name))
         << "attempting to access undefined function " << name;
     // If we have already compiled for the given inputs, regardless of
-    // the options, we can get sizes from a corresponding TcExecutor.
+    // the options, we can get sizes from a corresponding CudaTcExecutor.
     auto ei = std::find_if(
         executors_.begin(),
         executors_.end(),
@@ -75,7 +75,7 @@ std::vector<const DLTensor*> CudaExecutionEngine::inferOutputTensorInfo(
       inputs,
       std::unique_ptr<MappingOptions>(nullptr),
       tcNameMap_.at(name),
-      TcExecutor::InvalidHandle);
+      CudaTcExecutor::InvalidHandle);
   auto outputsInfo = execInfo->exec.inferOutputTensorInfo();
   emplaceExecutor(std::move(execInfo));
   return outputsInfo;
@@ -181,7 +181,7 @@ size_t CudaExecutionEngine::getHandle(
   if (ei != executors_.end()) {
     return (*ei)->objectLocalHandle;
   }
-  return TcExecutor::InvalidHandle;
+  return CudaTcExecutor::InvalidHandle;
 }
 
 std::unique_ptr<CudaExecutionEngine::ExecutorInfo>
@@ -196,7 +196,7 @@ CudaExecutionEngine::makeExecutorInfo(
       inputsInfo,
       std::unique_ptr<MappingOptions>(new MappingOptions(options)),
       tcNameMap_.at(name),
-      TcExecutor::InvalidHandle);
+      CudaTcExecutor::InvalidHandle);
 }
 
 size_t CudaExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
@@ -218,7 +218,7 @@ size_t CudaExecutionEngine::compile(
   // Check if we already have a handle for this name+size+options combination.
   // If so, return it.
   size_t handle = getHandle(name, inputs, options);
-  if (handle != TcExecutor::InvalidHandle) {
+  if (handle != CudaTcExecutor::InvalidHandle) {
     return handle;
   }
 
