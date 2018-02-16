@@ -34,6 +34,7 @@ class Jit {
   llvm::orc::RTDyldObjectLinkingLayer objectLayer_;
   llvm::orc::IRCompileLayer<decltype(objectLayer_), llvm::orc::SimpleCompiler>
       compileLayer_;
+
  public:
   Jit();
 

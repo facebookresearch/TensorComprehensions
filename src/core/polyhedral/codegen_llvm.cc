@@ -28,8 +28,8 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Tapir/CilkABI.h"
 
 #include "Halide/Halide.h"
@@ -205,6 +205,10 @@ class IslAstExprInterpeter {
   }
 };
 
+DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
+DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
+static constexpr int kOptLevel = 3;
+
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
   const isl::pw_multi_aff* iteratorMap_;
@@ -303,81 +307,52 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
     value = sym_get(name);
   }
-public:
-  void optimize_module() {
-    Halide::Internal::debug(3) << "Optimizing module\n";
 
-    if (Halide::Internal::debug::debug_level() >= 3) {
-        #if LLVM_VERSION_MAJOR >= 5
-        module->print(llvm::dbgs(), nullptr, false, true);
-        #else
-        module->dump();
-        #endif
+ public:
+  void optimize_module() {
+    if (FLAGS_llvm_dump_before_opt) {
+      module->print(llvm::dbgs(), nullptr, false, true);
     }
 
-    // We override PassManager::add so that we have an opportunity to
-    // blacklist problematic LLVM passes.
-    class MyFunctionPassManager : public llvm::legacy::FunctionPassManager {
-    public:
-        MyFunctionPassManager(llvm::Module *m) : llvm::legacy::FunctionPassManager(m) {}
-        virtual void add(llvm::Pass *p) override {
-            Halide::Internal::debug(2) << "Adding function pass: " << p->getPassName().str() << "\n";
-            llvm::legacy::FunctionPassManager::add(p);
-        }
-    };
+    llvm::legacy::FunctionPassManager functionPassManager(module.get());
+    llvm::legacy::PassManager modulePassManager;
 
-    class MyModulePassManager : public llvm::legacy::PassManager {
-    public:
-        virtual void add(llvm::Pass *p) override {
-            Halide::Internal::debug(2) << "Adding module pass: " << p->getPassName().str() << "\n";
-            llvm::legacy::PassManager::add(p);
-        }
-    };
-
-    MyFunctionPassManager function_pass_manager(module.get());
-    MyModulePassManager module_pass_manager;
-
-    std::unique_ptr<llvm::TargetMachine> TM = Halide::Internal::make_target_machine(*module);
-    module_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(TM ? TM->getTargetIRAnalysis() : llvm::TargetIRAnalysis()));
-    function_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(TM ? TM->getTargetIRAnalysis() : llvm::TargetIRAnalysis()));
+    std::unique_ptr<llvm::TargetMachine> targetMachine =
+        Halide::Internal::make_target_machine(*module);
+    modulePassManager.add(llvm::createTargetTransformInfoWrapperPass(
+        targetMachine ? targetMachine->getTargetIRAnalysis()
+                      : llvm::TargetIRAnalysis()));
+    functionPassManager.add(llvm::createTargetTransformInfoWrapperPass(
+        targetMachine ? targetMachine->getTargetIRAnalysis()
+                      : llvm::TargetIRAnalysis()));
 
     llvm::PassManagerBuilder b;
-    b.OptLevel = 3;
+    b.OptLevel = kOptLevel;
     b.tapirTarget = new llvm::CilkABI();
-#if LLVM_VERSION_MAJOR >= 5
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
-#else
-    b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0);
-#endif
     b.LoopVectorize = true;
     b.SLPVectorize = true;
 
-#if LLVM_VERSION_MAJOR >= 5
-    if (TM) {
-        TM->adjustPassManager(b);
+    if (targetMachine) {
+      targetMachine->adjustPassManager(b);
     }
-#endif
 
-    b.populateFunctionPassManager(function_pass_manager);
-    b.populateModulePassManager(module_pass_manager);
+    b.populateFunctionPassManager(functionPassManager);
+    b.populateModulePassManager(modulePassManager);
 
     // Run optimization passes
-    function_pass_manager.doInitialization();
+    functionPassManager.doInitialization();
     for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
-        function_pass_manager.run(*i);
-    }
-    function_pass_manager.doFinalization();
-    module_pass_manager.run(*module);
+      functionPassManager.run(*i);
 
-    Halide::Internal::debug(3) << "After LLVM optimizations:\n";
-    if (Halide::Internal::debug::debug_level() >= 2) {
-        #if LLVM_VERSION_MAJOR >= 5
+      functionPassManager.doFinalization();
+      modulePassManager.run(*module);
+
+      if (FLAGS_llvm_dump_after_opt) {
         module->print(llvm::dbgs(), nullptr, false, true);
-        #else
-        module->dump();
-        #endif
+      }
     }
-}
+  }
 };
 
 class LLVMCodegen {
@@ -535,16 +510,17 @@ class LLVMCodegen {
         llvm::BasicBlock::Create(llvmCtx, "loop_latch", function);
     auto* loopExitBB = llvm::BasicBlock::Create(llvmCtx, "loop_exit", function);
 
-    //TODO: integrate query ISL as to whether the relevant loop ought be parallelized
+    // TODO: integrate query ISL as to whether the relevant loop ought be
+    // parallelized
     bool parallel = false;
 
     llvm::Value* SyncRegion = nullptr;
     if (parallel) {
       SyncRegion = halide_cg.get_builder().CreateCall(
-        llvm::Intrinsic::getDeclaration(function->getParent(), llvm::Intrinsic::syncregion_start),
-        {},
-        "syncreg"
-      );
+          llvm::Intrinsic::getDeclaration(
+              function->getParent(), llvm::Intrinsic::syncregion_start),
+          {},
+          "syncreg");
     }
 
     halide_cg.get_builder().CreateBr(headerBB);
@@ -596,8 +572,10 @@ class LLVMCodegen {
       halide_cg.get_builder().SetInsertPoint(loopBodyBB);
 
       if (parallel) {
-        auto* detachedBB = llvm::BasicBlock::Create(llvmCtx, "det.achd", function);
-        halide_cg.get_builder().CreateDetach(detachedBB, loopLatchBB, SyncRegion);
+        auto* detachedBB =
+            llvm::BasicBlock::Create(llvmCtx, "det.achd", function);
+        halide_cg.get_builder().CreateDetach(
+            detachedBB, loopLatchBB, SyncRegion);
         halide_cg.get_builder().SetInsertPoint(detachedBB);
       }
       auto* currentBB = emitAst(node.for_get_body());
@@ -624,9 +602,9 @@ class LLVMCodegen {
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
     halide_cg.sym_pop(node.for_get_iterator().get_id().get_name());
     if (parallel) {
-        auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
-        halide_cg.get_builder().CreateSync(syncBB, SyncRegion);
-        halide_cg.get_builder().SetInsertPoint(syncBB);
+      auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
+      halide_cg.get_builder().CreateSync(syncBB, SyncRegion);
+      halide_cg.get_builder().SetInsertPoint(syncBB);
     }
     return halide_cg.get_builder().GetInsertBlock();
   }
@@ -695,7 +673,8 @@ class LLVMCodegen {
   CodeGen_TC halide_cg;
 };
 
-// Create a list of isl ids to be used as loop iterators when building the AST.
+// Create a list of isl ids to be used as loop iterators when building the
+// AST.
 //
 // Note that this function can be scrapped as ISL can generate some default
 // iterator names.  However, it may come handy for associating extra info with
