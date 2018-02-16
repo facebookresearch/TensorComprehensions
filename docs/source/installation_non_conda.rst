@@ -154,7 +154,7 @@ TC from source, checkout the TensorComprehensions repo and run the following com
 
 .. code-block:: bash
 
-    $ cd $HOME && git clone git@github.com:facebookresearch/TensorComprehensions.git --recursive
+    $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions
     $ git submodule update --init --recursive
     $ export TC_DIR=$(pwd)
