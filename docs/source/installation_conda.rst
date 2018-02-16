@@ -169,6 +169,8 @@ Now check your proto version by running:
 
     $ protoc --version
 
+.. _conda_install_tc:
+
 Step 7: Installing TC
 ^^^^^^^^^^^^^^^^^^^^^
 
