@@ -32,8 +32,8 @@ Each index variable has an associated range :code:`[b,e)` over which it operates
 That range is inferred by its use, as described below.
 Index variables go out of scope after the statement, allowing the reuse of short variable names like :code:`i`.
 
-Implied Reductions
-------------------
+Implied Reductions and operators
+--------------------------------
 
 If an index variable appears on the right but not on the left of a statement,
 it is a reduction index for the statement.
@@ -41,10 +41,12 @@ If a statement has one or more reduction variables then it must specify a :code:
 operator such as :code:`+` or :code:`max`.
 There is only one reduction operator for the entire statement because
 combinations like :code:`max/+` on different dimensions have different mathematical meanings depending on loop order.
-All reduction operators are considered to be associative and commutative to
-allow for arbitrary order of evaluation.
-Reduction operators may be suffixed with :code:`!` to indicate that the tensor to which values are accumulated should first be initialized with the identity of the reduction operator (e.g., zero for :code:`+`).
-Otherwise, values are accumulated directly to the output or temporary tensor passed to the kernel.
+All reduction operators are considered to be associative and commutative to allow for arbitrary order of evaluation.
+
+Reduction operators may be suffixed with :code:`!` (for example :code:`+=!`) to indicate that the
+tensor to which values are accumulated should first be initialized with the identity of the reduction
+operator (e.g., :code:`0` for :code:`+`). Otherwise, values are accumulated directly to the output or
+temporary tensor passed to the kernel.
 
 Size Expressions
 ----------------
