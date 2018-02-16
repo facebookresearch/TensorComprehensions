@@ -239,10 +239,10 @@ bool GeneticTunerHarness::warmupOrPrune(
             CHECK(info);
             USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
             auto& exec = info->exec;
-            auto block = exec.block();
+            auto block = static_cast<CudaTcExecutor&>(*exec).block();
             auto nThreads = TX.mappingSize(block) * TY.mappingSize(block) *
                 TZ.mappingSize(block);
-            auto grid = exec.grid();
+            auto grid = static_cast<CudaTcExecutor&>(*exec).grid();
             auto nBlocks = BX.mappingSize(grid) * BY.mappingSize(grid) *
                 BZ.mappingSize(grid);
             if (nBlocks * nThreads < minThreads) {
@@ -250,7 +250,7 @@ bool GeneticTunerHarness::warmupOrPrune(
                 std::stringstream ssInfo;
                 ssInfo << "Skip configuration with too few threads: " << block
                        << "\n"
-                       << MappingOptionsAsCpp(*info->options);
+                       << MappingOptionsAsCpp(MappingOptions(info->options));
                 LOG_LINE_BY_LINE(INFO, ssInfo);
               }
               return true;

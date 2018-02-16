@@ -23,64 +23,6 @@ namespace tc {
 
 using namespace dlutils;
 
-// Under object lock, fill parse the language and fill the underlying map
-void CudaExecutionEngine::define(const std::string& language) {
-  lang::Parser parser(language);
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
-  while (parser.L.cur().kind != lang::TK_EOF) {
-    auto treeRef = parser.parseFunction();
-    auto name = lang::Def(treeRef).name().name();
-    tcNameMap_.emplace(std::make_pair(name, treeRef));
-  }
-}
-
-// support define if we pass the parsed TreeRefs.
-void CudaExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
-  for (auto& ref : treeRefs) {
-    auto name = lang::Def(ref).name().name();
-    tcNameMap_.emplace(std::make_pair(name, ref));
-  }
-}
-
-// Under object lock, retrieve the TreeRef at name and infer the output
-// tensors informations
-std::vector<const DLTensor*> CudaExecutionEngine::inferOutputTensorInfo(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputs) {
-  {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
-    CHECK_EQ(1, tcNameMap_.count(name))
-        << "attempting to access undefined function " << name;
-    // If we have already compiled for the given inputs, regardless of
-    // the options, we can get sizes from a corresponding CudaTcExecutor.
-    auto ei = std::find_if(
-        executors_.begin(),
-        executors_.end(),
-        [&](const std::unique_ptr<ExecutorInfo>& ei) {
-          return ei && name == ei->identifier &&
-              compareDLTensorVectorMetadata(
-                     extractRawPtrs(ei->inputsInfo), inputs);
-        });
-    if (ei != executors_.end()) {
-      return (*ei)->exec.inferOutputTensorInfo();
-    }
-  }
-
-  // Otherwise, create a new executor and add it to executor_ with
-  // null options.  It will be used for further size queries but
-  // will fail if somebody attempts to run it.
-  auto execInfo = tc::make_unique<ExecutorInfo>(
-      name,
-      inputs,
-      std::unique_ptr<MappingOptions>(nullptr),
-      tcNameMap_.at(name),
-      CudaTcExecutor::InvalidHandle);
-  auto outputsInfo = execInfo->exec.inferOutputTensorInfo();
-  emplaceExecutor(std::move(execInfo));
-  return outputsInfo;
-}
-
 // Steal ExecutorInfo and give it back under lock
 // Run outside of lock on owning ExecutorInfo.
 Duration CudaExecutionEngine::run(
@@ -88,8 +30,8 @@ Duration CudaExecutionEngine::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile,
-    std::function<bool(const ExecutorInfo*)> pruningFunction) {
-  std::unique_ptr<ExecutorInfo> p(nullptr);
+    std::function<bool(const CudaExecutorInfo*)> pruningFunction) {
+  std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
   {
     std::lock_guard<std::mutex> lg(executorInfoMutex);
     std::swap(p, executors_[handle]);
@@ -101,13 +43,15 @@ Duration CudaExecutionEngine::run(
   // exit.
   Duration res(Duration::max());
   if (p.get()) {
-    if (pruningFunction(p.get())) {
+    auto& execInfo = static_cast<CudaExecutorInfo&>(*p);
+    auto exec = static_cast<CudaTcExecutor*>(execInfo.exec.get());
+    if (pruningFunction(&execInfo)) {
       return Duration::max();
     }
-    CHECK(p->exec.hasRTCFun());
+    CHECK(exec->hasRTCFun());
     try {
       // Must catch and swap to avoid exception in destructor!
-      res = p->exec.run(inputs, outputs, profile);
+      res = exec->run(inputs, outputs, profile);
     } catch (std::exception& e) {
       std::lock_guard<std::mutex> lg(executorInfoMutex);
       std::swap(p, executors_[handle]);
@@ -127,7 +71,7 @@ void CudaExecutionEngine::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
-  std::unique_ptr<ExecutorInfo> p(nullptr);
+  std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
   {
     std::lock_guard<std::mutex> lg(executorInfoMutex);
     std::swap(p, executors_[handle]);
@@ -138,10 +82,11 @@ void CudaExecutionEngine::uncheckedRun(
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
   if (p.get()) {
-    CHECK(p->exec.hasRTCFun());
+    auto exec = static_cast<CudaTcExecutor*>(p->exec.get());
+    CHECK(exec->hasRTCFun());
     try {
       // Must catch and swap to avoid exception in destructor!
-      p->exec.uncheckedRun(inputs, outputs);
+      exec->uncheckedRun(inputs, outputs);
     } catch (std::exception& e) {
       std::lock_guard<std::mutex> lg(executorInfoMutex);
       std::swap(p, executors_[handle]);
@@ -158,8 +103,9 @@ void CudaExecutionEngine::uncheckedRun(
 // lock.
 void CudaExecutionEngine::clear(size_t handle) {
   std::lock_guard<std::mutex> lg(executorInfoMutex);
-  executors_[handle]->clear();
-  executors_[handle] = std::unique_ptr<ExecutorInfo>(nullptr);
+  auto executor = static_cast<CudaExecutorInfo*>(executors_[handle].get());
+  executor->clear();
+  executors_[handle] = std::unique_ptr<ExecutionEngine::ExecutorInfo>(nullptr);
 }
 
 size_t CudaExecutionEngine::getHandle(
@@ -170,45 +116,33 @@ size_t CudaExecutionEngine::getHandle(
   auto ei = std::find_if(
       executors_.begin(),
       executors_.end(),
-      [&](const std::unique_ptr<ExecutorInfo>& ei) {
+      [&](const std::unique_ptr<ExecutionEngine::ExecutorInfo>& ei) {
         return ei && // UPtrs get stolen by run to avoid underlying vector
                      // realloc issues, guard against that
             name == ei->identifier &&
             compareDLTensorVectorMetadata(
                    extractRawPtrs(ei->inputsInfo), inputsInfo) &&
-            ei->options && *ei->options == options;
+            ei->options != "" && MappingOptions(ei->options) == options;
       });
   if (ei != executors_.end()) {
     return (*ei)->objectLocalHandle;
   }
-  return CudaTcExecutor::InvalidHandle;
+  return TcExecutor::InvalidHandle;
 }
 
-std::unique_ptr<CudaExecutionEngine::ExecutorInfo>
+std::unique_ptr<ExecutionEngine::ExecutorInfo>
 CudaExecutionEngine::makeExecutorInfo(
     const std::string& name,
     const std::vector<const DLTensor*>& inputsInfo,
     const MappingOptions& options) {
   CHECK_EQ(tcNameMap_.count(name), 1)
       << "TC function " << name << " not defined";
-  return tc::make_unique<ExecutorInfo>(
+  return std::unique_ptr<ExecutionEngine::ExecutorInfo>(new CudaExecutorInfo(
       name,
       inputsInfo,
-      std::unique_ptr<MappingOptions>(new MappingOptions(options)),
+      options,
       tcNameMap_.at(name),
-      CudaTcExecutor::InvalidHandle);
-}
-
-size_t CudaExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
-  // Insert in vector under lock
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
-  size_t handle = uidCounter++;
-  p->objectLocalHandle = handle;
-  // This may trigger reallocs and moves of the underlying vector, fun!
-  executors_.emplace_back(std::move(p));
-  // This is really the invariant we enforce
-  CHECK_EQ(executors_.size(), uidCounter);
-  return handle;
+      TcExecutor::InvalidHandle));
 }
 
 size_t CudaExecutionEngine::compile(
@@ -218,14 +152,17 @@ size_t CudaExecutionEngine::compile(
   // Check if we already have a handle for this name+size+options combination.
   // If so, return it.
   size_t handle = getHandle(name, inputs, options);
-  if (handle != CudaTcExecutor::InvalidHandle) {
+  if (handle != TcExecutor::InvalidHandle) {
     return handle;
   }
 
   // Otherwise we need to compile.
-  auto p = makeExecutorInfo(name, inputs, options);
-  p->exec.compile(options);
-  CHECK(p->exec.hasRTCFun());
+  std::unique_ptr<ExecutionEngine::ExecutorInfo> p =
+      makeExecutorInfo(name, inputs, options);
+  auto exec = static_cast<CudaTcExecutor*>(p->exec.get());
+  CHECK(exec);
+  exec->compile(options);
+  CHECK(exec->hasRTCFun());
 
   handle = emplaceExecutor(std::move(p));
   return handle;

@@ -32,128 +32,6 @@ namespace tc {
 
 using namespace dlutils;
 
-const size_t CudaTcExecutor::InvalidHandle;
-
-lang::TreeRef parseOneFunction(const std::string& def) {
-  lang::Parser parser(def);
-  auto r = parser.parseFunction();
-  if (parser.L.cur().kind != lang::TK_EOF) {
-    throw lang::ErrorReport(parser.L.cur().range)
-        << "More than one TCs were passed to CudaTcExecutor.";
-  }
-  return r;
-}
-
-int toTypeToken(DLDataType dtype) {
-  return lang::TypeInfo(lang::TypeInfo::Code(dtype.code), dtype.bits)
-      .toScalarToken();
-}
-
-CudaTcExecutor::CudaTcExecutor(
-    const std::string& TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : CudaTcExecutor(parseOneFunction(TcDefinition), inputsInfo) {}
-
-// TODO: make sure that the empty stride arrays (in DLTensor) are not a problem
-void checkSizesAndStridesAreCompliant(
-    const DLTensor* actual,
-    const DLTensor* expected,
-    const lang::Param& dbg) {
-  if (actual->ndim != expected->ndim) {
-    throw lang::ErrorReport(dbg)
-        << "expected " << expected->ndim << " dimensions but found tensor with "
-        << actual->ndim << " dimensions";
-  }
-  auto atype = toTypeToken(actual->dtype);
-  auto etype = toTypeToken(expected->dtype);
-  if (atype != etype) {
-    throw lang::ErrorReport(dbg) << "expected " << lang::kindToString(etype)
-                                 << " but found " << lang::kindToString(atype);
-  }
-  std::vector<int64_t> shapeA(actual->shape, actual->shape + actual->ndim);
-  std::vector<int64_t> shapeE(
-      expected->shape, expected->shape + expected->ndim);
-  for (int i = 0; i < shapeA.size(); ++i) {
-    if (shapeA[i] != shapeE[i]) {
-      throw lang::ErrorReport(dbg)
-          << "expected size " << shapeE[i] << " for dim " << i << " but found "
-          << shapeA[i];
-    }
-  }
-}
-
-// templating to match both const and non-const DLTensor pointers
-template <typename T>
-void checkSizesAndStridesAreCompliant(
-    const std::vector<T*>& dlTensors,
-    const std::vector<DLTensorUPtr>& tensorInfos,
-    const lang::ListView<lang::Param>& dbgInfo) {
-  if (tensorInfos.size() != dlTensors.size()) {
-    throw lang::ErrorReport(dbgInfo)
-        << "expected " << tensorInfos.size() << " values but found "
-        << dlTensors.size();
-  }
-  for (size_t i = 0; i < tensorInfos.size(); ++i) {
-    checkSizesAndStridesAreCompliant(
-        dlTensors[i], tensorInfos[i].get(), dbgInfo[i]);
-  }
-}
-
-void CudaTcExecutor::checkInputsCompliant(
-    const std::vector<const DLTensor*>& inputsInfo) const {
-  if (inputsInfo.size() != halideComponents_.inputs.size()) {
-    throw lang::ErrorReport(halideComponents_.getDef())
-        << "expected " << halideComponents_.inputs.size()
-        << " inputs but found " << inputsInfo.size();
-  }
-  for (size_t i = 0; i < inputsInfo.size(); ++i) {
-    auto dltype_ = inputsInfo[i]->dtype;
-    auto htype_ = halideComponents_.inputs[i].type();
-    // we have three type representations here: (1) halide Type (2) DLTensor
-    // type, and (3) the token representing the type in the frontend (e.g.
-    // TK_FLOAT) we need to translate to (3) to report user facing errors
-    auto dltype =
-        lang::TypeInfo(lang::TypeInfo::Code(dltype_.code), dltype_.bits)
-            .toScalarToken();
-    auto htype =
-        lang::TypeInfo(lang::TypeInfo::Code(htype_.code()), htype_.bits())
-            .toScalarToken();
-    if (dltype != htype) {
-      throw lang::ErrorReport(halideComponents_.getDef().params()[i])
-          << "expected type " << lang::kindToString(htype) << " but found "
-          << lang::kindToString(dltype);
-    }
-    int edim = halideComponents_.inputs[i].dimensions();
-    int adim = inputsInfo[i]->ndim;
-    if (adim != edim) {
-      throw lang::ErrorReport(halideComponents_.getDef().params()[i])
-          << "expected a tensor with " << edim << " dimensions but found "
-          << adim << " dimensions.";
-    }
-  }
-}
-
-CudaTcExecutor::CudaTcExecutor(
-    lang::TreeRef TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : tcTree_(TcDefinition), ctx_(isl_ctx_alloc()) {
-  execInfo_.kernelName = lang::Def(tcTree_).name().name();
-  halideComponents_ = tc2halide::translate(ctx_, tcTree_);
-  checkInputsCompliant(inputsInfo);
-  execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
-  // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  execInfo_.outputsInfo =
-      tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
-}
-
-CudaTcExecutor::~CudaTcExecutor() {
-  isl_ctx_free(ctx_.release());
-}
-
-std::vector<const DLTensor*> CudaTcExecutor::inferOutputTensorInfo() {
-  return extractRawPtrs(execInfo_.outputsInfo);
-}
-
 namespace {
 
 std::string appendOptionsAndGitHash(
@@ -173,8 +51,7 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
     throw std::runtime_error{
         "CudaTcExecutor::compile cannot be called multiple tines."};
   }
-  execInfo_.options =
-      std::unique_ptr<MappingOptions>(new MappingOptions(options));
+  execInfo_.options = options.toProtobufSerializedString();
 
   auto cachedOp = [&]() -> std::unique_ptr<CudaCache::RetrievalResult> {
     if (ManualCudaCache::cacheEnabled()) {
@@ -191,12 +68,12 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
     if (not CudaCache::cacheEnabled()) {
       return nullptr;
     }
-    CHECK(execInfo_.options)
-        << "Isl Kernel options are NULL, are you trying compile "
+    CHECK_NE(execInfo_.options, "")
+        << "options string is empty, are you trying compile "
         << "a dummy CudaTcExecutor?";
     return CudaCache::getCache()->retrieveKernel(
         execInfo_.kernelName, // TODO:replace this with pretty printed TC
-        *execInfo_.options,
+        options,
         extractRawPtrs(execInfo_.inputsInfo),
         extractRawPtrs(execInfo_.outputsInfo));
   }();
@@ -215,7 +92,7 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
   } else {
     compileWithTcMapper();
     execInfo_.cudaSource =
-        appendOptionsAndGitHash(execInfo_.cudaSource, *execInfo_.options);
+        appendOptionsAndGitHash(execInfo_.cudaSource, options);
     if (CudaCache::cacheEnabled()) {
       LOG_IF(INFO, FLAGS_debug_tc_mapper)
           << "original grid: " << execInfo_.grid;
@@ -223,7 +100,7 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
           << "original block: " << execInfo_.block;
       CudaCache::getCache()->cacheKernel(
           execInfo_.kernelName, // TODO:replace this with pretty printed TC
-          *execInfo_.options,
+          options,
           extractRawPtrs(execInfo_.inputsInfo),
           extractRawPtrs(execInfo_.outputsInfo),
           execInfo_.kernelSpecializedName,
@@ -281,13 +158,13 @@ void CudaTcExecutor::compileWithTcMapper() {
   scopTmp = polyhedral::Scop::makeSpecializedScop(
       *scopTmp,
       globalParameterContext.intersect(scopTmp->globalParameterContext));
-  LOG_IF(INFO, FLAGS_debug_tc_mapper) << *(execInfo_.options);
+  LOG_IF(INFO, FLAGS_debug_tc_mapper) << MappingOptions(execInfo_.options);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << *(scopTmp->scheduleRoot());
 
   // Now we can build stuff
   auto mappedScop =
       polyhedral::MappedScop::makeWithOuterBlockInnerThreadStrategy(
-          std::move(scopTmp), *execInfo_.options);
+          std::move(scopTmp), MappingOptions(execInfo_.options));
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
 
@@ -311,7 +188,7 @@ Duration CudaTcExecutor::run(
     bool profile) const {
   CHECK(execInfo_.rtcFun) << "Can't launch uncompiled: "
                           << execInfo_.kernelName;
-  CHECK(execInfo_.options);
+  CHECK_NE(execInfo_.options, "");
   checkSizesAndStridesAreCompliant(
       inputs, execInfo_.inputsInfo, halideComponents_.getDef().params());
   checkSizesAndStridesAreCompliant(
@@ -341,7 +218,7 @@ Duration CudaTcExecutor::run(
     OptionsCache::getCache()->recordRuntime(
         // TODO:replace this with pretty printed TC
         execInfo_.kernelName,
-        *execInfo_.options,
+        MappingOptions(execInfo_.options),
         inputs,
         constPtrs(outputs),
         res);

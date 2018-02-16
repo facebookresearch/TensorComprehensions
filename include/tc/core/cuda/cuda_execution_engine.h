@@ -23,6 +23,7 @@
 #include <dlpack/dlpack.h>
 
 #include "tc/core/cuda/cuda_tc_executor.h"
+#include "tc/core/execution_engine.h"
 #include "tc/core/mapping_options.h"
 
 namespace tc {
@@ -31,51 +32,33 @@ namespace tc {
 /// able to execute the kernels for multiple TC i.e. given the language which
 /// can have multiple TCs, people should be able to run things by just calling
 /// out the run function with the name of function and the inputs to run on.
-class CudaExecutionEngine {
+class CudaExecutionEngine : public ExecutionEngine {
  public:
-  struct ExecutorInfo {
-    ExecutorInfo(
+  struct CudaExecutorInfo : public ExecutionEngine::ExecutorInfo {
+    CudaExecutorInfo(
         std::string id,
         std::vector<const DLTensor*> inputsInfo,
-        std::unique_ptr<MappingOptions> options,
+        const MappingOptions& options,
         lang::TreeRef tc,
         size_t handle)
-        : identifier(id),
-          inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
-          options(std::move(options)),
-          exec(tc, inputsInfo),
-          objectLocalHandle(handle) {}
-
-    void clear() {
-      exec.clearRTC();
+        : ExecutionEngine::ExecutorInfo(
+              id,
+              inputsInfo,
+              options.toProtobufSerializedString(),
+              tc,
+              handle) {
+      exec =
+          std::unique_ptr<CudaTcExecutor>(new CudaTcExecutor(tc, inputsInfo));
     }
 
-    std::string identifier;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::unique_ptr<MappingOptions> options;
-    CudaTcExecutor exec;
-    /// When run is called this is used to find the most recently compiled
-    /// version.
-    size_t objectLocalHandle;
+    void clear() {
+      static_cast<CudaTcExecutor&>(*exec).clearRTC();
+    }
   };
 
   CudaExecutionEngine() = default;
 
-  /// Create the CudaExecutionEngine::tcNameMap_ using the language passed
-  /// to it - should support many TC.
-  void define(const std::string& language);
-
-  /// Create the CudaExecutionEngine::tcNameMap_ from the parsed TC
-  /// string - supports many TC.
-  void define(const std::vector<lang::TreeRef>& treeRefs);
-
   void addTC(const std::string& tc);
-
-  /// Get the output Tensor info that can be used by the calling framework to
-  /// allocate storage for the output.
-  std::vector<const DLTensor*> inferOutputTensorInfo(
-      const std::string& name,
-      const std::vector<const DLTensor*>& inTensorPtrs);
 
   lang::TreeRef treeForFunction(const std::string& name) {
     return tcNameMap_.at(name);
@@ -84,11 +67,19 @@ class CudaExecutionEngine {
   // TODO: Pass autotuning info (none by default, otherwise some struct with
   //       maxtime and other things)
 
-  /// Returns a handle for the compiled kernel
+  /// returns a handle for the compiled kernel
+  /// @{
+  size_t compile(
+      const std::string& name,
+      const std::vector<const DLTensor*>& inputs,
+      const std::string& mappingOptions) override {
+    return compile(name, inputs, MappingOptions(mappingOptions));
+  }
   size_t compile(
       const std::string& name,
       const std::vector<const DLTensor*>& inputs,
       const MappingOptions& options);
+  /// @}
 
   // TODO: sanity check on name and input / output sizes.
   /// Run a TC specified by its name on the given tensor inputs and fill the
@@ -99,13 +90,23 @@ class CudaExecutionEngine {
   /// The pruning function returns true if the run should not proceed (e.g. if
   /// there are too few threads mapped that would likely result in catastrophic
   /// performance). In this case, return Duration::max().
+  /// @{
   Duration run(
       size_t handle,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false,
-      std::function<bool(const ExecutorInfo*)> pruningFunction =
-          [](const ExecutorInfo*) { return false; });
+      bool profile = false) override {
+    return run(handle, inputs, outputs, profile, [](const CudaExecutorInfo*) {
+      return false;
+    });
+  }
+  Duration run(
+      size_t handle,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<DLTensor*>& outputs,
+      bool profile,
+      std::function<bool(const CudaExecutorInfo*)> pruningFunction);
+  /// @}
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to
   /// data in GPU address space.
@@ -115,9 +116,9 @@ class CudaExecutionEngine {
   void uncheckedRun(
       size_t handle,
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs);
+      const std::vector<void*>& outputs) override;
 
-  void clear(size_t handle);
+  void clear(size_t handle) override;
 
  private:
   size_t getHandle(
@@ -128,18 +129,6 @@ class CudaExecutionEngine {
       const std::string& name,
       const std::vector<const DLTensor*>& inputsInfo,
       const MappingOptions& options);
-  size_t emplaceExecutor(std::unique_ptr<ExecutorInfo> p);
-
-  /// For thread-safety perform all cheap operations under lock
-  std::mutex executorInfoMutex;
-
-  // XXX:if ExecutorInfo is moved/copied (even when the vector's underlying
-  // storage is extended) something inside isl segfaults,  unique_ptr is used as
-  // a workaround
-  std::vector<std::unique_ptr<ExecutorInfo>> executors_;
-  std::map<std::string, lang::TreeRef> tcNameMap_;
-
-  size_t uidCounter = 0;
 };
 
 } // namespace tc

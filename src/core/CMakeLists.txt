@@ -7,11 +7,13 @@ add_library(
 
   SHARED
 
+  execution_engine.cc
   flags.cc
   compilation_cache.cc
   cuda.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
+  tc_executor.cc
   rtc.cc
   islpp.cc
 
