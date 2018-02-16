@@ -176,7 +176,7 @@ Now, you need to install TC from source. For installing TC from source, checkout
 
 .. code-block:: bash
 
-    $ cd $HOME && git clone git@github.com:facebookresearch/TensorComprehensions.git --recursive
+    $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions
     $ git submodule update --init --recursive
     $ conda install -y pyyaml
