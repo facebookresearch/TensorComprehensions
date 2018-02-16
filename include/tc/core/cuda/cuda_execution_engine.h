@@ -22,8 +22,8 @@
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/mapping_options.h"
-#include "tc/core/tc_executor.h"
 
 namespace tc {
 
