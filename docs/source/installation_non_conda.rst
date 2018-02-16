@@ -146,6 +146,7 @@ Now, check your yaml import works. If it doesn't, make sure you ran earlier step
 
     $ python3 -c 'import yaml'
 
+.. _non_conda_install_tc:
 
 Step 7: Install TC
 ^^^^^^^^^^^^^^^^^^
