@@ -23,13 +23,13 @@ Let's start with a simple example is a matrix vector product:
 
 .. code::
 
-    def mv(float(R,C) A, float(C) x) -> (o) {
-      o(i) += A(i,j) * x(j)
+    def mv(float(R,C) A, float(C) B) -> (o) {
+      o(i) += A(i,j) * B(j)
     }
 
-:code:`A` and :code:`x` are input tensors. :code:`o` is an output tensor.
-The statement :code:`o(i) += A(i,j)*x(j)` introduces two index variables :code:`i` and :code:`j`.
-Their range is inferred by their use indexing :code:`A` and :code:`x`. :code:`i = [0,R)`, :code:`j = [0,C)`.
+:code:`A` and :code:`B` are input tensors. :code:`o` is an output tensor.
+The statement :code:`o(i) += A(i,j) * B(j)` introduces two index variables :code:`i` and :code:`j`.
+Their range is inferred by their use indexing :code:`A` and :code:`B`. :code:`i = [0,R)`, :code:`j = [0,C)`.
 Because :code:`j` only appears on the right side,
 stores into :code:`o` will reduce over :code:`j` with the reduction specified for the loop.
 Reductions can occur across multiple variables, but they all share the same kind of associative reduction (e.g. :code:`+=`)
@@ -40,7 +40,7 @@ to maintain invariant (3). :code:`mv` computes the same thing as this C++ loop:
     for(int i = 0; i < R; i++) {
       o(i) = 0.0f;
       for(int j = 0; j < C; j++) {
-        o(i) += A(i,j) * x(j);
+        o(i) += A(i,j) * B(j);
       }
     }
 
@@ -56,8 +56,8 @@ Simple matrix-vector
 
 .. code::
 
-    def mv(float(R,C) A, float(C) x) -> (o) {
-      o(i) += A(i,j) * x(j)
+    def mv(float(R,C) A, float(C) B) -> (o) {
+      o(i) += A(i,j) * B(j)
     }
 
 Simple matrix-multiply
