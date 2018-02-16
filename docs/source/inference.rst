@@ -271,3 +271,20 @@ Strided indexing with dynamic stride
 The value of :code:`S(0)` is not fixed until runtime, so we can't resolve the
 size of :code:`A` or the range of the loop. This case throws a compile-time
 error. A :code:`where` clause that defines the range of :code:`i` is required.
+
+Constant fill using an exists clause
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code::
+
+    def constant_fill(float(N) A, float c) -> B {
+      B(i) = c where A(i) exists
+    }
+
+An :code:`exists` clause allows you to add additional expressions to the range
+inference process without having the expressions affect the actual computation.
+In this example, it allows you to say that :code:`B(i)` should have the same size as
+:code:`A(i)`, but be filled with a constant value :code:`c`.  That is, you should infer the
+range of :code:`B(i)` to exist at all the places where :code:`A(i)` exists.
+It is equivalent to writing the expression :code:`true ? c : A(i)`, but with
+clearer intentions.

@@ -369,7 +369,7 @@ struct Sema {
   TreeRef boolType(TreeRef anchor) {
     return c(TK_BOOL, anchor->range(), {});
   }
-  void checkDim(const Ident& dim) {
+  void checkDim(Ident dim) {
     insert(env, dim, dimType(dim), false);
   }
   TreeRef checkTensorType(TreeRef type) {
@@ -451,7 +451,7 @@ struct Sema {
     // where clauses are checked _before_ the rhs because they
     // introduce let bindings that are in scope for the rhs
     auto where_clauses_ = stmt.whereClauses().map(
-        [&](const TreeRef& rc) { return checkWhereClause(rc); });
+        [&](TreeRef rc) { return checkWhereClause(rc); });
 
     TreeRef rhs_ = checkExp(stmt.rhs(), true);
     TreeRef scalar_type = typeOfExpr(rhs_);
@@ -488,7 +488,7 @@ struct Sema {
     live_input_names.erase(stmt.ident().name());
 
     auto equivalent_statement_ =
-        stmt.equivalent().map([&](const Equivalent& eq) {
+        stmt.equivalent().map([&](Equivalent eq) {
           auto indices_ = eq.accesses().map(
               [&](TreeRef index) { return checkExp(index, true); });
           return Equivalent::create(eq.range(), eq.name(), indices_);
@@ -526,7 +526,7 @@ struct Sema {
 
     return result;
   }
-  bool isNotInplace(const TreeRef& assignment) {
+  bool isNotInplace(TreeRef assignment) {
     switch (assignment->kind()) {
       case TK_PLUS_EQ_B:
       case TK_TIMES_EQ_B:
@@ -567,7 +567,7 @@ struct Sema {
       throw ErrorReport(ident) << name << " already defined";
     }
   }
-  TreeRef lookup(const Ident& ident, bool required) {
+  TreeRef lookup(Ident ident, bool required) {
     TreeRef v = lookup(index_env, ident, false);
     if (!v)
       v = lookup(let_env, ident, false);
@@ -575,7 +575,7 @@ struct Sema {
       v = lookup(env, ident, required);
     return v;
   }
-  TreeRef lookup(Env& the_env, const Ident& ident, bool required) {
+  TreeRef lookup(Env& the_env, Ident ident, bool required) {
     std::string name = ident.name();
     auto it = the_env.find(name);
     if (required && it == the_env.end()) {
