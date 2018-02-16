@@ -149,6 +149,24 @@ struct Parser {
     auto r = parseExp();
     return RangeConstraint::create(id->range(), id, l, r);
   }
+  TreeRef parseLetBinding() {
+    auto ident = parseIdent();
+    L.expect('=');
+    auto exp = parseExp();
+    return Let::create(ident->range(), ident, exp);
+  }
+  TreeRef parseWhereClause() {
+    auto lookahead = L.lookahead();
+    if (lookahead.kind == '=') {
+      return parseLetBinding();
+    } else if (lookahead.kind == TK_IN) {
+      return parseRangeConstraint();
+    } else {
+      L.expect(TK_EXISTS);
+      auto exp = parseExp();
+      return Exists::create(exp->range(), {exp});
+    }
+  }
   TreeRef parseParam() {
     if (L.cur().kind == TK_IDENT) {
       auto ident = parseIdent();
@@ -159,10 +177,9 @@ struct Parser {
     auto ident = parseIdent();
     return Param::create(typ->range(), ident, typ);
   }
-  TreeRef parseRangeConstraints() {
+  TreeRef parseWhereClauses() {
     if (L.nextIf(TK_WHERE)) {
-      return parseNonEmptyList(
-          ',', [&](int i) { return parseRangeConstraint(); });
+      return parseNonEmptyList(',', [&](int i) { return parseWhereClause(); });
     }
     return List::create(L.cur().range, {});
   }
@@ -200,7 +217,7 @@ struct Parser {
     auto assign = parseAssignment();
     auto rhs = parseExp();
     TreeRef equivalent_statement = parseEquivalent();
-    TreeRef range_statements = parseRangeConstraints();
+    TreeRef range_statements = parseWhereClauses();
     TreeRef empty_reduction_variables = c(TK_LIST, ident->range(), {});
     return Comprehension::create(
         ident->range(),

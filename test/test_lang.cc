@@ -200,9 +200,8 @@ int main(int argc, char** argv) {
     std::stringstream ss;
     bar->range().highlight(ss);
     assertEqual("lexer2.expected", ss.str());
-    TreeRef sss;
-    s->matchD(TK_CONST, "file.h", 3, sss);
-    assert(sss->stringValue() == "min");
+    s->expect(TK_CONST, 1);
+    ASSERT(s->tree(0)->stringValue() == "min");
   }
   {
     std::string stuff = "-3+4*5+7-a";

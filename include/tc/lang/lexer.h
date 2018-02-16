@@ -77,9 +77,17 @@ namespace lang {
   _(TK_UINT64, "uint64", "uint64")               \
   _(TK_BOOL, "bool", "bool")                     \
   _(TK_CAST, "cast", "")                         \
-  _(TK_IN, "in", "in")
+  _(TK_IN, "in", "in")                           \
+  _(TK_GE, "ge", ">=")                           \
+  _(TK_LE, "le", "<=")                           \
+  _(TK_EQ, "eq", "==")                           \
+  _(TK_NE, "neq", "!=")                          \
+  _(TK_AND, "and", "&&")                         \
+  _(TK_OR, "or", "||")                           \
+  _(TK_LET, "let", "")                           \
+  _(TK_EXISTS, "exists", "exists")
 
-static const char* valid_single_char_tokens = "+-*/()[]?:,={}>";
+static const char* valid_single_char_tokens = "+-*/()[]?:,={}><!";
 
 enum TokenKind {
   // we use characters to represent themselves so skip all valid characters
@@ -121,11 +129,14 @@ struct SharedParserData {
     // listed in increasing order of precedence
     std::vector<std::vector<int>> binary_ops = {
         {'?'},
+        {TK_OR},
+        {TK_AND},
+        {'>', '<', TK_LE, TK_GE, TK_EQ, TK_NE},
         {'+', '-'},
         {'*', '/'},
     };
     std::vector<std::vector<int>> unary_ops = {
-        {'-'},
+        {'-', '!'},
     };
 
     std::stringstream ss;
@@ -371,9 +382,20 @@ struct Lexer {
     next();
     return true;
   }
+  Token lookahead() {
+    if (!lookahead_) {
+      lookahead_.reset(new Token(lex()));
+    }
+    return *lookahead_;
+  }
   Token next() {
     auto r = cur_;
-    cur_ = lex();
+    if (lookahead_) {
+      cur_ = *lookahead_;
+      lookahead_.reset();
+    } else {
+      cur_ = lex();
+    }
     return r;
   }
   void reportError(const std::string& what, const Token& t);
@@ -407,6 +429,7 @@ struct Lexer {
   }
   size_t pos;
   Token cur_;
+  std::unique_ptr<Token> lookahead_;
   SharedParserData& shared;
 };
 } // namespace lang
