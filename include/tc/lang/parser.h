@@ -162,8 +162,8 @@ struct Parser {
     } else if (lookahead.kind == TK_IN) {
       return parseRangeConstraint();
     } else {
-      auto exp = parseExp();
       L.expect(TK_EXISTS);
+      auto exp = parseExp();
       return Exists::create(exp->range(), {exp});
     }
   }

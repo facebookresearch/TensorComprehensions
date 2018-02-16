@@ -487,12 +487,11 @@ struct Sema {
     // if we redefined an input, it is no longer valid for range expressions
     live_input_names.erase(stmt.ident().name());
 
-    auto equivalent_statement_ =
-        stmt.equivalent().map([&](Equivalent eq) {
-          auto indices_ = eq.accesses().map(
-              [&](TreeRef index) { return checkExp(index, true); });
-          return Equivalent::create(eq.range(), eq.name(), indices_);
-        });
+    auto equivalent_statement_ = stmt.equivalent().map([&](Equivalent eq) {
+      auto indices_ = eq.accesses().map(
+          [&](TreeRef index) { return checkExp(index, true); });
+      return Equivalent::create(eq.range(), eq.name(), indices_);
+    });
 
     TreeRef assignment = stmt.assignment();
     // For semantic consistency we allow overwriting reductions like +=!

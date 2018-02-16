@@ -278,7 +278,7 @@ Constant fill using an exists clause
 .. code::
 
     def constant_fill(float(N) A, float c) -> B {
-      B(i) = c where A(i) exists
+      B(i) = c where exists A(i)
     }
 
 An :code:`exists` clause allows you to add additional expressions to the range

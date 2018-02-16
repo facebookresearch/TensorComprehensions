@@ -216,7 +216,7 @@ TEST(TestCornerCases, E16){
 TEST(TestCornerCases, E17) {
   auto r = F(1);
   Succeed(
-      "def f(float(1) a) -> (b) { b(i) = 4.0 where a(i) exists }", {F(1)}, {r});
+      "def f(float(1) a) -> (b) { b(i) = 4.0 where exists a(i) }", {F(1)}, {r});
   CHECK_EQ(at::Scalar(r[0]).toFloat(), 4);
 }
 
