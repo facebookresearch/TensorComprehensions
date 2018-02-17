@@ -34,7 +34,7 @@ Tensor Comprehensions provides framework-Agnostic Abstractions for High-Performa
    :caption: Installation
 
    installation
-   docker_image
+   installation_docker_image
    installation_conda_dep
    installation_conda
    installation_non_conda

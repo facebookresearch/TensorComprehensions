@@ -1,11 +1,11 @@
 # Development branches, we modify those heavily
 [submodule "third-party/islpp"]
 	path = third-party/islpp
-	url = git@github.com:nicolasvasilache/isl.git
+	url = https://github.com/nicolasvasilache/isl.git
 	branch = ntv_dev
 [submodule "third-party/cub"]
 	path = third-party/cub
-        url = git@github.com:nicolasvasilache/cub.git
+        url = https://github.com/nicolasvasilache/cub.git
 	branch = nvrtc-cub
 [submodule "third-party/halide"]
 	path = third-party/halide
@@ -14,7 +14,7 @@
 # Mainstream branches, we don't modify those
 [submodule "third-party/caffe2"]
 	path = third-party/caffe2
-	url = git@github.com:caffe2/caffe2.git
+	url = https://github.com/caffe2/caffe2.git
 [submodule "third-party/gflags"]
 	path = third-party/gflags
 	url = https://github.com/gflags/gflags
@@ -23,7 +23,7 @@
 	url = https://github.com/google/glog.git
 [submodule "third-party/ATen"]
 	path = third-party/ATen
-	url = git@github.com:zdevito/aten.git
+	url = https://github.com/zdevito/aten.git
 [submodule "third-party/dlpack"]
 	path = third-party/dlpack
 	url = https://github.com/dmlc/dlpack.git

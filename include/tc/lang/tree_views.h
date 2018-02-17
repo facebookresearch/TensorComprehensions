@@ -34,6 +34,9 @@ struct TreeView {
   }
 
  protected:
+  TreeRef subtree(size_t i) const {
+    return tree_->tree(i);
+  }
   TreeRef tree_;
 };
 
@@ -60,7 +63,7 @@ struct ListViewIterator {
 template <typename T>
 struct ListView : public TreeView {
   ListView(const TreeRef& tree) : TreeView(tree) {
-    tree->match(TK_LIST);
+    tree->expect(TK_LIST);
   }
   typedef ListViewIterator<T> iterator;
   typedef ListViewIterator<T> const_iterator;
@@ -89,7 +92,7 @@ using List = ListView<TreeRef>;
 template <typename T>
 struct OptionView : public TreeView {
   explicit OptionView(const TreeRef& tree) : TreeView(tree) {
-    TC_ASSERT(tree, tree->kind() == TK_OPTION);
+    tree->expect(TK_OPTION);
   }
   bool present() const {
     return tree_->trees().size() > 0;
@@ -107,13 +110,13 @@ struct Ident : public TreeView {
   // each subclass of TreeView provides:
   // 1. a constructor that takes a TreeRef, and matches it to the right type.
   explicit Ident(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_IDENT, name_);
+    tree_->expect(TK_IDENT, 1);
   }
   // 2. accessors that get underlying information out of the object
   // in this case, we return the name of the identifier, and handle the
   // converstion to a string in the method
   const std::string& name() const {
-    return name_->stringValue();
+    return subtree(0)->stringValue();
   }
 
   // 3. a static method 'create' that creates the underlying TreeRef object
@@ -132,41 +135,37 @@ struct Ident : public TreeView {
 template <int kind>
 struct ApplyLike : public TreeView {
   explicit ApplyLike(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(kind, name_, arguments_);
+    tree_->expect(kind, 2);
   }
 
   Ident name() const {
-    return Ident(name_);
+    return Ident(subtree(0));
   }
   ListView<TreeRef> arguments() const {
-    return ListView<TreeRef>(arguments_);
+    return ListView<TreeRef>(subtree(1));
   }
 
   static TreeRef
   create(const SourceRange& range, TreeRef name, TreeRef arguments) {
     return Compound::create(kind, range, {name, arguments});
   }
-
- private:
-  TreeRef name_;
-  TreeRef arguments_;
 };
 using Apply = ApplyLike<TK_APPLY>;
 using Access = ApplyLike<TK_ACCESS>;
 
 struct BuiltIn : public TreeView {
   explicit BuiltIn(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_BUILT_IN, name_, arguments_, type_);
+    tree_->expect(TK_BUILT_IN, 3);
   }
   const std::string& name() const {
-    return name_->stringValue();
+    return subtree(0)->stringValue();
   }
   ListView<TreeRef> arguments() const {
-    return ListView<TreeRef>(arguments_);
+    return ListView<TreeRef>(subtree(1));
   }
 
   TreeRef type() const {
-    return type_;
+    return subtree(2);
   }
 
   static TreeRef create(
@@ -186,13 +185,14 @@ struct BuiltIn : public TreeView {
 
 struct TensorType : public TreeView {
   explicit TensorType(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_TENSOR_TYPE, scalar_type_, dims_);
+    tree_->expect(TK_TENSOR_TYPE, 2);
   }
   static TreeRef
   create(const SourceRange& range, TreeRef scalar_type_, TreeRef dims_) {
     return Compound::create(TK_TENSOR_TYPE, range, {scalar_type_, dims_});
   }
   TreeRef scalarTypeTree() const {
+    auto scalar_type_ = subtree(0);
     if (scalar_type_->kind() == TK_IDENT)
       throw ErrorReport(tree_)
           << " TensorType has a symbolic ident " << Ident(scalar_type_).name()
@@ -204,17 +204,13 @@ struct TensorType : public TreeView {
   }
   // either an Ident or a constant
   ListView<TreeRef> dims() const {
-    return ListView<TreeRef>(dims_);
+    return ListView<TreeRef>(subtree(1));
   }
-
- private:
-  TreeRef scalar_type_;
-  TreeRef dims_;
 };
 
 struct Param : public TreeView {
   explicit Param(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_PARAM, ident_, type_);
+    tree_->expect(TK_PARAM, 2);
   }
   static TreeRef create(const SourceRange& range, TreeRef ident, TreeRef type) {
     return Compound::create(TK_PARAM, range, {ident, type});
@@ -225,28 +221,24 @@ struct Param : public TreeView {
   // this means that clients can do p.ident().name() to get the name of the
   // parameter.
   Ident ident() const {
-    return Ident(ident_);
+    return Ident(subtree(0));
   }
   // may be TensorType or TK_INFERRED
   TreeRef type() const {
-    return type_;
+    return subtree(1);
   }
   bool typeIsInferred() const {
-    return type_->kind() == TK_INFERRED;
+    return type()->kind() == TK_INFERRED;
   }
   // helper for when you know the type is not inferred.
   TensorType tensorType() const {
-    return TensorType(type_);
+    return TensorType(type());
   }
-
- private:
-  TreeRef ident_;
-  TreeRef type_;
 };
 
 struct Equivalent : public TreeView {
   explicit Equivalent(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_EQUIVALENT, name_, accesses_);
+    tree_->expect(TK_EQUIVALENT, 2);
   }
   static TreeRef
   create(const SourceRange& range, const std::string& name, TreeRef accesses) {
@@ -254,52 +246,35 @@ struct Equivalent : public TreeView {
         TK_EQUIVALENT, range, {String::create(name), accesses});
   }
   const std::string& name() const {
-    return name_->stringValue();
+    return subtree(0)->stringValue();
   }
   ListView<TreeRef> accesses() const {
-    return ListView<TreeRef>(accesses_);
+    return ListView<TreeRef>(subtree(1));
   }
-
- private:
-  TreeRef name_;
-  TreeRef accesses_;
 };
 
 struct RangeConstraint : public TreeView {
   explicit RangeConstraint(const TreeRef& tree) : TreeView(tree) {
-    tree->match(TK_RANGE_CONSTRAINT, ident_, start_, end_);
+    tree->expect(TK_RANGE_CONSTRAINT, 3);
   }
   static TreeRef
   create(const SourceRange& range, TreeRef ident, TreeRef start, TreeRef end) {
     return Compound::create(TK_RANGE_CONSTRAINT, range, {ident, start, end});
   }
   Ident ident() const {
-    return Ident(ident_);
+    return Ident(subtree(0));
   }
   TreeRef start() const {
-    return start_;
+    return subtree(1);
   }
   TreeRef end() const {
-    return end_;
+    return subtree(2);
   }
-
- private:
-  TreeRef ident_;
-  TreeRef start_;
-  TreeRef end_;
 };
 
 struct Comprehension : public TreeView {
   explicit Comprehension(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(
-        TK_COMPREHENSION,
-        ident_,
-        indices_,
-        assignment_,
-        rhs_,
-        range_constraints_,
-        equivalent_,
-        reduction_variables_);
+    tree_->expect(TK_COMPREHENSION, 7);
   }
   static TreeRef create(
       const SourceRange& range,
@@ -327,56 +302,48 @@ struct Comprehension : public TreeView {
   // this means that clients can do p.ident().name() to get the name of the
   // parameter.
   Ident ident() const {
-    return Ident(ident_);
+    return Ident(subtree(0));
   }
   ListView<Ident> indices() const {
-    return ListView<Ident>(indices_);
+    return ListView<Ident>(subtree(1));
   }
   // kind == '=', TK_PLUS_EQ, TK_PLUS_EQ_B, etc.
   TreeRef assignment() const {
-    return assignment_;
+    return subtree(2);
   }
   TreeRef rhs() const {
-    return rhs_;
-  }
-  // we don't use these yet, so there is now TreeView class for them.
-  ListView<RangeConstraint> rangeConstraints() const {
-    return ListView<RangeConstraint>(range_constraints_);
-  }
-  OptionView<Equivalent> equivalent() const {
-    return OptionView<Equivalent>(equivalent_);
-  }
-  ListView<Ident> reductionVariables() const {
-    return ListView<Ident>(reduction_variables_);
+    return subtree(3);
   }
 
- private:
-  TreeRef ident_;
-  TreeRef indices_;
-  TreeRef assignment_;
-  TreeRef rhs_;
-  TreeRef range_constraints_;
-  TreeRef equivalent_;
-  TreeRef reduction_variables_;
+  // where clauses are either RangeConstraints or Let bindings
+  ListView<TreeRef> whereClauses() const {
+    return ListView<TreeRef>(subtree(4));
+  }
+  OptionView<Equivalent> equivalent() const {
+    return OptionView<Equivalent>(subtree(5));
+  }
+  ListView<Ident> reductionVariables() const {
+    return ListView<Ident>(subtree(6));
+  }
 };
 
 struct Def : public TreeView {
   explicit Def(const TreeRef& tree) : TreeView(tree) {
-    tree->match(TK_DEF, name_, paramlist, retlist, stmts_list);
+    tree->expect(TK_DEF, 4);
   }
   Ident name() {
-    return Ident(name_);
+    return Ident(subtree(0));
   }
   // ListView helps turn TK_LISTs into vectors of TreeViews
   // so that we can, e.g., return lists of parameters
   ListView<Param> params() const {
-    return ListView<Param>(paramlist);
+    return ListView<Param>(subtree(1));
   }
   ListView<Param> returns() const {
-    return ListView<Param>(retlist);
+    return ListView<Param>(subtree(2));
   }
   ListView<Comprehension> statements() const {
-    return ListView<Comprehension>(stmts_list);
+    return ListView<Comprehension>(subtree(3));
   }
   static TreeRef create(
       const SourceRange& range,
@@ -387,69 +354,78 @@ struct Def : public TreeView {
     return Compound::create(
         TK_DEF, range, {name, paramlist, retlist, stmts_list});
   }
-
- private:
-  TreeRef name_;
-  TreeRef paramlist;
-  TreeRef retlist;
-  TreeRef stmts_list;
 };
 
 struct Select : public TreeView {
   explicit Select(const TreeRef& tree) : TreeView(tree) {
-    tree_->match('.', name_, index_);
+    tree_->expect('.', 2);
   }
   Ident name() const {
-    return Ident(name_);
+    return Ident(subtree(0));
   }
   int index() const {
-    return index_->doubleValue();
+    return subtree(1)->doubleValue();
   }
   static TreeRef create(const SourceRange& range, TreeRef name, TreeRef index) {
     return Compound::create('.', range, {name, index});
   }
-
- private:
-  TreeRef name_;
-  TreeRef index_;
 };
 
 struct Const : public TreeView {
   explicit Const(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_CONST, value_, type_);
+    tree_->expect(TK_CONST, 2);
   }
   double value() const {
-    return value_->doubleValue();
+    return subtree(0)->doubleValue();
   }
   TreeRef type() const {
-    return type_;
+    return subtree(1);
   }
   static TreeRef create(const SourceRange& range, TreeRef value, TreeRef type) {
     return Compound::create(TK_CONST, range, {value, type});
   }
-
- private:
-  TreeRef value_;
-  TreeRef type_;
 };
 
 struct Cast : public TreeView {
   explicit Cast(const TreeRef& tree) : TreeView(tree) {
-    tree_->match(TK_CAST, value_, type_);
+    tree_->expect(TK_CAST, 2);
   }
   TreeRef value() const {
-    return value_;
+    return subtree(0);
   }
   TreeRef type() const {
-    return type_;
+    return subtree(1);
   }
   static TreeRef create(const SourceRange& range, TreeRef value, TreeRef type) {
     return Compound::create(TK_CAST, range, {value, type});
   }
+};
 
- private:
-  TreeRef value_;
-  TreeRef type_;
+struct Let : public TreeView {
+  explicit Let(const TreeRef& tree) : TreeView(tree) {
+    tree_->expect(TK_LET, 2);
+  }
+  Ident name() const {
+    return Ident(subtree(0));
+  }
+  TreeRef rhs() const {
+    return subtree(1);
+  }
+  static TreeRef create(const SourceRange& range, TreeRef name, TreeRef rhs) {
+    return Compound::create(TK_LET, range, {name, rhs});
+  }
+};
+
+struct Exists : public TreeView {
+  explicit Exists(const TreeRef& tree) : TreeView(tree) {
+    tree_->expect(TK_EXISTS, 1);
+  }
+  TreeRef exp() const {
+    return subtree(0);
+  }
+  static TreeRef create(const SourceRange& range, TreeRef exp) {
+    return Compound::create(TK_EXISTS, range, {exp});
+  }
 };
 
 } // namespace lang

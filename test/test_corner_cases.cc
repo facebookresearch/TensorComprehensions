@@ -79,20 +79,20 @@ static void Fail(
   }
 }
 
-TEST(FailTest, E1) {
+TEST(TestCornerCases, E1) {
   Fail("expected (", " def f{} {}", {}, {});
 }
-TEST(FailTest, E2) {
+TEST(TestCornerCases, E2) {
   Succeed("def f(float(1) a) -> (b) { b(i) = a(i) }", {F(1)}, {F(1)});
 }
 
 // free(): invalid next size (fast): 0x000000003b2d6230 ***
-TEST(FailTest, DISABLED_E4) {
+TEST(TestCornerCases, DISABLED_E4) {
   Succeed("def f(float a) -> (b) { b = a }", {F()}, {F()});
 }
 
 // main conflicts with program main in nvcc
-TEST(FailTest, DISABLED_E3) {
+TEST(TestCornerCases, DISABLED_E3) {
   Succeed(
       "def main(float(1) a) -> (b) { b(i) = a(i) }", {F(1)}, {F(1)}, "main");
 }
@@ -100,15 +100,15 @@ TEST(FailTest, DISABLED_E3) {
 // segfaults on line:
 // src/aten/aten_compiler.cc:123
 // 123    at::Backend backend = inputs[0].type().backend();
-TEST(FailTest, DISABLED_E5) {
+TEST(TestCornerCases, DISABLED_E5) {
   Succeed("def f() -> (b) { b(i) = 4 where i in 0:10 }", {}, {F(0)});
 }
 
-TEST(FailTest, E6) {
+TEST(TestCornerCases, E6) {
   Succeed("def f(float a) -> (b) { b(i) = a where i in 0:10 }", {F()}, {F(10)});
 }
 
-TEST(FailTest, E7) {
+TEST(TestCornerCases, E7) {
   Fail(
       "expected 2 inputs",
       "def f(float a, float c) -> (b) { b(i) = a where i in 0:10 }",
@@ -116,7 +116,7 @@ TEST(FailTest, E7) {
       {F(10)});
 }
 
-TEST(FailTest, E8) {
+TEST(TestCornerCases, E8) {
   Fail(
       "expected type int32",
       "def f(int32 a) -> (b) { b(i) = a where i in 0:10 }",
@@ -124,7 +124,7 @@ TEST(FailTest, E8) {
       {F(10)});
 }
 
-TEST(FailTest, E9) {
+TEST(TestCornerCases, E9) {
   Fail(
       "expected a tensor with 0",
       "def f(int32 a) -> (b) { b(i) = a where i in 0:10 }",
@@ -132,12 +132,12 @@ TEST(FailTest, E9) {
       {F(10)});
 }
 
-TEST(FailTest, E10) {
+TEST(TestCornerCases, E10) {
   Succeed(
       "def f(int32 a) -> (b) { b(i) = a where i in 0:10 }", {I()}, {I(10, 10)});
 }
 
-TEST(FailTest, E11) {
+TEST(TestCornerCases, E11) {
   Fail(
       "expected integral type",
       "def f(int32(N) a) -> (b) { b(i) = a(i + .5) }",
@@ -145,7 +145,7 @@ TEST(FailTest, E11) {
       {I(10, 10)});
 }
 
-TEST(FailTest, E12) {
+TEST(TestCornerCases, E12) {
   // this test should eventually work when we can handle non-trivial
   // expressions in where clauses
   Fail(
@@ -155,7 +155,7 @@ TEST(FailTest, E12) {
       {I(10)});
 }
 
-TEST(FailTest, E13) {
+TEST(TestCornerCases, E13) {
   // this test is harder still, because the bounds of the output
   // depend on the non-trivial expression
   Fail(
@@ -165,7 +165,7 @@ TEST(FailTest, E13) {
       {I(10)});
 }
 
-TEST(FailTest, DISABLED_E14) {
+TEST(TestCornerCases, DISABLED_E14) {
   // Currently expressions in where clauses are assumed to be
   // affine. Needs fixing.
   Fail(
@@ -173,6 +173,66 @@ TEST(FailTest, DISABLED_E14) {
       "def f(float(N) b) -> (c) { c(i) += b(i + j) where j in 0:(N*N), i in 0:10 }",
       {F(12)},
       {I(10)});
+}
+
+TEST(TestCornerCases, E15){
+#define GEN_COMPARATOR(op)                                       \
+  {                                                              \
+    auto a = F();                                                \
+    auto b = F();                                                \
+    auto c = F(1);                                               \
+    Succeed(                                                     \
+        "def f(float a, float b) -> (c) { c(i) = float(a " #op   \
+        " b) where i in 0:1 }",                                  \
+        {a, b},                                                  \
+        {c});                                                    \
+    auto r = at::Scalar(a).toFloat() op at::Scalar(b).toFloat(); \
+    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                     \
+  }
+
+    GEN_COMPARATOR(<=) GEN_COMPARATOR(>=) GEN_COMPARATOR(==) GEN_COMPARATOR(!=)
+        GEN_COMPARATOR(<) GEN_COMPARATOR(>)
+
+}
+
+TEST(TestCornerCases, E16){
+#define GEN_BOOLS(op)                                                         \
+  {                                                                           \
+    auto a = F();                                                             \
+    auto b = F();                                                             \
+    auto c = F(1);                                                            \
+    Succeed(                                                                  \
+        "def f(float a, float b) -> (c) { c(i) = float(!(a < .5) " #op        \
+        " b > .5) where i in 0:1 }",                                          \
+        {a, b},                                                               \
+        {c});                                                                 \
+    auto r = !(at::Scalar(a).toFloat() < .5) op at::Scalar(b).toFloat() > .5; \
+    ;                                                                         \
+    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                                  \
+  }
+
+    GEN_BOOLS(||) GEN_BOOLS(&&)}
+
+TEST(TestCornerCases, E17) {
+  auto r = F(1);
+  Succeed(
+      "def f(float(1) a) -> (b) { b(i) = 4.0 where exists a(i) }", {F(1)}, {r});
+  CHECK_EQ(at::Scalar(r[0]).toFloat(), 4);
+}
+
+TEST(TestCornerCases, E18) {
+  auto a = F(1);
+  auto r = F(1);
+  Succeed(
+      "def f(float(1) a) -> (b) { b(i) = 2*foo where foo = a(i) }", {a}, {r});
+  CHECK_EQ(at::Scalar(r[0]).toFloat(), at::Scalar(a[0]).toFloat() * 2);
+}
+TEST(TestCornerCases, E19) {
+  Fail(
+      "undefined variable",
+      "def f(float(1) a) -> (b) { b(i) = 2*foo where foo = a(i), foo in 1:2 }",
+      {F(1)},
+      {F(1)});
 }
 
 int main(int argc, char** argv) {

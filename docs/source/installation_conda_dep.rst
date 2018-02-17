@@ -131,6 +131,8 @@ Set environment variables:
     $ export LD_LIBRARY_PATH=/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
     $ export PATH=/usr/local/bin:/usr/local/cuda/bin:$PATH
 
+.. _conda_dep_install_tc:
+
 Step 6: Install TC
 ^^^^^^^^^^^^^^^^^^
 
@@ -144,7 +146,7 @@ conda packages of TC dependencies and then build TC.
     $ source activate tc-build-conda
     $ conda install -y -c prigoyal tapir50 llvm isl-tc gflags glog
     $ conda install -y -c pytorch pytorch
-    $ cd $HOME && git clone git@github.com:facebookresearch/TensorComprehensions.git --recursive
+    $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions
     $ git submodule update --init --recursive
     $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX WITH_CAFFE2=OFF CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
