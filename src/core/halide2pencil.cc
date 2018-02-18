@@ -37,10 +37,9 @@ DLDataType fromHalideType(const Halide::Type& type) {
   return dtype;
 }
 
-HalidePencilState toPencil(
+std::map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& halide,
     const std::vector<const DLTensor*>& inputsDLT) {
-  HalidePencilState pencilState;
   std::map<std::string, int> pvm;
   CHECK_EQ(halide.inputs.size(), inputsDLT.size())
       << "Mismatched HalideIR and DLTensor number of inputs";
@@ -79,6 +78,14 @@ HalidePencilState toPencil(
       }
     }
   }
+  return pvm;
+}
+
+HalidePencilState toPencil(
+    const tc2halide::HalideComponents& halide,
+    const std::vector<const DLTensor*>& inputsDLT) {
+  HalidePencilState pencilState;
+  auto pvm = computeParamValueMap(halide, inputsDLT);
 
   // instantiate parameters with runtime values and build output DLpack metadata
   std::map<std::string, Expr> substitutions;

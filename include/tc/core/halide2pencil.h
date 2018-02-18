@@ -33,6 +33,14 @@ struct HalidePencilState {
   std::vector<dlutils::DLTensorUPtr> outputsDLT;
 };
 
+/// Given the result of translating TC language to Halide as components and the
+/// (metadata of) input tensors with specific shapes, compute a map between TC
+/// parametric tensor sizes, represented as strings, and their numerical values
+/// with given input sizes.
+std::map<std::string, int> computeParamValueMap(
+    const tc2halide::HalideComponents& components,
+    const std::vector<const DLTensor*>& inputsDLT);
+
 // Codegen cannot be static atm because of the way it is implemented.
 // TODO: This should be broken down into 2 functions, one static and one
 // with the object state.
