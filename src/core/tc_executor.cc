@@ -142,7 +142,8 @@ TcExecutor::TcExecutor(
   checkInputsCompliant(inputsInfo);
   execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  execInfo_.outputsInfo = toPencil(halideComponents_, inputsInfo).outputsDLT;
+  execInfo_.outputsInfo =
+      tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
 TcExecutor::~TcExecutor() {

@@ -81,10 +81,9 @@ std::map<std::string, int> computeParamValueMap(
   return pvm;
 }
 
-HalidePencilState toPencil(
+std::vector<DLTensorUPtr> inferOutputTensorInfo(
     const tc2halide::HalideComponents& halide,
     const std::vector<const DLTensor*>& inputsDLT) {
-  HalidePencilState pencilState;
   auto pvm = computeParamValueMap(halide, inputsDLT);
 
   // instantiate parameters with runtime values and build output DLpack metadata
@@ -115,9 +114,7 @@ HalidePencilState toPencil(
         makeDLTensorWithSizes(ctx, fromHalideType(out.type()), sizes));
   }
 
-  pencilState.outputsDLT = std::move(outputsDLT);
-
-  return pencilState;
+  return outputsDLT;
 }
 
 std::string halide2Pencil(const Stmt& stmt) {

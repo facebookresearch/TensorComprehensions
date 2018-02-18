@@ -160,7 +160,7 @@ struct TC2Isl : public ::testing::Test {
         polyhedral::Scop::makeScop(isl::with_exceptions::globalIslCtx(), comps);
     polyhedral::detail::validateSchedule(scop->scheduleRoot());
     // Just check no crashes
-    auto halidePencilState = toPencil(comps, inputs);
+    auto outputs = inferOutputTensorInfo(comps, inputs);
     // Check schedule construction equality
     auto scheduleHalide = polyhedral::detail::fromIslSchedule(
         polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());

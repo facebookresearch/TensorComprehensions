@@ -26,13 +26,6 @@
 
 namespace tc {
 
-// The main (only?) purpose of this class is to build a PENCIL string with
-// fully specialized JIT parameters to pass down to PET.
-// This will be scrapped in a near future
-struct HalidePencilState {
-  std::vector<dlutils::DLTensorUPtr> outputsDLT;
-};
-
 /// Given the result of translating TC language to Halide as components and the
 /// (metadata of) input tensors with specific shapes, compute a map between TC
 /// parametric tensor sizes, represented as strings, and their numerical values
@@ -41,18 +34,13 @@ std::map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& components,
     const std::vector<const DLTensor*>& inputsDLT);
 
-// Codegen cannot be static atm because of the way it is implemented.
-// TODO: This should be broken down into 2 functions, one static and one
-// with the object state.
-//
-// This function takes pieces of Halide IR and generates "PENCIL" (for now
-// really just simple C). This code is the fed to applyPpcg and JIT compiled to
-// HPC kernels.
-// This function also builds the DLTensor objects and returns ownership.
-// The DLTensor returned are pure metadata and the .data field is left unset.
-// It updates the internal state
-HalidePencilState toPencil(
-    const tc2halide::HalideComponents& components,
+/// Infer the numerical sizes of the output tensors in the TC definition
+/// translated into Halide using the provided map between symbolic parameter
+/// names and their values ("pvm").
+/// @return metadata of the output tensors, with ownership transfer via
+/// unique_ptr, data pointers of the underlying DLTensors are null/
+std::vector<dlutils::DLTensorUPtr> inferOutputTensorInfo(
+    const tc2halide::HalideComponents& halide,
     const std::vector<const DLTensor*>& inputsDLT);
 
 // Just generates a function body from a Halide stmt. Exposed for testing.
