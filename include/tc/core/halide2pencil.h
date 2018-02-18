@@ -30,9 +30,6 @@ namespace tc {
 // fully specialized JIT parameters to pass down to PET.
 // This will be scrapped in a near future
 struct HalidePencilState {
-  std::vector<std::string> outputNames;
-  std::vector<std::string> inputNames;
-
   std::vector<dlutils::DLTensorUPtr> outputsDLT;
 };
 

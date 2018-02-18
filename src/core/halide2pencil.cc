@@ -80,16 +80,6 @@ HalidePencilState toPencil(
     }
   }
 
-  // Update names: input, output
-  pencilState.inputNames.clear();
-  for (auto& i : halide.inputs) {
-    pencilState.inputNames.push_back(i.name());
-  }
-  pencilState.outputNames.clear();
-  for (auto& o : halide.outputs) {
-    pencilState.outputNames.push_back(o.name());
-  }
-
   // instantiate parameters with runtime values and build output DLpack metadata
   std::map<std::string, Expr> substitutions;
   for (auto p : pvm) {
