@@ -16,7 +16,7 @@
 #include "tc/core/tc_executor.h"
 
 #include "tc/core/compilation_cache.h"
-#include "tc/core/halide2pencil.h"
+#include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapped_scop.h"
 #include "tc/core/tc2halide.h"

@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include "tc/core/halide2pencil.h"
+#include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/utils/dlpack.h"

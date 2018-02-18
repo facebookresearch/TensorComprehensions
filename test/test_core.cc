@@ -24,7 +24,7 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/flags.h"
-#include "tc/core/halide2pencil.h"
+#include "tc/core/halide_utils.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
