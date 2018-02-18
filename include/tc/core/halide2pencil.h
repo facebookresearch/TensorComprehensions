@@ -71,19 +71,4 @@ std::unordered_map<std::string, long> GetParameterValues(
 // Just generates a function body from a Halide stmt. Exposed for testing.
 std::string halide2Pencil(const Halide::Internal::Stmt& s);
 
-namespace detail {
-
-inline std::string makeExternC(const std::string& s) {
-  return std::string("extern \"C\" {\n") + s + std::string("\n}\n");
-}
-
-inline std::string CUDADecl(
-    const std::string& kernelSpecializedName,
-    const std::string& CudaSignature) {
-  // TODO: Inject __launch_bounds__
-  return std::string("__global__ void ") + kernelSpecializedName +
-      std::string("(") + CudaSignature + std::string(")");
-}
-
-} // namespace detail
 } // namespace tc
