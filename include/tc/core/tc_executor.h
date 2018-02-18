@@ -105,9 +105,6 @@ class TcExecutor {
   }
 
  private:
-  HalidePencilState getHalidePencilState(
-      const std::vector<const DLTensor*>& inTensorPtrs);
-
   void compileWithPetPpcg();
   void compileWithTcMapper();
 
