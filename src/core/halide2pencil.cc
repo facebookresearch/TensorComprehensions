@@ -28,106 +28,6 @@ using namespace dlutils;
 using namespace Halide;
 using namespace Halide::Internal;
 
-namespace {
-
-std::string C99TensorSignature(
-    std::string name,
-    const DLTensor* t,
-    const std::unordered_set<std::string>& indirectAccesses,
-    bool input = false) {
-  std::stringstream ss;
-  if (input) {
-    ss << "const ";
-  }
-  // An extra level of indirection allows to pass full array sizes to Ppcg and
-  // takes care of indirect memory accesses.
-  ss << toString(t->dtype) << " " << name;
-  if (indirectAccesses.count(name) > 0) {
-    ss << "[]";
-  }
-  ss << "[" << t->shape[0] << "]";
-  for (int ii = 0; ii < t->ndim - 1; ++ii) {
-    CHECK_LT(0, t->strides[ii + 1]);
-    CHECK_EQ(0, t->strides[ii] % t->strides[ii + 1])
-        << "Strides non-comformable with C99 array in " << t;
-    auto v = t->strides[ii] / t->strides[ii + 1];
-    ss << "[" << v << "]";
-  }
-  return ss.str();
-}
-
-std::string C99TensorSignatures(
-    const std::vector<const DLTensor*>& outs,
-    const std::vector<const DLTensor*>& ins,
-    const std::vector<std::string>& outputNames,
-    const std::vector<std::string>& inputNames,
-    const std::unordered_set<std::string>& indirectAccesses) {
-  std::stringstream ss;
-  for (size_t i = 0; i < outs.size(); ++i) {
-    if (i > 0)
-      ss << ", ";
-    ss << C99TensorSignature(outputNames[i], outs[i], indirectAccesses);
-  }
-  for (size_t i = 0; i < ins.size(); ++i) {
-    if (i > 0)
-      ss << ", ";
-    ss << C99TensorSignature(inputNames[i], ins[i], indirectAccesses, true);
-  }
-  return ss.str();
-}
-
-std::string CUDATensorSignatures(
-    const std::vector<const DLTensor*>& outs,
-    const std::vector<const DLTensor*>& ins,
-    const std::vector<std::string>& outputNames,
-    const std::vector<std::string>& inputNames) {
-  std::stringstream ss;
-  for (size_t i = 0; i < outs.size(); ++i) {
-    if (i > 0)
-      ss << ", ";
-    ss << toString(outs[i]->dtype) << "* __restrict__ " << outputNames[i];
-  }
-  for (size_t i = 0; i < ins.size(); ++i) {
-    if (i > 0)
-      ss << ", ";
-    ss << "const " << toString(ins[i]->dtype) << "* __restrict__ "
-       << inputNames[i];
-  }
-  return ss.str();
-}
-
-} // namespace
-
-// Different signatures are temporary, they should be removed in favor of
-// a DeviceTensor-style API that will be compatible with whatever tensor
-// library we end up using.
-std::string C99Signature(
-    const HalidePencilState& state,
-    const std::vector<const DLTensor*>& outputs,
-    const std::vector<const DLTensor*>& inputs,
-    const std::unordered_set<std::string>& indirectAccesses) {
-  CHECK_EQ(outputs.size(), state.outputNames.size());
-  CHECK_EQ(inputs.size(), state.inputNames.size());
-  auto res = state.parameterSignature +
-      C99TensorSignatures(
-                 outputs,
-                 inputs,
-                 state.outputNames,
-                 state.inputNames,
-                 indirectAccesses);
-  return res;
-}
-
-std::string CUDASignature(
-    const HalidePencilState& state,
-    const std::vector<const DLTensor*>& outputs,
-    const std::vector<const DLTensor*>& inputs) {
-  auto res = state.parameterSignature +
-      CUDATensorSignatures(
-                 outputs, inputs, state.outputNames, state.inputNames);
-  return res;
-}
-
 DLDataType fromHalideType(const Halide::Type& type) {
   // Hmm, these are suspiciously similar...
   DLDataType dtype;
@@ -140,7 +40,6 @@ DLDataType fromHalideType(const Halide::Type& type) {
 HalidePencilState toPencil(
     const tc2halide::HalideComponents& halide,
     const std::vector<const DLTensor*>& inputsDLT,
-    bool scheduleSpecialize,
     const std::string& kernelName) {
   HalidePencilState pencilState;
   CHECK_EQ(halide.inputs.size(), inputsDLT.size())
@@ -191,7 +90,7 @@ HalidePencilState toPencil(
     }
   }
 
-  // Update names: input, output, kernelName, parameterSignature,
+  // Update names: input, output, kernelName,
   // kernelSpecializedName
   pencilState.inputNames.clear();
   for (auto& i : halide.inputs) {
@@ -201,13 +100,6 @@ HalidePencilState toPencil(
   for (auto& o : halide.outputs) {
     pencilState.outputNames.push_back(o.name());
   }
-  std::stringstream ss;
-  for (auto& p : halide.params) {
-    if (!p.second.is_buffer()) {
-      ss << "int " << p.first << ", ";
-    }
-  }
-  pencilState.parameterSignature = ss.str();
   std::stringstream ss2;
   pencilState.kernelName = kernelName;
   ss2 << pencilState.kernelName;
@@ -243,35 +135,8 @@ HalidePencilState toPencil(
     outputsDLT.emplace_back(
         makeDLTensorWithSizes(ctx, fromHalideType(out.type()), sizes));
   }
-  std::vector<const DLTensor*> outputsRawPtr;
-  for (auto& p : outputsDLT) {
-    outputsRawPtr.push_back(p.get());
-  }
-
-  Stmt stmt = halide.stmt;
-  if (scheduleSpecialize) {
-    stmt = substitute(substitutions, stmt);
-    // Constant-fold following substitution
-    stmt = simplify(stmt);
-  }
-
-  // extract indirectAccesses from the HalideContextPencil. Their signature is
-  // different
-  std::unordered_set<std::string> indirectAccesses;
-  /*
-    TODO
-  for (auto i : HalideContextPencil::IndirectAccesses(vops)) {
-    indirectAccesses.insert(i->name);
-  }
-  */
-
-  auto body = tc::halide2Pencil(stmt);
 
   pencilState.outputsDLT = std::move(outputsDLT);
-  pencilState.signatureSourcePair = SignatureSourcePair{
-      C99Signature(pencilState, outputsRawPtr, inputsDLT, indirectAccesses),
-      CUDASignature(pencilState, outputsRawPtr, inputsDLT),
-      body};
 
   return pencilState;
 }

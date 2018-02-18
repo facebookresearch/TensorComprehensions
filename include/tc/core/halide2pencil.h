@@ -26,12 +26,6 @@
 
 namespace tc {
 
-struct SignatureSourcePair {
-  std::string C99Signature;
-  std::string CUDASignature;
-  std::string Source;
-};
-
 // The main (only?) purpose of this class is to build a PENCIL string with
 // fully specialized JIT parameters to pass down to PET.
 // This will be scrapped in a near future
@@ -41,10 +35,8 @@ struct HalidePencilState {
   std::vector<std::string> inputNames;
   std::vector<int> parameters;
   std::string kernelSpecializedName;
-  std::string parameterSignature;
 
   std::map<std::string, int> pvm;
-  SignatureSourcePair signatureSourcePair;
   std::vector<dlutils::DLTensorUPtr> outputsDLT;
 };
 
@@ -61,19 +53,7 @@ struct HalidePencilState {
 HalidePencilState toPencil(
     const tc2halide::HalideComponents& components,
     const std::vector<const DLTensor*>& inputsDLT,
-    bool scheduleSpecialize = false,
     const std::string& kernelName = "anon");
-
-std::string C99Signature(
-    const HalidePencilState& state,
-    const std::vector<const DLTensor*>& outputs,
-    const std::vector<const DLTensor*>& inputs,
-    const std::unordered_set<std::string>& indirectAccesses);
-
-std::string CUDASignature(
-    const HalidePencilState& state,
-    const std::vector<const DLTensor*>& outputs,
-    const std::vector<const DLTensor*>& inputs);
 
 // These are *const* accessors because they tie runtime parameter values to
 // JIT compiled code. Any uncontrolled change there may blow things up.
