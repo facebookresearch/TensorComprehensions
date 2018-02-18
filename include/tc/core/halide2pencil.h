@@ -70,14 +70,10 @@ std::string C99Signature(
     const std::vector<const DLTensor*>& inputs,
     const std::unordered_set<std::string>& indirectAccesses);
 
-std::string C99Body(const HalidePencilState& state);
-
 std::string CUDASignature(
     const HalidePencilState& state,
     const std::vector<const DLTensor*>& outputs,
     const std::vector<const DLTensor*>& inputs);
-
-const std::string& parameterSignature(const HalidePencilState& state);
 
 // These are *const* accessors because they tie runtime parameter values to
 // JIT compiled code. Any uncontrolled change there may blow things up.
