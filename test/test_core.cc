@@ -43,7 +43,7 @@ struct GenericHalideCoreTest : public ::testing::Test {
     auto curPos = std::string::npos;
     auto halide =
         tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
-    auto res = tc::halide2Pencil(halide.stmt);
+    auto res = tc::halideCodegenC(halide.stmt);
     for (const auto& e : expected) {
       auto newPos = res.find(e);
       if (curPos == std::string::npos) {

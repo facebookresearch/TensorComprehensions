@@ -117,10 +117,10 @@ std::vector<DLTensorUPtr> inferOutputTensorInfo(
   return outputsDLT;
 }
 
-std::string halide2Pencil(const Stmt& stmt) {
-  // build Pencil string from Halide stmt
+std::string halideCodegenC(const Stmt& stmt) {
+  // build C string from Halide stmt
   std::ostringstream ss;
-  class PencilPrinter : public IRPrinter {
+  class HalideCPrinter : public IRPrinter {
     using IRPrinter::visit;
 
     void visit(const Call* op) override {
@@ -151,7 +151,7 @@ std::string halide2Pencil(const Stmt& stmt) {
       }
       stream << " = ";
       CHECK_EQ(1, op->values.size())
-          << "Cannot generate PENCIL for provide with != 1 values";
+          << "Cannot generate C for provide with != 1 values";
       op->values[0].accept(this);
       stream << ";\n";
     }
@@ -169,7 +169,7 @@ std::string halide2Pencil(const Stmt& stmt) {
     }
 
    public:
-    PencilPrinter(std::ostream& os) : IRPrinter(os) {}
+    HalideCPrinter(std::ostream& os) : IRPrinter(os) {}
   } printer(ss);
 
   stmt.accept(&printer);

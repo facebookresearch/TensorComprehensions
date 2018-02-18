@@ -43,7 +43,7 @@ std::vector<dlutils::DLTensorUPtr> inferOutputTensorInfo(
     const tc2halide::HalideComponents& halide,
     const std::vector<const DLTensor*>& inputsDLT);
 
-// Just generates a function body from a Halide stmt. Exposed for testing.
-std::string halide2Pencil(const Halide::Internal::Stmt& s);
+/// Just generates a C function body from a Halide stmt. Exposed for testing.
+std::string halideCodegenC(const Halide::Internal::Stmt& s);
 
 } // namespace tc
