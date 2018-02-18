@@ -151,8 +151,7 @@ TcExecutor::~TcExecutor() {
 HalidePencilState TcExecutor::getHalidePencilState(
     const std::vector<const DLTensor*>& inTensorPtrs) {
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  auto halidePencilState =
-      toPencil(halideComponents_, inTensorPtrs, execInfo_.kernelName);
+  auto halidePencilState = toPencil(halideComponents_, inTensorPtrs);
   return halidePencilState;
 }
 

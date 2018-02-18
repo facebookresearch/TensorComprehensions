@@ -30,13 +30,9 @@ namespace tc {
 // fully specialized JIT parameters to pass down to PET.
 // This will be scrapped in a near future
 struct HalidePencilState {
-  std::string kernelName;
   std::vector<std::string> outputNames;
   std::vector<std::string> inputNames;
-  std::vector<int> parameters;
-  std::string kernelSpecializedName;
 
-  std::map<std::string, int> pvm;
   std::vector<dlutils::DLTensorUPtr> outputsDLT;
 };
 
@@ -52,21 +48,7 @@ struct HalidePencilState {
 // It updates the internal state
 HalidePencilState toPencil(
     const tc2halide::HalideComponents& components,
-    const std::vector<const DLTensor*>& inputsDLT,
-    const std::string& kernelName = "anon");
-
-// These are *const* accessors because they tie runtime parameter values to
-// JIT compiled code. Any uncontrolled change there may blow things up.
-void SetKernelName(const HalidePencilState& state, const std::string& name);
-std::string GetKernelName(const HalidePencilState& state);
-std::vector<int> GetKernelParameters(const HalidePencilState& state);
-std::string KernelSpecializedName(const HalidePencilState& state);
-
-// TODO: Delete one of the two following functions
-std::map<std::string, int> GetParameterValMap(const HalidePencilState& state);
-// Get the mapping from symbolic sizes to their effective values.
-std::unordered_map<std::string, long> GetParameterValues(
-    const HalidePencilState& state);
+    const std::vector<const DLTensor*>& inputsDLT);
 
 // Just generates a function body from a Halide stmt. Exposed for testing.
 std::string halide2Pencil(const Halide::Internal::Stmt& s);

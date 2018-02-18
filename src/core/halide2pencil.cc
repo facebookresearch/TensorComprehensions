@@ -39,9 +39,9 @@ DLDataType fromHalideType(const Halide::Type& type) {
 
 HalidePencilState toPencil(
     const tc2halide::HalideComponents& halide,
-    const std::vector<const DLTensor*>& inputsDLT,
-    const std::string& kernelName) {
+    const std::vector<const DLTensor*>& inputsDLT) {
   HalidePencilState pencilState;
+  std::map<std::string, int> pvm;
   CHECK_EQ(halide.inputs.size(), inputsDLT.size())
       << "Mismatched HalideIR and DLTensor number of inputs";
 
@@ -57,8 +57,8 @@ HalidePencilState toPencil(
       auto dim_exp_tree = param_type.dims()[d];
       // dims can either be symbolic 'D' or a literal constant '4'
       if (const Variable* v = extent.as<Variable>()) {
-        if (pencilState.pvm.count(v->name) > 0) {
-          int64_t prev = pencilState.pvm[v->name];
+        if (pvm.count(v->name) > 0) {
+          int64_t prev = pvm[v->name];
           if (prev != current_size) {
             throw lang::ErrorReport(dim_exp_tree)
                 << "Mismatched sizes for dimension " << v->name
@@ -66,7 +66,7 @@ HalidePencilState toPencil(
                 << current_size << " here";
           }
         } else {
-          pencilState.pvm[v->name] = current_size;
+          pvm[v->name] = current_size;
         }
       } else { // it was a constant
         const int64_t* c = as_const_int(extent);
@@ -80,18 +80,7 @@ HalidePencilState toPencil(
     }
   }
 
-  // Update actual parameters integer values
-  pencilState.parameters.clear();
-  for (auto& p : halide.params) {
-    // halide.params contains all args to tc::def including tensors
-    // only filter params coming from tensor shapes
-    if (!p.second.is_buffer()) {
-      pencilState.parameters.push_back(pencilState.pvm.at(p.first));
-    }
-  }
-
-  // Update names: input, output, kernelName,
-  // kernelSpecializedName
+  // Update names: input, output
   pencilState.inputNames.clear();
   for (auto& i : halide.inputs) {
     pencilState.inputNames.push_back(i.name());
@@ -100,17 +89,10 @@ HalidePencilState toPencil(
   for (auto& o : halide.outputs) {
     pencilState.outputNames.push_back(o.name());
   }
-  std::stringstream ss2;
-  pencilState.kernelName = kernelName;
-  ss2 << pencilState.kernelName;
-  for (int i : pencilState.parameters) {
-    ss2 << "_" << i;
-  }
-  pencilState.kernelSpecializedName = ss2.str();
 
   // instantiate parameters with runtime values and build output DLpack metadata
   std::map<std::string, Expr> substitutions;
-  for (auto p : pencilState.pvm) {
+  for (auto p : pvm) {
     substitutions[p.first] = p.second;
   }
   DLContext ctx{kDLGPU, 0};
@@ -139,35 +121,6 @@ HalidePencilState toPencil(
   pencilState.outputsDLT = std::move(outputsDLT);
 
   return pencilState;
-}
-
-std::string KernelSpecializedName(const HalidePencilState& state) {
-  return state.kernelSpecializedName;
-}
-
-std::string GetKernelName(const HalidePencilState& state) {
-  return state.kernelName;
-}
-
-void SetKernelName(HalidePencilState& state, const std::string& name) {
-  state.kernelName = name;
-}
-
-std::vector<int> GetKernelParameters(const HalidePencilState& state) {
-  return state.parameters;
-}
-
-std::map<std::string, int> GetParameterValMap(const HalidePencilState& state) {
-  return state.pvm;
-}
-
-std::unordered_map<std::string, long> GetParameterValues(
-    const HalidePencilState& state) {
-  std::unordered_map<std::string, long> m;
-  for (const auto& p : state.pvm) {
-    m[p.first] = p.second;
-  }
-  return m;
 }
 
 std::string halide2Pencil(const Stmt& stmt) {
