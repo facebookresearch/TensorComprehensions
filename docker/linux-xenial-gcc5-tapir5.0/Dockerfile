@@ -4,6 +4,7 @@ FROM tensorcomprehensions/linux-xenial:${BUILD_ID}
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
+RUN apt-get install -y --no-install-recommends vim
 
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN apt-get update
