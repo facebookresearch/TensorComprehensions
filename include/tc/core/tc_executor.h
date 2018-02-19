@@ -26,9 +26,6 @@
 
 #include "tc/lang/parser.h"
 
-// TODO: remove me
-#include "tc/core/mapping_options.h"
-
 namespace tc {
 
 using namespace dlutils;
@@ -96,19 +93,6 @@ class TcExecutor {
   const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
 
  protected:
-  struct TcExecutionInfo {
-    std::string kernelName;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::vector<dlutils::DLTensorUPtr> outputsInfo;
-    std::vector<int> kernelParams;
-    std::string kernelSpecializedName;
-    std::string options;
-    std::string cudaSource;
-    Grid grid{{0, 0, 0}};
-    Block block{{0, 0, 0}};
-    std::shared_ptr<CudaRTCFunction> rtcFun;
-  };
-
   void checkSizesAndStridesAreCompliant(
       const DLTensor* actual,
       const DLTensor* expected,
@@ -123,8 +107,15 @@ class TcExecutor {
   void checkInputsCompliant(
       const std::vector<const DLTensor*>& inputsInfo) const;
 
+  struct {
+    std::string kernelName;
+    std::vector<dlutils::DLTensorUPtr> inputsInfo;
+    std::vector<dlutils::DLTensorUPtr> outputsInfo;
+    std::vector<int> kernelParams;
+    std::string options;
+  } execInfo_;
+
   tc2halide::HalideComponents halideComponents_;
-  TcExecutionInfo execInfo_;
   lang::TreeRef tcTree_;
   mutable isl::ctx ctx_;
 };

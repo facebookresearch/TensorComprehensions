@@ -239,10 +239,10 @@ bool GeneticTunerHarness::warmupOrPrune(
             CHECK(info);
             USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
             auto& exec = info->exec;
-            auto block = static_cast<CudaTcExecutor&>(*exec).block();
+            auto block = static_cast<CudaTcExecutor&>(*exec).block;
             auto nThreads = TX.mappingSize(block) * TY.mappingSize(block) *
                 TZ.mappingSize(block);
-            auto grid = static_cast<CudaTcExecutor&>(*exec).grid();
+            auto grid = static_cast<CudaTcExecutor&>(*exec).grid;
             auto nBlocks = BX.mappingSize(grid) * BY.mappingSize(grid) *
                 BZ.mappingSize(grid);
             if (nBlocks * nThreads < minThreads) {

@@ -47,7 +47,7 @@ std::string appendOptionsAndGitHash(
 } // namespace
 
 void CudaTcExecutor::compile(const tc::MappingOptions& options) {
-  if (execInfo_.rtcFun) {
+  if (rtcFun) {
     throw std::runtime_error{
         "CudaTcExecutor::compile cannot be called multiple tines."};
   }
@@ -79,43 +79,37 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
   }();
 
   if (cachedOp) {
-    execInfo_.cudaSource = cachedOp->source;
-    execInfo_.grid = cachedOp->grid;
-    execInfo_.block = cachedOp->block;
+    cudaSource = cachedOp->source;
+    grid = cachedOp->grid;
+    block = cachedOp->block;
     execInfo_.kernelParams = cachedOp->parameters;
-    execInfo_.kernelSpecializedName = cachedOp->specializedName;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "generatedCuda: " << execInfo_.cudaSource;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved grid: " << execInfo_.grid;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "retrieved block: " << execInfo_.block;
+    kernelSpecializedName = cachedOp->specializedName;
+    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "generatedCuda: " << cudaSource;
+    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved grid: " << grid;
+    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved block: " << block;
   } else {
     compileWithTcMapper();
-    execInfo_.cudaSource =
-        appendOptionsAndGitHash(execInfo_.cudaSource, options);
+    cudaSource = appendOptionsAndGitHash(cudaSource, options);
     if (CudaCache::cacheEnabled()) {
-      LOG_IF(INFO, FLAGS_debug_tc_mapper)
-          << "original grid: " << execInfo_.grid;
-      LOG_IF(INFO, FLAGS_debug_tc_mapper)
-          << "original block: " << execInfo_.block;
+      LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original grid: " << grid;
+      LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original block: " << block;
       CudaCache::getCache()->cacheKernel(
           execInfo_.kernelName, // TODO:replace this with pretty printed TC
           options,
           extractRawPtrs(execInfo_.inputsInfo),
           extractRawPtrs(execInfo_.outputsInfo),
-          execInfo_.kernelSpecializedName,
+          kernelSpecializedName,
           execInfo_.kernelParams,
-          execInfo_.cudaSource,
-          execInfo_.grid,
-          execInfo_.block);
+          cudaSource,
+          grid,
+          block);
     }
   }
 
-  execInfo_.rtcFun = nullptr; // force unloading in case we
+  rtcFun = nullptr; // force unloading in case we
   // NVRTC the same name / input with different options.
   auto t0 = std::chrono::high_resolution_clock::now();
-  execInfo_.rtcFun = CudaRTCFunction::Compile(
-      execInfo_.kernelSpecializedName, execInfo_.cudaSource);
+  rtcFun = CudaRTCFunction::Compile(kernelSpecializedName, cudaSource);
   auto t1 = std::chrono::high_resolution_clock::now();
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "[COMPILE] Compiling with nvrtc took: "
@@ -170,24 +164,23 @@ void CudaTcExecutor::compileWithTcMapper() {
 
   execInfo_.kernelParams = narrowParamsVector(
       mappedScop->scop().getParameterValues(globalParameterContext));
-  execInfo_.kernelSpecializedName =
+  kernelSpecializedName =
       specializeKernelName(execInfo_.kernelName, execInfo_.kernelParams);
 
   // This updates the launch bounds with the actual result from compilation
   // with tightening of launch_bounds.
   // What you get is not what you asked for, the autotuner should adapt to
   // that.
-  std::tie(execInfo_.cudaSource, execInfo_.grid, execInfo_.block) =
-      mappedScop->codegen(execInfo_.kernelSpecializedName);
-  LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << execInfo_.cudaSource;
+  std::tie(cudaSource, grid, block) =
+      mappedScop->codegen(kernelSpecializedName);
+  LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << cudaSource;
 }
 
 Duration CudaTcExecutor::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile) const {
-  CHECK(execInfo_.rtcFun) << "Can't launch uncompiled: "
-                          << execInfo_.kernelName;
+  CHECK(rtcFun) << "Can't launch uncompiled: " << execInfo_.kernelName;
   CHECK_NE(execInfo_.options, "");
   checkSizesAndStridesAreCompliant(
       inputs, execInfo_.inputsInfo, halideComponents_.getDef().params());
@@ -203,11 +196,11 @@ Duration CudaTcExecutor::run(
     O.push_back(outputs[i]->data);
   }
   cudaStream_t stream = 0;
-  CHECK_NE(execInfo_.grid[0], 0) << "Grid dims are not set up";
-  CHECK_NE(execInfo_.block[0], 0) << "Block dims are not set up";
-  auto res = execInfo_.rtcFun->Launch(
-      execInfo_.grid.extractDefaultedArray(),
-      execInfo_.block.extractDefaultedArray(),
+  CHECK_NE(grid[0], 0) << "Grid dims are not set up";
+  CHECK_NE(block[0], 0) << "Block dims are not set up";
+  auto res = rtcFun->Launch(
+      grid.extractDefaultedArray(),
+      block.extractDefaultedArray(),
       0,
       stream,
       execInfo_.kernelParams,
@@ -230,12 +223,12 @@ void CudaTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) const {
   cudaStream_t stream = 0;
-  CHECK_NE(execInfo_.grid[0], 0) << "Grid dims are not set up";
-  CHECK_NE(execInfo_.block[0], 0) << "Block dims are not set up";
+  CHECK_NE(grid[0], 0) << "Grid dims are not set up";
+  CHECK_NE(block[0], 0) << "Block dims are not set up";
   bool profile = false;
-  execInfo_.rtcFun->Launch(
-      execInfo_.grid.extractDefaultedArray(),
-      execInfo_.block.extractDefaultedArray(),
+  rtcFun->Launch(
+      grid.extractDefaultedArray(),
+      block.extractDefaultedArray(),
       0,
       stream,
       execInfo_.kernelParams,
