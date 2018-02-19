@@ -79,10 +79,6 @@ class CudaTcExecutor : public ::tc::TcExecutor {
       const std::vector<const void*>& inputs,
       const std::vector<void*>& outputs) const;
 
-  std::string getCudaSource() {
-    return cudaSource;
-  }
-
   bool hasRTCFun() {
     return rtcFun.get() != nullptr;
   }
