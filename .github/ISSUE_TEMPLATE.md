@@ -15,6 +15,9 @@ When submitting a bug report, please include the following information (where re
 - Docker image (if using docker):
 - GCC/GXX version (if compiling from source):
 - LLVM/Tapir git hash used (if compiling from source):
+
+  To get the hash, run: `$HOME/clang+llvm-tapir5.0/bin/clang --version`
+
 - Commit hash of our repo and submodules (if compiling from source):
 
 In addition, including the following information will also be very helpful for us to diagnose the problem:

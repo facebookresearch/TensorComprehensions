@@ -136,9 +136,9 @@ Now, Install cuDNN v6.0 (skip if you have it already):
     $ CUDNN_TAR_FILE="cudnn-8.0-linux-x64-v6.0.tgz"
     $ wget http://developer.download.nvidia.com/compute/redist/cudnn/v6.0/${CUDNN_TAR_FILE}
     $ tar -xzvf ${CUDNN_TAR_FILE}
-    $ sudo cp -P cuda/include/cudnn.h /usr/local/cuda/include
-    $ sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
-    $ sudo chmod a+r /usr/local/cuda/lib64/libcudnn*
+    $ cp -P cuda/include/cudnn.h /usr/local/cuda/include
+    $ cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
+    $ chmod a+r /usr/local/cuda/lib64/libcudnn*
 
 Set environment variables:
 
@@ -161,7 +161,7 @@ to install the protobuf.
 
     $ mkdir -p /tmp/proto-install && cd /tmp/proto-install
     $ wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip && unzip -qq proto.zip -d .
-    $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && sudo make install && sudo ldconfig
+    $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && make install && ldconfig
 
 Now check your proto version by running:
 
