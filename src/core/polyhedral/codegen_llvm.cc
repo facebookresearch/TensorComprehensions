@@ -20,11 +20,17 @@
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "llvm/Transforms/Tapir/CilkABI.h"
 
 #include "Halide/Halide.h"
 
@@ -36,6 +42,10 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+
+#ifndef LLVM_VERSION_MAJOR
+#error LLVM_VERSION_MAJOR not set
+#endif
 
 using namespace Halide;
 
@@ -195,6 +205,10 @@ class IslAstExprInterpeter {
   }
 };
 
+DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
+DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
+static constexpr int kOptLevel = 3;
+
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
   const isl::pw_multi_aff* iteratorMap_;
@@ -202,7 +216,6 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
   using CodeGen_X86::codegen;
   using CodeGen_X86::llvm_type_of;
-  using CodeGen_X86::optimize_module;
   using CodeGen_X86::sym_get;
   using CodeGen_X86::sym_pop;
   using CodeGen_X86::sym_push;
@@ -293,6 +306,52 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
         isl_aff_get_dim_name(subscriptAff.get(), isl_dim_in, *posOne));
 
     value = sym_get(name);
+  }
+
+ public:
+  void optimize_module() {
+    if (FLAGS_llvm_dump_before_opt) {
+      module->print(llvm::dbgs(), nullptr, false, true);
+    }
+
+    llvm::legacy::FunctionPassManager functionPassManager(module.get());
+    llvm::legacy::PassManager modulePassManager;
+
+    std::unique_ptr<llvm::TargetMachine> targetMachine =
+        Halide::Internal::make_target_machine(*module);
+    modulePassManager.add(llvm::createTargetTransformInfoWrapperPass(
+        targetMachine ? targetMachine->getTargetIRAnalysis()
+                      : llvm::TargetIRAnalysis()));
+    functionPassManager.add(llvm::createTargetTransformInfoWrapperPass(
+        targetMachine ? targetMachine->getTargetIRAnalysis()
+                      : llvm::TargetIRAnalysis()));
+
+    llvm::PassManagerBuilder b;
+    b.OptLevel = kOptLevel;
+    b.tapirTarget = new llvm::CilkABI();
+    b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
+    b.LoopVectorize = true;
+    b.SLPVectorize = true;
+
+    if (targetMachine) {
+      targetMachine->adjustPassManager(b);
+    }
+
+    b.populateFunctionPassManager(functionPassManager);
+    b.populateModulePassManager(modulePassManager);
+
+    // Run optimization passes
+    functionPassManager.doInitialization();
+    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
+      functionPassManager.run(*i);
+
+      functionPassManager.doFinalization();
+      modulePassManager.run(*module);
+
+      if (FLAGS_llvm_dump_after_opt) {
+        module->print(llvm::dbgs(), nullptr, false, true);
+      }
+    }
   }
 };
 
@@ -451,6 +510,19 @@ class LLVMCodegen {
         llvm::BasicBlock::Create(llvmCtx, "loop_latch", function);
     auto* loopExitBB = llvm::BasicBlock::Create(llvmCtx, "loop_exit", function);
 
+    // TODO: integrate query ISL as to whether the relevant loop ought be
+    // parallelized
+    bool parallel = false;
+
+    llvm::Value* SyncRegion = nullptr;
+    if (parallel) {
+      SyncRegion = halide_cg.get_builder().CreateCall(
+          llvm::Intrinsic::getDeclaration(
+              function->getParent(), llvm::Intrinsic::syncregion_start),
+          {},
+          "syncreg");
+    }
+
     halide_cg.get_builder().CreateBr(headerBB);
 
     llvm::PHINode* phi = nullptr;
@@ -498,9 +570,22 @@ class LLVMCodegen {
     // Create Body
     {
       halide_cg.get_builder().SetInsertPoint(loopBodyBB);
+
+      if (parallel) {
+        auto* detachedBB =
+            llvm::BasicBlock::Create(llvmCtx, "det.achd", function);
+        halide_cg.get_builder().CreateDetach(
+            detachedBB, loopLatchBB, SyncRegion);
+        halide_cg.get_builder().SetInsertPoint(detachedBB);
+      }
       auto* currentBB = emitAst(node.for_get_body());
       halide_cg.get_builder().SetInsertPoint(currentBB);
-      halide_cg.get_builder().CreateBr(loopLatchBB);
+
+      if (parallel) {
+        halide_cg.get_builder().CreateReattach(loopLatchBB, SyncRegion);
+      } else {
+        halide_cg.get_builder().CreateBr(loopLatchBB);
+      }
     }
 
     // Create Latch
@@ -516,6 +601,11 @@ class LLVMCodegen {
 
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
     halide_cg.sym_pop(node.for_get_iterator().get_id().get_name());
+    if (parallel) {
+      auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
+      halide_cg.get_builder().CreateSync(syncBB, SyncRegion);
+      halide_cg.get_builder().SetInsertPoint(syncBB);
+    }
     return halide_cg.get_builder().GetInsertBlock();
   }
 
@@ -583,7 +673,8 @@ class LLVMCodegen {
   CodeGen_TC halide_cg;
 };
 
-// Create a list of isl ids to be used as loop iterators when building the AST.
+// Create a list of isl ids to be used as loop iterators when building the
+// AST.
 //
 // Note that this function can be scrapped as ISL can generate some default
 // iterator names.  However, it may come handy for associating extra info with

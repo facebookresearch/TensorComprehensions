@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <stdexcept>
+
 #include "tc/core/polyhedral/llvm_jit.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -29,17 +31,55 @@
 
 using namespace llvm;
 
+// Parse through ldconfig to find the path of a particular
+// shared library. This is an unfortunate way to have to
+// find it, but I couldn't immediately find something in
+// imported libraries that would resolve this for us.
+std::string find_library_path(std::string library) {
+  std::string command = "ldconfig -p | grep " + library;
+
+  FILE* fpipe = popen(command.c_str(), "r");
+
+  if (fpipe == nullptr) {
+    throw std::runtime_error("Failed to popen()");
+  }
+
+  std::string output;
+  char buffer[512];
+
+  while (1) {
+    int charactersRead = fread(buffer, 1, sizeof(buffer), fpipe);
+    if (charactersRead == 0)
+      break;
+    output += std::string(buffer, charactersRead);
+  }
+  pclose(fpipe);
+
+  int idx = output.rfind("=> ");
+  if (idx == std::string::npos) {
+    throw std::runtime_error("Failed locate library: " + library);
+  }
+  output = output.substr(idx + 3);
+  if (output.length() > 0 && output[output.length() - 1] == '\n') {
+    output = output.substr(0, output.length() - 1);
+  }
+  return output;
+}
+
 namespace tc {
 
 Jit::Jit()
     : TM_(EngineBuilder().selectTarget()),
       DL_(TM_->createDataLayout()),
       objectLayer_([]() { return std::make_shared<SectionMemoryManager>(); }),
-      compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)),
-      optimizeLayer_(compileLayer_, [this](std::shared_ptr<Module> M) {
-        return optimizeModule(std::move(M));
-      }) {
-  sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+      compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
+  std::string err;
+
+  auto path = find_library_path("libcilkrts.so");
+  sys::DynamicLibrary::LoadLibraryPermanently(path.c_str(), &err);
+  if (err != "") {
+    throw std::runtime_error("Failed to find cilkrts: " + err);
+  }
 }
 
 void Jit::codegenScop(
@@ -57,7 +97,7 @@ Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto Resolver = orc::createLambdaResolver(
       [&](const std::string& Name) {
-        if (auto Sym = optimizeLayer_.findSymbol(Name, false))
+        if (auto Sym = compileLayer_.findSymbol(Name, false))
           return Sym;
         return JITSymbol(nullptr);
       },
@@ -67,7 +107,7 @@ Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
         return JITSymbol(nullptr);
       });
 
-  auto res = optimizeLayer_.addModule(std::move(M), std::move(Resolver));
+  auto res = compileLayer_.addModule(std::move(M), std::move(Resolver));
   CHECK(res) << "Failed to jit compile.";
   return *res;
 }
@@ -76,53 +116,13 @@ JITSymbol Jit::findSymbol(const std::string Name) {
   std::string MangledName;
   raw_string_ostream MangledNameStream(MangledName);
   Mangler::getNameWithPrefix(MangledNameStream, Name, DL_);
-  return optimizeLayer_.findSymbol(MangledNameStream.str(), true);
+  return compileLayer_.findSymbol(MangledNameStream.str(), true);
 }
 
 JITTargetAddress Jit::getSymbolAddress(const std::string Name) {
   auto res = findSymbol(Name).getAddress();
   CHECK(res) << "Could not find jit-ed symbol";
   return *res;
-}
-
-DEFINE_bool(llvm_no_opt, false, "Disable LLVM optimizations");
-DEFINE_bool(llvm_debug_passes, false, "Print pass debug info");
-DEFINE_bool(llvm_dump_optimized_ir, false, "Print optimized IR");
-
-std::shared_ptr<Module> Jit::optimizeModule(std::shared_ptr<Module> M) {
-  if (FLAGS_llvm_no_opt) {
-    return M;
-  }
-
-  PassBuilder PB(TM_.get());
-  AAManager AA;
-  CHECK(PB.parseAAPipeline(AA, "default"))
-      << "Unable to parse AA pipeline description.";
-  LoopAnalysisManager LAM(FLAGS_llvm_debug_passes);
-  FunctionAnalysisManager FAM(FLAGS_llvm_debug_passes);
-  CGSCCAnalysisManager CGAM(FLAGS_llvm_debug_passes);
-  ModuleAnalysisManager MAM(FLAGS_llvm_debug_passes);
-  FAM.registerPass([&] { return std::move(AA); });
-  PB.registerModuleAnalyses(MAM);
-  PB.registerCGSCCAnalyses(CGAM);
-  PB.registerFunctionAnalyses(FAM);
-  PB.registerLoopAnalyses(LAM);
-  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-  ModulePassManager MPM(FLAGS_llvm_debug_passes);
-  MPM.addPass(VerifierPass());
-  CHECK(PB.parsePassPipeline(MPM, "default<O3>", true, FLAGS_llvm_debug_passes))
-      << "Unable to parse pass pipline description.";
-  MPM.addPass(VerifierPass());
-
-  MPM.run(*M, MAM);
-
-  if (FLAGS_llvm_dump_optimized_ir) {
-    // M->dump(); // does not link
-    M->print(llvm::errs(), nullptr);
-  }
-
-  return M;
 }
 
 } // namespace tc
