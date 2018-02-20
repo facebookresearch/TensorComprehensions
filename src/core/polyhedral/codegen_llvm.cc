@@ -338,15 +338,18 @@ llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
 }
 
 class LLVMCodegen {
-  void collectTensor(const Halide::OutputImageParam& t) {
+  llvm::Type* convertTensorToType(const Halide::OutputImageParam& t) {
     auto sizes =
         getTensorSizesWithoutLeadingDim(t, scop_.globalParameterContext);
     if (not sizes.empty()) {
-      args_.emplace_back(
-          makePtrToArrayType(halide_cg.llvm_type_of(t.type()), sizes));
+      return makePtrToArrayType(halide_cg.llvm_type_of(t.type()), sizes);
     } else {
-      args_.emplace_back(halide_cg.llvm_type_of(t.type())->getPointerTo());
+      return halide_cg.llvm_type_of(t.type())->getPointerTo();
     }
+  }
+
+  void collectTensor(const Halide::OutputImageParam& t) {
+    args_.emplace_back(convertTensorToType(t));
     argNames_.emplace_back(t.name());
   }
 
@@ -429,6 +432,61 @@ class LLVMCodegen {
       llvm::verifyModule(*halide_cg.get_module(), &llvm::outs());
       throw std::runtime_error("LLVM generated module is invalid.");
     }
+  }
+
+  void createWrapper(
+      const std::vector<Halide::ImageParam>& inputs,
+      const std::vector<Halide::OutputImageParam>& outputs,
+      const std::string& fname) {
+    CHECK(not inputs.empty());
+    CHECK(not outputs.empty());
+
+    auto pred = [&inputs](const Halide::OutputImageParam& p) {
+      return p.type() == inputs.front().type();
+    };
+
+    if (not std::all_of(inputs.begin(), inputs.end(), pred) or
+        not std::all_of(outputs.begin(), outputs.end(), pred)) {
+      throw std::invalid_argument("All arguments must be of the same type.");
+    }
+
+    llvm::Type* wrapperArg = halide_cg.llvm_type_of(inputs.at(0).type())
+                                 ->getPointerTo()
+                                 ->getPointerTo();
+
+    auto* wrapperFType = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(llvmCtx), {wrapperArg}, false);
+
+    auto* wrapper = llvm::Function::Create(
+        wrapperFType,
+        llvm::Function::ExternalLinkage,
+        fname,
+        halide_cg.get_module());
+
+    auto builder = halide_cg.get_builder();
+    auto* kernel = builder.GetInsertBlock()->getParent();
+    CHECK_EQ(
+        inputs.size() + outputs.size(),
+        kernel->getFunctionType()->getNumParams());
+
+    wrapper->arg_begin()->setName("args");
+
+    std::vector<llvm::Value*> implArgs;
+    implArgs.reserve(kernel->getFunctionType()->getNumParams());
+
+    builder.SetInsertPoint(llvm::BasicBlock::Create(llvmCtx, "entry", wrapper));
+
+    size_t idx = 0;
+    for (auto* implParam : kernel->getFunctionType()->params()) {
+      auto argAddr = builder.CreateInBoundsGEP(
+          &*wrapper->arg_begin(), {getLLVMConstantSignedInt64(idx++)});
+      auto arg = builder.CreateLoad(argAddr);
+      auto castedToSpecialized = builder.CreateBitCast(arg, &*implParam);
+      implArgs.push_back(castedToSpecialized);
+    }
+
+    builder.CreateCall(kernel, implArgs);
+    builder.CreateRetVoid();
   }
 
   llvm::BasicBlock* emitAst(isl::ast_node node) {
@@ -728,8 +786,10 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
   cg.halide_cg.get_module()->setDataLayout(dataLayout);
   cg.halide_cg.get_module()->setTargetTriple(
       llvm::EngineBuilder().selectTarget()->getTargetTriple().str());
-  cg.createSignature(scop.halide.inputs, scop.halide.outputs, specializedName);
+  cg.createSignature(
+      scop.halide.inputs, scop.halide.outputs, specializedName + "_imlp");
   cg.CodeGen(islCg.astNode);
+  cg.createWrapper(scop.halide.inputs, scop.halide.outputs, specializedName);
   cg.halide_cg.optimize_module();
   return cg.halide_cg.move_module();
 }

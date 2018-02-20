@@ -54,14 +54,14 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   Jit jit;
   jit.codegenScop("kernel_anon", *scop);
-  auto fptr =
-      (void (*)(float*, float*, float*))jit.getSymbolAddress("kernel_anon");
+  auto fptr = (void (*)(float**))jit.getSymbolAddress("kernel_anon");
 
   at::Tensor A = at::CPU(at::kFloat).rand({N, M});
   at::Tensor B = at::CPU(at::kFloat).rand({N, M});
   at::Tensor C = at::CPU(at::kFloat).rand({N, M});
   at::Tensor Cc = A + B;
-  fptr(A.data<float>(), B.data<float>(), C.data<float>());
+  std::vector<float*> args{A.data<float>(), B.data<float>(), C.data<float>()};
+  fptr(args.data());
 
   checkRtol(Cc - C, {A, B}, N * M);
 }
@@ -124,16 +124,16 @@ TEST(LLVMCodegen, MultiStmt) {
 
   Jit jit;
   jit.codegenScop("kernel_anon", *scop);
-  auto fptr = (void (*)(float*, float*, float*, float*, float*, float*, float*))
-                  jit.getSymbolAddress("kernel_anon");
-  fptr(
-      A.data<float>(),
-      B.data<float>(),
-      C.data<float>(),
-      D.data<float>(),
-      O1.data<float>(),
-      O2.data<float>(),
-      O3.data<float>());
+  auto fptr = (void (*)(float**))jit.getSymbolAddress("kernel_anon");
+
+  std::vector<float*> args{A.data<float>(),
+                           B.data<float>(),
+                           C.data<float>(),
+                           D.data<float>(),
+                           O1.data<float>(),
+                           O2.data<float>(),
+                           O3.data<float>()};
+  fptr(args.data());
 
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < M; c1 += 1) {
@@ -185,9 +185,11 @@ TEST(LLVMCodegen, BatchMatMul) {
 
   Jit jit;
   jit.codegenScop("batch_matmul", *scop);
-  auto fptr =
-      (void (*)(float*, float*, float*))jit.getSymbolAddress("batch_matmul");
-  fptr(X.data<float>(), Y.data<float>(), Oc.data<float>());
+  auto fptr = (void (*)(float**))jit.getSymbolAddress("batch_matmul");
+
+  std::vector<float*> args{X.data<float>(), Y.data<float>(), Oc.data<float>()};
+  fptr(args.data());
+
   checkRtol(O - Oc, {Y, X}, M, 3e-7);
 }
 
@@ -226,18 +228,18 @@ TEST(LLVMCodegen, Convolution) {
 
   Jit jit;
   jit.codegenScop("convolution", *scop);
-  auto fptr =
-      (void (*)(float*, float*, float*, float*, float*))jit.getSymbolAddress(
-          "convolution");
+  auto fptr = (void (*)(float**))jit.getSymbolAddress("convolution");
+
   at::Tensor tmp = at::CPU(at::kFloat).zeros_like(expected);
   at::Tensor output = at::CPU(at::kFloat).zeros_like(expected);
 
-  fptr(
-      I.data<float>(),
-      W1.data<float>(),
-      B.data<float>(),
-      tmp.data<float>(),
-      output.data<float>());
+  std::vector<float*> args{I.data<float>(),
+                           W1.data<float>(),
+                           B.data<float>(),
+                           tmp.data<float>(),
+                           output.data<float>()};
+
+  fptr(args.data());
   CHECK_EQ(output.ndimension(), 4);
   checkRtol(output - expected, {I, W1, B}, C * KH * KW, 1e-6);
 }
