@@ -25,11 +25,6 @@
 
 namespace tc {
 
-using PpcgppCompilationCommand = std::function<std::string(
-    std::unique_ptr<tc::polyhedral::Scop>&& scop,
-    const std::vector<const DLTensor*>& inputs,
-    const MappingOptions& options)>;
-
 class TcExecutor {
  public:
   TcExecutor(
@@ -105,7 +100,6 @@ class TcExecutor {
   }
 
  private:
-  void compileWithPetPpcg();
   void compileWithTcMapper();
 
   struct TcExecutionInfo {
