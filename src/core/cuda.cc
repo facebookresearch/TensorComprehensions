@@ -100,8 +100,4 @@ size_t CudaGPUInfo::SharedMemorySize() const {
   }
   return sharedMemSizes_.at(CurrentGPUId());
 }
-
-size_t querySharedMemorySize() {
-  CudaGPUInfo::GPUInfo().SharedMemorySize();
-}
 } // namespace tc
