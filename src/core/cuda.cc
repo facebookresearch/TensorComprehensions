@@ -18,6 +18,8 @@
 
 #include <memory>
 #include <stdexcept>
+#include <tuple>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
@@ -26,7 +28,7 @@
 namespace tc {
 namespace {
 
-std::vector<std::string> init() {
+std::tuple<std::vector<std::string>, std::vector<size_t>> init() {
   int deviceCount = 0;
   auto err_id = cudaGetDeviceCount(&deviceCount);
   if (err_id == 35 or err_id == 30) {
@@ -39,13 +41,15 @@ std::vector<std::string> init() {
     return {};
   }
   std::vector<std::string> gpuNames;
+  std::vector<size_t> sharedMemSizes;
   gpuNames.reserve(deviceCount);
   for (int i = 0; i < deviceCount; ++i) {
     cudaDeviceProp deviceProp;
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDeviceProperties(&deviceProp, i));
     gpuNames.emplace_back(deviceProp.name);
+    sharedMemSizes.emplace_back(deviceProp.sharedMemPerBlock);
   }
-  return gpuNames;
+  return std::make_tuple(gpuNames, sharedMemSizes);
 }
 
 } // namespace
@@ -54,7 +58,9 @@ CudaGPUInfo& CudaGPUInfo::GPUInfo() {
   static thread_local std::unique_ptr<CudaGPUInfo> pInfo;
   static thread_local bool inited = false;
   if (!inited) {
-    pInfo = std::unique_ptr<CudaGPUInfo>(new CudaGPUInfo(init()));
+    auto infos = init();
+    pInfo = std::unique_ptr<CudaGPUInfo>(
+        new CudaGPUInfo(std::get<0>(infos), std::get<1>(infos)));
     inited = true;
   }
   return *pInfo;
@@ -88,18 +94,14 @@ std::string CudaGPUInfo::GetCudaDeviceStr() const {
   return GetGPUName(CurrentGPUId());
 }
 
-size_t querySharedMemorySize() {
-  int nDevices;
-  // Do not enforce the check in case no device is present.
-  auto ret = cudaGetDeviceCount(&nDevices);
-  if (ret != cudaSuccess || nDevices == 0) {
-    return 0;
-  } else {
-    int dev;
-    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
-    cudaDeviceProp prop;
-    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDeviceProperties(&prop, dev));
-    return prop.sharedMemPerBlock;
+size_t CudaGPUInfo::SharedMemorySize() const {
+  if (NumberGPUs() == 0) {
+    return 0; // no shared memory if no GPUs
   }
+  return sharedMemSizes_.at(CurrentGPUId());
+}
+
+size_t querySharedMemorySize() {
+  CudaGPUInfo::GPUInfo().SharedMemorySize();
 }
 } // namespace tc
