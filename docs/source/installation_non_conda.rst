@@ -101,6 +101,11 @@ Now, Install cuDNN v6.0 (skip if you have it already):
     $ cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
     $ chmod a+r /usr/local/cuda/lib64/libcudnn*
 
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
+
 Set environment variables:
 
 .. code-block:: bash
@@ -119,6 +124,11 @@ to install the protobuf.
     $ mkdir -p /tmp/proto-install && cd /tmp/proto-install
     $ wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip && unzip -qq proto.zip -d .
     $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && make install && ldconfig
+
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
 
 Now check your proto version by running:
 
