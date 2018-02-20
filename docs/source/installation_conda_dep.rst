@@ -65,6 +65,12 @@ to install the protobuf.
     $ wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip && unzip -qq proto.zip -d .
     $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && make install && ldconfig
 
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
+
+
 Now check your proto version by running:
 
 .. code-block:: bash
@@ -124,6 +130,11 @@ Now, Install cuDNN v6.0 (skip if you have it already):
     $ cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
     $ chmod a+r /usr/local/cuda/lib64/libcudnn*
 
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
+
 Set environment variables:
 
 .. code-block:: bash
@@ -144,7 +155,7 @@ conda packages of TC dependencies and then build TC.
 
     $ conda create -y --name tc-build-conda python=3.6
     $ source activate tc-build-conda
-    $ conda install -y -c prigoyal tapir50 llvm isl-tc gflags glog
+    $ conda install -y -c prigoyal llvm-tapir50 isl-tc gflags glog
     $ conda install -y -c pytorch pytorch
     $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions

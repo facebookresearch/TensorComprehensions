@@ -19,7 +19,7 @@ The conda and non-conda images for each setup are below:
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86
+    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86_1
 
 Now, follow the instructions below to build TC:
 
@@ -31,7 +31,7 @@ Now, follow the instructions below to build TC:
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3:x86
+    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3:x86_1
 
 Now, to install TC, follow :ref:`non_conda_install_tc`
 
@@ -40,7 +40,7 @@ Now, to install TC, follow :ref:`non_conda_install_tc`
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3-conda:x86
+    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3-conda:x86_1
 
 We don't ship the conda packages for TC dependencies that are compatible with gcc5 yet, so you have to
 build them from source. To install TC, see instructions here: :ref:`conda_install_tc`
@@ -50,7 +50,7 @@ build them from source. To install TC, see instructions here: :ref:`conda_instal
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86
+    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86_1
 
 Now, to install TC, follow :ref:`non_conda_install_tc`
 
@@ -66,7 +66,7 @@ have :code:`nvidia-docker` installed. Then run the image using following command
 
 .. code-block:: bash
 
-    $ nvidia-docker run --rm -i -t tensorcomprehensions/trusty-gcc4.8-py3-conda-cuda:x86
+    $ nvidia-docker run --rm -i -t tensorcomprehensions/trusty-gcc4.8-py3-conda-cuda:x86_1
 
 Now, follow the instructions below to build TC:
 

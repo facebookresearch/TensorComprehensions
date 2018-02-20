@@ -13,11 +13,11 @@ Step 1: Install some build dependencies
 .. code-block:: bash
 
     $ apt-get update
-    $ apt-get install -y libgoogle-glog-dev curl build-essential cmake git automake libgmp3-dev libtool ssh libyaml-dev realpath wget valgrind software-properties-common unzip
+    $ apt-get install -y libgoogle-glog-dev curl build-essential cmake git automake libgmp3-dev libtool ssh libyaml-dev realpath wget valgrind software-properties-common unzip libz-dev
 
 .. note::
 
-    You might additionally need to install :code:`cmake3` and :code:`libz-dev`, if these packages are not found by apt-get, you can proceed otherwise install them by running :code:`apt-get install libz-dev`
+    You might additionally need to install :code:`cmake3`, if this package is not found by apt-get, you can proceed.
 
 Step 2: Setup gcc / g++
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -70,9 +70,10 @@ Now, clone the repo, build and install LLVM+Tapir:
 
     $ git clone --recursive https://github.com/wsmoses/Tapir-LLVM llvm
     $ mkdir -p ${LLVM_SOURCES}/llvm_build && cd ${LLVM_SOURCES}/llvm_build
-    $ ${CMAKE_VERSION} -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX} -DLLVM_TARGETS_TO_BUILD=X86 -DCOMPILER_RT_BUILD_CILKTOOLS=OFF -DLLVM_ENABLE_CXX1Y=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_ENABLE_ASSERTIONS=ON -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_LLVM_DYLIB=ON  -DLLVM_ENABLE_RTTI=ON ../llvm/
+    $ ${CMAKE_VERSION} -DLLVM_ENABLE_OCAMLDOC=OFF -DLLVM_INSTALL_OCAMLDOC_HTML_DIR=/tmp -DLLVM_OCAML_INSTALL_PATH=/tmp -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX} -DLLVM_TARGETS_TO_BUILD=X86 -DCOMPILER_RT_BUILD_CILKTOOLS=OFF -DLLVM_ENABLE_CXX1Y=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_ENABLE_ASSERTIONS=ON -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_LLVM_DYLIB=ON  -DLLVM_ENABLE_RTTI=ON ../llvm/
     $ make -j $CORES -s && make install -j $CORES -s
     $ cd $HOME && rm -rf $LLVM_SOURCES
+
 
 Step 4: Get CUDA and CUDNN
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,9 +98,14 @@ Now, Install cuDNN v6.0 (skip if you have it already):
     $ CUDNN_TAR_FILE="cudnn-8.0-linux-x64-v6.0.tgz"
     $ wget http://developer.download.nvidia.com/compute/redist/cudnn/v6.0/${CUDNN_TAR_FILE}
     $ tar -xzvf ${CUDNN_TAR_FILE}
-    $ sudo cp -P cuda/include/cudnn.h /usr/local/cuda/include
-    $ sudo cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
-    $ sudo chmod a+r /usr/local/cuda/lib64/libcudnn*
+    $ cp -P cuda/include/cudnn.h /usr/local/cuda/include
+    $ cp -P cuda/lib64/libcudnn* /usr/local/cuda/lib64/
+    $ chmod a+r /usr/local/cuda/lib64/libcudnn*
+
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
 
 Set environment variables:
 
@@ -118,7 +124,12 @@ to install the protobuf.
 
     $ mkdir -p /tmp/proto-install && cd /tmp/proto-install
     $ wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip && unzip -qq proto.zip -d .
-    $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && sudo make install && sudo ldconfig
+    $ cd protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8 && make install && ldconfig
+
+.. note::
+
+    Please use :code:`sudo` to run the command that might fail with permission issues. Otherwise, run
+    the commands as is.
 
 Now check your proto version by running:
 
@@ -136,7 +147,7 @@ dependencies and updating your Python:
 
 .. code-block:: bash
 
-    $ sudo apt-get install -y python3-dev python3-pip python3-setuptools
+    $ apt-get install -y python3-dev python3-pip python3-setuptools
     $ pip3 install --upgrade pip
     $ pip3 install numpy pyyaml
 
