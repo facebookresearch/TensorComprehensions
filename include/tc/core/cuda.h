@@ -90,7 +90,10 @@ struct WithDevice {
 // Consider lifting stuff up from fbcuda rather than reinventing the wheel
 //
 class CudaGPUInfo {
-  CudaGPUInfo(const std::vector<std::string>& gpuNames) : gpuNames_(gpuNames) {}
+  CudaGPUInfo(
+      const std::vector<std::string>& gpuNames,
+      const std::vector<size_t>& sharedMemSizes)
+      : gpuNames_(gpuNames), sharedMemSizes_(sharedMemSizes) {}
 
  public:
   static CudaGPUInfo& GPUInfo();
@@ -102,8 +105,10 @@ class CudaGPUInfo {
   void SynchronizeCurrentGPU() const;
   std::string GetGPUName(int id = -1) const;
   std::string GetCudaDeviceStr() const;
+  size_t SharedMemorySize() const;
 
   std::vector<std::string> gpuNames_;
+  std::vector<size_t> sharedMemSizes_;
 };
 
 // Query the active device about the avaialble memory size.
