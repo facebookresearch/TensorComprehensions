@@ -637,8 +637,8 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
 
   Workspace w_test;
   init_ws(w_test);
-  Argument tcArg = MakeArgument<string>("def", tc);
-  Argument tcNameArg = MakeArgument<string>("name", "fun");
+  Argument tcArg = MakeArgument<string>("tcDef", tc);
+  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   MappingOptions options = tc::makeBaseCliStrategy()
                                .tile({1})
                                .mapToThreads({128})
@@ -686,8 +686,8 @@ def fun(float(N) X, int(A,B) I) -> (Z) {
 }
 )TC";
 
-  Argument tcArg = MakeArgument<string>("def", tc);
-  Argument tcNameArg = MakeArgument<string>("name", "fun");
+  Argument tcArg = MakeArgument<string>("tcDef", tc);
+  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   MappingOptions options = tc::makeBaseCliStrategy()
                                .tile({1})
                                .mapToThreads({128})
@@ -726,8 +726,8 @@ def fun(float(B, N, M) X) -> (Z) {
 
   Workspace w_test;
   init_ws(w_test);
-  Argument tcArg = MakeArgument<string>("def", tc);
-  Argument tcNameArg = MakeArgument<string>("name", "fun");
+  Argument tcArg = MakeArgument<string>("tcDef", tc);
+  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   MappingOptions options = tc::makeBaseCliStrategy()
                                .tile({1})
                                .mapToThreads({128})

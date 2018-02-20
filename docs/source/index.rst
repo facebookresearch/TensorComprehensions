@@ -38,6 +38,7 @@ Tensor Comprehensions provides framework-Agnostic Abstractions for High-Performa
    installation_conda_dep
    installation_conda
    installation_non_conda
+   installation_caffe2_integration
 
 .. toctree::
    :maxdepth: 1

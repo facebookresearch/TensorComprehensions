@@ -1,11 +1,9 @@
-Building with conda packaged dependencies in Conda Environment
-==============================================================
+Using Tensor Comprehensions with Caffe2
+=======================================
 
-If you want to build TC in a conda environment using the conda packages of TC dependencies,
-you are on the right place. Follow the following installation instructions **step-wise**. If you have already done some steps (in-order), you can skip them.
-
-On :code:`Ubuntu 16.04`, for installation from source, follow the following instructions **step-wise**. If you wish to install
-on :code:`Ubuntu 14.04`, make the changes where you see 1604.
+We provide very basic integration of Tensor Comprehensions with Caffe2. Follow
+the instructions below on how to build Tensor Comprehensions so that Caffe2 works
+fine with it. We only support :code:`conda` environment build for this right now.
 
 Step 1: Install system dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -15,12 +13,6 @@ Step 1: Install system dependencies
     $ apt-get update
     $ apt-get install -y wget cmake git build-essential unzip curl automake build-essential realpath libtool software-properties-common
 
-.. note::
-
-    Please check that your system doesn't have any :code:`protobuf` installed via apt-get or other means. This can easily
-    conflict with the protobuf version TC uses and can cause build failures. For example, check :code:`/usr/lib/x86_64-linux-gnu` for any protobuf installations
-    that might look like :code:`libprotobuf.*`, :code:`libprotobuf-lite.*`, :code:`libprotoc.*`. Please uninstall them via
-    :code:`apt-get remove` command.
 
 Step 2: Setup gcc / g++
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -115,8 +107,8 @@ Set environment variables:
 
 .. _conda_dep_install_tc:
 
-Step 5: Install TC
-^^^^^^^^^^^^^^^^^^
+Step 5: Install TC with Caffe2
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We ship conda packages for most of TC dependencies like :code:`clang+llvm`, :code:`glog`,
 :code:`gflags`, :code:`protobuf3`, :code:`halide`. We will directly install the
@@ -124,35 +116,22 @@ conda packages of TC dependencies and then build TC.
 
 .. code-block:: bash
 
-    $ conda create -y --name tc-build-conda python=3.6 && source activate tc-build-conda
-    $ conda install -y -c prigoyal llvm-tapir50 isl-tc gflags glog protobuf
+    $ conda create -y --name tc-build-conda python=3.6
+    $ source activate tc-build-conda
+    $ conda install -y -c prigoyal llvm-tapir50 isl-tc gflags glog caffe2 protobuf
     $ conda install -y -c pytorch pytorch
     $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions && git submodule update --init --recursive
-    $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX WITH_CAFFE2=OFF CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
+    $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
 
 .. note::
-    Please also make sure that you don't have :code:`gflags` or :code:`glog` in your system path. Those might conflict with the TC gflags/glog.
+    Please also make sure that you don't have gflags or glog in your system path. Those might conflict with the TC gflags/glog.
 
 
-Step 6: Verify TC installation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Step 6: Run TC Caffe2 Python test
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: bash
 
     $ cd $HOME/TensorComprehensions
-    $ ./test.sh                   # if you have GPU
-    $ ./test_cpu.sh               # if you have only CPU
-
-
-Build with Basic Caffe2 Integration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you want to install TC with Caffe2 as well, run the following:
-
-.. code-block:: bash
-
-    $ conda install -y -c prigoyal caffe2
-    $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
-
-Now, you have the TC bindings with Caffe2 built as well and and you write python examples for TC in caffe2.
+    $ python test_python/test_c2.py   # if you have GPU

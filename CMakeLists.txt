@@ -214,7 +214,7 @@ include(cmake/GetGitRevisionDescription.cmake)
 
 ################################################################################
 
-# gflag
+# gflags
 message("find_library(GFLAGS_LIBRARIES gflags")
 find_library(GFLAGS_LIBRARIES gflags PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
 message(STATUS "Found gflags: ${GFLAGS_LIBRARIES}")
