@@ -21,7 +21,6 @@
 #include <vector>
 
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/cuda_info.h"
 #include "tc/core/utils/dlpack.h"
 
 namespace tc {
