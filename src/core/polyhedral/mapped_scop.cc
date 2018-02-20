@@ -37,7 +37,6 @@
 #include "tc/core/polyhedral/separation.h"
 #include "tc/core/polyhedral/tighten_launch_bounds.h"
 #include "tc/core/polyhedral/unroll.h"
-#include "tc/core/rtc.h"
 #include "tc/core/scope_guard.h"
 
 #include <glog/logging.h>
