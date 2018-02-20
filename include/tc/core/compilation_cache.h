@@ -26,8 +26,8 @@
 
 #include <compcache.pb.h>
 
+#include "tc/core/cuda.h"
 #include "tc/core/mapping_options.h"
-#include "tc/core/utils/cuda_info.h"
 
 namespace tc {
 

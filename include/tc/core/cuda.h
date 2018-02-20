@@ -84,6 +84,28 @@ struct WithDevice {
   size_t newGpu;
 };
 
+//
+// This functionality in this type of class has been rewritten over and over
+// again. Here we just provide a static singleton and basic properties.
+// Consider lifting stuff up from fbcuda rather than reinventing the wheel
+//
+class CudaGPUInfo {
+  CudaGPUInfo(const std::vector<std::string>& gpuNames) : gpuNames_(gpuNames) {}
+
+ public:
+  static CudaGPUInfo& GPUInfo();
+
+  // These functions require init to have been run, they are thus members of
+  // the singleton object and not static functions.
+  int NumberGPUs() const;
+  int CurrentGPUId() const;
+  void SynchronizeCurrentGPU() const;
+  std::string GetGPUName(int id = -1) const;
+  std::string GetCudaDeviceStr() const;
+
+  std::vector<std::string> gpuNames_;
+};
+
 // Query the active device about the avaialble memory size.
 size_t querySharedMemorySize();
 

@@ -25,8 +25,6 @@ add_library(
   cuda/cuda_execution_engine.cc
   cuda/cuda_tc_executor.cc
 
-  utils/cuda_info.cc
-
   polyhedral/codegen_cuda.cc
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
