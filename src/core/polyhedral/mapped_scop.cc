@@ -23,8 +23,8 @@
 #include <stdexcept>
 #include <unordered_set>
 
-#include "tc/core/cuda.h"
 #include "tc/core/flags.h"
+#include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen_cuda.h"
 #include "tc/core/polyhedral/exceptions.h"

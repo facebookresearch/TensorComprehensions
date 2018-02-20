@@ -111,7 +111,4 @@ class CudaGPUInfo {
   std::vector<size_t> sharedMemSizes_;
 };
 
-// Query the active device about the avaialble memory size.
-size_t querySharedMemorySize();
-
 } // namespace tc
