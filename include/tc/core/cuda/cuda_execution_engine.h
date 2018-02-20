@@ -58,8 +58,6 @@ class CudaExecutionEngine : public ExecutionEngine {
 
   CudaExecutionEngine() = default;
 
-  void addTC(const std::string& tc);
-
   lang::TreeRef treeForFunction(const std::string& name) {
     return tcNameMap_.at(name);
   }
