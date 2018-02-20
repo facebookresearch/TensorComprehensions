@@ -25,7 +25,6 @@
 #include "tc/external/isl.h"
 
 #include "tc/core/flags.h"
-#include "tc/core/rtc.h"
 
 /// \file mapping_options.h
 /// A set of classes that act as the in-memory interface to control polyhedral

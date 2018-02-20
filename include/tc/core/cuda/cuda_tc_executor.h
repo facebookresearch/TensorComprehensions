@@ -18,6 +18,7 @@
 #include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/scop.h"
+#include "tc/core/rtc.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/parser.h"
