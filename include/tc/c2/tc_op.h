@@ -37,13 +37,15 @@ class TcOp : public Operator<Context> {
  public:
   TcOp(const OperatorDef& operator_def, Workspace* ws)
       : caffe2::Operator<Context>(operator_def, ws),
+        tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
+        tcName_(
+            OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
         mappingOptions_(tc::MappingOptions::makeNaiveMappingOptions()),
         gradMappingOptions_(tc::MappingOptions::makeNaiveMappingOptions()) {
-    tc_ = OperatorBase::GetSingleArgument<std::string>("def", "ERROR");
-    gradTc_ = OperatorBase::GetSingleArgument<std::string>("grad_def", "ERROR");
-    tcName_ = OperatorBase::GetSingleArgument<std::string>("name", "ERROR");
+    gradTc_ =
+        OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =
-        OperatorBase::GetSingleArgument<std::string>("grad_name", "ERROR");
+        OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
     profile_ = OperatorBase::GetSingleArgument<bool>("profile", false);
     ArgumentHelper args(operator_def);
     if (args.HasArgument("mappingOptions")) {

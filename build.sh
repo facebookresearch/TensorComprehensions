@@ -416,9 +416,14 @@ if ! test -z $aten || ! test -z $all; then
 fi
 
 if ! test -z $caffe2 || ! test -z $all ; then
-  if [ "$WITH_CAFFE2" == "ON" ]; then
-    install_caffe2
-  fi
+    if [ "$WITH_CAFFE2" == "ON" ]; then
+        if [[ $(find $CONDA_PREFIX -name libcaffe2_gpu.so) ]]; then
+            echo "caffe2 found"
+        else
+            echo "no files found"
+            install_caffe2
+        fi
+    fi
 fi
 
 if ! test -z $isl || ! test -z $all; then

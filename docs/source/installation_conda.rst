@@ -40,6 +40,7 @@ If you don't have correct gcc, g++, follow the instructions below, otherwise ski
 
     $ add-apt-repository ppa:ubuntu-toolchain-r/test
     $ apt-get update
+    $ apt-get install -y --no-install-recommends libcilkrts5
     $ apt-get install -y --no-install-recommends gcc-5 g++-5
 
 *Optionally*, you can configure the gcc versions available on your machine and set up higher priority for the version you want.
@@ -190,8 +191,7 @@ Now, you need to install TC from source. For installing TC from source, checkout
 .. code-block:: bash
 
     $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
-    $ cd TensorComprehensions
-    $ git submodule update --init --recursive
+    $ cd TensorComprehensions && git submodule update --init --recursive
     $ conda install -y pyyaml
     $ export TC_DIR=$(pwd)
     $ BUILD_TYPE=Release PYTHON=$(which python3) WITH_CAFFE2=OFF CLANG_PREFIX=$HOME/clang+llvm-tapir5.0 ./build.sh --all
@@ -212,25 +212,12 @@ Step 8: Verify TC installation
 
 Build with Basic Caffe2 Integration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-1. If you want to install TC with Caffe2 as well, run the following:
+
+If you want to install TC with Caffe2 as well, run the following:
 
 .. code-block:: bash
 
-    $ BUILD_TYPE=Release PYTHON=$(which python3) WITH_PYTHON_C2=OFF CLANG_PREFIX=$HOME/clang+llvm-tapir5.0 ./build.sh --all
+    $ conda install -y -c prigoyal caffe2
+    $ BUILD_TYPE=Release PYTHON=$(which python3) CLANG_PREFIX=$HOME/clang+llvm-tapir5.0 ./build.sh --all
 
-
-.. note::
-
-    This turns off the Caffe2 python build. If you want to turn on the Caffe2 python build, see next step:
-
-2. For installing python binaries as well of Caffe2 with TC:
-
-.. code-block:: bash
-
-    $ BUILD_TYPE=Release PYTHON=$(which python3) WITH_PYTHON_C2=ON CLANG_PREFIX=$HOME/clang+llvm-tapir5.0 ./build.sh --all
-
-.. note::
-
-    Caffe2 doesn't provide support for pip/conda at the moment and this means in order to use the caffe2 python, you might need to set $PYTHONPATH. Normally, it could be :code:`${TC_DIR}/third-party-install/`
-
-However, please check caffe2 official instructions `here <https://caffe2.ai/docs/getting-started.html?platform=mac&configuration=compile#test-the-caffe2-installation>`_ . TC doesn't yet provide support for caffe2 python usage.
+Now, you have the TC bindings with Caffe2 built as well and and you write python examples for TC in caffe2.
