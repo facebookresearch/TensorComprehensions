@@ -49,29 +49,29 @@ std::map<std::string, int> computeParamValueMap(
     const ImageParam& in = halide.inputs[i];
     const DLTensor* tensor = inputsDLT[i];
     // for error messages
-    auto param_type = halide.getDef().params()[i].tensorType();
+    auto paramType = halide.getDef().params()[i].tensorType();
     for (int d = 0; d < in.dimensions(); d++) {
       Expr extent = in.parameter().extent_constraint(d);
-      int64_t current_size = tensor->shape[d];
-      auto dim_exp_tree = param_type.dims()[d];
+      int64_t currentSize = tensor->shape[d];
+      auto dimExpTree = paramType.dims()[d];
       // dims can either be symbolic 'D' or a literal constant '4'
       if (const Variable* v = extent.as<Variable>()) {
         if (pvm.count(v->name) > 0) {
           int64_t prev = pvm[v->name];
-          if (prev != current_size) {
-            throw lang::ErrorReport(dim_exp_tree)
+          if (prev != currentSize) {
+            throw lang::ErrorReport(dimExpTree)
                 << "Mismatched sizes for dimension " << v->name
-                << " previous value is " << prev << " but found "
-                << current_size << " here";
+                << " previous value is " << prev << " but found " << currentSize
+                << " here";
           }
         } else {
-          pvm[v->name] = current_size;
+          pvm[v->name] = currentSize;
         }
       } else { // it was a constant
         const int64_t* c = as_const_int(extent);
         CHECK(c != NULL);
         if (*c != tensor->shape[d]) {
-          throw lang::ErrorReport(dim_exp_tree)
+          throw lang::ErrorReport(dimExpTree)
               << "Constant dimension expected size " << *c << " but found "
               << tensor->shape[d];
         }
