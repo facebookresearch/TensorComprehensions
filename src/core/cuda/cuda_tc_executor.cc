@@ -146,7 +146,8 @@ std::vector<int> narrowParamsVector(const std::vector<long>& params) {
 void CudaTcExecutor::compileWithTcMapper() {
   // A bit chicken-and-eggy, need scop from TC to have the space to build the
   // context to specialize the scop..
-  auto scopTmp = polyhedral::Scop::makeScop(ctx_, halideComponents_);
+  auto scopTmp = polyhedral::Scop::makeScop(
+      isl::with_exceptions::globalIslCtx(), halideComponents_);
   auto globalParameterContext =
       scopTmp->makeContextFromInputs(extractRawPtrs(execInfo_.inputsInfo));
   scopTmp = polyhedral::Scop::makeSpecializedScop(

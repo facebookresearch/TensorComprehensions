@@ -49,9 +49,10 @@ TcExecutor::TcExecutor(
 TcExecutor::TcExecutor(
     lang::TreeRef TcDefinition,
     const std::vector<const DLTensor*>& inputsInfo)
-    : tcTree_(TcDefinition), ctx_(isl_ctx_alloc()) {
+    : tcTree_(TcDefinition) {
   execInfo_.kernelName = lang::Def(tcTree_).name().name();
-  halideComponents_ = tc2halide::translate(ctx_, tcTree_);
+  halideComponents_ =
+      tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
   checkInputsCompliant(inputsInfo);
   execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
@@ -59,9 +60,7 @@ TcExecutor::TcExecutor(
       tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
-TcExecutor::~TcExecutor() {
-  isl_ctx_free(ctx_.release());
-}
+TcExecutor::~TcExecutor() {}
 
 // TODO: make sure that the empty stride arrays (in DLTensor) are not a problem
 void TcExecutor::checkSizesAndStridesAreCompliant(
