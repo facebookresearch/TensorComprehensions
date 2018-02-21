@@ -658,7 +658,7 @@ TEST_F(TMM_128_1024_1024, Tightening) {
   Check(options);
 }
 
-TEST(LayerNorm, BugReferenceBelongsToTwoGroups) {
+TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
   std::vector<at::Tensor> inputs = {mat1};
   std::vector<at::Tensor> outputs;
@@ -692,7 +692,8 @@ TEST(LayerNorm, BugReferenceBelongsToTwoGroups) {
 
   tc::ATenCompilationUnit atCompl;
   atCompl.define(TC);
-  EXPECT_DEATH(atCompl.compile("layernorm", inputs, options));
+  // Expecting this to compile without dying.
+  atCompl.compile("layernorm", inputs, options);
 }
 
 int main(int argc, char** argv) {

@@ -185,11 +185,11 @@ isl::map extractAccess(
 
 std::pair<isl::union_map, isl::union_map>
 extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
-  class FindAccesses : public IRVisitor {
-    using IRVisitor::visit;
+  class FindAccesses : public IRGraphVisitor {
+    using IRGraphVisitor::visit;
 
     void visit(const Call* op) override {
-      IRVisitor::visit(op);
+      IRGraphVisitor::visit(op);
       if (op->call_type == Call::Halide || op->call_type == Call::Image) {
         reads = reads.unite(
             extractAccess(domain, op, op->name, op->args, accesses));
@@ -197,7 +197,7 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
     }
 
     void visit(const Provide* op) override {
-      IRVisitor::visit(op);
+      IRGraphVisitor::visit(op);
       writes =
           writes.unite(extractAccess(domain, op, op->name, op->args, accesses));
     }
