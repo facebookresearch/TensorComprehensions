@@ -117,7 +117,6 @@ class TcExecutor {
 
   tc2halide::HalideComponents halideComponents_;
   lang::TreeRef tcTree_;
-  mutable isl::ctx ctx_;
 };
 
 // templating to match both const and non-const DLTensor pointers
