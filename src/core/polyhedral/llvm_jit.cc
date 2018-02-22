@@ -31,40 +31,7 @@
 
 using namespace llvm;
 
-// Parse through ldconfig to find the path of a particular
-// shared library. This is an unfortunate way to have to
-// find it, but I couldn't immediately find something in
-// imported libraries that would resolve this for us.
-std::string find_library_path(std::string library) {
-  std::string command = "ldconfig -p | grep " + library;
-
-  FILE* fpipe = popen(command.c_str(), "r");
-
-  if (fpipe == nullptr) {
-    throw std::runtime_error("Failed to popen()");
-  }
-
-  std::string output;
-  char buffer[512];
-
-  while (1) {
-    int charactersRead = fread(buffer, 1, sizeof(buffer), fpipe);
-    if (charactersRead == 0)
-      break;
-    output += std::string(buffer, charactersRead);
-  }
-  pclose(fpipe);
-
-  int idx = output.rfind("=> ");
-  if (idx == std::string::npos) {
-    throw std::runtime_error("Failed locate library: " + library);
-  }
-  output = output.substr(idx + 3);
-  if (output.length() > 0 && output[output.length() - 1] == '\n') {
-    output = output.substr(0, output.length() - 1);
-  }
-  return output;
-}
+extern const char* libcilkPath;
 
 namespace tc {
 
@@ -75,8 +42,7 @@ Jit::Jit()
       compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
   std::string err;
 
-  auto path = find_library_path("libcilkrts.so");
-  sys::DynamicLibrary::LoadLibraryPermanently(path.c_str(), &err);
+  sys::DynamicLibrary::LoadLibraryPermanently(libcilkPath, &err);
   if (err != "") {
     throw std::runtime_error("Failed to find cilkrts: " + err);
   }

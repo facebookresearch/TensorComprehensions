@@ -1,3 +1,5 @@
+add_subdirectory(polyhedral)
+
 find_library(CUDA_NVRTC_LIBRARIES nvrtc
   PATHS ${CUDA_TOOLKIT_ROOT_DIR}
   PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
@@ -41,6 +43,7 @@ add_library(
   polyhedral/separation.cc
   polyhedral/tighten_launch_bounds.cc
   polyhedral/unroll.cc
+  ${CMAKE_CURRENT_BINARY_DIR}/polyhedral/libpaths.cc
 )
 
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
