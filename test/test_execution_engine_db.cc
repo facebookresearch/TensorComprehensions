@@ -26,7 +26,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/mapping_options.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 TEST(ATenCompilationDbTest, MultiTc) {
   static constexpr uint32_t N = 8, C = 16, O = 6, H = 24, W = 27, KH = 3,
