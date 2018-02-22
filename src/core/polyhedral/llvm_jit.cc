@@ -36,7 +36,7 @@ using namespace llvm;
 // find it, but I couldn't immediately find something in
 // imported libraries that would resolve this for us.
 std::string find_library_path(std::string library) {
-  std::string command = "ldconfig -p | grep " + library;
+  std::string command = "ldconfig -p | grep " + library + " | grep x86-64";
 
   FILE* fpipe = popen(command.c_str(), "r");
 
