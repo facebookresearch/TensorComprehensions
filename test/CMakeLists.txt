@@ -23,24 +23,20 @@ target_link_libraries(tc_test INTERFACE ${GOOGLE_LIBS})
 ################################################################################
 # Basic tests of external functionalities we rely upon
 ################################################################################
-set(BASIC_TEST_FILES
-  test_basic
-  test_basic_gpu
-)
+if (WITH_CUDA)
+add_executable(test_basic test_basic.cc)
+add_test(test_basic test_basic)
+target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
 
-foreach(i ${BASIC_TEST_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
-endforeach()
-
-target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} tc_aten)
-target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBS} )
+  add_executable(test_basic_gpu test_basic_gpu.cc)
+  add_test(test_basic_gpu test_basic_gpu)
+  target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBS} )
+endif()
 
 ################################################################################
 # Core library only tests
 ################################################################################
 set(CORE_TEST_FILES
-  test_autotuner_utility
   test_core
   test_inference
   test_isl_functionality
@@ -53,31 +49,41 @@ foreach(i ${CORE_TEST_FILES})
   target_link_libraries(${i} ${GOOGLE_LIBS} tc_core)
 endforeach()
 
-target_link_libraries(test_autotuner_utility tc_autotuner tc_aten)
+################################################################################
+# Core GPU library tests
+################################################################################
+if (WITH_CUDA)
+  add_executable(test_autotuner_utility test_autotuner_utility.cc)
+  add_test(test_autotuner_utility test_autotuner_utility)
+  target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} tc_autotuner tc_aten tc_core)
+endif()
+
 
 ################################################################################
 # ATen execution based test
 ################################################################################
-set(ATEN_TEST_FILES
-  test_autotuner
-  test_compilation_cache
-  test_execution_engine
-  test_execution_engine_cache
-  test_execution_engine_db
-  test_tc_mapper
-  test_tc_mapper_bugs
-  test_corner_cases
-)
-foreach(i ${ATEN_TEST_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
-  target_link_libraries(
-      ${i}
+if (WITH_CUDA)
+  set(ATEN_TEST_FILES
+    test_autotuner
+    test_compilation_cache
+    test_execution_engine
+    test_execution_engine_cache
+    test_execution_engine_db
+    test_tc_mapper
+    test_tc_mapper_bugs
+    test_corner_cases
+  )
+  foreach(i ${ATEN_TEST_FILES})
+    add_executable(${i} ${i}.cc)
+    add_test(${i} ${i})
+    target_link_libraries(
+        ${i}
 
-      ${GOOGLE_LIBS}
-      tc_aten
-      tc_autotuner)
-endforeach()
+        ${GOOGLE_LIBS}
+        tc_aten
+        tc_autotuner)
+  endforeach()
+endif()
 
 ################################################################################
 # CPP mapper tests, execution should use ATen C++ API
@@ -95,7 +101,7 @@ foreach(i ${CORE_TEST_FILES})
 #  target_compile_options(${i}  PUBLIC -fsanitize=address)
 #  set(CMAKE_EXE_LINKER_FLAGS  -fsanitize=address)
 endforeach()
-target_link_libraries(test_mapper_llvm tc_aten ${ATEN_LIBRARIES})
+target_link_libraries(test_mapper_llvm ${ATEN_LIBRARIES} -lLLVM)
 
 ################################################################################
 # TensorComprehensions tests
@@ -103,7 +109,7 @@ target_link_libraries(test_mapper_llvm tc_aten ${ATEN_LIBRARIES})
 # cuda_add_executable(test_matmul test_matmul.cu OPTIONS -std=c++11)
 ################################################################################
 
-if (WITH_CAFFE2)
+if (WITH_CAFFE2 AND WITH_CUDA)
   set(TEST_FILES
     test_caffe2
   )
