@@ -26,39 +26,12 @@
 #include <ATen/ATen.h>
 
 #include <cuda_runtime_api.h>
+
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda.h"
 #include "tc/core/flags.h"
 
-struct PrecisionException : public std::runtime_error {
-  PrecisionException(const std::string& s) : std::runtime_error(s) {}
-};
-
-// Given the difference of output vs expected tensor, check whether the
-// difference is within a relative tolerance range.
-// By default we use IEEE float precision , in the future we should pull it
-// from the type of the at::Tensor.
-// Also allow a factor to specify the total number of reductions involved
-// in each result so we can properly compute the expected precision.
-bool checkRtol(
-    const at::Tensor& diff,
-    const std::vector<at::Tensor> inputs,
-    double nOperations = 1.0,
-    double machinePrecision = std::numeric_limits<float>::epsilon()) {
-  double maxValue = 0.0;
-  for (auto& tensor : inputs) {
-    maxValue = fmax(tensor.abs().max().toFloat(), maxValue);
-  }
-  auto maxDiff = diff.abs().max().toFloat();
-  if (maxDiff >= nOperations * machinePrecision * maxValue) {
-    std::stringstream ss;
-    ss << "Error at relative precision: " << machinePrecision
-       << ", #operations: " << nOperations << ", maxValue: " << maxValue
-       << ", maxDiff: " << maxDiff << ", random seed: " << tc::randomSeed();
-    throw PrecisionException(ss.str());
-  }
-  return true;
-}
+#include "test_harness_aten.h"
 
 at::Tensor subtensor(at::Tensor& tensor, int dim, int groups, int g) {
   if (!tensor.defined()) {
