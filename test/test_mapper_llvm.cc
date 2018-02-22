@@ -24,7 +24,7 @@
 #include "tc/core/polyhedral/llvm_jit.h"
 #include "tc/core/polyhedral/scop.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 using namespace std;
 

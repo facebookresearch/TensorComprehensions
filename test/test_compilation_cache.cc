@@ -24,7 +24,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 class CudaCacheTest : public ::testing::Test {
  protected:
