@@ -29,7 +29,7 @@ message TilingProto {
   repeated uint64 sizes = 1;
 }
 
-// Options for TC mapper or PPCG.
+// Options for TC mapper.
 message MappingOptionsProto {
   // Options for the scheduler before tiling.
   required SchedulerOptionsProto outer_schedule_options = 1;
