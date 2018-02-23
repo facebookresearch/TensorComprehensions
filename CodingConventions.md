@@ -290,7 +290,7 @@ Prefer to leave public members unprefixed and unsuffixed.
 
 We generally prefer `lowerCamelCase` for header-exposed functions but this is
 not strictly enforced when working at the interface between TC and other
-projects (Halide, Caffe2, ISL, PPCG).
+projects (Halide, Caffe2, ISL).
 As usual, follow the local naming conventions of the file you are working in.
 
 If you are modeling a class after an existing pattern, such as an STL
