@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <isl/interface/isl.h>
+#include <isl/cpp.h>
 
 #include "tc/external/detail/isl_mu_wrappers.h"
 #include "tc/external/detail/islpp.h"
