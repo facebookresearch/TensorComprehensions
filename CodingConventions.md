@@ -16,7 +16,7 @@ that is easy to read and contribute to, especially for newcomers.
 There's no well-defined cutoff here - just try to minimize effort for your
 reviewers. A good rule of thumb is that if your cosmetic changes require adding
 significant new sections to the diff (such as a function rename that touches
-all callsites), it should probably be pulled out into its own diff.
+all call sites), it should probably be pulled out into its own diff.
 
 ## Headers ##
 
@@ -61,7 +61,7 @@ includes:
 - Always include the corresponding .h for a .cpp first, before even system
   headers.
 - Separate includes into groups: C++ standard library headers, external projects, and finally headers within TC.
-  Each groupshould be separated by a newline, for readability. (Whether to separate TC
+  Each group should be separated by a newline, for readability. (Whether to separate TC
   includes by subsystem (e.g., `jit`) is left up to the author.)
 - Keep headers alphabetized within each group. This makes it easier to ensure
   that all necessary includes are made, and no extraneous ones are left behind.
@@ -262,7 +262,7 @@ file you are working on.
 ### Variables ###
 
 Use `lowerCamelCase` or `lower_case_with_underscores` for all local variables,
-adhering to whichever is the discernable local convention if possible.
+adhering to whichever is the discernible local convention if possible.
 For instance, in the isl related files, it is a good idea to use `lowerCamelCase`
 for TC islpp extensions as opposed to `lower_case_with_underscores` for C or
 the isl C++ bindings. This help better differentiate between the different conventions.
@@ -284,7 +284,7 @@ All constants should be prefixed with `k` and use `CamelCase`, e.g.,
 
 As with variables, use `lowerCamelCase` or `lower_case_with_underscores`.
 Private variables should be suffixed with `_`.
-Prefer to leave public members unprefixed and unsiffixed.
+Prefer to leave public members unprefixed and unsuffixed.
 
 ### Functions ###
 
@@ -305,7 +305,7 @@ containers or smart pointers.
 ### Namespaces ###
 
 New namespaces should use `lowercase`---and single-word namespaces are greatly
-prefered for common usage.  For longer namespaces, use
+preferred for common usage.  For longer namespaces, use
 `lower_case_with_underscores`.
 
 ### Other conventions ###
@@ -472,7 +472,7 @@ MyClass::MyClass(const Func* func) : m_idx(-1) {
 }
 ```
 
-Otherwise, it is always correct to format lists thusly:
+Otherwise, it is always correct to format lists this way:
 
 ```cpp
 MyClass::MyClass(const Class* cls, const Func* func, const Class* ctx)
