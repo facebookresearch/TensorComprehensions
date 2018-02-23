@@ -83,35 +83,6 @@ int run2_2(
   return callback(SomeType(), SomeOtherType(), user);
 }
 
-TEST(IslWrap, Test0) {
-  auto l = [](SomeType t, void* user) -> int { return t.i; };
-  ::isl::isl_wrap_1(run0_1, std::make_tuple(), l, nullptr);
-  int i = 0;
-  auto ll = [&i](SomeType t, void* user) -> int { return i; };
-  ::isl::isl_wrap_1(run0_1, std::make_tuple(), ll, nullptr);
-}
-
-TEST(IslWrap, Test1) {
-  auto l = [](SomeType t, void* user) -> int { return t.i; };
-  ::isl::isl_wrap_1(run1_1, std::make_tuple(1.0f), l, nullptr);
-  int i = 0;
-  auto ll = [&i](SomeType t, void* user) -> int { return i; };
-  ::isl::isl_wrap_1(run1_1, std::make_tuple(1.0f), ll, nullptr);
-}
-
-TEST(IslWrap, Test2) {
-  auto l = [](SomeType t, SomeOtherType tt, void* user) -> int { return t.i; };
-  ::isl::isl_wrap_2(run1_2, std::make_tuple(1.0f), l, nullptr);
-  int i = 0;
-  auto ll = [&i](SomeType t, SomeOtherType tt, void* user) -> int { return i; };
-  ::isl::isl_wrap_2(run1_2, std::make_tuple(1.0f), ll, nullptr);
-  i = 0;
-  auto lll = [&i](SomeType t, SomeOtherType tt, void* user) -> int {
-    return i;
-  };
-  ::isl::isl_wrap_2(run2_2, std::make_tuple(1.0f, SomeType()), lll, nullptr);
-}
-
 TEST(Math, Median) {
   std::vector<int> v0{};
   EXPECT_THROW(tc::median(v0), std::out_of_range);
