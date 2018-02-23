@@ -877,7 +877,7 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   s = removeProducerConsumer.mutate(s);
 
   // Rename all loop variables to be valid C identifiers, to ease
-  // conversion to isl and pencil.
+  // conversion to isl.
   class RenameVariables : public IRMutator2 {
     using IRMutator2::visit;
 

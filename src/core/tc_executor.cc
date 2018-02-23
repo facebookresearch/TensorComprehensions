@@ -16,7 +16,7 @@
 #include "tc/core/tc_executor.h"
 
 #include "tc/core/compilation_cache.h"
-#include "tc/core/halide2pencil.h"
+#include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapped_scop.h"
 #include "tc/core/tc2halide.h"
@@ -141,25 +141,13 @@ TcExecutor::TcExecutor(
   halideComponents_ = tc2halide::translate(ctx_, tcTree_);
   checkInputsCompliant(inputsInfo);
   execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
-  execInfo_.outputsInfo = getHalidePencilState(inputsInfo).outputsDLT;
+  // TODO: check if this is wrong, packed tensors may  have 0 strides stored
+  execInfo_.outputsInfo =
+      tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
 TcExecutor::~TcExecutor() {
   isl_ctx_free(ctx_.release());
-}
-
-HalidePencilState TcExecutor::getHalidePencilState(
-    const std::vector<const DLTensor*>& inTensorPtrs) {
-  // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  auto halidePencilState = toPencil(
-      halideComponents_,
-      inTensorPtrs,
-      // if execInfo_.options is nullptr then just don't specialize the code
-      (execInfo_.options
-           ? execInfo_.options->proto.fix_parameters_before_scheduling()
-           : false),
-      execInfo_.kernelName);
-  return halidePencilState;
 }
 
 std::vector<const DLTensor*> TcExecutor::inferOutputTensorInfo() {

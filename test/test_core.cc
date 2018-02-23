@@ -24,7 +24,7 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/flags.h"
-#include "tc/core/halide2pencil.h"
+#include "tc/core/halide_utils.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
@@ -43,7 +43,7 @@ struct GenericHalideCoreTest : public ::testing::Test {
     auto curPos = std::string::npos;
     auto halide =
         tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
-    auto res = tc::halide2Pencil(halide.stmt);
+    auto res = tc::halideCodegenC(halide.stmt);
     for (const auto& e : expected) {
       auto newPos = res.find(e);
       if (curPos == std::string::npos) {
@@ -160,7 +160,7 @@ struct TC2Isl : public ::testing::Test {
         polyhedral::Scop::makeScop(isl::with_exceptions::globalIslCtx(), comps);
     polyhedral::detail::validateSchedule(scop->scheduleRoot());
     // Just check no crashes
-    auto halidePencilState = toPencil(comps, inputs);
+    auto outputs = inferOutputTensorInfo(comps, inputs);
     // Check schedule construction equality
     auto scheduleHalide = polyhedral::detail::fromIslSchedule(
         polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());

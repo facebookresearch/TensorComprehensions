@@ -20,7 +20,7 @@ add_library(
   tc2halide.cc
 
   halide2isl.cc
-  halide2pencil.cc
+  halide_utils.cc
 
   utils/cuda_info.cc
 
