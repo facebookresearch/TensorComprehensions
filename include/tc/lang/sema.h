@@ -349,6 +349,11 @@ struct Sema {
       }
     }
 
+    for (auto p : func.params())
+      non_temporaries.insert(p.ident().name());
+    for (auto r : func.returns())
+      non_temporaries.insert(r.ident().name());
+
     auto statements_ =
         checkList(func.statements(), [&](TreeRef r) { return checkStmt(r); });
     auto returns_ =
@@ -519,6 +524,13 @@ struct Sema {
         where_clauses_,
         equivalent_statement_,
         reduction_variable_list);
+
+    if (non_temporaries.count(stmt.ident().name()) == 0) {
+      throw ErrorReport(stmt)
+          << stmt.ident().name()
+          << " is not listed as an input or output to this function. Temporaries tensors are not yet implmented";
+    }
+
     // clear the per-statement environments to get ready for the next statement
     index_env.clear();
     let_env.clear();
@@ -601,5 +613,7 @@ struct Sema {
   // if you write to an input, using it in a range expression is no longer
   // allowed
   std::unordered_set<std::string> live_input_names;
+
+  std::unordered_set<std::string> non_temporaries;
 };
 } // namespace lang

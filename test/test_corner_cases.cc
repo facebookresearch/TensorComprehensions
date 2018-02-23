@@ -234,6 +234,13 @@ TEST(TestCornerCases, E19) {
       {F(1)},
       {F(1)});
 }
+TEST(TestCornerCases, E20) {
+  Fail(
+      "Temporaries tensors",
+      "def f(float(1) a) -> (b) { c(i) = a(i) b(i) = c(i)  }",
+      {F(1)},
+      {F(1)});
+}
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
