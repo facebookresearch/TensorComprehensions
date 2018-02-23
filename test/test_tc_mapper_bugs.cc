@@ -658,6 +658,44 @@ TEST_F(TMM_128_1024_1024, Tightening) {
   Check(options);
 }
 
+TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
+  at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
+  std::vector<at::Tensor> inputs = {mat1};
+  std::vector<at::Tensor> outputs;
+
+  static constexpr auto TC = R"TC(
+    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
+       mean(t, b) +=! I(t, b, c) / C
+       centered(t, b, c) = I(t, b, c) - mean(t, b)
+       var(t, b) +=! centered(t, b, c) * centered(t, b, c)
+       var(t, b) = (var(t, b)) / C
+       O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
+    }
+  )TC";
+  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+                     .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+                     .outerScheduleAllowSkewing(false)
+                     .outerSchedulePositiveOrthant(true)
+                     .intraTileScheduleFusionStrategy(
+                         tc::FusionStrategy::Preserve3Coincident)
+                     .intraTileScheduleAllowSkewing(false)
+                     .intraTileSchedulePositiveOrthant(true)
+                     .tile(4, 16)
+                     .mapToThreads(64)
+                     .mapToBlocks(128, 32, 4)
+                     .unroll(2)
+                     .tileImperfectlyNested(false)
+                     .useSharedMemory(true)
+                     .usePrivateMemory(true)
+                     .unrollCopyShared(false)
+                     .matchLibraryCalls(false);
+
+  tc::ATenCompilationUnit atCompl;
+  atCompl.define(TC);
+  // Expecting this to compile without dying.
+  atCompl.compile("layernorm", inputs, options);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
