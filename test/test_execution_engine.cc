@@ -45,6 +45,87 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   }
 };
 
+TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxA) {
+  at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
+  std::vector<at::Tensor> inputs = {a};
+  std::vector<at::Tensor> outputs;
+
+  // Tensor dependencies should strictly be DAG
+  Check(
+      R"(
+      def softmax(float(N, D) I) -> (O, tmp) {
+        tmp(n) max= I(n, d)
+        O(n, d) = exp(I(n, d) - tmp(n))
+        tmp(n) +=! O(n, d)
+        O(n, d) = O(n, d) / tmp(n)
+      }
+    )",
+      "softmax",
+      tc::MappingOptions::makeNaiveMappingOptions(),
+      inputs,
+      outputs);
+}
+
+TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxB) {
+  at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
+  std::vector<at::Tensor> inputs = {a};
+  std::vector<at::Tensor> outputs;
+
+  // Tensor dependencies should strictly be DAG
+  Check(
+      R"(
+      def softmax(float(N, D) I) -> (O, tmp, tmp1) {
+        tmp(n) max=! I(n, d)
+        O(n, d) = exp(I(n, d) - tmp(n))
+        tmp1(n) +=! O(n, d)
+        O(n, d) = O(n, d) / tmp1(n)
+      }
+    )",
+      "softmax",
+      tc::MappingOptions::makeNaiveMappingOptions(),
+      inputs,
+      outputs);
+}
+
+TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxC) {
+  at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
+  std::vector<at::Tensor> inputs = {a};
+  std::vector<at::Tensor> outputs;
+
+  Check(
+      R"(
+      def softmax(float(N, D) I) -> (O, expsum, maxVal) {
+        maxVal(n) max=! I(n, d)
+        expsum(n) +=! exp(I(n, d) - maxVal(n))
+        O(n, d) = exp(I(n, d) - maxVal(n)) / expsum(n)
+      }
+    )",
+      "softmax",
+      tc::MappingOptions::makeNaiveMappingOptions(),
+      inputs,
+      outputs);
+}
+
+TEST_F(ATenCompilationUnitTest, SoftmaxD) {
+  at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
+  std::vector<at::Tensor> inputs = {a};
+  std::vector<at::Tensor> outputs;
+
+  Check(
+      R"(
+      def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
+        maxVal(n) max= I(n, d)
+        expDistance(n, d) = exp(I(n, d) - maxVal(n))
+        expSum(n) +=! expDistance(n, d)
+        O(n, d) = expDistance(n, d) / expSum(n)
+      }
+    )",
+      "softmax",
+      tc::MappingOptions::makeNaiveMappingOptions(),
+      inputs,
+      outputs);
+}
+
 TEST_F(ATenCompilationUnitTest, Concat) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   at::Tensor b = at::CUDA(at::kFloat).rand({32, 16});
