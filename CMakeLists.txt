@@ -215,8 +215,8 @@ include(cmake/GetGitRevisionDescription.cmake)
 ################################################################################
 
 # gflags
-message("find_library(GFLAGS_LIBRARIES gflags")
-find_library(GFLAGS_LIBRARIES gflags PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
+message("Looking for gflags...")
+find_library(GFLAGS_LIBRARIES gflags HINTS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
 message(STATUS "Found gflags: ${GFLAGS_LIBRARIES}")
 
 # glog
@@ -227,7 +227,7 @@ if (WITH_CAFFE2)
   add_definitions(-DCAFFE2_USE_GOOGLE_GLOG)
 endif()
 
-find_library(GLOG_LIBRARIES glog PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
+find_library(GLOG_LIBRARIES glog HINTS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
 message(STATUS "Found glog: ${GLOG_LIBRARIES}")
 
 # Uncomment for debugging all the CMake variables
