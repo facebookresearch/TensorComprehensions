@@ -592,24 +592,14 @@ TEST_F(Caffe2Test, DISABLED_TcConvolutionOp_Gradient) {
       {"H"},
       {strategyArg, strideHArg, strideWArg});
 
-  // TODO: This is an error and should not throw
-  //  there is a bug and it throws an exception
   auto kh = KH;
   auto kw = KW;
   auto sh = SH;
   auto sw = SW;
-  try {
-    TestHarness::BasicGradientCorrectnessTest(
-        def,
-        init_ws,
-        {{"kernel_h", kh},
-         {"kernel_w", kw},
-         {"stride_h", sh},
-         {"stride_w", sw}});
-  } catch (std::runtime_error error) {
-    ASSERT_STREQ("[tc] Ppcg generated != 1 kernels", error.what());
-    return;
-  }
+  TestHarness::BasicGradientCorrectnessTest(
+      def,
+      init_ws,
+      {{"kernel_h", kh}, {"kernel_w", kw}, {"stride_h", sh}, {"stride_w", sw}});
 }
 
 TEST_F(Caffe2Test, TcBatchMatmul) {
