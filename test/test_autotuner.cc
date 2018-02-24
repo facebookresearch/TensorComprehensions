@@ -89,6 +89,28 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   }
 };
 
+TEST_F(ATenCompilationUnitTest, LayerNorm) {
+  at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
+  std::vector<at::Tensor> inputs = {mat1};
+  std::vector<at::Tensor> outputs;
+
+  static constexpr auto TC = R"TC(
+    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
+       mean(t, b) +=! I(t, b, c) / C
+       centered(t, b, c) = I(t, b, c) - mean(t, b)
+       var(t, b) +=! centered(t, b, c) * centered(t, b, c)
+       var(t, b) = (var(t, b)) / C
+       O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
+    }
+  )TC";
+  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto name = "layernorm";
+
+  std::string cacheFilename = "";
+  auto bestOptions =
+      autotune(cacheFilename, TC, name, inputs, options, {options});
+}
+
 TEST_F(ATenCompilationUnitTest, MatmulA) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor mat2 = at::CUDA(at::kFloat).rand({4, 5});
@@ -153,10 +175,7 @@ TEST_F(ATenCompilationUnitTest, TensorDot) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def tensordot(float(N, C1, C2, H, W) I0,
-                            float(N, C2, C3, H, W) I1)
-    -> (O)
-    {
+    def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
       O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
     }
   )TC";

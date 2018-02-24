@@ -29,9 +29,6 @@ namespace tc {
 namespace autotune {
 namespace detail {
 
-volatile std::sig_atomic_t killRequested = 0;
-volatile std::sig_atomic_t signal_ = 0;
-
 GeneticAutotuner::GeneticAutotuner(const std::string& tc) : tc_(tc) {
   lang::Parser parser(tc);
   while (parser.L.cur().kind != lang::TK_EOF) {
@@ -57,6 +54,8 @@ void GeneticAutotuner::storeCaches(const std::string& filename) {
   if (filename.empty()) {
     std::cout << "No filepath provided, not saving cache" << std::endl;
   } else {
+    std::cout << "Dumping cache to " << filename << ".cuda/options"
+              << std::endl;
     tc::OptionsCache::getCache()->keepOnlyBestCandidates(10);
     tc::OptionsCache::dumpCacheToProtobuf(tc::makeOptionsFilename(filename));
 
@@ -123,12 +122,12 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
       fixedParams);
 
   std::signal(SIGTERM, [](int sig) {
-    killRequested = 1;
     signal_ = sig;
+    killRequested_ = 1;
   });
   std::signal(SIGINT, [](int sig) {
-    killRequested = 1;
     signal_ = sig;
+    killRequested_ = 1;
   });
 
   std::atomic_bool tunerFinished(false);
@@ -148,12 +147,12 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
   });
   while (not tunerFinished) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if (killRequested) {
-      std::cerr << "Autotuning aborted. Dumping cache to " << cacheFileName
-                << ".cuda/options" << std::endl;
+    if (killRequested_) {
+      std::cerr << "Autotuning aborted." << std::endl;
       storeCaches(cacheFileName);
-      std::signal(signal_, SIG_DFL);
-      std::raise(signal_);
+      tunerThread.join();
+      killRequested_ = 0;
+      throw std::runtime_error("Abort requested");
     }
   }
   tunerThread.join();

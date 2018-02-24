@@ -40,6 +40,9 @@ namespace tc {
 namespace autotune {
 namespace detail {
 
+volatile std::sig_atomic_t signal_ = 0;
+volatile std::sig_atomic_t killRequested_ = 0;
+
 GeneticTunerHarness::GeneticTunerHarness(
     size_t n,
     uint8_t crossoverRate,
@@ -98,7 +101,9 @@ GeneticTunerHarness::GeneticTunerHarness(
 
 void GeneticTunerHarness::run(size_t numGenerations) {
   for (size_t i = 0; i < numGenerations; ++i) {
-    runOneGeneration(i);
+    if (not killRequested_) {
+      runOneGeneration(i);
+    }
   }
 }
 
