@@ -1,11 +1,8 @@
 ARG BUILD_ID
-FROM tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7:${BUILD_ID}
+FROM tensorcomprehensions/linux-trusty-gcc4.8-cuda8-cudnn6:${BUILD_ID}
 
 ENV LD_LIBRARY_PATH /usr/lib/:/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
 ENV PATH /usr/local/bin:/usr/local/cuda/bin:$PATH
-
-RUN apt-get update
-RUN apt-get install -y --no-install-recommends libz-dev
 
 WORKDIR /conda-install
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh &&\
@@ -35,3 +32,5 @@ RUN which protoc
 RUN protoc --version
 RUN which python
 RUN python --version
+
+CMD ["bash"]

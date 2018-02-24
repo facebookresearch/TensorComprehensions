@@ -1,5 +1,5 @@
 ARG BUILD_ID
-FROM tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0:${BUILD_ID}
+FROM tensorcomprehensions/linux-xenial-gcc5:${BUILD_ID}
 
 ARG BUILD
 ADD ./common/install_cuda.sh install_cuda.sh
