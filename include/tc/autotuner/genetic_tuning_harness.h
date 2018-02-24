@@ -16,6 +16,7 @@
 #pragma once
 
 #include <atomic>
+#include <csignal>
 #include <deque>
 #include <memory>
 #include <unordered_map>
@@ -30,6 +31,9 @@
 namespace tc {
 namespace autotune {
 namespace detail {
+
+extern volatile std::sig_atomic_t signal_;
+extern volatile std::sig_atomic_t killRequested_;
 
 class GeneticTunerHarness {
  public:

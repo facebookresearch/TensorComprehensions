@@ -671,7 +671,7 @@ TEST_F(Caffe2Test, DISABLED_TcGather) {
   Workspace w_test;
   init_ws(w_test);
   auto tc = R"TC(
-def fun(float(N) X, int(A,B) I) -> (Z) {
+def fun(float(N) X, int32(A,B) I) -> (Z) {
    Z(i,j) = X(I(i,j))
 }
 )TC";
