@@ -1,5 +1,5 @@
 ARG BUILD_ID
-FROM tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6:${BUILD_ID}
+FROM tensorcomprehensions/linux-trusty-gcc4.8-cuda8-cudnn6:${BUILD_ID}
 
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -33,3 +33,5 @@ RUN python3 --version
 RUN python3 -c 'import yaml'
 RUN which protoc
 RUN protoc --version
+
+CMD ["bash"]

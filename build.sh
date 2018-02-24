@@ -378,6 +378,7 @@ function install_halide() {
       WITH_OPENCL= \
       WITH_OPENGL= \
       WITH_METAL= \
+      WITH_EXCEPTIONS=1 \
       make -f ../Makefile -j $CORES install || exit 1
       mkdir -p ${INSTALL_PREFIX}/include/Halide
       mv ${INSTALL_PREFIX}/include/Halide*.h  ${INSTALL_PREFIX}/include/Halide/

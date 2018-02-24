@@ -19,9 +19,16 @@ The conda and non-conda images for each setup are below:
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86_1
+    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-cuda8-cudnn6-py3-conda:x86
 
 Now, follow the instructions below to build TC:
+
+.. note::
+
+    For building TC, you will need to specify :code:`CLANG_PREFIX` variable which is the location
+    where clang+llvm is installed in docker images. For docker image, please set this to
+    :code:`CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0` for the next step, otherwise
+    the build will fail.
 
 * **Option1:** If you want to build everything from scratch including TC dependencies, follow :ref:`conda_install_tc`.
 * **Option2:** If you want to build TC but using pre-built conda packages, follow :ref:`conda_dep_install_tc`.
@@ -31,16 +38,22 @@ Now, follow the instructions below to build TC:
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3:x86_1
+    $ docker run -i -t tensorcomprehensions/linux-trusty-gcc4.8-cuda8-cudnn6-py3:x86
 
 Now, to install TC, follow :ref:`non_conda_install_tc`
 
+.. note::
+
+    For building TC, you will need to specify :code:`CLANG_PREFIX` variable which is the location
+    where clang+llvm is installed in docker images. For docker image, please set this to
+    :code:`CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0` for the next step, otherwise
+    the build will fail.
 
 * :code:`Ubuntu 16.04 conda environment`
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3-conda:x86_1
+    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-cuda9-cudnn7-py3-conda:x86
 
 We don't ship the conda packages for TC dependencies that are compatible with gcc5 yet, so you have to
 build them from source. To install TC, see instructions here: :ref:`conda_install_tc`
@@ -50,10 +63,16 @@ build them from source. To install TC, see instructions here: :ref:`conda_instal
 
 .. code-block:: bash
 
-    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86_1
+    $ docker run -i -t tensorcomprehensions/linux-xenial-gcc5-cuda9-cudnn7-py3:x86
 
 Now, to install TC, follow :ref:`non_conda_install_tc`
 
+.. note::
+
+    For building TC, you will need to specify :code:`CLANG_PREFIX` variable which is the location
+    where clang+llvm is installed in docker images. For docker image, please set this to
+    :code:`CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0` for the next step, otherwise
+    the build will fail.
 
 TC runtime image with nvidia-docker
 -----------------------------------
@@ -66,9 +85,16 @@ have :code:`nvidia-docker` installed. Then run the image using following command
 
 .. code-block:: bash
 
-    $ nvidia-docker run --rm -i -t tensorcomprehensions/trusty-gcc4.8-py3-conda-cuda:x86_1
+    $ nvidia-docker run --rm -i -t tensorcomprehensions/trusty-gcc4.8-py3-conda-cuda:x86
 
 Now, follow the instructions below to build TC:
+
+.. note::
+
+    For building TC, you will need to specify :code:`CLANG_PREFIX` variable which is the location
+    where clang+llvm is installed in docker images. For docker image, please set this to
+    :code:`CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0` for the next step, otherwise
+    the build will fail.
 
 * **Option1:** If you want to build everything from scratch including TC dependencies, follow :ref:`conda_install_tc`.
 * **Option2:** If you want to build TC but using pre-built conda packages, follow :ref:`conda_dep_install_tc`.
