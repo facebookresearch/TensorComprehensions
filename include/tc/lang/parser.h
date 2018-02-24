@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 #pragma once
-#include "lexer.h"
-#include "tree.h"
-#include "tree_views.h"
+#include "tc/lang/lexer.h"
+#include "tc/lang/tree.h"
+#include "tc/lang/tree_views.h"
 
 namespace lang {
 

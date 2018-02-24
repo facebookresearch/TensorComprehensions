@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 #pragma once
-#include "error_report.h"
-#include "tree.h"
+#include "tc/lang/error_report.h"
+#include "tc/lang/tree.h"
 
 namespace lang {
 
