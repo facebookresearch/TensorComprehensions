@@ -4,7 +4,7 @@ jobs:
     working_directory: ~/TensorComprehensions
     resource_class: xlarge
     docker:
-      - image: tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86_1
+      - image: tensorcomprehensions/linux-trusty-gcc4.8-tapir5.0-cuda8-cudnn6-py3-conda:x86
 
     steps:
       - checkout
@@ -125,7 +125,7 @@ jobs:
     working_directory: ~/TensorComprehensions
     resource_class: xlarge
     docker:
-      - image: tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86_1
+      - image: tensorcomprehensions/linux-xenial-gcc5-tapir5.0-cuda9-cudnn7-py3:x86
 
     steps:
       - checkout

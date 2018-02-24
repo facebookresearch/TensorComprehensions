@@ -19,7 +19,7 @@ ENV CXX /usr/bin/g++
 ENV LLVM_SOURCES /tmp/llvm_sources-tapir5.0
 WORKDIR $LLVM_SOURCES
 
-ENV CLANG_PREFIX $HOME/clang+llvm-tapir5.0
+ENV CLANG_PREFIX /usr/local/clang+llvm-tapir5.0
 ENV CMAKE_VERSION cmake
 
 RUN git clone --recursive https://github.com/wsmoses/Tapir-LLVM llvm && \
