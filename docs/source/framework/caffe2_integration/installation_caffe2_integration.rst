@@ -1,9 +1,11 @@
-Using Tensor Comprehensions with Caffe2
-=======================================
+Installing TC with Caffe2 Integration
+=====================================
 
 We provide very basic integration of Tensor Comprehensions with Caffe2. Follow
 the instructions below on how to build Tensor Comprehensions so that Caffe2 works
 fine with it. We only support :code:`conda` environment build for this right now.
+
+.. _installation_caffe2_integration:
 
 Step 1: Install system dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

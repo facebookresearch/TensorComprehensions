@@ -13,8 +13,8 @@ The positioning of TC in the ML ecosystem aims at achieving the following:
 
 For now, we detail the first two points below:
 
-Integrating any ML framework
-----------------------------
+Implications of ML Framework Integration
+----------------------------------------
 
 The simple fact that TC wants to be ML-framework agnostic has deeper
 implications that we will look into lifting in the future.

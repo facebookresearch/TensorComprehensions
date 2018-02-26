@@ -1,5 +1,5 @@
-Building from Source in Non-Conda Environment
-=============================================
+Building from Source in Non-Conda Env
+=====================================
 
 For native development in non-conda environment, you have to build TC and all of
 its dependencies from source. Follow the installation instructions below for that.
