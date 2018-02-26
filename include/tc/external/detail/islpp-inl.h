@@ -289,26 +289,4 @@ inline long evalIntegerAt(isl::aff a, isl::point pt) {
   return isl_val_get_num_si(v.get());
 }
 
-inline isl::schedule_node MoveDownToMark(
-    isl::schedule_node node,
-    std::string name) {
-  while (node.get()) {
-    isl_schedule_node_type type = isl_schedule_node_get_type(node.get());
-    if (type == isl_schedule_node_mark) {
-      isl_id* id = isl_schedule_node_mark_get_id(node.get());
-      std::string mark_name{isl_id_get_name(id)};
-      isl_id_free(id);
-      if (mark_name == name)
-        return node;
-    } else if (
-        type == isl_schedule_node_sequence || type == isl_schedule_node_set) {
-      throw isl::with_exceptions::islpp_error(
-          "cannot unambiguously descend past sequence/set node");
-    }
-    node = node.child(0);
-  }
-
-  throw isl::with_exceptions::islpp_error(
-      "no child mark node with the name \"" + name + "\"");
-}
 } // namespace isl

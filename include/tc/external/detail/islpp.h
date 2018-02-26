@@ -283,8 +283,6 @@ inline T dropDimsPreserveTuple(T t, isl::dim_type type, int from, int length) {
   return t.set_tuple_id(type, id);
 }
 
-isl::schedule_node MoveDownToMark(isl::schedule_node, std::string name);
-
 // Given a space and a list of values, this returns the corresponding multi_val.
 template <typename T>
 isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
@@ -397,18 +395,6 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, paramValuesMap);
 }
 
-// Preferred namespace to use from C++ land
-namespace with_exceptions {
-
-class islpp_error : public std::runtime_error {
- public:
-  explicit islpp_error(const std::string& what_arg)
-      : std::runtime_error(what_arg) {}
-  explicit islpp_error(const char* what_arg) : std::runtime_error(what_arg) {}
-  virtual ~islpp_error() {}
-};
-
-} // namespace with_exceptions
 } // namespace isl
 
 namespace isl {
