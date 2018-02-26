@@ -41,8 +41,8 @@ PYBIND11_MODULE(autotuner, m) {
   try {
     dlpack = py::module::import("torch.utils.dlpack");
   } catch (std::exception& e) {
-    std::cerr << "\n DLPack conversion is missing, binary will be useless \n"
-              << std::endl;
+    std::cerr << "\n PyTorch installation is missing, binary will be useless \n"
+              << e.what() << std::endl;
   }
   py::class_<tc::autotune::GeneticAutotunerATen>(m, "ATenAutotuner")
       .def(py::init<const std::string>())

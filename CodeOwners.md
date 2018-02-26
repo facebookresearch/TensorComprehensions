@@ -1,16 +1,52 @@
 This file lists the "owners" for each part of Tensor Comprehensions.
-These people are major contributors of a specific part, they ensure issues in that part get addressed and pull requests get reviewed.
-If you want to contribute to Tensor Comprehensions, make sure to include these people in your review requests.
+These people are major contributors of a specific part, they ensure issues in
+that part get addressed and pull requests get reviewed. If you want to contribute
+to Tensor Comprehensions, make sure to include these people in your review requests.
 
-### Build system and Docker
+### Documentation
+* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
+* **Albert Cohen** [@albertcohen](https://github.com/albertcohen)
+```
+docs/*
+*.md
+```
+
+### Build system
 * **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
-docker/*
+.circleci/*
 */CMakeLists.txt
 ```
 
-### Tensor Comprehensions language and frontend 
+### Docker
+* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
+```
+docker/*
+```
+
+### Conda Packaging
+* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
+```
+conda_recipes/*
+```
+
+### Python bindings
+* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
+```
+tensor_comprehensions/pybinds/*
+test_python/*
+```
+
+### Framework integration (PyTorch, Caffe2, etc.)
+* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
+```
+tensor_comprehensions/*
+src/c2/*
+src/aten/*
+```
+
+### Tensor Comprehensions language and frontend
 * **Zachary DeVito** [@zdevito](https://github.com/zdevito)
 ```
 src/lang/*
@@ -35,27 +71,6 @@ src/core/polyhedral/*
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
 src/autotuner/*
-```
-
-### Framework integration (ATen, Caffe2, etc.)
-* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
-```
-src/c2/*
-src/aten/*
-```
-
-### Documentation
-* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
-* **Albert Cohen** [@albertcohen](https://github.com/albertcohen)
-```
-docs/*
-*.md
-```
-
-### Python bindings
-* **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
-```
-pybind/*
 ```
 
 ### Protocol buffers

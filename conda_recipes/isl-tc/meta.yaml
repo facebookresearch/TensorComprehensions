@@ -1,0 +1,35 @@
+package:
+  name: isl-tc
+  version: "{{ environ.get('ISL_TC_BUILD_VERSION') }}"
+
+source:
+  git_url: https://github.com/nicolasvasilache/isl.git
+  git_rev: "{{ environ.get('ISL_TC_GIT_HASH') }}"
+
+requirements:
+  build:
+    - gmp>=5.0.1,<7
+    - cmake
+  run:
+    - gmp>=5.0.1,<7
+    - cmake
+
+build:
+  number: {{ environ.get('ISL_TC_BUILD_NUMBER') }}
+  skip: True   # [win]
+
+test:
+  commands:
+    - test -f "$PREFIX/lib/libisl.so"
+    - test -f "$PREFIX/lib/libisl-static.a"
+    - test -d "$PREFIX/include/isl"
+    - test -f "$PREFIX/include/isl/interface/isl.h"
+
+about:
+  home: https://github.com/nicolasvasilache/isl
+  license: MIT
+  summary: A thread-safe C library for manipulating sets and relations of integer points bounded by affine constraints.
+
+extra:
+  recipe-maintainers:
+    - prigoyal

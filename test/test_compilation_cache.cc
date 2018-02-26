@@ -1356,7 +1356,7 @@ TEST_F(CompilationCacheTest, Serialization) {
 TEST(CompilationCache, ManualInjection) {
   static constexpr auto tc = R"(
       def add(float(N) A, float(N) B) -> (output) {
-        output(i) = A(i) + B(i) + 1
+        output(i) = A(i) + B(i)
       })";
 
   tc::ManualCudaCache::enableCache();

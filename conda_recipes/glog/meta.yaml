@@ -1,0 +1,37 @@
+package:
+  name: glog
+  version: "{{ environ.get('GLOG_BUILD_VERSION') }}"
+
+source:
+  git_url: https://github.com/google/glog.git
+  git_rev: "{{ environ.get('GLOG_GIT_HASH') }}"
+
+requirements:
+  build:
+    # glog has default flag: WITH_GFLAGS=ON in glog cmake file. TC also builds
+    # glog with gflags so we get this dependency
+    - gflags==2.4.4
+    - cmake
+  run:
+    - gflags==2.4.4
+    - cmake
+
+build:
+  number: {{ environ.get('GLOG_BUILD_NUMBER') }}
+  skip: true  # [win]
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib*/libglog.so
+    - test -f ${PREFIX}/lib*/libglog.so.0
+    - test -f ${PREFIX}/lib*/libglog.so.0.3.5
+    - test -d ${PREFIX}/include/glog
+
+about:
+  home: https://github.com/google/glog
+  license: BSD 3-Clause
+  summary: C++ implementation of the Google logging module.
+
+extra:
+  recipe-maintainers:
+    - prigoyal

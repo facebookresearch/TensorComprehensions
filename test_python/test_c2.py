@@ -31,11 +31,15 @@ class TestCaffe2(unittest.TestCase):
           output(i, j) +=! A(i, kk) * B(kk, j)
         }
         """
+        # TODO: (prigoyal) serialize the options
+        # options = Options("mlp")
         mat1, mat2 = np.random.rand(100, 400), np.random.rand(400, 500)
         with core.DeviceScope(core.DeviceOption(caffe2_pb2.CUDA, 0)):
             workspace.FeedBlob('mat1', mat1.astype(np.float32))
             workspace.FeedBlob('mat2', mat2.astype(np.float32))
-            matmul = core.CreateOperator("TcOp", ["mat1", "mat2"], ["out"], tcDef=lang, tcName="matmul")
+            matmul = core.CreateOperator(
+                "TcOp", ["mat1", "mat2"], ["out"], lang=lang, tcName="matmul"
+            )
         workspace.RunOperatorOnce(matmul)
         out = workspace.FetchBlob("out")
 

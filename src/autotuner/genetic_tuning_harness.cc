@@ -323,11 +323,13 @@ void GeneticTunerHarness::doCompile(tc::ExecutionEngine& engine) {
       pConf->optionalCompilationHandle =
           std::unique_ptr<size_t>(new size_t(handle));
     } catch (const std::exception& e) {
-      LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
-      std::stringstream ssWarning;
-      MappingOptionsCppPrinter warningPrinter(ssWarning);
-      warningPrinter << options;
-      LOG_LINE_BY_LINE(WARNING, ssWarning);
+      if (FLAGS_debug_tuner) {
+        LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
+        std::stringstream ssWarning;
+        MappingOptionsCppPrinter warningPrinter(ssWarning);
+        warningPrinter << options;
+        LOG_LINE_BY_LINE(WARNING, ssWarning);
+      }
       pConf->invalid = true;
     }
     CHECK(pConf->invalid || pConf->optionalCompilationHandle)
@@ -407,12 +409,14 @@ void GeneticTunerHarness::doGpuWork(
         engine.clear(handle);
       }
     } catch (std::exception& e) {
-      LOG(WARNING) << "Runtime error gpu " << gpu << ": " << e.what();
-      std::stringstream ssWarning;
-      MappingOptionsCppPrinter warningPrinter(ssWarning);
-      warningPrinter << options;
-      LOG(WARNING) << "Aborted execution on gpu " << gpu;
-      LOG_LINE_BY_LINE(WARNING, ssWarning);
+      if (FLAGS_debug_tuner) {
+        LOG(WARNING) << "Runtime error gpu " << gpu << ": " << e.what();
+        std::stringstream ssWarning;
+        MappingOptionsCppPrinter warningPrinter(ssWarning);
+        warningPrinter << options;
+        LOG(WARNING) << "Aborted execution on gpu " << gpu;
+        LOG_LINE_BY_LINE(WARNING, ssWarning);
+      }
       while (cudaGetLastError() != cudaSuccess) {
         // In case of errors in the generated, we cannot rely on deviceReset to
         // set the GPU in a clean state. So instead we just pop and discard all
