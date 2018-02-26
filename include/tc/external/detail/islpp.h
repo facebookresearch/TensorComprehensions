@@ -284,38 +284,6 @@ isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
   return mv;
 }
 
-// Takes a space + new ids and returns the multi_aff such that:
-// 1. the space is s extended by all the ids (enforced to not be
-//    present in the original space)
-// 2. the multi_aff is the identity on its restriction to the parameter space
-//
-// Here we are using T so that template instantion kicks in at the caller's
-// place and we can use CHECK macros in the proper context.
-template <typename T>
-inline isl::multi_aff makeParameterVectorInSpace(
-    isl::space s,
-    const std::vector<T>& ids) {
-  auto offset = s.dim(isl::dim_type::param);
-  auto space = s.add_dims(isl::dim_type::param, ids.size());
-  {
-    int i = 0;
-    for (auto id : ids) {
-      CHECK_GT(0, space.find_dim_by_id(isl::dim_type::param, id))
-          << "ID " << id << " already exists in space: " << space;
-      space = space.set_dim_id(isl::dim_type::param, offset + i++, id);
-    }
-  }
-  auto ma = isl::multi_aff::zero(space);
-  isl::local_space ls(space.domain());
-  int i = 0;
-  for (auto id : ids) {
-    auto pos = space.find_dim_by_id(isl::dim_type::param, id);
-    isl::aff aff(ls, isl::dim_type::param, pos);
-    ma = ma.set_aff(i++, aff);
-  }
-  return ma;
-}
-
 // Takes a space of parameters, a range of (ids, extent)-pairs and returns
 // the set such that:
 // 1. the space is paramSpace extended by all the ids (enforced to not be
