@@ -266,10 +266,6 @@ struct IslIdIslHash {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
-isl::set makeUniverseSet(const isl::ctx& ctx, std::vector<const char*> pNames);
-// Better if we had isl::set::align(s) a member
-isl::set makeAlignedSet(isl::set orig, isl::set s);
-
 template <typename T>
 inline T dropDimsPreserveTuple(T t, isl::dim_type type, int from, int length) {
   auto id = t.get_tuple_id(type);

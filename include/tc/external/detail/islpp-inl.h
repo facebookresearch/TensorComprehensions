@@ -218,21 +218,4 @@ inline isl::set operator&(isl::point P1, isl::set S2) {
   return S2 & P1;
 }
 
-inline isl::set makeUniverseSet(
-    const isl::ctx& ctx,
-    std::vector<const char*> pNames) {
-  auto s = isl::set::universe(isl::space(ctx, pNames.size()));
-  int idx = 0;
-  for (auto n : pNames) {
-    s = isl::manage(isl_set_set_dim_name(s.release(), isl_dim_param, idx++, n));
-  }
-  return s;
-}
-
-// Better if we had isl::set::align(s) a member
-inline isl::set makeAlignedSet(isl::set orig, isl::set s) {
-  return isl::manage(
-      isl_set_align_params(orig.copy(), isl_set_get_space(s.copy())));
-}
-
 } // namespace isl
