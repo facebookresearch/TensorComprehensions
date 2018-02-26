@@ -269,12 +269,6 @@ struct IslIdIslHash {
 isl::set makeUniverseSet(const isl::ctx& ctx, std::vector<const char*> pNames);
 // Better if we had isl::set::align(s) a member
 isl::set makeAlignedSet(isl::set orig, isl::set s);
-isl::point
-makePoint(isl::space s, std::vector<const char*> names, std::vector<long> vals);
-isl::point makePoint(
-    isl::space s,
-    std::unordered_map<std::string, long> nameMap);
-long evalIntegerAt(isl::aff a, isl::point pt);
 
 template <typename T>
 inline T dropDimsPreserveTuple(T t, isl::dim_type type, int from, int length) {
