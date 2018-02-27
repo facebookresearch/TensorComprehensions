@@ -1,5 +1,5 @@
-Building from Source in Conda Environment
-=========================================
+Building from Source in Conda Env
+=================================
 
 If you want to build TC in a conda environment from source including all of its
 dependencies, you are at the right installation page. But if you want to build TC

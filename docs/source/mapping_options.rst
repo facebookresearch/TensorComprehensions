@@ -1,3 +1,5 @@
+.. _tc_mapping_options:
+
 Mapping Options
 ===============
 
@@ -32,7 +34,7 @@ Python
 
 .. code-block:: python
 
-  from mapping_options import Options
+  from tensor_comprehensions.mapping_options import Options
 
   options = Options("naive")
   options.mapToBlocks([100, 20])

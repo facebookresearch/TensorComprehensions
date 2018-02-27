@@ -23,6 +23,7 @@
 
 # we use a mobile friendly version of themes
 # see https://github.com/rtfd/sphinx_rtd_theme
+import tensor_comprehensions
 import sphinx_rtd_theme
 
 # -- General configuration ------------------------------------------------

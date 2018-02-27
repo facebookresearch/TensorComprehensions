@@ -16,6 +16,8 @@ from the previous generation. Both types are potentially randomly changed
 (mutation). The top candidates (:code:`elites`) survive intact (without mutations)
 between generations.
 
+.. _autotuner_parameters:
+
 Parameters for Autotuning
 -------------------------
 

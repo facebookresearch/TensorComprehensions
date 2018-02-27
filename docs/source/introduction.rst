@@ -1,15 +1,38 @@
 What is Tensor Comprehensions?
 ==============================
 
-Tensor Comprehensions(TC) is a notation based on generalized Einstein notation for computing on
-multi-dimensional arrays. TC greatly simplifies ML framework implementations by
-providing a concise and powerful syntax which can be efficiently translated to
-high-performance computation kernels, automatically.
+Tensor Comprehensions(TC) is a notation based on generalized Einstein notation
+for computing on multi-dimensional arrays. TC greatly simplifies ML framework
+implementations by providing a concise and powerful syntax which can be efficiently
+translated to high-performance computation kernels, automatically.
 
-TC are supported both in Python and C++, we also provide
-lightweight integration with Caffe2. More generally the only
-requirement to integrate TC into a workflow is to use a simple tensor library
-with a few basic functionalities.
+Example of using TC with framework
+----------------------------------
+
+TC is supported both in Python and C++ and we also provide lightweight integration
+with PyTorch/Caffe2 frameworks.
+
+An example of how using TC in PyTorch looks like:
+
+.. code-block:: python
+
+    import tensor_comprehensions as tc
+    import torch
+    lang = """
+    def matmul(float(M,N) A, float(N,K) B) -> (output) {
+      output(i, j) +=! A(i, kk) * B(kk, j)
+    }
+    """
+    matmul = tc.define(lang, name="matmul")
+    mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
+    out = matmul(mat1, mat2)
+
+
+For more details on how to use TC with PyTorch, see :ref:`tc_with_pytorch`.
+
+More generally the only requirement to integrate TC into a workflow is to use a
+simple tensor library with a few basic functionalities. For more details, see
+:ref:`integrating_ml_frameworks`.
 
 Tensor Comprehension Notation
 -----------------------------
@@ -60,16 +83,6 @@ Simple matrix-vector
       o(i) += A(i,j) * B(j)
     }
 
-Simple matrix-multiply
-^^^^^^^^^^^^^^^^^^^^^^
-Note the layout for B is transposed and matches the traditional layout of the weight matrix in a linear layer):
-
-.. code::
-
-    def mm(float(X,Y) A, float(Y,Z) B) -> (R) {
-      R(i,j) += A(i,k) * B(k,j)
-    }
-
 Simple 2-D convolution (no stride, no padding)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -82,8 +95,7 @@ Simple 2-D convolution (no stride, no padding)
 Simple 2D max pooling
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Note the similarity with a convolution with a
-"select"-style kernel):
+Note the similarity with a convolution with a "select"-style kernel:
 
 .. code::
 

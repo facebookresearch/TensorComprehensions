@@ -47,6 +47,7 @@ If you don't have correct gcc, g++, follow the instructions below, otherwise ski
     $ update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
     $ update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
 
+.. _install_anaconda:
 
 Step 3: Install Anaconda3
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
