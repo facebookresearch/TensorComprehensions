@@ -110,6 +110,34 @@ DEFINE_int64(
     -1,
     "The number of best candidates to restore from the proto cache");
 
+namespace {
+bool parseCommandLineFlags(int* pargc, char*** pargv) {
+  if (*pargc == 0) {
+    return true;
+  }
+  // TODO: (prigoyal): we need to do some filtering on flags here,
+  // add option for displaying the help message
+  return ::gflags::ParseCommandLineFlags(pargc, pargv, true);
+}
+
+bool initGoogleLogging(int* pargc, char** argv) {
+  if (*pargc == 0) {
+    return true;
+  }
+  ::google::InitGoogleLogging(argv[0]);
+  return true;
+}
+} // namespace
+
+namespace python {
+bool globalDebugGflagsGlogInit(int* pargc, char*** pargv) {
+  bool success = true;
+  success &= parseCommandLineFlags(pargc, pargv);
+  success &= initGoogleLogging(pargc, *pargv);
+  return success;
+}
+} // namespace python
+
 uint64_t initRandomSeed() {
   static std::mutex mut;
   static bool inited = false;

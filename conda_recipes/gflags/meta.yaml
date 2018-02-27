@@ -1,0 +1,37 @@
+package:
+  name: gflags
+  version: "{{ environ.get('GFLAGS_BUILD_VERSION') }}"
+
+source:
+  git_url: https://github.com/gflags/gflags.git
+  git_rev: "{{ environ.get('GFLAGS_GIT_HASH') }}"
+
+requirements:
+  build:
+    - cmake
+  run:
+    - cmake
+
+build:
+  number: {{ environ.get('GFLAGS_BUILD_NUMBER') }}
+  skip: true  # [win]
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib/libgflags.so
+    - test -f ${PREFIX}/lib/libgflags.so.2.2
+    - test -f ${PREFIX}/lib/libgflags.so.2.2.1
+    - test -f ${PREFIX}/lib/libgflags_nothreads.so
+    - test -f ${PREFIX}/lib/libgflags_nothreads.so.2.2
+    - test -f ${PREFIX}/lib/libgflags_nothreads.so.2.2.1
+    - test -d ${PREFIX}/include/gflags
+
+about:
+  home: https://github.com/gflags/gflags
+  license: BSD 3-Clause
+  license_file: COPYING.txt
+  summary: A C++ library that implements commandline flags processing.
+
+extra:
+  recipe-maintainers:
+    - prigoyal

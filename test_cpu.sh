@@ -26,8 +26,9 @@ echo "Running Python tests"
 
 echo "Setting PYTHONPATH only"
 export TC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-export PYTHONPATH=${TC_DIR}/build/pybinds:${PYTHONPATH}
+export PYTHONPATH=${TC_DIR}/build/tensor_comprehensions/pybinds:${PYTHONPATH}
 echo "PYTHONPATH: ${PYTHONPATH}"
+${PYTHON} -c 'import tc'
 ${PYTHON} -c 'import mapping_options'
 ${PYTHON} -c 'import autotuner'
 
