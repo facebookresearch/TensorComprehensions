@@ -45,6 +45,8 @@ my_layer.autotune
 .. autoclass:: TcUnit
    :members: autotune
 
+.. _autotune_parameters:
+
 Autotuning Parameters
 ---------------------
 
