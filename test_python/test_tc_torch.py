@@ -13,7 +13,7 @@
 # limitations under the License.
 ##############################################################################
 
-import os, unittest, time, pdb
+import os, unittest, time
 
 import torch
 import torch.cuda
@@ -52,7 +52,6 @@ def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_gra
 }}
 """
 
-# PATH_PREFIX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tc_test")
 PATH_PREFIX = os.path.join("/tmp/", "tc_test")
 
 if not os.path.exists(PATH_PREFIX):
@@ -333,7 +332,7 @@ class TestAutotuner(unittest.TestCase):
         I, W = torch.randn(N, C, H, W).cuda(), torch.randn(O, C, kH, kW).cuda()
         convolution.autotune(I, W, **tc.autotuner_settings)
         # on the second call, autotuning will be seeded from previous best options
-        convolution.autotune(I, W, **tc.autotuner_settings)
+        convolution.autotune(I, W, **tc.autotuner_settings, generations=5, pop_size=20)
 
     def test_conv_train_autotune_cache_no_options_seed(self):
         lang = CONV_TRAIN
