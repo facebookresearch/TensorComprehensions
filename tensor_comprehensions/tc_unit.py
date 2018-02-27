@@ -41,6 +41,14 @@ small_sizes_autotuner_settings = {
 ###############################################################################
 # Some helper functions
 ###############################################################################
+def check_cache_file_exists(cache_file):
+    # for autotuning, we save two files: .cuda and .options, we will check that
+    # these two files exists for the validity of cache
+    if os.path.exists(cache_file + ".options") and os.path.exists(cache_file + ".cuda"):
+        return True
+    return False
+
+
 def get_options_from_cache_file(name, *inputs, **kwargs):
     options = None
     if "cache" in kwargs and kwargs["cache"] and isinstance(kwargs["cache"], str):
@@ -49,12 +57,12 @@ def get_options_from_cache_file(name, *inputs, **kwargs):
         if "training" in kwargs and kwargs["training"]:
             if (kwargs["type"] == "backward"):
                 cache_file = cache_file + "_backward"
-        if "tuner" in kwargs and os.path.exists(cache_file):
+        if "tuner" in kwargs and check_cache_file_exists(cache_file):
             tuner = kwargs["tuner"]
             loaded_options = tuner.load(cache_file, name, list(inputs), 1)
             if len(loaded_options) > 0:
                 options = loaded_options[0]
-        elif os.path.exists(cache_file):
+        elif check_cache_file_exists(cache_file):
             tuner = TcAutotuner(kwargs["tc_lang"])
             options = tuner.load(cache_file, name, list(inputs))
     return options
@@ -225,7 +233,6 @@ class TcAutotuner(object):
         kwargs.pop("name", None)
         backward = True if backward_name is not None else False
         hash_key = get_tc_hash_key(name, *input_tensors)
-
         # lookup for the options in the cache. Whenever we make the call to
         # autotune, tuning must happen. But if the kernel has been tuned earlier
         # then we can use previous options to seed the tuning.
@@ -592,6 +599,10 @@ class TcUnit(object):
         kwargs.update(self.kwargs_define)
         if self.tuner is None:
             self.tuner = TcAutotuner(self.lang, **kwargs)
+        else:
+            # we do the init again so that the autotuner parameters are updated
+            # properly if users change them
+            self.tuner.__init__(self.lang, **kwargs)
         return self.tuner.autotune(*inputs, **kwargs)
 
 ###############################################################################
