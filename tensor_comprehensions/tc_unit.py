@@ -159,39 +159,20 @@ def get_options_from_kwargs_and_tuner_cache(name, cache_file, options_cache, *in
 # TC autotuner class - ATen
 ###############################################################################
 class TcAutotuner(object):
-    def __init__(
-        self,
-        tc_lang,
-        pop_size=10,
-        crossover_rate=80,
-        mutation_rate=7,
-        generations=2,
-        number_elites=1,
-        threads=8,
-        gpus="0",
-        proto="/tmp/tuner.txt",
-        restore_from_proto=False,
-        restore_number=10,
-        log_generations=False,
-        tuner_min_launch_total_threads=64,
-        **kwargs
-    ):
+    def __init__(self, tc_lang, **kwargs):
         # tuner_cache will look like:
         # hash_key -> {"forward": options1, "backward": options2}
         self.tuner_cache = {}
         self.kwargs = kwargs
         self.tc_lang = tc_lang
         self.autotuner = ATenAutotuner(tc_lang)
-        self.set_autotuner_settings(
-            pop_size, crossover_rate, mutation_rate, generations, number_elites,
-            threads, gpus, proto, restore_from_proto, restore_number,
-            log_generations, tuner_min_launch_total_threads
-        )
+        self.set_autotuner_parameters(**kwargs)
 
-    def set_autotuner_settings(
-        self, pop_size, crossover_rate, mutation_rate, generations, number_elites,
-        threads, gpus, proto, restore_from_proto, restore_number, log_generations,
-        tuner_min_launch_total_threads,
+    def set_autotuner_parameters(
+        self, pop_size=10, crossover_rate=80, mutation_rate=7, generations=2,
+        number_elites=1, threads=8, gpus="0", proto="/tmp/tuner.txt",
+        restore_from_proto=False, restore_number=10, log_generations=False,
+        tuner_min_launch_total_threads=64, **kwargs
     ):
         self.autotuner.pop_size(pop_size)
         self.autotuner.crossover_rate(crossover_rate)
@@ -602,7 +583,7 @@ class TcUnit(object):
         else:
             # we do the init again so that the autotuner parameters are updated
             # properly if users change them
-            self.tuner.__init__(self.lang, **kwargs)
+            self.tuner.set_autotuner_parameters(**kwargs)
         return self.tuner.autotune(*inputs, **kwargs)
 
 ###############################################################################
