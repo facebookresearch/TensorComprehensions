@@ -266,24 +266,12 @@ struct IslIdIslHash {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
-isl::set makeUniverseSet(const isl::ctx& ctx, std::vector<const char*> pNames);
-// Better if we had isl::set::align(s) a member
-isl::set makeAlignedSet(isl::set orig, isl::set s);
-isl::point
-makePoint(isl::space s, std::vector<const char*> names, std::vector<long> vals);
-isl::point makePoint(
-    isl::space s,
-    std::unordered_map<std::string, long> nameMap);
-long evalIntegerAt(isl::aff a, isl::point pt);
-
 template <typename T>
 inline T dropDimsPreserveTuple(T t, isl::dim_type type, int from, int length) {
   auto id = t.get_tuple_id(type);
   t = t.drop_dims(type, from, length);
   return t.set_tuple_id(type, id);
 }
-
-isl::schedule_node MoveDownToMark(isl::schedule_node, std::string name);
 
 // Given a space and a list of values, this returns the corresponding multi_val.
 template <typename T>
@@ -294,38 +282,6 @@ isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
     mv = mv.set_val(i, isl::val(s.get_ctx(), vals[i]));
   }
   return mv;
-}
-
-// Takes a space + new ids and returns the multi_aff such that:
-// 1. the space is s extended by all the ids (enforced to not be
-//    present in the original space)
-// 2. the multi_aff is the identity on its restriction to the parameter space
-//
-// Here we are using T so that template instantion kicks in at the caller's
-// place and we can use CHECK macros in the proper context.
-template <typename T>
-inline isl::multi_aff makeParameterVectorInSpace(
-    isl::space s,
-    const std::vector<T>& ids) {
-  auto offset = s.dim(isl::dim_type::param);
-  auto space = s.add_dims(isl::dim_type::param, ids.size());
-  {
-    int i = 0;
-    for (auto id : ids) {
-      CHECK_GT(0, space.find_dim_by_id(isl::dim_type::param, id))
-          << "ID " << id << " already exists in space: " << space;
-      space = space.set_dim_id(isl::dim_type::param, offset + i++, id);
-    }
-  }
-  auto ma = isl::multi_aff::zero(space);
-  isl::local_space ls(space.domain());
-  int i = 0;
-  for (auto id : ids) {
-    auto pos = space.find_dim_by_id(isl::dim_type::param, id);
-    isl::aff aff(ls, isl::dim_type::param, pos);
-    ma = ma.set_aff(i++, aff);
-  }
-  return ma;
 }
 
 // Takes a space of parameters, a range of (ids, extent)-pairs and returns
@@ -397,18 +353,6 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, paramValuesMap);
 }
 
-// Preferred namespace to use from C++ land
-namespace with_exceptions {
-
-class islpp_error : public std::runtime_error {
- public:
-  explicit islpp_error(const std::string& what_arg)
-      : std::runtime_error(what_arg) {}
-  explicit islpp_error(const char* what_arg) : std::runtime_error(what_arg) {}
-  virtual ~islpp_error() {}
-};
-
-} // namespace with_exceptions
 } // namespace isl
 
 namespace isl {
