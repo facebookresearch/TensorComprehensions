@@ -72,3 +72,9 @@ Machine Learning.
    :caption: Support
 
    contacts
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Tutorials Reference
+
+   tutorials/index
