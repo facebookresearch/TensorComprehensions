@@ -689,13 +689,10 @@ struct IslCodegenRes {
 };
 
 IslCodegenRes codegenISL(const Scop& scop) {
-  // TODO: improve support for C++ callbacks in isl bindings generator
-  // see https://github.com/PollyLabs/isl/issues/24
-  // This cannot be done via islpp_wrap because the callback is stored for
-  // later use while islpp_wrap passes a pointer to a stack-allocated
-  // object to the call as a means to support capturing lambdas.
-  auto collect =
-      [](isl_ast_node* n, isl_ast_build* b, void* uTuple) -> isl_ast_node* {
+  IteratorMapsType iteratorMaps;
+  StmtSubscriptExprMapType stmtSubscripts;
+  auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
+                     isl::ast_node n, isl::ast_build b) -> isl::ast_node {
     auto collectIteratorMaps =
         [](isl::ast_node node,
            isl::ast_build build,
@@ -738,16 +735,8 @@ IslCodegenRes codegenISL(const Scop& scop) {
       return node.set_annotation(stmtId);
     };
 
-    auto& t = *static_cast<
-        std::tuple<IteratorMapsType&, Scop&, StmtSubscriptExprMapType&>*>(
-        uTuple);
-
-    auto& uv = std::get<0>(t);
-    auto& scop = std::get<1>(t);
-    auto& stmtSubscripts = std::get<2>(t);
-    return collectIteratorMaps(
-               isl::manage(n), isl::manage_copy(b), uv, scop, stmtSubscripts)
-        .release();
+    auto& uv = iteratorMaps;
+    return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
   };
 
   auto bands = detail::ScheduleTree::collect(
@@ -765,12 +754,8 @@ IslCodegenRes codegenISL(const Scop& scop) {
   checkValidIslSchedule(scop.scheduleRoot());
   auto schedule = detail::toIslSchedule(scop.scheduleRoot());
   auto ctx = schedule.get_ctx();
-  IteratorMapsType iteratorMaps;
-  StmtSubscriptExprMapType stmtSubscripts;
   auto astBuild = isl::ast_build(schedule.get_ctx());
-  auto t = std::tie(iteratorMaps, scop, stmtSubscripts);
-  astBuild = isl::manage(
-      isl_ast_build_set_at_each_domain(astBuild.release(), collect, &t));
+  astBuild = astBuild.set_at_each_domain(collect);
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
   auto astNode = astBuild.node_from(schedule);
   return {

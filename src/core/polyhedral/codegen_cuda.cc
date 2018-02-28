@@ -739,13 +739,9 @@ string emitCudaKernel(
   emitTensorViews(ss, scop.halide.inputs, paramValues);
   emitTmpDecl(ss, scop);
   emitPromotedArrayViewsHalide(ss, scop);
-  // TODO: improve support for C++ callbacks in isl bindings generator
-  // see https://github.com/PollyLabs/isl/issues/24
-  // This cannot be done via islpp_wrap because the callback is stored for
-  // later use while islpp_wrap passes a pointer to a stack-allocated
-  // object to the call as a means to support capturing lambdas.
-  auto collect =
-      [](isl_ast_node* n, isl_ast_build* b, void* u) -> isl_ast_node* {
+  IteratorMapsType iteratorMaps;
+  auto collect = [&iteratorMaps](
+                     isl::ast_node n, isl::ast_build b) -> isl::ast_node {
     auto collectIteratorMaps =
         [](isl::ast_node node,
            isl::ast_build build,
@@ -776,9 +772,7 @@ string emitCudaKernel(
       return node.set_annotation(nodeId);
     };
 
-    auto uv = static_cast<IteratorMapsType*>(u);
-    return collectIteratorMaps(isl::manage(n), isl::manage_copy(b), uv)
-        .release();
+    return collectIteratorMaps(n, b, &iteratorMaps);
   };
 
   auto bands = detail::ScheduleTree::collect(
@@ -796,10 +790,8 @@ string emitCudaKernel(
   checkValidIslSchedule(mscop.schedule());
   auto schedule = detail::toIslSchedule(mscop.schedule());
   auto ctx = schedule.get_ctx();
-  IteratorMapsType iteratorMaps;
   auto astBuild = isl::ast_build(schedule.get_ctx());
-  astBuild = isl::manage(isl_ast_build_set_at_each_domain(
-      astBuild.release(), collect, &iteratorMaps));
+  astBuild = astBuild.set_at_each_domain(collect);
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
   auto astNode = astBuild.node_from(schedule);
   AstPrinter(CodegenContext(ss, mscop, iteratorMaps)).emit(astNode);
