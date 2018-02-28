@@ -90,3 +90,24 @@ footer .rst-footer-buttons {
 footer p {
     font-size: 100%;
 }
+
+/* Fixes for mobile - adopted from pytorch theme*/
+.wy-nav-top {
+    background-color: #fff;
+    background-image: url('../img/tc-logo-full-color-with-text-2.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    padding: 0;
+    margin: 0.4045em 0.809em;
+    color: #333;
+}
+
+.wy-nav-top > a {
+    display: none;
+}
+
+@media screen and (max-width: 768px) {
+    .wy-side-nav-search>a img.logo {
+        height: 60px;
+    }
+}
