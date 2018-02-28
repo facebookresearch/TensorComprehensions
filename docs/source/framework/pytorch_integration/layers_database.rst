@@ -256,7 +256,7 @@ Cast
 .. code::
 
     def cast(float(M,N) A) -> (int32(M,N) O1) {{
-        O1(m, n) = int32(A(m, n) + {four})
+        O1(m, n) = int32(A(m, n) + {constant})
     }}
 
 Copy

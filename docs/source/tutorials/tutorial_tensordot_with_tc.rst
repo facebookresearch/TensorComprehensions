@@ -10,7 +10,7 @@ For this tutorial, you will need to install Tensor Comprehensions binary. You ca
 get binary builds of Tensor Comprehensions with: ``conda install -y -c pytorch -c prigoyal tensor_comprehensions``
 
 About TensorDot
-^^^^^^^^^^^^^^^
+---------------
 
 Assume that we have two tensors, one with dimension :code:`(N, C1, C2, H, W)` and
 one with dimension :code:`(N, C2, C3, H, W)`, and we want to do a gemm-type
@@ -140,7 +140,7 @@ get a decent kernel performance as shown in the screenshot below (tuned on one M
     :align: center
 
 Early stopping
-^^^^^^^^^^^^^^
+--------------
 
 If your kernel performance is good enough while the autotuning continues, you
 can stop autotuning by pressing :code:`Ctrl+C` and the autotuning cache will be saved
