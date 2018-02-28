@@ -3,8 +3,8 @@ Autograd with TC
 
 We provide the TC intergation with PyTorch `autograd` so that it is easy to write
 a training layer with TC and be able to run backwards as well if the layer is part
-of a network. In order to write a training layer with TC, you need to follow the
-steps below:
+of a network. We do not support double backwards right now. In order to write a
+training layer with TC, you need to follow the steps below:
 
 1. Define your TC language that has two definitions: one for the forward layer and the other for the backward layer and pass it to :code:`tc.define` call. In addition, also pass :code:`training=True` and the name of the backward TC :code:`backward`.
 
