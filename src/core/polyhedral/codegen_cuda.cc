@@ -923,7 +923,7 @@ string emitCudaKernel(
   astBuild = isl::manage(isl_ast_build_set_at_each_domain(
       astBuild.release(), collect, &iteratorMaps));
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
-  auto astNode = astBuild.node_from_schedule(schedule);
+  auto astNode = astBuild.node_from(schedule);
   AstPrinter(CodegenContext(ss, mscop, iteratorMaps)).emit(astNode);
   ss << "}" << endl;
 

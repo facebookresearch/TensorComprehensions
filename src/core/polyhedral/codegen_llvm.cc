@@ -773,7 +773,7 @@ IslCodegenRes codegenISL(const Scop& scop) {
   astBuild = isl::manage(
       isl_ast_build_set_at_each_domain(astBuild.release(), collect, &t));
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
-  auto astNode = astBuild.node_from_schedule(schedule);
+  auto astNode = astBuild.node_from(schedule);
   return {
       std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};
 }
