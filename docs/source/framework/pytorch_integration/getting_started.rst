@@ -16,7 +16,9 @@ A **few cases** where TC can be useful:
 
 * you are interested in fusing layers like group convolution, ReLU, FC *or*
 
-* if you have a different new layer, let's call it :code:`hconv` (a variant of convolution), for which you wish you had an efficient kernel available
+* if you have a different new layer, let's call it :code:`hconv` (a variant of convolution), for which you wish you had an efficient kernel available *or*
+
+* if you have standard operation on different data layouts that you didn't want to use because you couldn't get good kernels for them
 
 TC makes its very trivial to get CUDA code for such cases and many more. By providing
 TC integration with PyTorch, we hope to make it further easy for PyTorch users

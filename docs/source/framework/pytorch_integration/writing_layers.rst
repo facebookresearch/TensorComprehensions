@@ -57,13 +57,13 @@ There are two ways to set the :code:`Options`:
 
 * **Autotuning**: You can autotune the kernel the kernel on certain input tensor sizes, cache the options and use them to run the layer. See :ref:`pytorch_autotune_layers` for how to autotune kernels.
 
-* **Default Mapping**: We provide various default options that can be chosen to closely represent the kernel. THe defaults provided are:
+* **Default Mapping**: We provide various default options that can be chosen to closely represent the kernel. The defaults provided are:
 
   * :code:`pointwise`: if kernel resembles a pointwise operation
   * :code:`mlp`: if kernel resembles an Linear layer operation
   * :code:`conv`: if kernel resembles a convolution operation
-  * :code:`group_conv`: if kernel resembles a convolution operation
-  * :code:`naive`: if none of the above, then chose naive Default
+  * :code:`group_conv`: if kernel resembles a group convolution operation
+  * :code:`naive`: if none of the above, then chose naive default
 
 An example for how to pass options:
 
@@ -126,9 +126,12 @@ happens only once and then you can keep running the layer.
 Multiple TC definitions in language
 -----------------------------------
 
-Let's say you want to define all of your TCs in one string and later keep running
-them. You an do so easily. Every time you want to run a different layer, you can
-make a :code:`tc.define` call and get the layer.
+Let's say you want to define all of your TCs in one string and later use that string
+for running different operations defined in the string. You an do so easily. You
+can define a :code:`lang` variable that holds the TC definition for all your operations.
+Every time you want to run a different operation, you can make a :code:`tc.define` call
+on the :code:`lang` variable, specify the :code:`name` corresponding to the operation
+definition and get the TC layer for it. Below is an example for how to do this:
 
 .. code-block:: python
 
@@ -215,7 +218,7 @@ adopt whatever feels more convenient.
     out = avgpool(inp)
 
 
-Manually Injecting external CUDA code
+Manually injecting external CUDA code
 -------------------------------------
 
 If you have an external efficient CUDA code that you want to use rather than
@@ -248,17 +251,19 @@ call. For example:
     a, b = torch.randn(100).cuda(), torch.randn(100).cuda()
     out = add(a, b, grid=[1, 1, 1], block=[100, 1, 1])
 
-In such cases, please note that TC doesn't modify the injected CUDA kernel. It will
-simply run the kernel injected as is and TC will also not guarantee the performance
-of the kernel. User needs to specify the :code:`grid` and :code:`block` values
-when running the layer and TC will simply use those settings.
+.. note::
+
+    In such cases, please note that TC doesn't modify the injected CUDA kernel. It will
+    simply run the kernel injected as is and TC will also not guarantee the performance
+    of the kernel. User needs to specify the :code:`grid` and :code:`block` values
+    when running the layer and TC will simply use those settings.
 
 
-Builtin Functions
------------------
+Built-in Functions
+------------------
 
-TC allows using some CUDA builtin functions as well when defining the TC language.
-During the execution, CUDA API will be called for those builtin functions. For example,
+TC allows using some CUDA built-in functions as well when defining the TC language.
+During the execution, CUDA API will be called for those built-in functions. For example,
 let's say we want to use :code:`fmax` CUDA function in our TC language. An example
 for how this would be done is below:
 
@@ -275,7 +280,7 @@ for how this would be done is below:
     inp = torch.randn(100, 128).cuda()
     out = relu(inp)
 
-TC supports only a few builtin CUDA functions and not all. You can find the documentation
+TC only supports a subset of built-in CUDA functions. You can find the documentation
 for these functions at the official CUDA documentation `here <http://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE>`_.
 The functions supported in TC are:
 

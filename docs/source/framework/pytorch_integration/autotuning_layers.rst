@@ -1,6 +1,6 @@
 .. _pytorch_autotune_layers:
 
-Autotuning Layers
+Autotuning layers
 =================
 
 TC provides a genetic search based autotuner that can be used to optimize a TC on
@@ -47,7 +47,7 @@ my_layer.autotune
 
 .. _autotune_parameters:
 
-Autotuning Parameters
+Autotuning parameters
 ---------------------
 
 Autotuner exposes various parameters that can be adjusted to control amount of tuning.
@@ -120,7 +120,7 @@ An example for how to pass options:
 
 .. _autotuner_cache_choices:
 
-Caching Autotuned options
+Caching autotuned options
 -------------------------
 
 As user autotunes kernels on given input tensor sizes, user can also cache the options
@@ -195,7 +195,7 @@ For example:
     out2 = matmul(mat1, mat2)
 
 
-Using Tuple sizes to Autotune
+Using tuple sizes to autotune
 -----------------------------
 
 If you want to autotune a kernel on variety of sizes and store the cache for later
@@ -227,7 +227,7 @@ The API description is given below:
 
 .. autofunction:: decode
 
-Decoding Example
+Decoding example
 ^^^^^^^^^^^^^^^^
 
 Below is example describing the above usage:

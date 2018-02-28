@@ -20,7 +20,7 @@ In order to use enable these flags, you need to call :code:`tc.GlobalDebugInit`
 and set the proper flags to :code:`true`. All of these flags are :code:`boolean`
 flags that take values :code:`true` or :code:`false`.
 
-Example Usage
+Example usage
 -------------
 
 .. code-block:: python

@@ -34,6 +34,8 @@ More generally the only requirement to integrate TC into a workflow is to use a
 simple tensor library with a few basic functionalities. For more details, see
 :ref:`integrating_ml_frameworks`.
 
+.. _tc_einstein_notation:
+
 Tensor Comprehension Notation
 -----------------------------
 TC borrow three ideas from Einstein notation that make expressions concise:
