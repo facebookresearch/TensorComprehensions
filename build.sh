@@ -8,8 +8,13 @@ if ! test ${CLANG_PREFIX}; then
     exit 1
 fi
 
-ATEN_NO_CUDA=${ATEN_NO_CUDA:=0}
 WITH_CAFFE2=${WITH_CAFFE2:=ON}
+WITH_CUDA=${WITH_CUDA:=ON}
+if [ "${WITH_CUDA,,}" = "off" -o "${WITH_CUDA,,}" = "no" -o "${WITH_CUDA}" = "0" ]; then
+  ATEN_NO_CUDA=1
+else
+  ATEN_NO_CUDA=${ATEN_NO_CUDA:=0}
+fi
 WITH_PYTHON_C2=${WITH_PYTHON_C2:=OFF}
 WITH_NNPACK=${WITH_NNPACK:=OFF}
 PYTHON=${PYTHON:="`which python3`"}
@@ -370,6 +375,7 @@ function install_tc() {
         -DPROTOBUF_PROTOC_EXECUTABLE=${PROTOC} \
         -DCLANG_PREFIX=${CLANG_PREFIX} \
         -DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR} \
+        -DWITH_CUDA=${WITH_CUDA} \
         -DCMAKE_C_COMPILER=${CC} \
         -DCMAKE_CXX_COMPILER=${CXX} .. || exit 1
   fi

@@ -15,25 +15,30 @@
  */
 #pragma once
 
-#include "tc/core/halide_utils.h"
-#include "tc/core/mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
-#include "tc/core/utils/dlpack.h"
-#include "tc/lang/parser.h"
+#include <limits>
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/halide_utils.h"
+#include "tc/core/tc2halide.h"
+#include "tc/core/utils/dlpack.h"
+#include "tc/core/utils/time.h"
+
+#include "tc/lang/parser.h"
+
 namespace tc {
+
+using namespace dlutils;
 
 class TcExecutor {
  public:
   TcExecutor(
-      const std::string& TCDefinition,
+      const std::string& TcDefinition,
       const std::vector<const DLTensor*>& inputsInfo);
   TcExecutor(
-      lang::TreeRef TCDefinition,
+      lang::TreeRef TcDefinition,
       const std::vector<const DLTensor*>& inputsInfo);
-  ~TcExecutor();
+  virtual ~TcExecutor();
 
   TcExecutor(TcExecutor&&) = delete;
   TcExecutor& operator=(TcExecutor&&) = delete;
@@ -54,7 +59,9 @@ class TcExecutor {
   // options then just instantiate another TcExecutor.
   // This is because for the time being we fully specialize all the sizes and
   // strides at runtime.
-  void compile(const tc::MappingOptions& options);
+  virtual void compile(const std::string& options) {
+    LOG(FATAL) << "TcExecutor::compile is abstract and should not be called";
+  }
 
   // Run can be called multiple times given a compilation, inputs are allowed
   // to change in that their data pointer is allowed to change.
@@ -64,74 +71,69 @@ class TcExecutor {
   // It is the caller's responsibility to ensure proper non-aliasing (or
   // advanced aliasing) properties of the input and output tensors.
   // if profile is set the kernel runtime (nanoseconds) is returned
-  Duration run(
+  virtual Duration run(
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) const;
+      bool profile = false) const {
+    LOG(FATAL) << "TcExecutor::run is abstract and should not be called";
+  }
 
   // This is the "low-latency" mode in which we just propagate raw pointers to
-  // data in GPU address space.
+  // data in the address space where kernel is executed.
   // No tensor-related information can be checked so it is the user's
   // responsibility to ensure that shapes and strides match. If the user
   // doesn't then segfault will likely occur.
-  void uncheckedRun(
+  virtual void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const;
-
-  std::string getCudaSource() {
-    return execInfo_.cudaSource;
-  }
-
-  bool hasRTCFun() {
-    return execInfo_.rtcFun.get() != nullptr;
-  }
-
-  // It is necessary to clear the RTC manually because it can throw and we
-  // can't have that in the destructor.
-  void clearRTC() {
-    if (!hasRTCFun()) {
-      return;
-    }
-    execInfo_.rtcFun->clear();
-  }
-
-  std::string kernelName() const {
-    return execInfo_.kernelName;
-  }
-
- private:
-  void compileWithTcMapper();
-
-  struct TcExecutionInfo {
-    std::string kernelName;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::vector<dlutils::DLTensorUPtr> outputsInfo;
-    std::vector<int> kernelParams;
-    std::string kernelSpecializedName;
-    std::unique_ptr<tc::MappingOptions> options;
-    std::string cudaSource;
-    Grid grid{{0, 0, 0}};
-    Block block{{0, 0, 0}};
-    std::shared_ptr<CudaRTCFunction> rtcFun;
-  };
-
- public:
-  Grid grid() const {
-    return execInfo_.grid;
-  }
-  Block block() const {
-    return execInfo_.block;
+      const std::vector<void*>& outputs) const {
+    LOG(FATAL)
+        << "TcExecutor::uncheckedRun is abstract and should not be called";
   }
 
   const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
 
- private:
+ protected:
+  void checkSizesAndStridesAreCompliant(
+      const DLTensor* actual,
+      const DLTensor* expected,
+      const lang::Param& dbg) const;
+
+  template <typename T>
+  void checkSizesAndStridesAreCompliant(
+      const std::vector<T*>& dlTensors,
+      const std::vector<DLTensorUPtr>& tensorInfos,
+      const lang::ListView<lang::Param>& dbgInfo) const;
+
   void checkInputsCompliant(
       const std::vector<const DLTensor*>& inputsInfo) const;
+
+  struct {
+    std::string kernelName;
+    std::vector<dlutils::DLTensorUPtr> inputsInfo;
+    std::vector<dlutils::DLTensorUPtr> outputsInfo;
+    std::vector<int> kernelParams;
+    std::string options;
+  } execInfo_;
+
   tc2halide::HalideComponents halideComponents_;
-  TcExecutionInfo execInfo_;
   lang::TreeRef tcTree_;
-  mutable isl::ctx ctx_;
 };
+
+// templating to match both const and non-const DLTensor pointers
+template <typename T>
+void TcExecutor::checkSizesAndStridesAreCompliant(
+    const std::vector<T*>& dlTensors,
+    const std::vector<DLTensorUPtr>& tensorInfos,
+    const lang::ListView<lang::Param>& dbgInfo) const {
+  if (tensorInfos.size() != dlTensors.size()) {
+    throw lang::ErrorReport(dbgInfo)
+        << "expected " << tensorInfos.size() << " values but found "
+        << dlTensors.size();
+  }
+  for (size_t i = 0; i < tensorInfos.size(); ++i) {
+    checkSizesAndStridesAreCompliant(
+        dlTensors[i], tensorInfos[i].get(), dbgInfo[i]);
+  }
+}
 
 } // namespace tc

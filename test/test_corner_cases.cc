@@ -27,7 +27,7 @@
 #include "tc/core/mapping_options.h"
 #include "tc/library/common.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 using tensor_list = std::vector<at::Tensor>;
 

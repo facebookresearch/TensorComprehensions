@@ -28,7 +28,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 DEFINE_bool(
     smoke_check,

@@ -22,8 +22,8 @@
 #include <ATen/ATen.h>
 #include <ATen/DLConvertor.h>
 
-#include "tc/core/execution_engine.h"
-#include "tc/core/utils/cuda_info.h"
+#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/lang/parser.h"
 
 namespace tc {
@@ -71,7 +71,7 @@ class ATenCompilationUnit {
       size_t handle);
 
  private:
-  std::unique_ptr<ExecutionEngine> executionEngine_;
+  std::unique_ptr<CudaExecutionEngine> executionEngine_;
 };
 
 std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>

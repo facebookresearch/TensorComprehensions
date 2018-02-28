@@ -29,7 +29,7 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/compilation_cache.h"
 #include "tc/core/cuda.h"
-#include "tc/core/execution_engine.h"
+#include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapping_types.h"
@@ -216,7 +216,7 @@ std::vector<size_t> parseGpus() {
 // The function returns true if purning is possible and we can skip poorly
 // performing versions early.
 bool GeneticTunerHarness::warmupOrPrune(
-    tc::ExecutionEngine& engine,
+    tc::CudaExecutionEngine& engine,
     const std::vector<DLTensor*>& outputs,
     const std::vector<const DLTensor*>& inputs,
     size_t handle,
@@ -233,15 +233,16 @@ bool GeneticTunerHarness::warmupOrPrune(
   auto debugTuner = FLAGS_debug_tuner;
   auto minThreads = FLAGS_tuner_min_launch_total_threads;
   auto threadPruningFunction =
-      std::function<bool(const ExecutionEngine::ExecutorInfo*)>(
-          [debugTuner, minThreads](const ExecutionEngine::ExecutorInfo* info) {
+      std::function<bool(const CudaExecutionEngine::ExecutorInfo*)>(
+          [debugTuner,
+           minThreads](const CudaExecutionEngine::ExecutorInfo* info) {
             CHECK(info);
             USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
             auto& exec = info->exec;
-            auto block = exec.block();
+            auto block = static_cast<CudaTcExecutor&>(*exec).block;
             auto nThreads = TX.mappingSize(block) * TY.mappingSize(block) *
                 TZ.mappingSize(block);
-            auto grid = exec.grid();
+            auto grid = static_cast<CudaTcExecutor&>(*exec).grid;
             auto nBlocks = BX.mappingSize(grid) * BY.mappingSize(grid) *
                 BZ.mappingSize(grid);
             if (nBlocks * nThreads < minThreads) {
@@ -249,7 +250,7 @@ bool GeneticTunerHarness::warmupOrPrune(
                 std::stringstream ssInfo;
                 ssInfo << "Skip configuration with too few threads: " << block
                        << "\n"
-                       << MappingOptionsAsCpp(*info->options);
+                       << MappingOptionsAsCpp(MappingOptions(info->options));
                 LOG_LINE_BY_LINE(INFO, ssInfo);
               }
               return true;
@@ -299,7 +300,7 @@ bool GeneticTunerHarness::warmupOrPrune(
   return false;
 }
 
-void GeneticTunerHarness::doCompile(tc::ExecutionEngine& engine) {
+void GeneticTunerHarness::doCompile(tc::CudaExecutionEngine& engine) {
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
@@ -340,7 +341,7 @@ void GeneticTunerHarness::doCompile(tc::ExecutionEngine& engine) {
 
 void GeneticTunerHarness::doGpuWork(
     size_t gpu,
-    tc::ExecutionEngine& engine,
+    tc::CudaExecutionEngine& engine,
     Printer& printer) {
   WithDevice wd(gpu);
   CHECK_EQ(1, kInputs_.count(gpu));
@@ -475,7 +476,7 @@ void GeneticTunerHarness::doGpuWork(
 void GeneticTunerHarness::runOneGeneration(size_t generation) {
   // Define tensors per GPU once globally
   auto gpus = parseGpus();
-  tc::ExecutionEngine engine;
+  tc::CudaExecutionEngine engine;
   engine.define({kTc_});
 
   {

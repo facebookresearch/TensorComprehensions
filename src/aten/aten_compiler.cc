@@ -24,7 +24,8 @@
 namespace tc {
 
 ATenCompilationUnit::ATenCompilationUnit() {
-  executionEngine_ = std::unique_ptr<ExecutionEngine>(new ExecutionEngine());
+  executionEngine_ =
+      std::unique_ptr<CudaExecutionEngine>(new CudaExecutionEngine());
 }
 
 void ATenCompilationUnit::define(const std::string& language) {

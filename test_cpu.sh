@@ -3,6 +3,7 @@
 set -e
 
 PYTHON=${PYTHON:="`which python3`"}
+WITH_CUDA=${WITH_CUDA:="ON"}
 
 function run_test {
     ACC=""
@@ -21,7 +22,8 @@ TEST_REGEX="test_basic test_core test_inference test_isl_scheduler test_lang tes
 run_test
 
 # Python tests - we basically only want to test the libs are built correctly and
-# import fine
+# import fine.  Temporarily conditioned by WITH_CUDA flag.  Autotuner is
+# required by python, but can only run with CUDA now.
 echo "Running Python tests"
 
 echo "Setting PYTHONPATH only"
@@ -30,6 +32,10 @@ export PYTHONPATH=${TC_DIR}/build/tensor_comprehensions/pybinds:${PYTHONPATH}
 echo "PYTHONPATH: ${PYTHONPATH}"
 ${PYTHON} -c 'import tc'
 ${PYTHON} -c 'import mapping_options'
-${PYTHON} -c 'import autotuner'
+if [ "${WITH_CUDA}" = "ON" -o "${WITH_CUDA}" = "on" -o "${WITH_CUDA}" = "1" ]; then
+  ${PYTHON} -c 'import autotuner'
+else
+  echo "Not running Python autotuner test because no CUDA available"
+fi
 
 echo SUCCESS

@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 #include "tc/core/execution_engine.h"
-#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/utils/memory.h"
 
 #include "tc/lang/parser.h"
 
 namespace tc {
-
-using namespace dlutils;
 
 // Under object lock, fill parse the language and fill the underlying map
 void ExecutionEngine::define(const std::string& language) {
@@ -63,7 +60,7 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
                      extractRawPtrs(ei->inputsInfo), inputs);
         });
     if (ei != executors_.end()) {
-      return (*ei)->exec.inferOutputTensorInfo();
+      return (*ei)->exec->inferOutputTensorInfo();
     }
   }
 
@@ -71,132 +68,10 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
   // null options.  It will be used for further size queries but
   // will fail if somebody attempts to run it.
   auto execInfo = tc::make_unique<ExecutorInfo>(
-      name,
-      inputs,
-      std::unique_ptr<MappingOptions>(nullptr),
-      tcNameMap_.at(name),
-      TcExecutor::InvalidHandle);
-  auto outputsInfo = execInfo->exec.inferOutputTensorInfo();
+      name, inputs, "", tcNameMap_.at(name), TcExecutor::InvalidHandle);
+  auto outputsInfo = execInfo->exec->inferOutputTensorInfo();
   emplaceExecutor(std::move(execInfo));
   return outputsInfo;
-}
-
-// Steal ExecutorInfo and give it back under lock
-// Run outside of lock on owning ExecutorInfo.
-Duration ExecutionEngine::run(
-    size_t handle,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<DLTensor*>& outputs,
-    bool profile,
-    std::function<bool(const ExecutorInfo*)> pruningFunction) {
-  std::unique_ptr<ExecutorInfo> p(nullptr);
-  {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
-    std::swap(p, executors_[handle]);
-  }
-
-  // It turns out someone else may already be running this configuration in
-  // some unexpected cases: there is no guarantee of no-redundancy in
-  // compilation options. In that case, we swapped 2 nullptrs and we just
-  // exit.
-  Duration res(Duration::max());
-  if (p.get()) {
-    if (pruningFunction(p.get())) {
-      return Duration::max();
-    }
-    CHECK(p->exec.hasRTCFun());
-    try {
-      // Must catch and swap to avoid exception in destructor!
-      res = p->exec.run(inputs, outputs, profile);
-    } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
-      std::swap(p, executors_[handle]);
-      throw;
-    }
-    {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
-      std::swap(p, executors_[handle]);
-    }
-  }
-  return res;
-}
-
-// Steal ExecutorInfo and give it back under lock
-// Run outside of lock on owning ExecutorInfo.
-void ExecutionEngine::uncheckedRun(
-    size_t handle,
-    const std::vector<const void*>& inputs,
-    const std::vector<void*>& outputs) {
-  std::unique_ptr<ExecutorInfo> p(nullptr);
-  {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
-    std::swap(p, executors_[handle]);
-  }
-
-  // It turns out someone else may already be running this configuration in
-  // some unexpected cases: there is no guarantee of no-redundancy in
-  // compilation options. In that case, we swapped 2 nullptrs and we just
-  // exit.
-  if (p.get()) {
-    CHECK(p->exec.hasRTCFun());
-    try {
-      // Must catch and swap to avoid exception in destructor!
-      p->exec.uncheckedRun(inputs, outputs);
-    } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
-      std::swap(p, executors_[handle]);
-      throw;
-    }
-    {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
-      std::swap(p, executors_[handle]);
-    }
-  }
-}
-
-// Steal ExecutorInfo, clear the underlying RTC object and give it back under
-// lock.
-void ExecutionEngine::clear(size_t handle) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
-  executors_[handle]->clear();
-  executors_[handle] = std::unique_ptr<ExecutorInfo>(nullptr);
-}
-
-size_t ExecutionEngine::getHandle(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputsInfo,
-    const MappingOptions& options) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
-  auto ei = std::find_if(
-      executors_.begin(),
-      executors_.end(),
-      [&](const std::unique_ptr<ExecutorInfo>& ei) {
-        return ei && // UPtrs get stolen by run to avoid underlying vector
-                     // realloc issues, guard against that
-            name == ei->identifier &&
-            compareDLTensorVectorMetadata(
-                   extractRawPtrs(ei->inputsInfo), inputsInfo) &&
-            ei->options && *ei->options == options;
-      });
-  if (ei != executors_.end()) {
-    return (*ei)->objectLocalHandle;
-  }
-  return TcExecutor::InvalidHandle;
-}
-
-std::unique_ptr<ExecutionEngine::ExecutorInfo>
-ExecutionEngine::makeExecutorInfo(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputsInfo,
-    const MappingOptions& options) {
-  CHECK_EQ(tcNameMap_.count(name), 1)
-      << "TC function " << name << " not defined";
-  return tc::make_unique<ExecutorInfo>(
-      name,
-      inputsInfo,
-      std::unique_ptr<MappingOptions>(new MappingOptions(options)),
-      tcNameMap_.at(name),
-      TcExecutor::InvalidHandle);
 }
 
 size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
@@ -211,24 +86,4 @@ size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
   return handle;
 }
 
-size_t ExecutionEngine::compile(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputs,
-    const MappingOptions& options) {
-  // Check if we already have a handle for this name+size+options combination.
-  // If so, return it.
-  size_t handle = getHandle(name, inputs, options);
-  if (handle != TcExecutor::InvalidHandle) {
-    return handle;
-  }
-
-  // Otherwise we need to compile.
-  auto p = makeExecutorInfo(name, inputs, options);
-  p->exec.compile(options);
-  CHECK(p->exec.hasRTCFun());
-
-  handle = emplaceExecutor(std::move(p));
-  return handle;
-}
-
-} // namespace tc
+}; // namespace tc

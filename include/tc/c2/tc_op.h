@@ -20,8 +20,8 @@
 #include <string>
 #include <vector>
 
-#include "tc/core/execution_engine.h"
-#include "tc/core/utils/cuda_info.h"
+#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/core/utils/dlpack.h"
 
 #include "tc/c2/context.h"
@@ -62,7 +62,7 @@ class TcOp : public Operator<Context> {
       setupDefaultGradMappingOptions();
     }
     executionEngine_ =
-        std::unique_ptr<tc::ExecutionEngine>(new tc::ExecutionEngine());
+        std::unique_ptr<tc::CudaExecutionEngine>(new tc::CudaExecutionEngine());
   }
 
   USE_OPERATOR_CONTEXT_FUNCTIONS;
@@ -134,7 +134,7 @@ class TcOp : public Operator<Context> {
   tc::MappingOptions gradMappingOptions_;
 
  private:
-  std::unique_ptr<tc::ExecutionEngine> executionEngine_;
+  std::unique_ptr<tc::CudaExecutionEngine> executionEngine_;
 };
 
 class GetTcOpGradient : public GradientMakerBase {

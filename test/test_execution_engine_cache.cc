@@ -26,7 +26,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/mapping_options.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 TEST(ATenCompilationCacheTest, Matmul) {
   tc::ATenCompilationUnit atCompl;

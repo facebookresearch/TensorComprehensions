@@ -26,8 +26,10 @@
 
 #include <compcache.pb.h>
 
+#include "tc/core/cuda.h"
 #include "tc/core/mapping_options.h"
-#include "tc/core/utils/cuda_info.h"
+#include "tc/core/rtc.h"
+#include "tc/core/utils/time.h"
 
 namespace tc {
 

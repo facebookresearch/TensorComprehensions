@@ -24,7 +24,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/exceptions.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 #include <nvrtc.h>
 

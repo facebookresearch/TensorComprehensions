@@ -21,12 +21,9 @@
 #include <tuple>
 #include <type_traits>
 
-#include <cuda_runtime_api.h>
 #include <mapping_options.pb.h>
 
-#include "tc/core/cuda.h"
 #include "tc/core/flags.h"
-#include "tc/core/rtc.h"
 #include "tc/external/isl.h"
 
 namespace tc {
