@@ -18,7 +18,8 @@ git_version = subprocess.check_output(
     ['git', 'rev-parse', 'HEAD'], cwd=TOP_DIR
 ).decode('ascii').strip()
 
-tc_version = '0.1.0'
+# TODO (prigoyal): automatically sync this with conda package
+tc_version = '0.1.1'
 tc_build_number = 2
 # versioning should comply with
 # https://www.python.org/dev/peps/pep-0440/#public-version-identifiers
