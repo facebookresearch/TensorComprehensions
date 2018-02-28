@@ -1,7 +1,7 @@
-Note about Performance/Autotuning
-=================================
+Note about Performance / Autotuning
+===================================
 
-Reuse Outputs
+Reuse outputs
 -------------
 
 TC depends on a tensor library to do the allocations for temporary variables or output tensors.
@@ -29,19 +29,21 @@ argument when you run the TC. For a concrete example:
     matmul(mat3, mat4, outputs=out)     # outputs re-used
 
 
-Static sizes for Autotuning
+Static sizes for autotuning
 ---------------------------
 
 Tensor Comprehensions have an autotuner that uses evolutionary search to find
 faster kernels. TC tries to specialize the kernels to the given input sizes.
 If the sizes are parametric, then the search space will become bigger and the performance
 is not as good static input sizes. Hence, for now, TC takes static input sizes. More
-concretely,
+concretely:
+
 
 1. you can not tune a kernel for parametric size ranges like batchsize between 16 and 32.
 
-2. you can tune a kernel let's say :code:`avgpool` for input shape :code:`(16, 32, 24, 23)`
-by simply calling:
+
+2. you can tune a kernel let's say :code:`avgpool` for input shape :code:`(16, 32, 24, 23)` by simply calling:
+
 
 .. code::
 

@@ -67,8 +67,8 @@ This TC is invalid because :code:`tmp` and :code:`O(n, d)` have cyclic dependenc
     }
 
 
-Autotuner FAQ
--------------
+Autotuner
+---------
 
 At the start of new generation, I see high kernel runtime, Why?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
