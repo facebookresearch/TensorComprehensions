@@ -1,46 +1,69 @@
-Using TC to get fast CUDA code for Tensor Contraction
-=====================================================
+Using TC to get fast CUDA code for TensorDot
+============================================
 
-In this tutorial, we will see how we can start from a random math operation,
-express it in TC language and easily get the fast CUDA code for it. We will also
-see how to tune the CUDA code to a better performance. All of this is possible with
-only 3-4 lines of code. Let's get started.
+In this tutorial, we will do a case study of implementing TensorDot with TC. This
+is a good example of taking a NumPy operation and using TC to get fast CUDA code
+for it. We will also see how to tune the CUDA code to a better performance.
+All of this is possible with only 3-4 lines of code.
 
 For this tutorial, you will need to install Tensor Comprehensions binary. You can
-get binary builds of Tensor Comprehensions with ``conda install -y -c pytorch -c prigoyal tensor_comprehensions``.
+get binary builds of Tensor Comprehensions with: ``conda install -y -c pytorch -c prigoyal tensor_comprehensions``
 
-About TensorDot operation
--------------------------
+About TensorDot
+^^^^^^^^^^^^^^^
 
-First, we find an operation that we want to generate fast CUDA code for. A lot of
-operations like convolution, pooling are standard and have CUDA code easily available, so
-rather we are going to pick a new and different operation. How do we find a new operation?
+Assume that we have two tensors, one with dimension :code:`(N, C1, C2, H, W)` and
+one with dimension :code:`(N, C2, C3, H, W)`, and we want to do a gemm-type
+computation on the :code:`C` dimensions to get an output of shape :code:`(N, C1, C3, H, W)`.
+Basically, for each :code:`(N, H, W)` combination, we want to do a reduction from
+:code:`(C1, C2) * (C2, C3) = (C1, C3)`.
 
-**Sources**: Maybe there is a research paper idea you have like KRU or there is a
-numpy operation that is interesting to you and is needed in Machine Learning model.
-As per Numpy docs on linear algebra, tensordot seems like an interesting operation
-`TensorDot <https://docs.scipy.org/doc/numpy/reference/generated/numpy.tensordot.html#numpy.tensordot>`_.
+So this operation can be represented as :code:`N x H x W` independent gemms and
+one could transpose :code:`H` and :code:`W` to the beginning of the matrix and then
+use a stock batched matrix multiply operation. This seems like an easy way to implement
+:code:`TensorDot` operation but that requires changes in data layout which could
+lead to bad kernel performance for memory bound operations. It would be better
+if we could generate a CUDA kernel which operated on the original data layout.
 
-**The TensorDot operation**
+So let's walk through the steps needed to implement TensorDot with TC.
 
-Assume that we have two tensors, one with dimension :code:`(N, C1, C2, H, W)` and one with dimension
-:code:`(N, C2, C3, H, W)`, and we want to do a gemm-type computation on the :code:`C`
-dimensions to get an output of shape :code:`(N, C1, C3, H, W)`. Basically, for each
-:code:`(N, H, W)` combination, we want to do a reduction from :code:`(C1, C2) * (C2, C3) = (C1, C3)`.
+Step 1: Write TC for TensorDot
+------------------------------
 
-So basically, this operation can be represented as `N x H x W` independent gemms and one could try to
-write batched gemm kernel for it. But does that guarantee good performance? What if the
-tensor sizes are like this: :code:`N=32, C1=512, C2=8, C3=2, H=28, W=28` i.e.
-the value of :code:`C1` is pretty large compared to :code:`C2` / :code:`C3`.
+First, we express the TensorDot operation in TC language using Einstein notation.
+For that, we will start from a simple matrix multiply operation and evolve that
+to TensorDot operation.
 
-Let's see how we can get the CUDA kernel for such operation and then tune the kernel.
+A simple 2D matrix multiply operation in TC is expressed as:
 
-Step 1: Write TC for TensorDot Operation
-----------------------------------------
+.. code-block:: python
 
-First step is to express the Tensordot operation in TC language. For more information on how to do
-so, you can refer to our `Documentation <https://facebookresearch.github.io/TensorComprehensions/index.html>`_
-and also find various TC examples `here <https://facebookresearch.github.io/TensorComprehensions/framework/pytorch_integration/layers_database.html>`_.
+     def matmul(float(M, N) X, float(N, K) W) -> (output) {
+         output(m, k) +=! X(m, nn) * W(nn, k)
+     }
+
+
+The variable :code:`nn` is being reduced in above expression. Now, let's write a
+**batched matrix-multiply** operation using above expression. For that, we need to
+add a batch dimension to it and the expression becomes:
+
+.. code-block:: python
+
+     def batch_matmul(float(B, M, N) X, float(B, N, K) W) -> (output) {
+         output(b, m, k) +=! X(b, m, nn) * W(b, nn, k)
+     }
+
+Now, for the tensordot operation, we need to add spatial dimensions :code:`H` and :code:`W`
+to the batched matrix multiply, and the expression for TensorDot becomes:
+
+.. code-block:: python
+
+     def tensordot(float(B, C1, C2, H, W) I0, float(B, C2, C3, H, W) I1) -> (O) {
+         O(b, c1, c3, h, w) +=! I0(b, c1, c2, h, w) * I1(b, c2, c3, h, w)
+     }
+
+Now, we have our :code:`TensorDot` expression, we are ready to use this and write
+3-4 lines of code to get our CUDA kernel.
 
 .. code-block:: python
 
@@ -57,7 +80,8 @@ and also find various TC examples `here <https://facebookresearch.github.io/Tens
 Step 2: Register operation with TC
 ----------------------------------
 
-Now, we will use the TC string and register it with the TC backend by calling :code:`tc.define`.
+Now, we will use the TC :code:`lang` and register it with the TC backend by calling
+:code:`tc.define`.
 
 .. code-block:: python
 
@@ -81,12 +105,10 @@ Now that TC is registered, we will create the input tensors and run it.
     # choose the options that resemble the operation and run
     out = tensordot(I0, I1, options=tc.Options("conv"))
 
-.. note::
-
-    The :code:`options` can be obtained by autotuning the kernel using Autotuner
-    (next step) or you can chose defaults provided. We strongly recommend to run
-    the autotuner instead of manual options for better performance. See :ref:`must_pass_options`
-    for more information about options.
+The :code:`options` can be obtained by autotuning the kernel using Autotuner
+(next step) or you can chose defaults provided. We strongly recommend to run
+the autotuner instead of manual options for better performance. See :ref:`must_pass_options`
+for more information about options.
 
 Step 4: Autotune and get better performing kernel
 -------------------------------------------------
@@ -111,7 +133,7 @@ You can control the amount of autotuning by changing the autotuner parameters. S
 :ref:`autotune_parameters` for how to change the settings.
 
 For the setting ``settings={"generations": 25, "pop_size": 100, "number_elites": 10}``, we
-get a decent kernel performance as shown in the screenshot below:
+get a decent kernel performance as shown in the screenshot below (tuned on one M40 GPU):
 
 .. figure:: ../_static/img/autotuning-py.jpg
     :alt: python-autotuning-tensordot
@@ -123,3 +145,13 @@ Early stopping
 If your kernel performance is good enough while the autotuning continues, you
 can stop autotuning by pressing :code:`Ctrl+C` and the autotuning cache will be saved
 and then the autotuning will stop.
+
+Summary
+-------
+
+We saw that using a one line mathematical and very intuitive description of :code:`TensorDot`
+operation, we were able to get the CUDA code very easily. Using the autotuner,
+we also saw the kernel performance improved drastically from best time of **6390 us to
+1613 us**. We have not yet characterized the precise fraction of peak performance
+we obtain but it is not uncommon to obtain 80%+ of peak shared memory bandwidth
+after autotuning.

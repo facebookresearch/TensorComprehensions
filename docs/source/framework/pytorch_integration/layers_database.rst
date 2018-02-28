@@ -27,7 +27,7 @@ An example to do so:
 Pooling Layers
 --------------
 
-Average Pooling
+Average pooling
 ^^^^^^^^^^^^^^^
 
 .. code::
@@ -37,7 +37,7 @@ Average Pooling
     }}
 
 
-Max Pooling
+Max pooling
 ^^^^^^^^^^^
 
 .. code::
@@ -46,7 +46,7 @@ Max Pooling
         output(b, c, h, w) max= input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
     }}
 
-Convolution Layers
+Convolution layers
 ------------------
 
 Simple Convolution
@@ -99,7 +99,7 @@ Group Convolution Strided
         O(n, g, f, h, w) = O(n, g, f, h, w) + B(g, f)
     }}
 
-Linear Layers
+Linear layers
 -------------
 
 Fully Connected layer
@@ -277,7 +277,7 @@ Scale
         O(m, n) = I(m, n) * {s}
     }}
 
-Fused Layers
+Fused layers
 ------------
 
 FCRelu
@@ -307,7 +307,7 @@ Small MobileNet
         O2(c2, h, w)  = fmax(O2(c2, h, w), 0)
     }
 
-Normalization Layers
+Normalization layers
 --------------------
 
 Batch Normalization
@@ -358,7 +358,7 @@ Cosine Similarity
 
 What operations can not be expressed
 ------------------------------------
-* **Reshaping** Tensors inside the language
-* **Dropout** : RNGs are not suppported inside TC language, because TC doesn't do internal allocations
-* **Strided "tensors"** : input Tensors have to be contiguous. If they are not contiguous, they are made contiguous before passing to the TC backend.
-* **RNNs** : TC language doesn't have loops yet. You can write them unrolled if you want.
+* **Reshape**: Reshaping tensors inside the language.
+* **Dropout**: RNGs are not supported inside TC language, because TC doesn't do internal allocations.
+* **Strided tensors**: Input tensors have to be contiguous. If they are not contiguous, they are made contiguous before passing to the TC backend.
+* **RNNs**: TC language doesn't have loops yet. You can write them unrolled if you want.

@@ -6,14 +6,11 @@ a training layer with TC and be able to run backwards as well if the layer is pa
 of a network. In order to write a training layer with TC, you need to follow the
 steps below:
 
-1. Define your TC language that has two definitions: one for the forward layer
-and the other for the backward layer and pass it to :code:`tc.define` call. In
-addition, also pass :code:`training=True` and the name of the backward TC :code:`backward`.
+1. Define your TC language that has two definitions: one for the forward layer and the other for the backward layer and pass it to :code:`tc.define` call. In addition, also pass :code:`training=True` and the name of the backward TC :code:`backward`.
 
-2. Create the Input Variables and Parameters. For example, weights should be marked
-as Parameters and the inputs tensors as Variables.
+2. Create the Input Variables and Parameters. For example, weights should be marked as Parameters and the inputs tensors as Variables.
 
-3. Run the layer and get the output of forward pass
+3. Run the layer and get the output of forward pass.
 
 4. To see that the backward call works fine, you can call backward on the outputs.
 
@@ -79,7 +76,7 @@ them, the example for that would be:
 In order to obtain options via autotuning for backward and forward layer, keep reading further.
 
 
-Autotuning Training Layer
+Autotuning training layer
 -------------------------
 
 You can autotune a training layer easily. The forward and backward layers will
@@ -114,7 +111,7 @@ You will find two cache files created: :code:`convolution_train.cuda/options` ha
 options for the forward layer and :code:`convolution_train_backward.cuda/options` file
 has options for the grad layer.
 
-Reordering Grad Outputs
+Reordering grad outputs
 -----------------------
 
 In the backward pass, TC uses the list of input tensors in the forward pass and appends
