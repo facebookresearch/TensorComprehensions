@@ -246,8 +246,16 @@ message(STATUS "Found glog: ${GLOG_LIBRARIES}")
 # endforeach()
 
 add_subdirectory(src)
+
+# At the moment pybind is only supported in CUDA mode and compilation fails
+# for non-CUDA mode (CUDA_HOME and CUB_HOME undefined error).
+# Once the core CPU mapper is stabilized we can worry about pybind, deactivate
+# conditionally for now
+if (WITH_CUDA)
+  add_subdirectory(tensor_comprehensions/pybinds)
+endif()
+
 enable_testing()
-add_subdirectory(tensor_comprehensions/pybinds)
 add_subdirectory(test)
 
 if (WITH_CAFFE2 AND WITH_CUDA)
