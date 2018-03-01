@@ -423,8 +423,6 @@ function install_halide() {
       WITH_METAL= \
       WITH_EXCEPTIONS=1 \
       make -f ../Makefile -j $CORES install || exit 1
-      mkdir -p ${INSTALL_PREFIX}/include/Halide
-      mv ${INSTALL_PREFIX}/include/Halide*.h  ${INSTALL_PREFIX}/include/Halide/
       set_bcache ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}
     fi
 

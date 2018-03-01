@@ -31,7 +31,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "Halide/Halide.h"
+#include "Halide.h"
 
 #include "isl/ast.h"
 
