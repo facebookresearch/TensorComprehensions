@@ -22,7 +22,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Target/TargetMachine.h"
 
-#include "Halide/Halide.h"
+#include "Halide.h"
 
 namespace tc {
 namespace polyhedral {
