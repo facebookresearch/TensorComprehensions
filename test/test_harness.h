@@ -30,7 +30,7 @@
 
 #include "tc/c2/operator_meta.h"
 #include "tc/c2/tc_op.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 
 DEFINE_bool(use_nvprof, false, "Start / stop nvprof");
 

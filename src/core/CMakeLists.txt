@@ -10,11 +10,11 @@ if (WITH_CUDA)
 
     SHARED
 
-    compilation_cache.cc
-    cuda.cc
+    cuda/cuda.cc
+    cuda/cuda_compilation_cache.cc
     cuda/cuda_execution_engine.cc
+    cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
-    rtc.cc
   )
   target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
   target_link_libraries(

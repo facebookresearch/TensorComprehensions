@@ -22,7 +22,7 @@
 
 #include <glog/logging.h>
 
-#include "tc/core/rtc.h" // for Duration
+#include "tc/core/cuda/cuda_rtc.h" // for Duration
 
 namespace tc {
 namespace autotune {

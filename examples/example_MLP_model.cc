@@ -31,7 +31,7 @@
 #include "example_fixture.h"
 
 #include "tc/c2/context.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/flags.h"
 
 using namespace caffe2;

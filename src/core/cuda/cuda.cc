@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 
 #include <memory>
 #include <stdexcept>

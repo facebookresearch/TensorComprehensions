@@ -28,7 +28,7 @@
 #include <cuda_runtime_api.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/flags.h"
 
 #include "test_harness_aten.h"

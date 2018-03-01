@@ -29,11 +29,11 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_autotuner_aten.h"
 #include "tc/autotuner/utils/utils.h"
-#include "tc/core/compilation_cache.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options.h"
-#include "tc/core/rtc.h"
 #include "tc/core/scope_guard.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2

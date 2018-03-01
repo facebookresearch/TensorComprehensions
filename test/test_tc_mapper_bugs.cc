@@ -20,7 +20,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/exceptions.h"
 
