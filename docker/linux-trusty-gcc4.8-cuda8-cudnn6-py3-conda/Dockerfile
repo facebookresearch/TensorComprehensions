@@ -1,25 +1,58 @@
-ARG BUILD_ID
-FROM tensorcomprehensions/linux-trusty-gcc4.8-cuda8-cudnn6:${BUILD_ID}
+FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu14.04
 
-ENV LD_LIBRARY_PATH /usr/lib/:/usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt-get update
+
+RUN apt-get install -y --no-install-recommends make git ssh realpath wget unzip cmake3 vim
+RUN apt-get install -y --no-install-recommends libgoogle-glog-dev libyaml-dev
+RUN apt-get install -y --no-install-recommends libgtest-dev libz-dev libgmp3-dev
+RUN apt-get install -y --no-install-recommends automake libtool valgrind subversion
+RUN apt-get install -y --no-install-recommends ca-certificates software-properties-common
+
+RUN cmake --version
+
+# GCC 4.8.*
+RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends libcilkrts5 gcc-4.8 g++-4.8
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+
+ENV CC /usr/bin/gcc
+ENV CXX /usr/bin/g++
+
+# LLVM+Clang-Tapir5.0
+ENV LLVM_SOURCES /tmp/llvm_sources-tapir5.0
+WORKDIR $LLVM_SOURCES
+
+ENV CLANG_PREFIX /usr/local/clang+llvm-tapir5.0
+ENV CMAKE_VERSION cmake
+
+RUN git clone --recursive https://github.com/wsmoses/Tapir-LLVM llvm && \
+    mkdir -p ${LLVM_SOURCES}/llvm_build && cd ${LLVM_SOURCES}/llvm_build && \
+    ${CMAKE_VERSION} -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_OCAMLDOC=OFF -DLLVM_INSTALL_OCAMLDOC_HTML_DIR=/tmp -DLLVM_OCAML_INSTALL_PATH=/tmp -DCMAKE_INSTALL_PREFIX=${CLANG_PREFIX} -DLLVM_TARGETS_TO_BUILD=X86 -DCOMPILER_RT_BUILD_CILKTOOLS=OFF -DLLVM_ENABLE_CXX1Y=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_BUILD_TESTS=OFF -DLLVM_ENABLE_ASSERTIONS=ON -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_LLVM_DYLIB=ON  -DLLVM_ENABLE_RTTI=ON ../llvm/ && \
+    make -j"$(nproc)" -s && make install -j"$(nproc)" -s
+
+RUN rm -Rf ${LLVM_SOURCES}
+
+# CUDA paths
+RUN ln -s /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so.1
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
 ENV PATH /usr/local/bin:/usr/local/cuda/bin:$PATH
 
+# Anaconda3
 WORKDIR /conda-install
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh &&\
     wget --quiet https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh -O anaconda.sh && \
-    chmod +x anaconda.sh && \
-    ./anaconda.sh -b -p /opt/conda && \
-    rm anaconda.sh
+    chmod +x anaconda.sh && ./anaconda.sh -b -p /opt/conda && rm anaconda.sh
 
 ENV PATH /opt/conda/bin:$PATH
 
-RUN conda install \
-         numpy\
-         decorator\
-         six\
-         future\
-         cmake
+RUN conda install numpy decorator six future cmake pyyaml
+RUN conda install -y -c pytorch pytorch
 
+# Protobuf 3.4*
 WORKDIR /proto-install
 RUN wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.zip && unzip -qq proto.zip -d /
 
@@ -32,5 +65,9 @@ RUN which protoc
 RUN protoc --version
 RUN which python
 RUN python --version
+
+# Cleanup the package manager
+RUN apt-get autoclean && apt-get clean
+RUN rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 CMD ["bash"]

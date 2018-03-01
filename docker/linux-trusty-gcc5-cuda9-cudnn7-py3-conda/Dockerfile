@@ -1,23 +1,23 @@
-FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu14.04
+FROM nvidia/cuda:9.1-cudnn7-devel-ubuntu16.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
 
 # System dependencies
-RUN apt-get install -y --no-install-recommends curl make git ssh realpath wget unzip cmake3 vim
-RUN apt-get install -y --no-install-recommends libgoogle-glog-dev libyaml-dev
+RUN apt-get install -y --no-install-recommends curl git ssh realpath wget unzip cmake vim
+RUN apt-get install -y --no-install-recommends libyaml-dev libgoogle-glog-dev
 RUN apt-get install -y --no-install-recommends libgtest-dev libz-dev libgmp3-dev
 RUN apt-get install -y --no-install-recommends automake libtool valgrind subversion
-RUN apt-get install -y --no-install-recommends ca-certificates software-properties-common
+RUN apt-get install -y --no-install-recommends build-essential ca-certificates software-properties-common
 RUN cmake --version
 
 # GCC 4.8.*
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends libcilkrts5 gcc-4.8 g++-4.8
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+RUN apt-get install -y --no-install-recommends gcc-5 g++-5
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 50
 
 ENV CC /usr/bin/gcc
 ENV CXX /usr/bin/g++
@@ -41,10 +41,15 @@ RUN ln -s /usr/local/cuda/targets/x86_64-linux/lib/stubs/libcuda.so /usr/local/c
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
 ENV PATH /usr/local/bin:/usr/local/cuda/bin:$PATH
 
-# Python3
-RUN apt-get install -y --no-install-recommends python3-dev python3-pip python3-setuptools
-RUN pip3 install --upgrade pip
-RUN pip3 install numpy decorator six future setuptools pyyaml
+# Conda setup
+WORKDIR /conda-install
+RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh &&\
+    wget --quiet https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh -O anaconda.sh && \
+    chmod +x anaconda.sh && ./anaconda.sh -b -p /opt/conda && rm anaconda.sh
+
+ENV PATH /opt/conda/bin:$PATH
+
+RUN conda install numpy decorator six future cmake pyyaml
 
 # Protobuf 3.4*
 WORKDIR /proto-install
@@ -53,11 +58,12 @@ RUN wget --quiet https://github.com/google/protobuf/archive/v3.4.0.zip -O proto.
 RUN cd /protobuf-3.4.0 && ./autogen.sh && ./configure && make -j 8
 RUN cd /protobuf-3.4.0 && make install && ldconfig
 
-RUN which python3
-RUN python3 --version
-RUN python3 -c 'import yaml'
+RUN which conda
+RUN conda --version
 RUN which protoc
 RUN protoc --version
+RUN which python
+RUN python --version
 
 # Cleanup the package manager
 RUN apt-get autoclean && apt-get clean

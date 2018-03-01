@@ -1,23 +1,23 @@
-FROM nvidia/cuda:8.0-cudnn6-devel-ubuntu14.04
+FROM nvidia/cuda:9.1-cudnn7-devel-ubuntu16.04
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
 
 # System dependencies
-RUN apt-get install -y --no-install-recommends curl make git ssh realpath wget unzip cmake3 vim
-RUN apt-get install -y --no-install-recommends libgoogle-glog-dev libyaml-dev
+RUN apt-get install -y --no-install-recommends curl git ssh realpath wget unzip cmake vim
+RUN apt-get install -y --no-install-recommends libyaml-dev libgoogle-glog-dev
 RUN apt-get install -y --no-install-recommends libgtest-dev libz-dev libgmp3-dev
 RUN apt-get install -y --no-install-recommends automake libtool valgrind subversion
-RUN apt-get install -y --no-install-recommends ca-certificates software-properties-common
+RUN apt-get install -y --no-install-recommends build-essential ca-certificates software-properties-common
 RUN cmake --version
 
 # GCC 4.8.*
 RUN add-apt-repository ppa:ubuntu-toolchain-r/test
 RUN apt-get update
-RUN apt-get install -y --no-install-recommends libcilkrts5 gcc-4.8 g++-4.8
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 50
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
+RUN apt-get install -y --no-install-recommends gcc-5 g++-5
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 50
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 50
 
 ENV CC /usr/bin/gcc
 ENV CXX /usr/bin/g++
