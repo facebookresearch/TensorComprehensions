@@ -20,8 +20,8 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/compilation_cache.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/scope_guard.h"
 
 #include "test_harness_aten_cuda.h"

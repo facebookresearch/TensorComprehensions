@@ -26,7 +26,7 @@
 #include <gtest/gtest.h>
 #include <nvrtc.h>
 
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 
 std::vector<char> jitCompile(
     std::string cuda,

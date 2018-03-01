@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_execution_engine.h"
 #include "tc/core/utils/dlpack.h"
 

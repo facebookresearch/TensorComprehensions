@@ -18,7 +18,7 @@
 
 #include <ATen/ATen.h>
 
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/utils/dlpack.h"
 
