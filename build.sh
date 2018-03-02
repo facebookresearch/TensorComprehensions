@@ -405,7 +405,7 @@ function install_halide() {
   mkdir -p ${TC_DIR}/third-party/halide/build || exit 1
   cd       ${TC_DIR}/third-party/halide/build || exit 1
 
-  if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${INSTALL_PREFIX}/include/Halide" ]; then
+  if ! test ${USE_CONTBUILD_CACHE} || [ ! -e "${INSTALL_PREFIX}/include/Halide.h" ]; then
 
     if should_rebuild ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}; then
       LLVM_CONFIG_FROM_PREFIX=${CLANG_PREFIX}/bin/llvm-config
