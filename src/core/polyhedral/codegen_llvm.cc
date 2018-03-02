@@ -54,6 +54,17 @@ using namespace Halide;
 
 namespace tc {
 
+namespace {
+template <typename T>
+std::string toString(T* llvmObject) {
+  std::string output;
+  llvm::raw_string_ostream rso(output);
+  llvmObject->print(rso, nullptr, false, true);
+  rso.str();
+  return output;
+}
+} // namespace
+
 namespace halide2isl {
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 }
@@ -198,8 +209,6 @@ class IslAstExprInterpeter {
   }
 };
 
-DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
-DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
 static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
@@ -303,9 +312,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
  public:
   void optimize_module() {
-    if (FLAGS_llvm_dump_before_opt) {
-      module->print(llvm::dbgs(), nullptr, false, true);
-    }
+    LOG_IF(INFO, FLAGS_llvm_dump_before_opt)
+        << "[LLVM-IR] Before optimization:\n"
+        << toString(module.get());
 
     llvm::legacy::FunctionPassManager functionPassManager(module.get());
     llvm::legacy::PassManager modulePassManager;
@@ -343,9 +352,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       functionPassManager.doFinalization();
       modulePassManager.run(*module);
 
-      if (FLAGS_llvm_dump_after_opt) {
-        module->print(llvm::dbgs(), nullptr, false, true);
-      }
+      LOG_IF(INFO, FLAGS_llvm_dump_after_opt)
+          << "[LLVM-IR] After optimization:\n"
+          << toString(module.get());
     }
   }
 };
@@ -438,7 +447,7 @@ class LLVMCodegen {
     halide_cg.get_builder().CreateRetVoid();
 
     if (llvm::verifyModule(*halide_cg.get_module())) {
-      std::cout << str() << std::endl;
+      LOG(ERROR) << str();
       llvm::verifyModule(*halide_cg.get_module(), &llvm::outs());
       throw std::runtime_error("LLVM generated module is invalid.");
     }
@@ -656,13 +665,7 @@ class LLVMCodegen {
 
  public:
   std::string str() const {
-    std::string output;
-    {
-      llvm::raw_string_ostream rso(output);
-      halide_cg.get_module()->print(rso, nullptr);
-      rso.str();
-    }
-    return output;
+    return toString(halide_cg.get_module());
   }
 
  private:
@@ -805,9 +808,6 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
   cg.createSignature(scop.halide.inputs, scop.halide.outputs, specializedName);
   cg.CodeGen(islCg.astNode);
   cg.halide_cg.optimize_module();
-  if (FLAGS_llvm_dump_ir) {
-    std::cout << cg.str() << std::endl;
-  }
   return cg.halide_cg.move_module();
 }
 
