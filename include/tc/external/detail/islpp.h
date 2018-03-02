@@ -24,7 +24,7 @@
 
 #include <glog/logging.h>
 
-#include <isl/interface/isl.h>
+#include <isl/cpp.h>
 
 #include "tc/core/islpp_wrap.h"
 
