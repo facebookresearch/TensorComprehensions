@@ -38,7 +38,8 @@ DEFINE_bool(
 DEFINE_bool(dump_cuda, false, "Print the generated cudaSource");
 
 // CPU codegen options
-DEFINE_bool(llvm_dump_ir, false, "Dump the IR after codegen");
+DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
+DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
 
 DEFINE_uint32(
     benchmark_warmup,
