@@ -189,9 +189,9 @@ Matmul Gradient
 
 .. code::
 
-    def matmul(float(M, N) A, float(N, K) B) -> (output) {
-      A_grad(i, j) +=! O_grad(i, kk) * B(j, kk)
-      B_grad(i, j) +=! O_grad(kk, j) * A(kk, i)
+    def matmul_grad(float(M, N) A, float(N, K) B) -> (output) {
+        A_grad(i, j) +=! O_grad(i, kk) * B(j, kk)
+        B_grad(i, j) +=! O_grad(kk, j) * A(kk, i)
     }
 
 Batch Matmul

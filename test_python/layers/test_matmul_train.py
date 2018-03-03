@@ -20,11 +20,6 @@ class TestTrainMatMul(unittest.TestCase):
         }
         """
 
-        # NOTE: TC doesn't support padding yet
-        # see https://github.com/facebookresearch/TensorComprehensions/issues/11
-        # due to this reason, we use kernel=1 for now (only because we want to)
-        # do the backwards as well. If kernel != 1 then we will have inconsistent
-        # values of H, W in the backward TC
         matmul = tc.define(MATMUL_LANG, name="matmul", training=True, backward="matmul_grad")
         mat1 = Parameter(torch.randn(3, 4).cuda())
         mat2 = Variable(torch.randn(4, 5).cuda(), requires_grad=True)
