@@ -393,14 +393,13 @@ function install_halide() {
   mkdir -p ${TC_DIR}/third-party/halide/build || exit 1
   cd       ${TC_DIR}/third-party/halide/build || exit 1
 
-  if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${INSTALL_PREFIX}/include/Halide" ]; then
+  if ! test ${USE_CONTBUILD_CACHE} || [ ! -e "${INSTALL_PREFIX}/include/Halide.h" ]; then
+    LLVM_CONFIG_FROM_PREFIX=${CLANG_PREFIX}/bin/llvm-config
+    LLVM_CONFIG=$( which $LLVM_CONFIG_FROM_PREFIX || which llvm-config-4.0 || which llvm-config )
+    CLANG_FROM_PREFIX=${CLANG_PREFIX}/bin/clang
+    CLANG=$( which $CLANG_FROM_PREFIX || which clang-4.0 || which clang )
 
     if should_rebuild ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}; then
-      LLVM_CONFIG_FROM_PREFIX=${CLANG_PREFIX}/bin/llvm-config
-      LLVM_CONFIG=$( which $LLVM_CONFIG_FROM_PREFIX || which llvm-config-4.0 || which llvm-config )
-      CLANG_FROM_PREFIX=${CLANG_PREFIX}/bin/clang
-      CLANG=$( which $CLANG_FROM_PREFIX || which clang-4.0 || which clang )
-
       CLANG=${CLANG} \
       LLVM_CONFIG=${LLVM_CONFIG} \
       VERBOSE=${VERBOSE} \
@@ -410,11 +409,20 @@ function install_halide() {
       WITH_OPENGL= \
       WITH_METAL= \
       WITH_EXCEPTIONS=1 \
-      make -f ../Makefile -j $CORES install || exit 1
-      mkdir -p ${INSTALL_PREFIX}/include/Halide
-      mv ${INSTALL_PREFIX}/include/Halide*.h  ${INSTALL_PREFIX}/include/Halide/
+      make -f ../Makefile -j $CORES || exit 1
       set_bcache ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}
     fi
+
+    CLANG=${CLANG} \
+    LLVM_CONFIG=${LLVM_CONFIG} \
+    VERBOSE=${VERBOSE} \
+    PREFIX=${INSTALL_PREFIX} \
+    WITH_LLVM_INSIDE_SHARED_LIBHALIDE= \
+    WITH_OPENCL= \
+    WITH_OPENGL= \
+    WITH_METAL= \
+    WITH_EXCEPTIONS=1 \
+    make -f ../Makefile -j $CORES install || exit 1
 
     echo "Successfully installed Halide"
 

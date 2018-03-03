@@ -17,7 +17,7 @@
 
 #include "tc/autotuner/genetic_autotuner.h"
 #include "tc/autotuner/utils/utils.h"
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/scope_guard.h"
 
 using namespace tc;

@@ -1,37 +1,3 @@
-if (WITH_CUDA)
-  find_library(CUDA_NVRTC_LIBRARIES nvrtc
-    PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-    PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
-endif()
-
-if (WITH_CUDA)
-  add_library(
-    tc_core_cuda
-
-    SHARED
-
-    compilation_cache.cc
-    cuda.cc
-    cuda/cuda_execution_engine.cc
-    cuda/cuda_tc_executor.cc
-    rtc.cc
-  )
-  target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
-  target_link_libraries(
-    tc_core_cuda
-
-    ${CUDA_CUDA_LIBRARIES}
-    ${CUDA_curand_LIBRARY}
-    ${CUDA_LIBRARIES}
-    ${CUDA_NVRTC_LIBRARIES}
-    ${ISL_LIBRARIES}
-
-    tc_lang
-    tc_version
-    tc_proto
-  )
-endif()
-
 add_library(
   tc_core
 
@@ -67,9 +33,7 @@ add_library(
   polyhedral/tighten_launch_bounds.cc
   polyhedral/unroll.cc
 )
-
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
-
 target_link_libraries(
   tc_core
 
@@ -81,11 +45,6 @@ target_link_libraries(
   tc_version
   tc_proto
 )
-
-if(WITH_CUDA)
-  target_link_libraries(tc_core tc_core_cuda)
-endif()
-
 install(
   TARGETS
   tc_core
@@ -94,6 +53,36 @@ install(
 )
 
 if (WITH_CUDA)
+  find_library(CUDA_NVRTC_LIBRARIES nvrtc
+    PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+    PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
+
+  add_library(
+    tc_core_cuda
+
+    SHARED
+
+    cuda/cuda.cc
+    cuda/cuda_compilation_cache.cc
+    cuda/cuda_execution_engine.cc
+    cuda/cuda_rtc.cc
+    cuda/cuda_tc_executor.cc
+  )
+  target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+  target_link_libraries(
+    tc_core_cuda
+
+    ${CUDA_CUDA_LIBRARIES}
+    ${CUDA_curand_LIBRARY}
+    ${CUDA_LIBRARIES}
+    ${CUDA_NVRTC_LIBRARIES}
+    ${ISL_LIBRARIES}
+
+    tc_lang
+    tc_version
+    tc_proto
+  )
+  target_link_libraries(tc_core tc_core_cuda)
   install(
     TARGETS
     tc_core_cuda

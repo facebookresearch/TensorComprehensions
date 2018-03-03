@@ -19,5 +19,5 @@
 #include "caffe2/core/operator.h"
 
 #define DMLC_GLOG_DEFINED
-#include "tc/core/rtc.h"
+#include "tc/core/cuda/cuda_rtc.h"
 #undef DMLC_GLOG_DEFINED

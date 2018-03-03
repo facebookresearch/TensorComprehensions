@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <Halide/Halide.h>
+#include <Halide.h>
 
 #include "tc/external/isl.h"
 #include "tc/lang/tree.h"

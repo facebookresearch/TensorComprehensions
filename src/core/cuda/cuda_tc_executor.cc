@@ -15,7 +15,7 @@
  */
 #include "tc/core/cuda/cuda_tc_executor.h"
 
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapped_scop.h"

@@ -32,7 +32,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Transforms/Tapir/CilkABI.h"
 
-#include "Halide/Halide.h"
+#include "Halide.h"
 
 #include "isl/ast.h"
 

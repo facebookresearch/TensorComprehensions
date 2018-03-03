@@ -18,7 +18,7 @@
 // Conditionally include CUDA-specific headers.  This file should compile even
 // without them.
 #ifdef CUDA_HOME
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #endif
 
 namespace tc {

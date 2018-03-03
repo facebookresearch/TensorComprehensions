@@ -20,7 +20,7 @@
 #include <csignal>
 #include <thread>
 
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/parser.h"
