@@ -20,6 +20,7 @@ CMAKE_VERSION=${CMAKE_VERSION:="`which cmake3 || which cmake`"}
 CAFFE2_BUILD_CACHE=${CAFFE2_BUILD_CACHE:=${TC_DIR}/third-party/.caffe2_build_cache}
 HALIDE_BUILD_CACHE=${HALIDE_BUILD_CACHE:=${TC_DIR}/third-party/.halide_build_cache}
 INSTALL_PREFIX=${INSTALL_PREFIX:=${TC_DIR}/third-party-install/}
+CILK_PATH=
 CC=${CC:="`which gcc`"}
 CXX=${CXX:="`which g++`"}
 
@@ -370,6 +371,7 @@ function install_tc() {
         -DPROTOBUF_PROTOC_EXECUTABLE=${PROTOC} \
         -DCLANG_PREFIX=${CLANG_PREFIX} \
         -DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR} \
+        -DCILK_PATH=${CILK_PATH} \
         -DCMAKE_C_COMPILER=${CC} \
         -DCMAKE_CXX_COMPILER=${CXX} .. || exit 1
   fi
