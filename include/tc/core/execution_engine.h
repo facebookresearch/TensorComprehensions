@@ -52,6 +52,10 @@ class ExecutionEngine {
 
   ExecutionEngine() = default;
 
+  lang::TreeRef treeForFunction(const std::string& name) {
+    return tcNameMap_.at(name);
+  }
+
   /// Parse TC definitions provided as string, store parsed trees internally.
   void define(const std::string& language);
 
