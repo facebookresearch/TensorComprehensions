@@ -1,0 +1,7 @@
+<map id="lang::Lexer" name="lang::Lexer">
+<area shape="rect" id="node3" href="$structlang_1_1Token.html" title="lang::Token" alt="" coords="91,392,181,419"/>
+<area shape="rect" id="node4" href="$structlang_1_1SourceRange.html" title="lang::SourceRange" alt="" coords="69,293,203,320"/>
+<area shape="rect" id="node5" href="$structlang_1_1SharedParserData.html" title="lang::SharedParserData" alt="" coords="251,512,412,539"/>
+<area shape="rect" id="node8" href="$structlang_1_1TokenTrie.html" title="lang::TokenTrie" alt="" coords="419,293,531,320"/>
+<area shape="rect" id="node10" title="STL class. " alt="" coords="405,96,544,123"/>
+</map>

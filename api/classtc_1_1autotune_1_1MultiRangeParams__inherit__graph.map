@@ -1,0 +1,4 @@
+<map id="tc::autotune::MultiRangeParams" name="tc::autotune::MultiRangeParams">
+<area shape="rect" id="node2" href="$classtc_1_1autotune_1_1CudaDimParameters.html" title="tc::autotune::CudaDimParameters" alt="" coords="5,96,227,123"/>
+<area shape="rect" id="node3" href="$classtc_1_1autotune_1_1TilingParameters.html" title="tc::autotune::TilingParameters" alt="" coords="251,96,448,123"/>
+</map>

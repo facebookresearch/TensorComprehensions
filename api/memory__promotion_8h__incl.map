@@ -1,0 +1,29 @@
+<map id="include/tc/core/polyhedral/memory_promotion.h" name="include/tc/core/polyhedral/memory_promotion.h">
+<area shape="rect" id="node3" href="$schedule__tree_8h.html" title="tc/core/polyhedral\l/schedule_tree.h" alt="" coords="857,278,983,319"/>
+<area shape="rect" id="node26" href="$scop_8h.html" title="tc/core/polyhedral\l/scop.h" alt="" coords="1685,97,1811,138"/>
+<area shape="rect" id="node9" href="$isl_8h.html" title="tc/external/isl.h" alt="" coords="505,557,615,584"/>
+<area shape="rect" id="node8" href="$options_8h.html" title="tc/core/polyhedral\l/options.h" alt="" coords="347,369,472,410"/>
+<area shape="rect" id="node20" href="$schedule__tree__elem_8h.html" title="tc/core/polyhedral\l/schedule_tree_elem.h" alt="" coords="1009,369,1161,410"/>
+<area shape="rect" id="node23" href="$vararg_8h.html" title="tc/core/utils/vararg.h" alt="" coords="1687,648,1828,675"/>
+<area shape="rect" id="node25" href="$schedule__tree-inl_8h.html" title="tc/core/polyhedral\l/schedule_tree&#45;inl.h" alt="" coords="649,369,783,410"/>
+<area shape="rect" id="node11" href="$isl__mu__wrappers_8h.html" title="tc/external/detail\l/isl_mu_wrappers.h" alt="" coords="406,641,540,682"/>
+<area shape="rect" id="node12" href="$islpp_8h.html" title="tc/external/detail\l/islpp.h" alt="" coords="617,641,735,682"/>
+<area shape="rect" id="node18" href="$islpp__wrap_8h.html" title="tc/core/islpp_wrap.h" alt="" coords="607,739,745,765"/>
+<area shape="rect" id="node19" href="$islpp-inl_8h.html" title="tc/external/detail\l/islpp&#45;inl.h" alt="" coords="859,731,977,773"/>
+<area shape="rect" id="node21" href="$mapping__types_8h.html" title="tc/core/polyhedral\l/mapping_types.h" alt="" coords="877,459,1003,501"/>
+<area shape="rect" id="node22" href="$mapping__types-inl_8h.html" title="tc/core/polyhedral\l/mapping_types&#45;inl.h" alt="" coords="827,550,969,591"/>
+<area shape="rect" id="node29" href="$constants_8h.html" title="tc/core/constants.h" alt="" coords="958,195,1092,221"/>
+<area shape="rect" id="node30" href="$halide2isl_8h.html" title="tc/core/halide2isl.h" alt="" coords="1811,195,1941,221"/>
+<area shape="rect" id="node36" href="$mapping__options_8h.html" title="tc/core/mapping_options.h" alt="" coords="2297,467,2471,493"/>
+<area shape="rect" id="node47" href="$schedule__transforms_8h.html" title="tc/core/polyhedral\l/schedule_transforms.h" alt="" coords="1117,187,1275,229"/>
+<area shape="rect" id="node33" href="$tc2halide_8h.html" title="tc/core/tc2halide.h" alt="" coords="1761,376,1889,403"/>
+<area shape="rect" id="node34" href="$tree_8h.html" title="tc/lang/tree.h" alt="" coords="1616,557,1715,584"/>
+<area shape="rect" id="node35" href="$tree__views_8h.html" title="tc/lang/tree_views.h" alt="" coords="1581,467,1720,493"/>
+<area shape="rect" id="node39" href="$flags_8h.html" title="tc/core/flags.h" alt="" coords="2489,557,2593,584"/>
+<area shape="rect" id="node41" href="$rtc_8h.html" title="tc/core/rtc.h" alt="" coords="2373,557,2464,584"/>
+<area shape="rect" id="node46" href="$mapping__options-inl_8h.html" title="tc/core/mapping_options\l&#45;inl.h" alt="" coords="2185,550,2348,591"/>
+<area shape="rect" id="node44" href="$cuda_8h.html" title="cuda.h" alt="" coords="1953,648,2015,675"/>
+<area shape="rect" id="node48" href="$functional_8h.html" title="tc/core/polyhedral\l/functional.h" alt="" coords="1229,459,1355,501"/>
+<area shape="rect" id="node50" href="$schedule__transforms-inl_8h.html" title="tc/core/polyhedral\l/schedule_transforms&#45;inl.h" alt="" coords="1058,278,1232,319"/>
+<area shape="rect" id="node49" href="$function__traits_8h.html" title="tc/core/utils/function\l_traits.h" alt="" coords="1198,550,1337,591"/>
+</map>

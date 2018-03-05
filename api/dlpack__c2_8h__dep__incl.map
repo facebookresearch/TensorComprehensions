@@ -1,0 +1,14 @@
+<map id="include/tc/c2/dlpack_c2.h" name="include/tc/c2/dlpack_c2.h">
+<area shape="rect" id="node2" href="$tc__op_8h.html" title="include/tc/c2/tc_op.h" alt="" coords="1001,80,1143,107"/>
+<area shape="rect" id="node3" href="$2fcrelu__op_8h.html" title="include/tc/c2/2fcrelu_op.h" alt="" coords="5,163,176,189"/>
+<area shape="rect" id="node4" href="$2lut__op_8h.html" title="include/tc/c2/2lut_op.h" alt="" coords="201,163,353,189"/>
+<area shape="rect" id="node5" href="$3fcrelu__op_8h.html" title="include/tc/c2/3fcrelu_op.h" alt="" coords="379,163,549,189"/>
+<area shape="rect" id="node6" href="$4fcrelu__op_8h.html" title="include/tc/c2/4fcrelu_op.h" alt="" coords="573,163,744,189"/>
+<area shape="rect" id="node7" href="$convolution__op_8h.html" title="include/tc/c2/convolution_op.h" alt="" coords="769,163,967,189"/>
+<area shape="rect" id="node8" href="$copy__op_8h.html" title="include/tc/c2/copy_op.h" alt="" coords="992,163,1152,189"/>
+<area shape="rect" id="node9" href="$dper__lut__concat__op_8h.html" title="include/tc/c2/dper\l_lut_concat_op.h" alt="" coords="1176,155,1301,197"/>
+<area shape="rect" id="node10" href="$fcrelu__op_8h.html" title="include/tc/c2/fcrelu_op.h" alt="" coords="1326,163,1489,189"/>
+<area shape="rect" id="node11" href="$group__convolution__op_8h.html" title="include/tc/c2/group\l_convolution_op.h" alt="" coords="1514,155,1645,197"/>
+<area shape="rect" id="node12" href="$lut__op_8h.html" title="include/tc/c2/lut_op.h" alt="" coords="1671,163,1817,189"/>
+<area shape="rect" id="node13" href="$matmul__op_8h.html" title="include/tc/c2/matmul_op.h" alt="" coords="1842,163,2016,189"/>
+</map>

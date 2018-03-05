@@ -1,0 +1,7 @@
+<map id="include/tc/lang/sema.h" name="include/tc/lang/sema.h">
+<area shape="rect" id="node3" href="$builtins_8h.html" title="tc/lang/builtins.h" alt="" coords="41,155,159,181"/>
+<area shape="rect" id="node5" href="$error__report_8h.html" title="tc/lang/error_report.h" alt="" coords="339,155,481,181"/>
+<area shape="rect" id="node6" href="$tree_8h.html" title="tc/lang/tree.h" alt="" coords="253,229,352,256"/>
+<area shape="rect" id="node16" href="$tree__views_8h.html" title="tc/lang/tree_views.h" alt="" coords="235,80,373,107"/>
+<area shape="rect" id="node10" href="$lexer_8h.html" title="tc/lang/lexer.h" alt="" coords="340,304,444,331"/>
+</map>

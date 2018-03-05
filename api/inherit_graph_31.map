@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classtc_1_1autotune_1_1MultiRangeParams.html" title="tc::autotune::MultiRange\lParams" alt="" coords="5,23,171,65"/>
+<area shape="rect" id="node2" href="$classtc_1_1autotune_1_1CudaDimParameters.html" title="tc::autotune::CudaDimParameters" alt="" coords="219,5,440,32"/>
+<area shape="rect" id="node3" href="$classtc_1_1autotune_1_1TilingParameters.html" title="tc::autotune::TilingParameters" alt="" coords="231,56,428,83"/>
+</map>

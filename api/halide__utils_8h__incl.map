@@ -1,0 +1,15 @@
+<map id="include/tc/core/halide_utils.h" name="include/tc/core/halide_utils.h">
+<area shape="rect" id="node6" href="$tc2halide_8h.html" title="tc/core/tc2halide.h" alt="" coords="837,96,965,123"/>
+<area shape="rect" id="node28" href="$cuda__info_8h.html" title="tc/core/utils/cuda\l_info.h" alt="" coords="737,395,860,437"/>
+<area shape="rect" id="node29" href="$dlpack_8h.html" title="tc/core/utils/dlpack.h" alt="" coords="1269,403,1411,429"/>
+<area shape="rect" id="node8" href="$isl_8h.html" title="tc/external/isl.h" alt="" coords="299,320,409,347"/>
+<area shape="rect" id="node19" href="$tree_8h.html" title="tc/lang/tree.h" alt="" coords="1051,320,1149,347"/>
+<area shape="rect" id="node26" href="$tree__views_8h.html" title="tc/lang/tree_views.h" alt="" coords="1087,171,1225,197"/>
+<area shape="rect" id="node10" href="$isl__mu__wrappers_8h.html" title="tc/external/detail\l/isl_mu_wrappers.h" alt="" coords="287,395,421,437"/>
+<area shape="rect" id="node11" href="$islpp_8h.html" title="tc/external/detail\l/islpp.h" alt="" coords="463,395,581,437"/>
+<area shape="rect" id="node17" href="$islpp__wrap_8h.html" title="tc/core/islpp_wrap.h" alt="" coords="393,493,532,520"/>
+<area shape="rect" id="node18" href="$islpp-inl_8h.html" title="tc/external/detail\l/islpp&#45;inl.h" alt="" coords="147,486,265,527"/>
+<area shape="rect" id="node22" href="$lexer_8h.html" title="tc/lang/lexer.h" alt="" coords="1140,403,1244,429"/>
+<area shape="rect" id="node27" href="$error__report_8h.html" title="tc/lang/error_report.h" alt="" coords="1138,245,1280,272"/>
+<area shape="rect" id="node31" href="$dlpack-inl_8h.html" title="tc/core/utils/dlpack\l&#45;inl.h" alt="" coords="1683,486,1815,527"/>
+</map>

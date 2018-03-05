@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['kbasemapping_5f',['kBaseMapping_',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a207004d4eca497b25579eb33564829e5',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kcrossoverrate',['kCrossOverRate',['../classtc_1_1autotune_1_1GeneticSearch.html#aed7be1809983ce85398d6136aa5b6047',1,'tc::autotune::GeneticSearch::kCrossOverRate()'],['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a1f70f76e5bd9bb6f191cdb97eecae12e',1,'tc::autotune::detail::GeneticTunerHarness::kCrossOverRate()']]],
+  ['kearlyprunefactor',['kEarlyPruneFactor',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#acb56d79f4df746981b42aa3bf46e8642',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kernelname',['kernelName',['../structtc_1_1TcExecutor_1_1TcExecutionInfo.html#ab3087838e1c45b1ff8ee743d5da8dfbc',1,'tc::TcExecutor::TcExecutionInfo']]],
+  ['kernelparameters',['kernelParameters',['../structtc_1_1CudaCache_1_1CachedEntry_1_1Values.html#a5d948ce1799ca6573e6d770daed39a2b',1,'tc::CudaCache::CachedEntry::Values::kernelParameters()'],['../structtc_1_1ManualCudaCache_1_1CachedEntry_1_1Values.html#ac8901788fc6916d01c3f9a02a066ddd4',1,'tc::ManualCudaCache::CachedEntry::Values::kernelParameters()']]],
+  ['kernelparams',['kernelParams',['../structtc_1_1TcExecutor_1_1TcExecutionInfo.html#a8f741ba01aab6e1f212eb0e236ba5704',1,'tc::TcExecutor::TcExecutionInfo']]],
+  ['kernelspecializedname',['kernelSpecializedName',['../structtc_1_1CudaCache_1_1CachedEntry_1_1Values.html#a53a013f5e51b5325f3b6183ef1617dc9',1,'tc::CudaCache::CachedEntry::Values::kernelSpecializedName()'],['../structtc_1_1ManualCudaCache_1_1CachedEntry_1_1Values.html#a0d3b9666e9efbe848cfe095a3aeab8b4',1,'tc::ManualCudaCache::CachedEntry::Values::kernelSpecializedName()'],['../structtc_1_1TcExecutor_1_1TcExecutionInfo.html#ae57e2eb1b3e3a0a5f6cd25d4b86f8abe',1,'tc::TcExecutor::TcExecutionInfo::kernelSpecializedName()']]],
+  ['key',['key',['../structtc_1_1CudaCache_1_1CachedEntry.html#a56a2f76a099a6ddf15a4897db3649ac1',1,'tc::CudaCache::CachedEntry::key()'],['../structtc_1_1OptionsCache_1_1CachedEntry.html#af8ba03c2951de34a745fcf12ed2f0a48',1,'tc::OptionsCache::CachedEntry::key()'],['../structtc_1_1ManualCudaCache_1_1CachedEntry.html#ac6b359ddc65f17bd1936e626c0160554',1,'tc::ManualCudaCache::CachedEntry::key()']]],
+  ['killrequested_5f',['killRequested_',['../namespacetc_1_1autotune_1_1detail.html#aa472bcab7cdb630f87a942df3406f321',1,'tc::autotune::detail']]],
+  ['kind',['kind',['../structlang_1_1TokenTrie.html#a46f519faaaca09383da49ba1ac8290b0',1,'lang::TokenTrie::kind()'],['../structlang_1_1Token.html#a4dbfa3261c75c402f461f27d7c52b3bb',1,'lang::Token::kind()']]],
+  ['kind_5f',['kind_',['../structlang_1_1Tree.html#a9b47805b17ea8acbd71686d4ca99183a',1,'lang::Tree']]],
+  ['kinputs_5f',['kInputs_',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#aab3b9cc7796c6dd79e364be446bb4ea3',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kkernelname_5f',['kKernelName_',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#ae35ed4e3a113ccd988be2776c794e856',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kmaxpopulationsize',['kMaxPopulationSize',['../classtc_1_1autotune_1_1GeneticSearch.html#aa5675f0c8255ca1deae0840c4463883f',1,'tc::autotune::GeneticSearch::kMaxPopulationSize()'],['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a8425c53d709bb9761fa13a541116274c',1,'tc::autotune::detail::GeneticTunerHarness::kMaxPopulationSize()']]],
+  ['kmincandidatesforbreeding',['kMinCandidatesForBreeding',['../classtc_1_1autotune_1_1GeneticSearch.html#ae3460f807ba10a0fd619aa3d8df980d6',1,'tc::autotune::GeneticSearch']]],
+  ['kmutateiterations',['kMutateIterations',['../classtc_1_1autotune_1_1GeneticSearch.html#a9a5c425961def7bb496f38ca2c6e47cf',1,'tc::autotune::GeneticSearch']]],
+  ['kmutationrate',['kMutationRate',['../classtc_1_1autotune_1_1GeneticSearch.html#a02ef3bbf0b4f75f6daac4febbd7123e3',1,'tc::autotune::GeneticSearch::kMutationRate()'],['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a98d4d00879789f97183134fce5cc03b7',1,'tc::autotune::detail::GeneticTunerHarness::kMutationRate()']]],
+  ['knumberelites',['kNumberElites',['../classtc_1_1autotune_1_1GeneticSearch.html#af811974309882cd68b8bc7b7173c97d7',1,'tc::autotune::GeneticSearch::kNumberElites()'],['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a12304a17c831eb4869f1e8d166f239f5',1,'tc::autotune::detail::GeneticTunerHarness::kNumberElites()']]],
+  ['kreducedbenchmarkiterations',['kReducedBenchmarkIterations',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a657e32daff8fab5c952371b5739583d2',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kreducedwarmupiterations',['kReducedWarmupIterations',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#abd902e8cf9ba99e920602bb3776d8e19',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['kreductioninit',['kReductionInit',['../namespacetc2halide.html#a0f7861507fd6a2b85ce302f0eee97365',1,'tc2halide']]],
+  ['kreductionupdate',['kReductionUpdate',['../namespacetc2halide.html#ad4ce57206b873404f84e7c8ff37cb2c6',1,'tc2halide']]],
+  ['kstartingpoints_5f',['kStartingPoints_',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a48f5ed1786227d8420d75255462bc526',1,'tc::autotune::detail::GeneticTunerHarness']]],
+  ['ktc_5f',['kTc_',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a6376012c03e10749f08d3faf93e644e0',1,'tc::autotune::detail::GeneticTunerHarness']]]
+];

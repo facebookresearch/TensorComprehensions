@@ -1,0 +1,31 @@
+<map id="include/tc/core/mapping_options.h" name="include/tc/core/mapping_options.h">
+<area shape="rect" id="node2" href="$parameters_8h.html" title="include/tc/autotuner\l/parameters.h" alt="" coords="77,278,213,319"/>
+<area shape="rect" id="node7" href="$utils_8h.html" title="include/tc/autotuner\l/utils/utils.h" alt="" coords="2291,459,2427,501"/>
+<area shape="rect" id="node8" href="$compilation__cache_8h.html" title="include/tc/core/compilation\l_cache.h" alt="" coords="1591,97,1768,138"/>
+<area shape="rect" id="node9" href="$execution__engine_8h.html" title="include/tc/core/execution\l_engine.h" alt="" coords="979,278,1145,319"/>
+<area shape="rect" id="node23" href="$mapping__options__cpp__printer_8h.html" title="include/tc/core/mapping\l_options_cpp_printer.h" alt="" coords="1793,97,1953,138"/>
+<area shape="rect" id="node24" href="$mapped__scop_8h.html" title="include/tc/core/polyhedral\l/mapped_scop.h" alt="" coords="1259,187,1429,229"/>
+<area shape="rect" id="node26" href="$scop_8h.html" title="include/tc/core/polyhedral\l/scop.h" alt="" coords="1345,97,1516,138"/>
+<area shape="rect" id="node29" href="$tighten__launch__bounds_8h.html" title="include/tc/core/polyhedral\l/tighten_launch_bounds.h" alt="" coords="1896,187,2067,229"/>
+<area shape="rect" id="node30" href="$tc__executor_8h.html" title="include/tc/core/tc\l_executor.h" alt="" coords="1061,187,1184,229"/>
+<area shape="rect" id="node3" href="$genetic__search_8h.html" title="include/tc/autotuner\l/genetic_search.h" alt="" coords="77,369,213,410"/>
+<area shape="rect" id="node4" href="$genetic__tuning__harness_8h.html" title="include/tc/autotuner\l/genetic_tuning_harness.h" alt="" coords="5,459,179,501"/>
+<area shape="rect" id="node5" href="$genetic__autotuner_8h.html" title="include/tc/autotuner\l/genetic_autotuner.h" alt="" coords="39,550,179,591"/>
+<area shape="rect" id="node6" href="$genetic__autotuner__aten_8h.html" title="include/tc/autotuner\l/genetic_autotuner_aten.h" alt="" coords="77,641,248,682"/>
+<area shape="rect" id="node10" href="$aten__compiler_8h.html" title="include/tc/aten/aten\l_compiler.h" alt="" coords="237,369,373,410"/>
+<area shape="rect" id="node11" href="$tc__op_8h.html" title="include/tc/c2/tc_op.h" alt="" coords="1035,376,1177,403"/>
+<area shape="rect" id="node12" href="$2fcrelu__op_8h.html" title="include/tc/c2/2fcrelu_op.h" alt="" coords="1120,467,1291,493"/>
+<area shape="rect" id="node13" href="$2lut__op_8h.html" title="include/tc/c2/2lut_op.h" alt="" coords="1315,467,1468,493"/>
+<area shape="rect" id="node14" href="$3fcrelu__op_8h.html" title="include/tc/c2/3fcrelu_op.h" alt="" coords="1493,467,1664,493"/>
+<area shape="rect" id="node15" href="$4fcrelu__op_8h.html" title="include/tc/c2/4fcrelu_op.h" alt="" coords="1688,467,1859,493"/>
+<area shape="rect" id="node16" href="$convolution__op_8h.html" title="include/tc/c2/convolution_op.h" alt="" coords="1883,467,2081,493"/>
+<area shape="rect" id="node17" href="$copy__op_8h.html" title="include/tc/c2/copy_op.h" alt="" coords="2107,467,2267,493"/>
+<area shape="rect" id="node18" href="$dper__lut__concat__op_8h.html" title="include/tc/c2/dper\l_lut_concat_op.h" alt="" coords="255,459,380,501"/>
+<area shape="rect" id="node19" href="$fcrelu__op_8h.html" title="include/tc/c2/fcrelu_op.h" alt="" coords="405,467,568,493"/>
+<area shape="rect" id="node20" href="$group__convolution__op_8h.html" title="include/tc/c2/group\l_convolution_op.h" alt="" coords="593,459,724,501"/>
+<area shape="rect" id="node21" href="$lut__op_8h.html" title="include/tc/c2/lut_op.h" alt="" coords="749,467,896,493"/>
+<area shape="rect" id="node22" href="$matmul__op_8h.html" title="include/tc/c2/matmul_op.h" alt="" coords="921,467,1095,493"/>
+<area shape="rect" id="node25" href="$codegen__cuda_8h.html" title="include/tc/core/polyhedral\l/codegen_cuda.h" alt="" coords="1320,278,1491,319"/>
+<area shape="rect" id="node27" href="$memory__promotion_8h.html" title="include/tc/core/polyhedral\l/memory_promotion.h" alt="" coords="1504,187,1675,229"/>
+<area shape="rect" id="node28" href="$schedule__tree__matcher_8h.html" title="include/tc/core/polyhedral\l/schedule_tree_matcher.h" alt="" coords="1699,187,1871,229"/>
+</map>

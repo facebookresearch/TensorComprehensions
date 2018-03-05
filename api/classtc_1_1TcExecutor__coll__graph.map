@@ -1,0 +1,11 @@
+<map id="tc::TcExecutor" name="tc::TcExecutor">
+<area shape="rect" id="node2" href="$structtc2halide_1_1HalideComponents.html" title="tc2halide::HalideComponents" alt="" coords="787,419,981,445"/>
+<area shape="rect" id="node5" title="STL class. " alt="" coords="233,363,313,389"/>
+<area shape="rect" id="node8" href="$structtc_1_1TcExecutor_1_1TcExecutionInfo.html" title="tc::TcExecutor::TcExecutionInfo" alt="" coords="779,181,989,208"/>
+<area shape="rect" id="node6" title="STL class. " alt="" coords="6,355,133,397"/>
+<area shape="rect" id="node10" href="$classtc_1_1Grid.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="515,240,581,267"/>
+<area shape="rect" id="node11" href="$classtc_1_1CudaDim.html" title="tc::CudaDim" alt="" coords="225,181,321,208"/>
+<area shape="rect" id="node14" href="$classtc_1_1Block.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="511,123,585,149"/>
+<area shape="rect" id="node12" href="$classtc_1_1CudaDimView.html" title="tc::CudaDimView" alt="" coords="7,181,132,208"/>
+<area shape="rect" id="node16" title="STL class. " alt="" coords="203,64,343,91"/>
+</map>

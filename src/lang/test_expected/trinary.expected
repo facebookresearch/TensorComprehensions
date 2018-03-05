@@ -1,7 +1,0 @@
-(?
-  (ident a)
-  (const 3 (int32))
-  (?
-    (ident b)
-    (const 3 (int32))
-    (const 4 (int32))))

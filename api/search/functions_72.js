@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['randomseed',['randomSeed',['../namespacetc.html#a66a35527959b3f1e86e90e99c87e15e0',1,'tc']]],
+  ['range',['range',['../structlang_1_1Tree.html#ad766efd1b282a3a73ff3a1c5a7debd35',1,'lang::Tree::range()'],['../structlang_1_1Compound.html#ab0136966f92a17c2aa81c72dcec37875',1,'lang::Compound::range()'],['../structlang_1_1TreeView.html#a15718e0d1b699d3653a173a972fa743a',1,'lang::TreeView::range()']]],
+  ['rangeconstraint',['RangeConstraint',['../structlang_1_1RangeConstraint.html#ac3af80fc0923c4d66edc9198a39d5d69',1,'lang::RangeConstraint']]],
+  ['rangeparameter',['RangeParameter',['../classtc_1_1autotune_1_1RangeParameter.html#a89670b72577947af384be178d7537a7e',1,'tc::autotune::RangeParameter::RangeParameter(std::vector&lt; size_t &gt; values, const std::string &amp;name)'],['../classtc_1_1autotune_1_1RangeParameter.html#a6a5bf4a95ab155ecba38d15929cf4fbb',1,'tc::autotune::RangeParameter::RangeParameter(const RangeParameter &amp;)'],['../classtc_1_1autotune_1_1RangeParameter.html#a8a42dcabd562d262f17f240c83d251e1',1,'tc::autotune::RangeParameter::RangeParameter()=default']]],
+  ['record',['record',['../classtc_1_1autotune_1_1Printer.html#aa95a8ce689b5498225fb322066e44142',1,'tc::autotune::Printer']]],
+  ['recordruntime',['recordRuntime',['../classtc_1_1OptionsCache.html#ab0132c554cb7763a250dcbc919896790',1,'tc::OptionsCache']]],
+  ['reductionvariables',['reductionVariables',['../structlang_1_1Comprehension.html#abbfb5c8019c87c705b61c4cef4fcf8ec',1,'lang::Comprehension']]],
+  ['referenceimplementationregistry',['ReferenceImplementationRegistry',['../classcaffe2_1_1ReferenceImplementationRegistry.html#a63700c749770f823f140cc3e28dc5bc4',1,'caffe2::ReferenceImplementationRegistry']]],
+  ['register',['Register',['../classcaffe2_1_1ReferenceImplementationRegistry_1_1Register.html#a2e714400a31eda23a51b899a8d6bf045',1,'caffe2::ReferenceImplementationRegistry::Register']]],
+  ['removeentriesnotinoptionscache',['removeEntriesNotInOptionsCache',['../classtc_1_1CudaCache.html#a1462ec16b885c8adece55ccfb0798261',1,'tc::CudaCache']]],
+  ['removefromcudacacheentriesnotinoptionscache',['removeFromCudaCacheEntriesNotInOptionsCache',['../namespacetc.html#ae8197752be30e2a7ce8d4532a82da1fa',1,'tc']]],
+  ['removemodule',['removeModule',['../classtc_1_1Jit.html#adaa416568c91fdf455cf5f24924b24f7',1,'tc::Jit']]],
+  ['replacestring',['replaceString',['../namespacetc.html#ab5fb0ea015007ff3ce1d4bb344ede788',1,'tc']]],
+  ['reporterror',['reportError',['../structlang_1_1Lexer.html#a7768c671076b41e84fa45ede5a006579',1,'lang::Lexer::reportError(const std::string &amp;what, const Token &amp;t)'],['../structlang_1_1Lexer.html#ab000e20e69b4fd368aac618f0a584fca',1,'lang::Lexer::reportError(const std::string &amp;what)']]],
+  ['restorecandidates',['restoreCandidates',['../namespacetc_1_1autotune.html#a8ac2dea7468fac1804d6a86b43ba2a34',1,'tc::autotune']]],
+  ['retrievebestoptions',['retrieveBestOptions',['../classtc_1_1OptionsCache.html#aa1c261de61b35b98dbb3ce4e20842ffe',1,'tc::OptionsCache']]],
+  ['retrievekernel',['retrieveKernel',['../classtc_1_1CudaCache.html#a67921966a144671fe30e9890f14a3acd',1,'tc::CudaCache::retrieveKernel()'],['../classtc_1_1ManualCudaCache.html#a6efbbb1c22074f846c3cf069fa6e6771',1,'tc::ManualCudaCache::retrieveKernel()']]],
+  ['retrieveoptionsandruntimes',['retrieveOptionsAndRuntimes',['../classtc_1_1OptionsCache.html#a3bdd74808d23fceca40eedfc50d65873',1,'tc::OptionsCache']]],
+  ['retrievetopkoptions',['retrieveTopKOptions',['../classtc_1_1OptionsCache.html#a071cedbb3d0a650acc2d6035e9ceb16a',1,'tc::OptionsCache']]],
+  ['returns',['returns',['../structlang_1_1Def.html#a4cbf4762a3a07d1066ce01f050e01ba3',1,'lang::Def']]],
+  ['rhs',['rhs',['../structlang_1_1Comprehension.html#aa17a13b9755872a30ecfc492a01eb712',1,'lang::Comprehension::rhs()'],['../structlang_1_1Let.html#a814aa045d56c03ed9320da84d9ccdea7',1,'lang::Let::rhs()']]],
+  ['run',['run',['../classtc_1_1ATenCompilationUnit.html#a04a9e569a4549c845b17485e9df22b4f',1,'tc::ATenCompilationUnit::run()'],['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#acc93621f219576c3600532e5b1d14771',1,'tc::autotune::detail::GeneticTunerHarness::run()'],['../classtc_1_1ExecutionEngine.html#ad6e954b89ed073cdbf8903fb2b0d95bd',1,'tc::ExecutionEngine::run()'],['../classtc_1_1TcExecutor.html#ab8622b353e02929d013c6c592a5aae5d',1,'tc::TcExecutor::run()']]],
+  ['runondevice',['RunOnDevice',['../classcaffe2_1_1TcCopyOp.html#a3f554f5bc55e598d1f8c89fea2fb4bfa',1,'caffe2::TcCopyOp::RunOnDevice()'],['../classcaffe2_1_1TcOp.html#ab2739838754f65cf424067ea3524bfe6',1,'caffe2::TcOp::RunOnDevice()']]],
+  ['runonegeneration',['runOneGeneration',['../classtc_1_1autotune_1_1detail_1_1GeneticTunerHarness.html#a7ac726f07e009185354c0182fe1aaa89',1,'tc::autotune::detail::GeneticTunerHarness']]]
+];

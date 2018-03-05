@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$classtc_1_1CudaDimView.html" title="tc::CudaDimView" alt="" coords="5,31,131,57"/>
+<area shape="rect" id="node2" href="$classtc_1_1CudaDim.html" title="tc::CudaDim" alt="" coords="179,31,275,57"/>
+<area shape="rect" id="node3" href="$classtc_1_1Block.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="323,5,397,32"/>
+<area shape="rect" id="node4" href="$classtc_1_1Grid.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="327,56,393,83"/>
+</map>

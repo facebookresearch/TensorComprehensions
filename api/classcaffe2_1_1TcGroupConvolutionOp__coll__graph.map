@@ -1,0 +1,18 @@
+<map id="caffe2::TcGroupConvolutionOp&lt; T, Context, Engine &gt;" name="caffe2::TcGroupConvolutionOp&lt; T, Context, Engine &gt;">
+<area shape="rect" id="node2" href="$classcaffe2_1_1TcOp.html" title="caffe2::TcOp\&lt; T, Context,\l Engine \&gt;" alt="" coords="2888,775,3064,817"/>
+<area shape="rect" id="node5" href="$classtc_1_1ExecutionEngine.html" title="tc::ExecutionEngine" alt="" coords="2381,691,2520,717"/>
+<area shape="rect" id="node8" href="$structtc_1_1ExecutionEngine_1_1ExecutorInfo.html" title="tc::ExecutionEngine\l::ExecutorInfo" alt="" coords="1451,450,1589,491"/>
+<area shape="rect" id="node10" href="$classtc_1_1MappingOptions.html" title="tc::MappingOptions" alt="" coords="878,801,1013,828"/>
+<area shape="rect" id="node11" href="$classtc_1_1CudaDimView.html" title="tc::CudaDimView" alt="" coords="7,756,132,783"/>
+<area shape="rect" id="node27" href="$classtc_1_1CudaDim.html" title="tc::CudaDim" alt="" coords="225,369,321,396"/>
+<area shape="rect" id="node12" href="$classtc_1_1SchedulerOptionsView.html" title="tc::SchedulerOptionsView" alt="" coords="461,861,635,888"/>
+<area shape="rect" id="node13" href="$classtc_1_1TilingView.html" title="tc::TilingView" alt="" coords="497,811,599,837"/>
+<area shape="rect" id="node14" title="STL class. " alt="" coords="233,651,313,677"/>
+<area shape="rect" id="node24" href="$structtc_1_1TcExecutor_1_1TcExecutionInfo.html" title="tc::TcExecutor::TcExecutionInfo" alt="" coords="840,319,1051,345"/>
+<area shape="rect" id="node15" title="STL class. " alt="" coords="6,643,133,685"/>
+<area shape="rect" id="node17" title="STL class. " alt="" coords="203,65,343,92"/>
+<area shape="rect" id="node19" href="$classtc_1_1TcExecutor.html" title="tc::TcExecutor" alt="" coords="1233,457,1341,484"/>
+<area shape="rect" id="node20" href="$structtc2halide_1_1HalideComponents.html" title="tc2halide::HalideComponents" alt="" coords="849,552,1042,579"/>
+<area shape="rect" id="node26" href="$classtc_1_1Grid.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="515,319,581,345"/>
+<area shape="rect" id="node29" href="$classtc_1_1Block.html" title="Specializing CudaDim to differentiate between Block and Grid sizes. " alt="" coords="511,369,585,396"/>
+</map>

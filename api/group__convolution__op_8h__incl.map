@@ -1,0 +1,29 @@
+<map id="include/tc/c2/group_convolution_op.h" name="include/tc/c2/group_convolution_op.h">
+<area shape="rect" id="node4" href="$tc__op_8h.html" title="tc/c2/tc_op.h" alt="" coords="3362,96,3460,123"/>
+<area shape="rect" id="node49" href="$group__convolution_8h.html" title="tc/library/group_convolution.h" alt="" coords="4047,96,4239,123"/>
+<area shape="rect" id="node7" href="$execution__engine_8h.html" title="tc/core/execution_engine.h" alt="" coords="2044,171,2223,197"/>
+<area shape="rect" id="node34" href="$cuda__info_8h.html" title="tc/core/utils/cuda\l_info.h" alt="" coords="1848,683,1971,725"/>
+<area shape="rect" id="node35" href="$dlpack_8h.html" title="tc/core/utils/dlpack.h" alt="" coords="2824,509,2966,536"/>
+<area shape="rect" id="node43" href="$context_8h.html" title="tc/c2/context.h" alt="" coords="3778,419,3887,445"/>
+<area shape="rect" id="node46" href="$dlpack__c2_8h.html" title="tc/c2/dlpack_c2.h" alt="" coords="3500,328,3626,355"/>
+<area shape="rect" id="node11" href="$mapping__options_8h.html" title="tc/core/mapping_options.h" alt="" coords="469,419,643,445"/>
+<area shape="rect" id="node30" href="$tc__executor_8h.html" title="tc/core/tc_executor.h" alt="" coords="1905,245,2050,272"/>
+<area shape="rect" id="node15" href="$isl_8h.html" title="tc/external/isl.h" alt="" coords="1162,600,1272,627"/>
+<area shape="rect" id="node21" href="$flags_8h.html" title="tc/core/flags.h" alt="" coords="538,509,643,536"/>
+<area shape="rect" id="node23" href="$rtc_8h.html" title="tc/core/rtc.h" alt="" coords="2396,509,2487,536"/>
+<area shape="rect" id="node28" href="$mapping__options-inl_8h.html" title="tc/core/mapping_options\l&#45;inl.h" alt="" coords="872,502,1035,543"/>
+<area shape="rect" id="node17" href="$isl__mu__wrappers_8h.html" title="tc/external/detail\l/isl_mu_wrappers.h" alt="" coords="1213,683,1347,725"/>
+<area shape="rect" id="node18" href="$islpp_8h.html" title="tc/external/detail\l/islpp.h" alt="" coords="765,683,883,725"/>
+<area shape="rect" id="node26" href="$cuda_8h.html" title="cuda.h" alt="" coords="2511,600,2572,627"/>
+<area shape="rect" id="node29" href="$vararg_8h.html" title="tc/core/utils/vararg.h" alt="" coords="1450,600,1591,627"/>
+<area shape="rect" id="node31" href="$halide__utils_8h.html" title="tc/core/halide_utils.h" alt="" coords="1906,419,2048,445"/>
+<area shape="rect" id="node37" href="$scop_8h.html" title="tc/core/polyhedral\l/scop.h" alt="" coords="1654,321,1779,362"/>
+<area shape="rect" id="node42" href="$parser_8h.html" title="tc/lang/parser.h" alt="" coords="1518,328,1630,355"/>
+<area shape="rect" id="node33" href="$tc2halide_8h.html" title="tc/core/tc2halide.h" alt="" coords="1162,509,1291,536"/>
+<area shape="rect" id="node36" href="$dlpack-inl_8h.html" title="tc/core/utils/dlpack\l&#45;inl.h" alt="" coords="3002,593,3134,634"/>
+<area shape="rect" id="node38" href="$constants_8h.html" title="tc/core/constants.h" alt="" coords="1078,419,1212,445"/>
+<area shape="rect" id="node39" href="$halide2isl_8h.html" title="tc/core/halide2isl.h" alt="" coords="1238,419,1368,445"/>
+<area shape="rect" id="node41" href="$schedule__transforms_8h.html" title="tc/core/polyhedral\l/schedule_transforms.h" alt="" coords="1637,411,1795,453"/>
+<area shape="rect" id="node40" href="$schedule__tree_8h.html" title="tc/core/polyhedral\l/schedule_tree.h" alt="" coords="1620,502,1746,543"/>
+<area shape="rect" id="node50" href="$common_8h.html" title="tc/library/common.h" alt="" coords="4074,171,4211,197"/>
+</map>
