@@ -23,7 +23,7 @@ namespace tc {
 // Under object lock, fill parse the language and fill the underlying map
 void ExecutionEngine::define(const std::string& language) {
   lang::Parser parser(language);
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
   while (parser.L.cur().kind != lang::TK_EOF) {
     auto treeRef = parser.parseFunction();
     auto name = lang::Def(treeRef).name().name();
@@ -33,7 +33,7 @@ void ExecutionEngine::define(const std::string& language) {
 
 // support define if we pass the parsed TreeRefs.
 void ExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
   for (auto& ref : treeRefs) {
     auto name = lang::Def(ref).name().name();
     tcNameMap_.emplace(std::make_pair(name, ref));
@@ -46,7 +46,7 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
     const std::string& name,
     const std::vector<const DLTensor*>& inputs) {
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
+    std::lock_guard<std::mutex> lg(executorInfoMutex_);
     CHECK_EQ(1, tcNameMap_.count(name))
         << "attempting to access undefined function " << name;
     // If we have already compiled for the given inputs, regardless of
@@ -76,7 +76,7 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
 
 size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
   // Insert in vector under lock
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
   size_t handle = uidCounter++;
   p->objectLocalHandle = handle;
   // This may trigger reallocs and moves of the underlying vector, fun!

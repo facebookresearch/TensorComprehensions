@@ -33,7 +33,7 @@ Duration CudaExecutionEngine::run(
     std::function<bool(const CudaExecutorInfo*)> pruningFunction) {
   std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
+    std::lock_guard<std::mutex> lg(executorInfoMutex_);
     std::swap(p, executors_[handle]);
   }
 
@@ -53,12 +53,12 @@ Duration CudaExecutionEngine::run(
       // Must catch and swap to avoid exception in destructor!
       res = exec->run(inputs, outputs, profile);
     } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
+      std::lock_guard<std::mutex> lg(executorInfoMutex_);
       std::swap(p, executors_[handle]);
       throw;
     }
     {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
+      std::lock_guard<std::mutex> lg(executorInfoMutex_);
       std::swap(p, executors_[handle]);
     }
   }
@@ -73,7 +73,7 @@ void CudaExecutionEngine::uncheckedRun(
     const std::vector<void*>& outputs) {
   std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex);
+    std::lock_guard<std::mutex> lg(executorInfoMutex_);
     std::swap(p, executors_[handle]);
   }
 
@@ -88,12 +88,12 @@ void CudaExecutionEngine::uncheckedRun(
       // Must catch and swap to avoid exception in destructor!
       exec->uncheckedRun(inputs, outputs);
     } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
+      std::lock_guard<std::mutex> lg(executorInfoMutex_);
       std::swap(p, executors_[handle]);
       throw;
     }
     {
-      std::lock_guard<std::mutex> lg(executorInfoMutex);
+      std::lock_guard<std::mutex> lg(executorInfoMutex_);
       std::swap(p, executors_[handle]);
     }
   }
@@ -102,7 +102,7 @@ void CudaExecutionEngine::uncheckedRun(
 // Steal ExecutorInfo, clear the underlying RTC object and give it back under
 // lock.
 void CudaExecutionEngine::clear(size_t handle) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
   auto executor = static_cast<CudaExecutorInfo*>(executors_[handle].get());
   executor->clear();
   executors_[handle] = std::unique_ptr<ExecutionEngine::ExecutorInfo>(nullptr);
@@ -112,7 +112,7 @@ size_t CudaExecutionEngine::getHandle(
     const std::string& name,
     const std::vector<const DLTensor*>& inputsInfo,
     const MappingOptions& options) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex);
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
   auto ei = std::find_if(
       executors_.begin(),
       executors_.end(),
