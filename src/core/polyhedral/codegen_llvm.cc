@@ -38,6 +38,7 @@
 #include "tc/core/constants.h"
 //#include "tc/core/polyhedral/isl_mu_wrappers.h"
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
@@ -680,23 +681,6 @@ class LLVMCodegen {
   CodeGen_TC halide_cg;
 };
 
-// Create a list of isl ids to be used as loop iterators when building the
-// AST.
-//
-// Note that this function can be scrapped as ISL can generate some default
-// iterator names.  However, it may come handy for associating extra info with
-// iterators.
-isl::list<isl::id>
-makeLoopIterators(isl::ctx ctx, int n, const std::string& prefix = "c") {
-  std::vector<isl::id> loopIterators;
-  for (int i = 0; i < n; ++i) {
-    std::stringstream ss;
-    ss << prefix << i;
-    loopIterators.emplace_back(ctx, ss.str());
-  }
-  return isl::list<isl::id>(ctx, loopIterators.begin(), loopIterators.end());
-}
-
 struct IslCodegenRes {
   IteratorMapsType iteratorMaps;
   StmtSubscriptExprMapType stmtSubscripts;
@@ -788,7 +772,7 @@ IslCodegenRes codegenISL(const Scop& scop) {
   auto t = std::tie(iteratorMaps, scop, stmtSubscripts);
   astBuild = isl::manage(
       isl_ast_build_set_at_each_domain(astBuild.release(), collect, &t));
-  astBuild = astBuild.set_iterators(makeLoopIterators(ctx, maxDepth));
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
   auto astNode = astBuild.node_from_schedule(schedule);
   return {
       std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};

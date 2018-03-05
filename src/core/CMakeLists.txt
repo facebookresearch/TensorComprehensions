@@ -14,6 +14,7 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
+  polyhedral/codegen.cc
   polyhedral/codegen_cuda.cc
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
