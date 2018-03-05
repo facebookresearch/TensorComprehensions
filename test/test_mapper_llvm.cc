@@ -163,13 +163,6 @@ TEST(LLVMCodegen, BatchMatMul) {
   checkRtol(O - Oc, {Y, X}, M, 3e-7);
 }
 
-DEFINE_int32(C, 4, "C");
-DEFINE_int32(O, 5, "O");
-DEFINE_int32(W, 14, "W");
-DEFINE_int32(H, 13, "H");
-DEFINE_int32(KW, 2, "KW");
-DEFINE_int32(KH, 3, "KH");
-
 TEST(LLVMCodegen, Convolution) {
   auto NN = 12;
   auto C = 4;
