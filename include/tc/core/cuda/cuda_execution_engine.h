@@ -58,10 +58,6 @@ class CudaExecutionEngine : public ExecutionEngine {
 
   CudaExecutionEngine() = default;
 
-  lang::TreeRef treeForFunction(const std::string& name) {
-    return tcNameMap_.at(name);
-  }
-
   // TODO: Pass autotuning info (none by default, otherwise some struct with
   //       maxtime and other things)
 
