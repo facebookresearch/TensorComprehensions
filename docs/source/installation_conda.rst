@@ -217,7 +217,7 @@ If you want to install TC with Caffe2 as well, run the following:
 
 .. code-block:: bash
 
-    $ conda install -y -c prigoyal caffe2
+    $ conda install -y -c tensorcomp caffe2
     $ BUILD_TYPE=Release PYTHON=$(which python3) CLANG_PREFIX=$HOME/clang+llvm-tapir5.0 ./build.sh --all
 
 Now, you have the TC bindings with Caffe2 built as well and and you write python examples for TC in caffe2.
