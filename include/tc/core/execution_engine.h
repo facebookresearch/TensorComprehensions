@@ -106,7 +106,7 @@ class ExecutionEngine {
   size_t emplaceExecutor(std::unique_ptr<ExecutorInfo> p);
 
   /// For thread-safety perform all cheap operations under lock.
-  std::mutex executorInfoMutex;
+  std::mutex executorInfoMutex_;
 
   /// Parsed TC trees.
   std::map<std::string, lang::TreeRef> tcNameMap_;
