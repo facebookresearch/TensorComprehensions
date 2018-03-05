@@ -20,6 +20,7 @@
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/mapping_options.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/core/utils/time.h"
@@ -104,6 +105,11 @@ class ExecutionEngine {
 
  protected:
   size_t emplaceExecutor(std::unique_ptr<ExecutorInfo> p);
+
+  size_t getHandle(
+      const std::string& name,
+      const std::vector<const DLTensor*>& inputsInfo,
+      const std::string& optionsStr);
 
   /// For thread-safety perform all cheap operations under lock.
   std::mutex executorInfoMutex_;

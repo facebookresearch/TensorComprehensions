@@ -86,4 +86,27 @@ size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
   return handle;
 }
 
+size_t ExecutionEngine::getHandle(
+    const std::string& name,
+    const std::vector<const DLTensor*>& inputsInfo,
+    const std::string& optionsStr) {
+  std::lock_guard<std::mutex> lg(executorInfoMutex_);
+  MappingOptions options(optionsStr);
+  auto ei = std::find_if(
+      executors_.begin(),
+      executors_.end(),
+      [&](const std::unique_ptr<ExecutionEngine::ExecutorInfo>& ei) {
+        return ei && // UPtrs get stolen by run to avoid underlying vector
+                     // realloc issues, guard against that
+            name == ei->identifier &&
+            compareDLTensorVectorMetadata(
+                   extractRawPtrs(ei->inputsInfo), inputsInfo) &&
+            ei->options != "" && MappingOptions(ei->options) == options;
+      });
+  if (ei != executors_.end()) {
+    return (*ei)->objectLocalHandle;
+  }
+  return TcExecutor::InvalidHandle;
+}
+
 }; // namespace tc

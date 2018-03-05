@@ -115,10 +115,6 @@ class CudaExecutionEngine : public ExecutionEngine {
   void clear(size_t handle) override;
 
  private:
-  size_t getHandle(
-      const std::string& name,
-      const std::vector<const DLTensor*>& inputsInfo,
-      const MappingOptions& options);
   std::unique_ptr<ExecutorInfo> makeExecutorInfo(
       const std::string& name,
       const std::vector<const DLTensor*>& inputsInfo,
