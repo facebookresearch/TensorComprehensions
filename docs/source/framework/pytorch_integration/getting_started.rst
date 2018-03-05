@@ -28,8 +28,8 @@ to express their operations and bridge the gap between research and engineering.
 Installation
 ------------
 
-We provide :code:`conda` package for Tensor Comprehensions to quickly get started
-with using TC. Follow the steps below to install TC :code:`conda` package:
+We provide :code:`conda` package for Tensor Comprehensions (only :code:`linux-64` package)
+to quickly get started with using TC. Follow the steps below to install TC :code:`conda` package:
 
 **Step 1:** Setup Anaconda
 If you don't have Anaconda setup already, please follow the step :ref:`install_anaconda`.

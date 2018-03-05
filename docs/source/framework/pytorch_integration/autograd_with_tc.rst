@@ -41,6 +41,13 @@ Examples
      out = convolution(I, W)
      out[0].sum().backward()
 
+.. note::
+
+    Please note the usage of :code:`.cuda()` i.e. tensor data is declared as the CUDA
+    type. Applying :code:`Variable` on the tensor data essentially allows the layer to be
+    part of computations graph and if :code:`Variable(torch.rand(), requires_grad=True).cuda()`
+    is done, then the grad will be available for the `Variable.cuda()` and not the actual `Variable/Tensor`.
+
 
 Specifying Mapping Options
 --------------------------
