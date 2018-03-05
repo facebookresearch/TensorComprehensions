@@ -18,15 +18,15 @@
 namespace tc {
 namespace polyhedral {
 
-isl::list<isl::id>
+isl::id_list
 Codegen::makeLoopIterators(isl::ctx ctx, int n, const std::string& prefix) {
-  std::vector<isl::id> loopIterators;
+  isl::id_list loopIterators(ctx, n);
   for (int i = 0; i < n; ++i) {
     std::stringstream ss;
     ss << prefix << i;
-    loopIterators.emplace_back(ctx, ss.str());
+    loopIterators = loopIterators.add(isl::id(ctx, ss.str()));
   }
-  return isl::list<isl::id>(ctx, loopIterators.begin(), loopIterators.end());
+  return loopIterators;
 }
 
 } // namespace polyhedral

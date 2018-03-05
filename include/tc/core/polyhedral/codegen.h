@@ -32,7 +32,7 @@ class Codegen {
   // Note that this function can be scrapped as ISL can generate some default
   // iterator names.  However, it may come handy for associating extra info with
   // iterators.
-  static isl::list<isl::id> makeLoopIterators(
+  static isl::id_list makeLoopIterators(
       isl::ctx ctx,
       int n,
       const std::string& prefix = kLoopIteratorDefaultPrefix);
