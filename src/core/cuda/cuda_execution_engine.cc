@@ -108,28 +108,6 @@ void CudaExecutionEngine::clear(size_t handle) {
   executors_[handle] = std::unique_ptr<ExecutionEngine::ExecutorInfo>(nullptr);
 }
 
-size_t CudaExecutionEngine::getHandle(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputsInfo,
-    const MappingOptions& options) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
-  auto ei = std::find_if(
-      executors_.begin(),
-      executors_.end(),
-      [&](const std::unique_ptr<ExecutionEngine::ExecutorInfo>& ei) {
-        return ei && // UPtrs get stolen by run to avoid underlying vector
-                     // realloc issues, guard against that
-            name == ei->identifier &&
-            compareDLTensorVectorMetadata(
-                   extractRawPtrs(ei->inputsInfo), inputsInfo) &&
-            ei->options != "" && MappingOptions(ei->options) == options;
-      });
-  if (ei != executors_.end()) {
-    return (*ei)->objectLocalHandle;
-  }
-  return TcExecutor::InvalidHandle;
-}
-
 std::unique_ptr<ExecutionEngine::ExecutorInfo>
 CudaExecutionEngine::makeExecutorInfo(
     const std::string& name,
@@ -151,7 +129,7 @@ size_t CudaExecutionEngine::compile(
     const MappingOptions& options) {
   // Check if we already have a handle for this name+size+options combination.
   // If so, return it.
-  size_t handle = getHandle(name, inputs, options);
+  size_t handle = getHandle(name, inputs, options.toProtobufSerializedString());
   if (handle != TcExecutor::InvalidHandle) {
     return handle;
   }
