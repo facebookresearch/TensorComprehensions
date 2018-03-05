@@ -518,7 +518,6 @@ void Scop::reschedule(
 }
 
 const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
-  CHECK(id.has_name()) << "cannot lookup argument using nameless id";
   std::string name = id.get_name();
 
   for (const auto& i : halide.inputs) {
