@@ -259,9 +259,14 @@ struct UnionAsVector
 
 struct IslIdIslHash {
   size_t operator()(const isl::id& id) const {
-    return id.get_hash();
+    return isl_id_get_hash(id.get());
   }
 };
+
+inline bool operator==(const isl::id& id1, const isl::id& id2) {
+  // isl_id objects can be compared by pointer value.
+  return id1.get() == id2.get();
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
