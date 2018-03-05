@@ -126,7 +126,7 @@ conda packages of TC dependencies and then build TC.
 .. code-block:: bash
 
     $ conda create -y --name tc-build-conda python=3.6 && source activate tc-build-conda
-    $ conda install -y -c prigoyal llvm-tapir50 isl-tc gflags glog protobuf
+    $ conda install -y -c tensorcomp llvm-tapir50 isl-tc gflags glog protobuf
     $ conda install -y -c pytorch pytorch
     $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions && git submodule update --init --recursive
@@ -153,7 +153,7 @@ If you want to install TC with Caffe2 as well, run the following:
 
 .. code-block:: bash
 
-    $ conda install -y -c prigoyal caffe2
+    $ conda install -y -c tensorcomp caffe2
     $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
 
 Now, you have the TC bindings with Caffe2 built as well and and you write python examples for TC in caffe2.

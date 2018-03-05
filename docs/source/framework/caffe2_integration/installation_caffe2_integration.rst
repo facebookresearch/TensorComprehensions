@@ -120,7 +120,7 @@ conda packages of TC dependencies and then build TC.
 
     $ conda create -y --name tc-build-conda python=3.6
     $ source activate tc-build-conda
-    $ conda install -y -c prigoyal llvm-tapir50 isl-tc gflags glog caffe2 protobuf
+    $ conda install -y -c tensorcomp llvm-tapir50 isl-tc gflags glog caffe2 protobuf
     $ conda install -y -c pytorch pytorch
     $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
     $ cd TensorComprehensions && git submodule update --init --recursive

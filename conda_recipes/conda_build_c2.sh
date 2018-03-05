@@ -37,6 +37,6 @@ export CAFFE2_BUILD_VERSION=$CAFFE2_BUILD_VERSION
 export CAFFE2_BUILD_NUMBER=$CAFFE2_BUILD_NUMBER
 export CAFFE2_GIT_HASH=$CAFFE2_GIT_HASH
 
-time conda build -c prigoyal --python 3.6 caffe2 --keep-old-work --no-remove-work-dir
+time conda build -c tensorcomp --python 3.6 caffe2 --keep-old-work --no-remove-work-dir
 
 echo "Caffe2 packaged Successfully"

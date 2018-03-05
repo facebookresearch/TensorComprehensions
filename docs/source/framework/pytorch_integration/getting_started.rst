@@ -55,7 +55,7 @@ Now, go ahead and install Tensor Comprehensions by running following command.
 
 .. code-block:: bash
 
-      $ conda install -y -c pytorch -c prigoyal tensor_comprehensions
+      $ conda install -y -c pytorch -c tensorcomp tensor_comprehensions
 
 Now, you are ready to start using Tensor Comprehensions with PyTorch. As an example,
 let's see a simple example of writing :code:`matmul` layer with TC in PyTorch.

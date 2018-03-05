@@ -7,7 +7,7 @@ for it. We will also see how to tune the CUDA code to a better performance.
 All of this is possible with only 3-4 lines of code.
 
 For this tutorial, you will need to install Tensor Comprehensions binary. You can
-get binary builds of Tensor Comprehensions with: ``conda install -y -c pytorch -c prigoyal tensor_comprehensions``
+get binary builds of Tensor Comprehensions with: ``conda install -y -c pytorch -c tensorcomp tensor_comprehensions``
 
 About TensorDot
 ---------------
