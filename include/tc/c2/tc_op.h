@@ -21,7 +21,8 @@
 #include <vector>
 
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_execution_engine.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
+#include "tc/core/execution_engine.h"
 #include "tc/core/utils/dlpack.h"
 
 #include "tc/c2/context.h"
@@ -61,8 +62,8 @@ class TcOp : public Operator<Context> {
     } else {
       setupDefaultGradMappingOptions();
     }
-    executionEngine_ =
-        std::unique_ptr<tc::CudaExecutionEngine>(new tc::CudaExecutionEngine());
+    executionEngine_ = std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>>(
+        new tc::ExecutionEngine<tc::CudaTcExecutor>());
   }
 
   USE_OPERATOR_CONTEXT_FUNCTIONS;
@@ -118,8 +119,8 @@ class TcOp : public Operator<Context> {
     }
 
     // compile and run
-    auto handle =
-        executionEngine_->compile(tcName_, inputDLTensors, mappingOptions_);
+    auto handle = executionEngine_->compile(
+        tcName_, inputDLTensors, mappingOptions_.toProtobufSerializedString());
     executionEngine_->run(handle, inputDLTensors, outputDLTensors, profile_);
     return true;
   }
@@ -134,7 +135,7 @@ class TcOp : public Operator<Context> {
   tc::MappingOptions gradMappingOptions_;
 
  private:
-  std::unique_ptr<tc::CudaExecutionEngine> executionEngine_;
+  std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>> executionEngine_;
 };
 
 class GetTcOpGradient : public GradientMakerBase {

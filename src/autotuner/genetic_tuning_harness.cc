@@ -29,7 +29,8 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
-#include "tc/core/cuda/cuda_execution_engine.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
+#include "tc/core/execution_engine.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapping_types.h"
@@ -215,8 +216,9 @@ std::vector<size_t> parseGpus() {
 //
 // The function returns true if purning is possible and we can skip poorly
 // performing versions early.
+template <typename ExecutorType>
 bool GeneticTunerHarness::warmupOrPrune(
-    tc::CudaExecutionEngine& engine,
+    ExecutorType& engine,
     const std::vector<DLTensor*>& outputs,
     const std::vector<const DLTensor*>& inputs,
     size_t handle,
@@ -297,7 +299,8 @@ bool GeneticTunerHarness::warmupOrPrune(
   return false;
 }
 
-void GeneticTunerHarness::doCompile(tc::CudaExecutionEngine& engine) {
+template <typename ExecutorType>
+void GeneticTunerHarness::doCompile(ExecutorType& engine) {
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
@@ -314,8 +317,10 @@ void GeneticTunerHarness::doCompile(tc::CudaExecutionEngine& engine) {
         LOG(INFO) << "[COMPILE] Start compilation @:" << current;
         LOG_LINE_BY_LINE(INFO, ssInfo);
       }
-      auto handle =
-          engine.compile(kKernelName_, kInputs_.begin()->second, options);
+      auto handle = engine.compile(
+          kKernelName_,
+          kInputs_.begin()->second,
+          options.toProtobufSerializedString());
       LOG_IF(INFO, FLAGS_debug_tuner)
           << "[COMPILE] Done compilation, got handle: " << handle;
       pConf->optionalCompilationHandle =
@@ -336,9 +341,10 @@ void GeneticTunerHarness::doCompile(tc::CudaExecutionEngine& engine) {
   }
 }
 
+template <typename ExecutorType>
 void GeneticTunerHarness::doGpuWork(
     size_t gpu,
-    tc::CudaExecutionEngine& engine,
+    ExecutorType& engine,
     Printer& printer) {
   WithDevice wd(gpu);
   CHECK_EQ(1, kInputs_.count(gpu));
@@ -473,7 +479,7 @@ void GeneticTunerHarness::doGpuWork(
 void GeneticTunerHarness::runOneGeneration(size_t generation) {
   // Define tensors per GPU once globally
   auto gpus = parseGpus();
-  tc::CudaExecutionEngine engine;
+  tc::ExecutionEngine<tc::CudaTcExecutor> engine;
   engine.define({kTc_});
 
   {
