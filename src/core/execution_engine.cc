@@ -23,7 +23,7 @@ namespace tc {
 // Under object lock, fill parse the language and fill the underlying map
 void ExecutionEngine::define(const std::string& language) {
   lang::Parser parser(language);
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   while (parser.L.cur().kind != lang::TK_EOF) {
     auto treeRef = parser.parseFunction();
     auto name = lang::Def(treeRef).name().name();
@@ -33,7 +33,7 @@ void ExecutionEngine::define(const std::string& language) {
 
 // support define if we pass the parsed TreeRefs.
 void ExecutionEngine::define(const std::vector<lang::TreeRef>& treeRefs) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   for (auto& ref : treeRefs) {
     auto name = lang::Def(ref).name().name();
     tcNameMap_.emplace(std::make_pair(name, ref));
@@ -46,39 +46,38 @@ std::vector<const DLTensor*> ExecutionEngine::inferOutputTensorInfo(
     const std::string& name,
     const std::vector<const DLTensor*>& inputs) {
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex_);
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
     CHECK_EQ(1, tcNameMap_.count(name))
         << "attempting to access undefined function " << name;
     // If we have already compiled for the given inputs, regardless of
     // the options, we can get sizes from a corresponding TcExecutor.
-    auto ei = std::find_if(
+    auto e = std::find_if(
         executors_.begin(),
         executors_.end(),
-        [&](const std::unique_ptr<ExecutorInfo>& ei) {
-          return ei && name == ei->identifier &&
+        [&](const std::unique_ptr<TcExecutor>& e) {
+          return e && name == e->identifier &&
               compareDLTensorVectorMetadata(
-                     extractRawPtrs(ei->inputsInfo), inputs);
+                     extractRawPtrs(e->inputsInfo), inputs);
         });
-    if (ei != executors_.end()) {
-      return (*ei)->exec->inferOutputTensorInfo();
+    if (e != executors_.end()) {
+      return (*e)->inferOutputTensorInfo();
     }
   }
 
   // Otherwise, create a new executor and add it to executor_ with
   // null options.  It will be used for further size queries but
   // will fail if somebody attempts to run it.
-  auto execInfo = tc::make_unique<ExecutorInfo>(
+  auto executor = tc::make_unique<TcExecutor>(
       name, inputs, "", tcNameMap_.at(name), TcExecutor::InvalidHandle);
-  auto outputsInfo = execInfo->exec->inferOutputTensorInfo();
-  emplaceExecutor(std::move(execInfo));
+  auto outputsInfo = executor->inferOutputTensorInfo();
+  emplaceExecutor(std::move(executor));
   return outputsInfo;
 }
 
-size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<ExecutorInfo> p) {
+size_t ExecutionEngine::emplaceExecutor(std::unique_ptr<TcExecutor> p) {
   // Insert in vector under lock
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   size_t handle = uidCounter++;
-  p->objectLocalHandle = handle;
   // This may trigger reallocs and moves of the underlying vector, fun!
   executors_.emplace_back(std::move(p));
   // This is really the invariant we enforce
@@ -90,21 +89,21 @@ size_t ExecutionEngine::getHandle(
     const std::string& name,
     const std::vector<const DLTensor*>& inputsInfo,
     const std::string& optionsStr) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   MappingOptions options(optionsStr);
-  auto ei = std::find_if(
+  auto it = std::find_if(
       executors_.begin(),
       executors_.end(),
-      [&](const std::unique_ptr<ExecutionEngine::ExecutorInfo>& ei) {
-        return ei && // UPtrs get stolen by run to avoid underlying vector
-                     // realloc issues, guard against that
-            name == ei->identifier &&
+      [&](const std::unique_ptr<TcExecutor>& e) {
+        return e && // UPtrs get stolen by run to avoid underlying vector
+                    // realloc issues, guard against that
+            name == e->identifier &&
             compareDLTensorVectorMetadata(
-                   extractRawPtrs(ei->inputsInfo), inputsInfo) &&
-            ei->options != "" && MappingOptions(ei->options) == options;
+                   extractRawPtrs(e->inputsInfo), inputsInfo) &&
+            e->options != "" && MappingOptions(e->options) == options;
       });
-  if (ei != executors_.end()) {
-    return (*ei)->objectLocalHandle;
+  if (it != executors_.end()) {
+    return it - executors_.begin();
   }
   return TcExecutor::InvalidHandle;
 }

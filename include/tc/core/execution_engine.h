@@ -29,28 +29,6 @@
 namespace tc {
 class ExecutionEngine {
  public:
-  struct ExecutorInfo {
-    ExecutorInfo(
-        std::string id,
-        std::vector<const DLTensor*> inputsInfo,
-        const std::string& options,
-        lang::TreeRef tc,
-        size_t handle)
-        : identifier(id),
-          inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
-          options(options),
-          exec(new TcExecutor(tc, inputsInfo)),
-          objectLocalHandle(handle) {}
-
-    std::string identifier;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::string options;
-    std::unique_ptr<TcExecutor> exec;
-    /// When run is called this is used to find the most recently compiled
-    /// version.
-    size_t objectLocalHandle;
-  };
-
   ExecutionEngine() = default;
 
   lang::TreeRef treeForFunction(const std::string& name) {
@@ -104,7 +82,7 @@ class ExecutionEngine {
   virtual void clear(size_t handle) {}
 
  protected:
-  size_t emplaceExecutor(std::unique_ptr<ExecutorInfo> p);
+  size_t emplaceExecutor(std::unique_ptr<TcExecutor> p);
 
   size_t getHandle(
       const std::string& name,
@@ -112,14 +90,14 @@ class ExecutionEngine {
       const std::string& optionsStr);
 
   /// For thread-safety perform all cheap operations under lock.
-  std::mutex executorInfoMutex_;
+  std::mutex tcExecutorMutex_;
 
   /// Parsed TC trees.
   std::map<std::string, lang::TreeRef> tcNameMap_;
 
   /// List of executors, indexed by handle.  Derived ExecutionEngines can also
-  /// derive ExecutorInfo.
-  std::vector<std::unique_ptr<ExecutorInfo>> executors_;
+  /// derive TcExecutor.
+  std::vector<std::unique_ptr<TcExecutor>> executors_;
 
   size_t uidCounter = 0;
 };

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 #include <dlpack/dlpack.h>
 
@@ -33,11 +34,12 @@ using namespace dlutils;
 class TcExecutor {
  public:
   TcExecutor(
-      const std::string& TcDefinition,
-      const std::vector<const DLTensor*>& inputsInfo);
-  TcExecutor(
-      lang::TreeRef TcDefinition,
-      const std::vector<const DLTensor*>& inputsInfo);
+      std::string id,
+      const std::vector<const DLTensor*>& inputsInfo,
+      const std::string& options,
+      lang::TreeRef tcDefinition,
+      size_t handle);
+
   virtual ~TcExecutor();
 
   TcExecutor(TcExecutor&&) = delete;
@@ -91,6 +93,10 @@ class TcExecutor {
   }
 
   const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
+
+  std::string identifier;
+  std::vector<dlutils::DLTensorUPtr> inputsInfo;
+  std::string options;
 
  protected:
   void checkSizesAndStridesAreCompliant(

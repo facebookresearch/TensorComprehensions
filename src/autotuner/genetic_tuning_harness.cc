@@ -232,35 +232,32 @@ bool GeneticTunerHarness::warmupOrPrune(
   // task-local. We pass a callback to determine whether to prune or not.
   auto debugTuner = FLAGS_debug_tuner;
   auto minThreads = FLAGS_tuner_min_launch_total_threads;
-  auto threadPruningFunction =
-      std::function<bool(const CudaExecutionEngine::ExecutorInfo*)>(
-          [debugTuner,
-           minThreads](const CudaExecutionEngine::ExecutorInfo* info) {
-            CHECK(info);
-            USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-            auto& exec = info->exec;
-            auto block = static_cast<CudaTcExecutor&>(*exec).block;
-            auto nThreads = TX.mappingSize(block) * TY.mappingSize(block) *
-                TZ.mappingSize(block);
-            auto grid = static_cast<CudaTcExecutor&>(*exec).grid;
-            auto nBlocks = BX.mappingSize(grid) * BY.mappingSize(grid) *
-                BZ.mappingSize(grid);
-            if (nBlocks * nThreads < minThreads) {
-              if (debugTuner) {
-                std::stringstream ssInfo;
-                ssInfo << "Skip configuration with too few threads: " << block
-                       << "\n"
-                       << MappingOptionsAsCpp(MappingOptions(info->options));
-                LOG_LINE_BY_LINE(INFO, ssInfo);
-              }
-              return true;
-            } else {
-              LOG_IF(INFO, debugTuner)
-                  << "Run configuration launch bounds blocks: " << grid
-                  << " and threads: " << block << "\n";
-            }
-            return false;
-          });
+  auto threadPruningFunction = std::function<bool(const TcExecutor*)>(
+      [debugTuner, minThreads](const TcExecutor* exec) {
+        CHECK(exec);
+        USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
+        auto block = static_cast<const CudaTcExecutor*>(exec)->block;
+        auto nThreads = TX.mappingSize(block) * TY.mappingSize(block) *
+            TZ.mappingSize(block);
+        auto grid = static_cast<const CudaTcExecutor*>(exec)->grid;
+        auto nBlocks =
+            BX.mappingSize(grid) * BY.mappingSize(grid) * BZ.mappingSize(grid);
+        if (nBlocks * nThreads < minThreads) {
+          if (debugTuner) {
+            std::stringstream ssInfo;
+            ssInfo << "Skip configuration with too few threads: " << block
+                   << "\n"
+                   << MappingOptionsAsCpp(MappingOptions(exec->options));
+            LOG_LINE_BY_LINE(INFO, ssInfo);
+          }
+          return true;
+        } else {
+          LOG_IF(INFO, debugTuner)
+              << "Run configuration launch bounds blocks: " << grid
+              << " and threads: " << block << "\n";
+        }
+        return false;
+      });
 
   // 1. Perform a first run which may have one of 3 behaviors:
   //   1.a. return Duration::max(), which means that pruning should occur,

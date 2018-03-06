@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "tc/core/tc_executor.h"
+
+#include <string>
+
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
@@ -25,16 +28,6 @@ using namespace dlutils;
 const size_t TcExecutor::InvalidHandle;
 
 namespace {
-lang::TreeRef parseOneFunction(const std::string& def) {
-  lang::Parser parser(def);
-  auto r = parser.parseFunction();
-  if (parser.L.cur().kind != lang::TK_EOF) {
-    throw lang::ErrorReport(parser.L.cur().range)
-        << "More than one TCs were passed to TcExecutor.";
-  }
-  return r;
-}
-
 int toTypeToken(DLDataType dtype) {
   return lang::TypeInfo(lang::TypeInfo::Code(dtype.code), dtype.bits)
       .toScalarToken();
@@ -42,14 +35,15 @@ int toTypeToken(DLDataType dtype) {
 } // namespace
 
 TcExecutor::TcExecutor(
-    const std::string& TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : TcExecutor(parseOneFunction(TcDefinition), inputsInfo) {}
-
-TcExecutor::TcExecutor(
-    lang::TreeRef TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : tcTree_(TcDefinition) {
+    std::string id,
+    const std::vector<const DLTensor*>& inputsInfo,
+    const std::string& options,
+    lang::TreeRef tcDefinition,
+    size_t handle)
+    : identifier(id),
+      inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
+      options(options),
+      tcTree_(tcDefinition) {
   execInfo_.kernelName = lang::Def(tcTree_).name().name();
   halideComponents_ =
       tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
