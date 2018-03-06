@@ -23,12 +23,8 @@ import unittest
 class TestAbsolute(unittest.TestCase):
 
     def test_absolute(self):
-        LANG = """
-        def abs(float(M, N) A) -> (O1) {
-          O1(m, n) = fabs(A(m, n))
-        }
-        """
-        absolute = tc.define(LANG, name="abs")
+
+        absolute = tc.define(tc.database['abs']['lang'], name="abs")
         A = -1 * torch.randn(3, 4).cuda()
         out = absolute(A, options=tc.Options("pointwise"))
 
