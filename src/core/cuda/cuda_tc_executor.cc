@@ -51,15 +51,15 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
     throw std::runtime_error{
         "CudaTcExecutor::compile cannot be called multiple tines."};
   }
-  execInfo_.options = options.toProtobufSerializedString();
+  executionInfo_.options = options.toProtobufSerializedString();
 
   auto cachedOp = [&]() -> std::unique_ptr<CudaCache::RetrievalResult> {
     if (ManualCudaCache::cacheEnabled()) {
       auto rr = ManualCudaCache::getCache()->retrieveKernel(
           // TODO:replace this with pretty printed TC
-          execInfo_.kernelName,
-          extractRawPtrs(execInfo_.inputsInfo),
-          extractRawPtrs(execInfo_.outputsInfo));
+          executionInfo_.kernelName,
+          extractRawPtrs(executionInfo_.inputsInfo),
+          extractRawPtrs(executionInfo_.outputsInfo));
       if (rr) {
         return rr;
       }
@@ -68,21 +68,21 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
     if (not CudaCache::cacheEnabled()) {
       return nullptr;
     }
-    CHECK_NE(execInfo_.options, "")
+    CHECK_NE(executionInfo_.options, "")
         << "options string is empty, are you trying compile "
         << "a dummy CudaTcExecutor?";
     return CudaCache::getCache()->retrieveKernel(
-        execInfo_.kernelName, // TODO:replace this with pretty printed TC
+        executionInfo_.kernelName, // TODO:replace this with pretty printed TC
         options,
-        extractRawPtrs(execInfo_.inputsInfo),
-        extractRawPtrs(execInfo_.outputsInfo));
+        extractRawPtrs(executionInfo_.inputsInfo),
+        extractRawPtrs(executionInfo_.outputsInfo));
   }();
 
   if (cachedOp) {
     cudaSource = cachedOp->source;
     grid = cachedOp->grid;
     block = cachedOp->block;
-    execInfo_.kernelParams = cachedOp->parameters;
+    executionInfo_.kernelParams = cachedOp->parameters;
     kernelSpecializedName = cachedOp->specializedName;
     LOG_IF(INFO, FLAGS_debug_tc_mapper) << "generatedCuda: " << cudaSource;
     LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved grid: " << grid;
@@ -94,12 +94,12 @@ void CudaTcExecutor::compile(const tc::MappingOptions& options) {
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original grid: " << grid;
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original block: " << block;
       CudaCache::getCache()->cacheKernel(
-          execInfo_.kernelName, // TODO:replace this with pretty printed TC
+          executionInfo_.kernelName, // TODO:replace this with pretty printed TC
           options,
-          extractRawPtrs(execInfo_.inputsInfo),
-          extractRawPtrs(execInfo_.outputsInfo),
+          extractRawPtrs(executionInfo_.inputsInfo),
+          extractRawPtrs(executionInfo_.outputsInfo),
           kernelSpecializedName,
-          execInfo_.kernelParams,
+          executionInfo_.kernelParams,
           cudaSource,
           grid,
           block);
@@ -149,24 +149,24 @@ void CudaTcExecutor::compileWithTcMapper() {
   auto scopTmp = polyhedral::Scop::makeScop(
       isl::with_exceptions::globalIslCtx(), halideComponents_);
   auto globalParameterContext =
-      scopTmp->makeContextFromInputs(extractRawPtrs(execInfo_.inputsInfo));
+      scopTmp->makeContextFromInputs(extractRawPtrs(executionInfo_.inputsInfo));
   scopTmp = polyhedral::Scop::makeSpecializedScop(
       *scopTmp,
       globalParameterContext.intersect(scopTmp->globalParameterContext));
-  LOG_IF(INFO, FLAGS_debug_tc_mapper) << MappingOptions(execInfo_.options);
+  LOG_IF(INFO, FLAGS_debug_tc_mapper) << MappingOptions(executionInfo_.options);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << *(scopTmp->scheduleRoot());
 
   // Now we can build stuff
   auto mappedScop =
       polyhedral::MappedScop::makeWithOuterBlockInnerThreadStrategy(
-          std::move(scopTmp), MappingOptions(execInfo_.options));
+          std::move(scopTmp), MappingOptions(executionInfo_.options));
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
 
-  execInfo_.kernelParams = narrowParamsVector(
+  executionInfo_.kernelParams = narrowParamsVector(
       mappedScop->scop().getParameterValues(globalParameterContext));
-  kernelSpecializedName =
-      specializeKernelName(execInfo_.kernelName, execInfo_.kernelParams);
+  kernelSpecializedName = specializeKernelName(
+      executionInfo_.kernelName, executionInfo_.kernelParams);
 
   // This updates the launch bounds with the actual result from compilation
   // with tightening of launch_bounds.
@@ -181,12 +181,14 @@ Duration CudaTcExecutor::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile) const {
-  CHECK(rtcFun) << "Can't launch uncompiled: " << execInfo_.kernelName;
-  CHECK_NE(execInfo_.options, "");
+  CHECK(rtcFun) << "Can't launch uncompiled: " << executionInfo_.kernelName;
+  CHECK_NE(executionInfo_.options, "");
   checkSizesAndStridesAreCompliant(
-      inputs, execInfo_.inputsInfo, halideComponents_.getDef().params());
+      inputs, executionInfo_.inputsInfo, halideComponents_.getDef().params());
   checkSizesAndStridesAreCompliant(
-      outputs, execInfo_.outputsInfo, halideComponents_.getDef().returns());
+      outputs,
+      executionInfo_.outputsInfo,
+      halideComponents_.getDef().returns());
 
   std::vector<const void*> I;
   std::vector<void*> O;
@@ -204,15 +206,15 @@ Duration CudaTcExecutor::run(
       block.extractDefaultedArray(),
       0,
       stream,
-      execInfo_.kernelParams,
+      executionInfo_.kernelParams,
       O,
       I,
       profile);
   if (profile and OptionsCache::cacheEnabled()) {
     OptionsCache::getCache()->recordRuntime(
         // TODO:replace this with pretty printed TC
-        execInfo_.kernelName,
-        MappingOptions(execInfo_.options),
+        executionInfo_.kernelName,
+        MappingOptions(executionInfo_.options),
         inputs,
         constPtrs(outputs),
         res);
@@ -232,7 +234,7 @@ void CudaTcExecutor::uncheckedRun(
       block.extractDefaultedArray(),
       0,
       stream,
-      execInfo_.kernelParams,
+      executionInfo_.kernelParams,
       outputs,
       inputs,
       profile);
