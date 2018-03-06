@@ -108,4 +108,10 @@ size_t ExecutionEngine::getHandle(
   return TcExecutor::InvalidHandle;
 }
 
+// Clear the underlying RTC object and executor under lock.
+void ExecutionEngine::clear(size_t handle) {
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
+  executors_[handle]->clearRuntimeCompiledFun();
+  executors_[handle] = std::unique_ptr<TcExecutor>(nullptr);
+}
 }; // namespace tc

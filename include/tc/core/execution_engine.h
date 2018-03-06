@@ -79,7 +79,7 @@ class ExecutionEngine {
       const std::vector<void*>& outputs) = 0;
 
   /// Clear the compilation result for the given handle.
-  virtual void clear(size_t handle) {}
+  void clear(size_t handle);
 
  protected:
   size_t emplaceExecutor(std::unique_ptr<TcExecutor> p);

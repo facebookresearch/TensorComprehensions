@@ -89,8 +89,6 @@ class CudaExecutionEngine : public ExecutionEngine {
       size_t handle,
       const std::vector<const void*>& inputs,
       const std::vector<void*>& outputs) override;
-
-  void clear(size_t handle) override;
 };
 
 } // namespace tc
