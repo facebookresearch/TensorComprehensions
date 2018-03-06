@@ -96,15 +96,6 @@ void CudaExecutionEngine::uncheckedRun(
   }
 }
 
-// Steal ExecutorInfo, clear the underlying RTC object and give it back under
-// lock.
-void CudaExecutionEngine::clear(size_t handle) {
-  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-  auto executor = static_cast<CudaTcExecutor*>(executors_[handle].get());
-  executor->clearRuntimeCompiledFunction();
-  executors_[handle] = std::unique_ptr<TcExecutor>(nullptr);
-}
-
 size_t CudaExecutionEngine::compile(
     const std::string& name,
     const std::vector<const DLTensor*>& inputs,
