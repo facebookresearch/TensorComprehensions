@@ -302,7 +302,9 @@ void TcExecutor::compileWithTcMapper() {
   // that.
   std::tie(execInfo_.cudaSource, execInfo_.grid, execInfo_.block) =
       mappedScop->codegen(execInfo_.kernelSpecializedName);
-  LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << execInfo_.cudaSource;
+  if (FLAGS_dump_cuda) {
+    std::cout << "generatedCuda: " << execInfo_.cudaSource << std::endl;
+  }
 }
 
 Duration TcExecutor::run(
