@@ -11,7 +11,7 @@ When submitting a bug report, please include the following information (where re
 - How you installed TC (docker, conda, source):
 - Python version:
 - CUDA/cuDNN version:
-- Conda version (is using conda):
+- Conda version (if using conda):
 - Docker image (if using docker):
 - GCC/GXX version (if compiling from source):
 - LLVM/Tapir git hash used (if compiling from source):
