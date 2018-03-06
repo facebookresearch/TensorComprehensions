@@ -3,7 +3,6 @@ add_library(
 
   SHARED
 
-  execution_engine.cc
   flags.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
@@ -64,7 +63,6 @@ if (WITH_CUDA)
 
     cuda/cuda.cc
     cuda/cuda_compilation_cache.cc
-    cuda/cuda_execution_engine.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
   )

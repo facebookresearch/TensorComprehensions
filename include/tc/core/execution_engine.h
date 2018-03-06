@@ -27,6 +27,7 @@
 #include "tc/lang/tree.h"
 
 namespace tc {
+template <typename ExecutorType>
 class ExecutionEngine {
  public:
   ExecutionEngine() = default;
@@ -53,30 +54,32 @@ class ExecutionEngine {
   /// the compilation options.  Must be overridden by a specific
   /// ExecutionEngine, which also interprets the options as it sees fit.
   /// \returns opaque handle of a compiled kernel.
-  virtual size_t compile(
+  size_t compile(
       const std::string& name,
       const std::vector<const DLTensor*>& inputs,
-      const std::string& options) = 0;
+      const std::string& options);
 
   /// Run a compiled TC kernel given its handle, on the given input tensors and
   /// fill in the outputs.  All tensors must be allocated and have appropriate
   /// shapes (inputs same as for copmilation, outputs same as returned by
   /// inferOutputTensorInfo).
   /// \returns The kernel runtime if profile is set, Duration::max() otherwise.
-  virtual Duration run(
+  Duration run(
       size_t handle,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) = 0;
+      bool profile = false,
+      std::function<bool(const ExecutorType*)> pruningFunction =
+          [](const ExecutorType*) { return false; });
 
   /// "Low-latency" execution mode in which we just propagate raw pointers to
   /// data in GPU address space.
   /// No tensor-related information can be checked so it is the user's
   /// responsibility to ensure that shapes and strides match.
-  virtual void uncheckedRun(
+  void uncheckedRun(
       size_t handle,
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) = 0;
+      const std::vector<void*>& outputs);
 
   /// Clear the compilation result for the given handle.
   void clear(size_t handle);
@@ -101,5 +104,6 @@ class ExecutionEngine {
 
   size_t uidCounter = 0;
 };
-
 } // namespace tc
+
+#include "tc/core/execution_engine-inl.h"
