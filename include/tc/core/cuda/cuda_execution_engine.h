@@ -34,28 +34,6 @@ namespace tc {
 /// out the run function with the name of function and the inputs to run on.
 class CudaExecutionEngine : public ExecutionEngine {
  public:
-  struct CudaExecutorInfo : public ExecutionEngine::ExecutorInfo {
-    CudaExecutorInfo(
-        std::string id,
-        std::vector<const DLTensor*> inputsInfo,
-        const MappingOptions& options,
-        lang::TreeRef tc,
-        size_t handle)
-        : ExecutionEngine::ExecutorInfo(
-              id,
-              inputsInfo,
-              options.toProtobufSerializedString(),
-              tc,
-              handle) {
-      exec =
-          std::unique_ptr<CudaTcExecutor>(new CudaTcExecutor(tc, inputsInfo));
-    }
-
-    void clear() {
-      static_cast<CudaTcExecutor&>(*exec).clearRTC();
-    }
-  };
-
   CudaExecutionEngine() = default;
 
   // TODO: Pass autotuning info (none by default, otherwise some struct with
@@ -90,7 +68,7 @@ class CudaExecutionEngine : public ExecutionEngine {
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
       bool profile = false) override {
-    return run(handle, inputs, outputs, profile, [](const CudaExecutorInfo*) {
+    return run(handle, inputs, outputs, profile, [](const CudaTcExecutor*) {
       return false;
     });
   }
@@ -99,7 +77,7 @@ class CudaExecutionEngine : public ExecutionEngine {
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
       bool profile,
-      std::function<bool(const CudaExecutorInfo*)> pruningFunction);
+      std::function<bool(const CudaTcExecutor*)> pruningFunction);
   /// @}
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to
@@ -113,12 +91,6 @@ class CudaExecutionEngine : public ExecutionEngine {
       const std::vector<void*>& outputs) override;
 
   void clear(size_t handle) override;
-
- private:
-  std::unique_ptr<ExecutorInfo> makeExecutorInfo(
-      const std::string& name,
-      const std::vector<const DLTensor*>& inputsInfo,
-      const MappingOptions& options);
 };
 
 } // namespace tc

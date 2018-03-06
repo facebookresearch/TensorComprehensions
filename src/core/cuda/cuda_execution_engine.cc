@@ -30,10 +30,10 @@ Duration CudaExecutionEngine::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile,
-    std::function<bool(const CudaExecutorInfo*)> pruningFunction) {
-  std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
+    std::function<bool(const CudaTcExecutor*)> pruningFunction) {
+  std::unique_ptr<TcExecutor> p(nullptr);
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex_);
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
     std::swap(p, executors_[handle]);
   }
 
@@ -42,23 +42,21 @@ Duration CudaExecutionEngine::run(
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
   Duration res(Duration::max());
-  if (p.get()) {
-    auto& execInfo = static_cast<CudaExecutorInfo&>(*p);
-    auto exec = static_cast<CudaTcExecutor*>(execInfo.exec.get());
-    if (pruningFunction(&execInfo)) {
+  if (p) {
+    if (pruningFunction(static_cast<CudaTcExecutor*>(p.get()))) {
       return Duration::max();
     }
-    CHECK(exec->hasRTCFun());
+    CHECK(static_cast<CudaTcExecutor*>(p.get())->hasRTCFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
-      res = exec->run(inputs, outputs, profile);
+      res = p->run(inputs, outputs, profile);
     } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex_);
+      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
       std::swap(p, executors_[handle]);
       throw;
     }
     {
-      std::lock_guard<std::mutex> lg(executorInfoMutex_);
+      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
       std::swap(p, executors_[handle]);
     }
   }
@@ -71,9 +69,9 @@ void CudaExecutionEngine::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
-  std::unique_ptr<ExecutionEngine::ExecutorInfo> p(nullptr);
+  std::unique_ptr<TcExecutor> p(nullptr);
   {
-    std::lock_guard<std::mutex> lg(executorInfoMutex_);
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
     std::swap(p, executors_[handle]);
   }
 
@@ -81,19 +79,18 @@ void CudaExecutionEngine::uncheckedRun(
   // some unexpected cases: there is no guarantee of no-redundancy in
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
-  if (p.get()) {
-    auto exec = static_cast<CudaTcExecutor*>(p->exec.get());
-    CHECK(exec->hasRTCFun());
+  if (p) {
+    CHECK(static_cast<CudaTcExecutor*>(p.get())->hasRTCFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
-      exec->uncheckedRun(inputs, outputs);
+      p->uncheckedRun(inputs, outputs);
     } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(executorInfoMutex_);
+      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
       std::swap(p, executors_[handle]);
       throw;
     }
     {
-      std::lock_guard<std::mutex> lg(executorInfoMutex_);
+      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
       std::swap(p, executors_[handle]);
     }
   }
@@ -102,25 +99,10 @@ void CudaExecutionEngine::uncheckedRun(
 // Steal ExecutorInfo, clear the underlying RTC object and give it back under
 // lock.
 void CudaExecutionEngine::clear(size_t handle) {
-  std::lock_guard<std::mutex> lg(executorInfoMutex_);
-  auto executor = static_cast<CudaExecutorInfo*>(executors_[handle].get());
-  executor->clear();
-  executors_[handle] = std::unique_ptr<ExecutionEngine::ExecutorInfo>(nullptr);
-}
-
-std::unique_ptr<ExecutionEngine::ExecutorInfo>
-CudaExecutionEngine::makeExecutorInfo(
-    const std::string& name,
-    const std::vector<const DLTensor*>& inputsInfo,
-    const MappingOptions& options) {
-  CHECK_EQ(tcNameMap_.count(name), 1)
-      << "TC function " << name << " not defined";
-  return std::unique_ptr<ExecutionEngine::ExecutorInfo>(new CudaExecutorInfo(
-      name,
-      inputsInfo,
-      options,
-      tcNameMap_.at(name),
-      TcExecutor::InvalidHandle));
+  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
+  auto executor = static_cast<CudaTcExecutor*>(executors_[handle].get());
+  executor->clearRTCFunction();
+  executors_[handle] = std::unique_ptr<TcExecutor>(nullptr);
 }
 
 size_t CudaExecutionEngine::compile(
@@ -135,12 +117,11 @@ size_t CudaExecutionEngine::compile(
   }
 
   // Otherwise we need to compile.
-  std::unique_ptr<ExecutionEngine::ExecutorInfo> p =
-      makeExecutorInfo(name, inputs, options);
-  auto exec = static_cast<CudaTcExecutor*>(p->exec.get());
-  CHECK(exec);
-  exec->compile(options);
-  CHECK(exec->hasRTCFun());
+  std::unique_ptr<CudaTcExecutor> p(new CudaTcExecutor(
+      name, inputs, options, tcNameMap_.at(name), TcExecutor::InvalidHandle));
+  CHECK(p);
+  p->compile(options);
+  CHECK(p->hasRTCFunction());
 
   handle = emplaceExecutor(std::move(p));
   return handle;
