@@ -97,7 +97,7 @@ class CudaTcExecutor : public ::tc::TcExecutor {
   }
 
   std::string kernelName() const {
-    return execInfo_.kernelName;
+    return executionInfo_.kernelName;
   }
 
  private:

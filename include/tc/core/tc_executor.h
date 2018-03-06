@@ -124,13 +124,20 @@ class TcExecutor {
   void checkInputsCompliant(
       const std::vector<const DLTensor*>& inputsInfo) const;
 
+  // This data structure contains the basic information that a TcExecutor
+  // needs to run a compiled kernel.
+  // This information corresponds to information required to:
+  // 1. build the kernel signature (kernelName/kernelParams)
+  // 2. retrieve the mapped kernel from cache (kernelName, options, input,
+  //    output)
+  // 3. actually run the kernel (supporting input, output tensors)
   struct {
     std::string kernelName;
     std::vector<dlutils::DLTensorUPtr> inputsInfo;
     std::vector<dlutils::DLTensorUPtr> outputsInfo;
     std::vector<int> kernelParams;
     std::string options;
-  } execInfo_;
+  } executionInfo_;
 
   tc2halide::HalideComponents halideComponents_;
   lang::TreeRef tcTree_;

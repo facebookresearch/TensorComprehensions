@@ -44,13 +44,13 @@ TcExecutor::TcExecutor(
       inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
       options(options),
       tcTree_(tcDefinition) {
-  execInfo_.kernelName = lang::Def(tcTree_).name().name();
+  executionInfo_.kernelName = lang::Def(tcTree_).name().name();
   halideComponents_ =
       tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
   checkInputsCompliant(inputsInfo);
-  execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
+  executionInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  execInfo_.outputsInfo =
+  executionInfo_.outputsInfo =
       tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
@@ -119,7 +119,7 @@ void TcExecutor::checkInputsCompliant(
 }
 
 std::vector<const DLTensor*> TcExecutor::inferOutputTensorInfo() {
-  return extractRawPtrs(execInfo_.outputsInfo);
+  return extractRawPtrs(executionInfo_.outputsInfo);
 }
 
 } // namespace tc
