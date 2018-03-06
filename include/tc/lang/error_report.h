@@ -43,7 +43,7 @@ struct ErrorReport : public std::exception {
 };
 
 inline void warn(const ErrorReport& err) {
-  std::cerr << err.what();
+  std::cerr << "WARNING: " << err.what();
 }
 
 template <typename T>
