@@ -111,7 +111,7 @@ The EBNF for the TC comprehension language is::
     return ::= id # inferred return type and range
 
     scalar_type ::= 'double' | 'float' | 'half'
-                  | 'int' | 'byte' | 'uint32' | ...
+                  | 'int32' | 'byte' | 'uint32' | ...
 
     type ::= scalar_type [ '(' id_list ')' ]
 
