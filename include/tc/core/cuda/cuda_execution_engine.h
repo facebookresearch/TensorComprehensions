@@ -28,10 +28,9 @@
 
 namespace tc {
 
-/// The goal for this new shiny API is to provide a different pathway for being
-/// able to execute the kernels for multiple TC i.e. given the language which
-/// can have multiple TCs, people should be able to run things by just calling
-/// out the run function with the name of function and the inputs to run on.
+/// Given the language, which can have multiple TCs, run underlying runtime
+/// compiled functions by just calling run with the name of the TC and the
+/// inputs to run on.
 class CudaExecutionEngine : public ExecutionEngine {
  public:
   CudaExecutionEngine() = default;
