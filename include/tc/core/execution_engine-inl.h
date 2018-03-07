@@ -82,7 +82,7 @@ ExecutionEngine<ExecutorType>::inferOutputTensorInfo(
   }
 
   // Otherwise, create a new executor and add it to executor_ with
-  // null options.  It will be used for further size queries but
+  // null options. It will be used for further size queries but
   // will fail if somebody attempts to run it.
   auto executor =
       tc::make_unique<TcExecutor>(name, inputs, "", tcNameMap_.at(name));
