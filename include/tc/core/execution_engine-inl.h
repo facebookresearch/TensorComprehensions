@@ -104,13 +104,13 @@ size_t ExecutionEngine<ExecutorType>::compile(
   }
 
   // Otherwise we need to compile.
-  std::unique_ptr<ExecutorType> p(
+  std::unique_ptr<ExecutorType> executorUPtr(
       new ExecutorType(name, inputs, options, tcNameMap_.at(name)));
-  CHECK(p);
-  p->compile(options);
-  CHECK(p->hasRuntimeCompiledFunction());
+  CHECK(executorUPtr);
+  executorUPtr->compile(options);
+  CHECK(executorUPtr->hasRuntimeCompiledFunction());
 
-  handle = emplaceExecutor(std::move(p));
+  handle = emplaceExecutor(std::move(executorUPtr));
   return handle;
 }
 
@@ -123,10 +123,10 @@ Duration ExecutionEngine<ExecutorType>::run(
     const std::vector<DLTensor*>& outputs,
     bool profile,
     std::function<bool(const ExecutorType*)> pruningFunction) {
-  std::unique_ptr<TcExecutor> p(nullptr);
+  std::unique_ptr<TcExecutor> executorUPtr(nullptr);
   {
     std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-    std::swap(p, executors_[handle]);
+    std::swap(executorUPtr, executors_[handle]);
   }
 
   // It turns out someone else may already be running this configuration in
@@ -134,22 +134,22 @@ Duration ExecutionEngine<ExecutorType>::run(
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
   Duration res(Duration::max());
-  if (p) {
-    if (pruningFunction(static_cast<ExecutorType*>(p.get()))) {
+  if (executorUPtr) {
+    if (pruningFunction(static_cast<ExecutorType*>(executorUPtr.get()))) {
       return Duration::max();
     }
-    CHECK(p->hasRuntimeCompiledFunction());
+    CHECK(executorUPtr->hasRuntimeCompiledFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
-      res = p->run(inputs, outputs, profile);
+      res = executorUPtr->run(inputs, outputs, profile);
     } catch (std::exception& e) {
       std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(p, executors_[handle]);
+      std::swap(executorUPtr, executors_[handle]);
       throw;
     }
     {
       std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(p, executors_[handle]);
+      std::swap(executorUPtr, executors_[handle]);
     }
   }
   return res;
@@ -162,29 +162,29 @@ void ExecutionEngine<ExecutorType>::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
-  std::unique_ptr<TcExecutor> p(nullptr);
+  std::unique_ptr<TcExecutor> executorUPtr(nullptr);
   {
     std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-    std::swap(p, executors_[handle]);
+    std::swap(executorUPtr, executors_[handle]);
   }
 
   // It turns out someone else may already be running this configuration in
   // some unexpected cases: there is no guarantee of no-redundancy in
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
-  if (p) {
-    CHECK(p->hasRuntimeCompiledFunction());
+  if (executorUPtr) {
+    CHECK(executorUPtr->hasRuntimeCompiledFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
-      p->uncheckedRun(inputs, outputs);
+      executorUPtr->uncheckedRun(inputs, outputs);
     } catch (std::exception& e) {
       std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(p, executors_[handle]);
+      std::swap(executorUPtr, executors_[handle]);
       throw;
     }
     {
       std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(p, executors_[handle]);
+      std::swap(executorUPtr, executors_[handle]);
     }
   }
 }
@@ -198,12 +198,12 @@ void ExecutionEngine<ExecutorType>::clear(size_t handle) {
 
 template <typename ExecutorType>
 size_t ExecutionEngine<ExecutorType>::emplaceExecutor(
-    std::unique_ptr<TcExecutor> p) {
+    std::unique_ptr<TcExecutor> executorUPtr) {
   // Insert in vector under lock
   std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   size_t handle = uidCounter++;
   // This may trigger reallocs and moves of the underlying vector, fun!
-  executors_.emplace_back(std::move(p));
+  executors_.emplace_back(std::move(executorUPtr));
   // This is really the invariant we enforce
   CHECK_EQ(executors_.size(), uidCounter);
   return handle;
