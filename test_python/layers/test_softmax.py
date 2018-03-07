@@ -27,7 +27,7 @@ class TestSoftmax(unittest.TestCase):
     def test_softmax(self):
         LANG = """
         def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
-          maxVal(n) max= I(n, d)
+          maxVal(n) max=! I(n, d)
           expDistance(n, d) = exp(I(n, d) - maxVal(n))
           expSum(n) +=! expDistance(n, d)
           O(n, d) = expDistance(n, d) / expSum(n)

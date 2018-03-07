@@ -87,7 +87,7 @@ TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxB) {
       outputs);
 }
 
-TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxC) {
+TEST_F(ATenCompilationUnitTest, SoftmaxC) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a};
   std::vector<at::Tensor> outputs;
@@ -114,7 +114,7 @@ TEST_F(ATenCompilationUnitTest, SoftmaxD) {
   Check(
       R"(
       def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
-        maxVal(n) max= I(n, d)
+        maxVal(n) max=! I(n, d)
         expDistance(n, d) = exp(I(n, d) - maxVal(n))
         expSum(n) +=! expDistance(n, d)
         O(n, d) = expDistance(n, d) / expSum(n)
