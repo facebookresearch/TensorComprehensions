@@ -27,18 +27,21 @@ namespace tc {
 
 namespace {
 const size_t InvalidHandle = std::numeric_limits<size_t>::max();
+
+std::vector<lang::TreeRef> parseDefs(const std::string& language) {
+  lang::Parser parser(language);
+  std::vector<lang::TreeRef> res;
+  while (parser.L.cur().kind != lang::TK_EOF) {
+    res.push_back(parser.parseFunction());
+  }
+  return res;
 }
+} // namespace
 
 // Under object lock, fill parse the language and fill the underlying map
 template <typename ExecutorType>
 void ExecutionEngine<ExecutorType>::define(const std::string& language) {
-  lang::Parser parser(language);
-  std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-  while (parser.L.cur().kind != lang::TK_EOF) {
-    auto treeRef = parser.parseFunction();
-    auto name = lang::Def(treeRef).name().name();
-    tcNameMap_.emplace(std::make_pair(name, treeRef));
-  }
+  define(parseDefs(language));
 }
 
 // support define if we pass the parsed TreeRefs.
