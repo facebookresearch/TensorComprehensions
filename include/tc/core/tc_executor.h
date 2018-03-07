@@ -92,6 +92,17 @@ class TcExecutor {
         << "TcExecutor::uncheckedRun is abstract and should not be called";
   }
 
+  virtual bool hasRuntimeCompiledFunction() {
+    LOG(FATAL)
+        << "TcExecutor::hasRuntimeCompiledFunction is abstract and should not be called";
+    return true;
+  }
+
+  virtual void clearRuntimeCompiledFunction() {
+    LOG(FATAL)
+        << "TcExecutor::clearRuntimeCompiledFunction is abstract and should not be called";
+  }
+
   const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
 
   std::string identifier;

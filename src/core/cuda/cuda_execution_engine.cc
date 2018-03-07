@@ -46,7 +46,7 @@ Duration CudaExecutionEngine::run(
     if (pruningFunction(static_cast<CudaTcExecutor*>(p.get()))) {
       return Duration::max();
     }
-    CHECK(static_cast<CudaTcExecutor*>(p.get())->hasRTCFunction());
+    CHECK(p->hasRuntimeCompiledFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
       res = p->run(inputs, outputs, profile);
@@ -80,7 +80,7 @@ void CudaExecutionEngine::uncheckedRun(
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
   if (p) {
-    CHECK(static_cast<CudaTcExecutor*>(p.get())->hasRTCFunction());
+    CHECK(p->hasRuntimeCompiledFunction());
     try {
       // Must catch and swap to avoid exception in destructor!
       p->uncheckedRun(inputs, outputs);
@@ -101,7 +101,7 @@ void CudaExecutionEngine::uncheckedRun(
 void CudaExecutionEngine::clear(size_t handle) {
   std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   auto executor = static_cast<CudaTcExecutor*>(executors_[handle].get());
-  executor->clearRTCFunction();
+  executor->clearRuntimeCompiledFunction();
   executors_[handle] = std::unique_ptr<TcExecutor>(nullptr);
 }
 
@@ -121,7 +121,7 @@ size_t CudaExecutionEngine::compile(
       name, inputs, options, tcNameMap_.at(name), TcExecutor::InvalidHandle));
   CHECK(p);
   p->compile(options);
-  CHECK(p->hasRTCFunction());
+  CHECK(p->hasRuntimeCompiledFunction());
 
   handle = emplaceExecutor(std::move(p));
   return handle;
