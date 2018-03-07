@@ -109,7 +109,7 @@ echo "HALIDE packaged Successfully"
 # Tensor Comprehensions settings
 TC_BUILD_VERSION="0.1.1"
 TC_BUILD_NUMBER=3
-TC_GIT_HASH="02fe7370832d8e93839cfcd7c6798783bd4f31cc"
+TC_GIT_HASH="8e112e9dccda62c30ef29208a827e783b9a7f156"
 
 echo "Packaging TC ==> TC_BUILD_VERSION: ${TC_BUILD_VERSION} TC_BUILD_NUMBER: ${TC_BUILD_NUMBER}"
 
