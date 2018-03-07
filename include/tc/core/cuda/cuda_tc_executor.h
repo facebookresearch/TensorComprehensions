@@ -34,7 +34,7 @@ class CudaTcExecutor : public ::tc::TcExecutor {
  public:
   CudaTcExecutor(
       std::string id,
-      std::vector<const DLTensor*> inputsInfo,
+      const std::vector<const DLTensor*>& inputsInfo,
       const std::string& options,
       lang::TreeRef tcDefinition,
       size_t handle)
