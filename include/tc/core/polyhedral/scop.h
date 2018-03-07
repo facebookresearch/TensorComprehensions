@@ -227,9 +227,6 @@ struct Scop {
   }
 
   static bool isSyncId(isl::id id) {
-    if (!id.has_name()) {
-      return false;
-    }
     auto name = id.get_name();
     if (name.find(kSyncIdPrefix) != 0) {
       return false;
