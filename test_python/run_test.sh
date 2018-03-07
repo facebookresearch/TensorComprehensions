@@ -51,6 +51,7 @@ $PYTHON layers/test_dump_cuda.py -v
 $PYTHON layers/test_external_cuda_injection.py -v
 $PYTHON layers/test_fc.py -v
 $PYTHON layers/test_fusion_fcrelu.py -v
+$PYTHON layers/test_broadcast_fcrelu.py -v
 $PYTHON layers/test_group_convolution.py -v
 $PYTHON layers/test_group_convolution_strided.py -v
 $PYTHON layers/test_indexing.py -v
