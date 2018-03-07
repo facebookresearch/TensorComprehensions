@@ -25,8 +25,6 @@ namespace tc {
 
 using namespace dlutils;
 
-const size_t TcExecutor::InvalidHandle;
-
 namespace {
 int toTypeToken(DLDataType dtype) {
   return lang::TypeInfo(lang::TypeInfo::Code(dtype.code), dtype.bits)
@@ -38,8 +36,7 @@ TcExecutor::TcExecutor(
     std::string id,
     const std::vector<const DLTensor*>& inputsInfo,
     const std::string& options,
-    lang::TreeRef tcDefinition,
-    size_t handle)
+    lang::TreeRef tcDefinition)
     : identifier(id),
       inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
       options(options),

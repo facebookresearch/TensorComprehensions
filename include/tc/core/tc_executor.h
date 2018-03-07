@@ -37,8 +37,7 @@ class TcExecutor {
       std::string id,
       const std::vector<const DLTensor*>& inputsInfo,
       const std::string& options,
-      lang::TreeRef tcDefinition,
-      size_t handle);
+      lang::TreeRef tcDefinition);
 
   virtual ~TcExecutor();
 
@@ -102,8 +101,6 @@ class TcExecutor {
     LOG(FATAL)
         << "TcExecutor::clearRuntimeCompiledFunction is abstract and should not be called";
   }
-
-  const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
 
   std::string identifier;
   std::vector<dlutils::DLTensorUPtr> inputsInfo;
