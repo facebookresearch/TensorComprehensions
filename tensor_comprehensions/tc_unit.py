@@ -204,7 +204,8 @@ class TcAutotuner(object):
         try:
             best_options = self.autotuner.tune(cache_file, tc_name, inputs, options, [options])
             return best_options
-        except RuntimeError:
+        except Exception as e:
+            logger.error('Raised exception: {}'.format(e))
             return options
 
     def autotune(self, *inputs, **kwargs):
