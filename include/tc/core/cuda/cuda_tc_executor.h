@@ -88,14 +88,14 @@ class CudaTcExecutor : public ::tc::TcExecutor {
       const std::vector<const void*>& inputs,
       const std::vector<void*>& outputs) const;
 
-  bool hasRTCFunction() {
+  bool hasRuntimeCompiledFunction() override {
     return rtcFun.get() != nullptr;
   }
 
   // It is necessary to clear the RTC manually because it can throw and we
   // can't have that in the destructor.
-  void clearRTCFunction() {
-    if (!hasRTCFunction()) {
+  void clearRuntimeCompiledFunction() override {
+    if (!hasRuntimeCompiledFunction()) {
       return;
     }
     rtcFun->clear();
