@@ -25,6 +25,10 @@
 
 namespace tc {
 
+namespace {
+const size_t InvalidHandle = std::numeric_limits<size_t>::max();
+}
+
 // Under object lock, fill parse the language and fill the underlying map
 template <typename ExecutorType>
 void ExecutionEngine<ExecutorType>::define(const std::string& language) {
@@ -77,8 +81,8 @@ ExecutionEngine<ExecutorType>::inferOutputTensorInfo(
   // Otherwise, create a new executor and add it to executor_ with
   // null options.  It will be used for further size queries but
   // will fail if somebody attempts to run it.
-  auto executor = tc::make_unique<TcExecutor>(
-      name, inputs, "", tcNameMap_.at(name), TcExecutor::InvalidHandle);
+  auto executor =
+      tc::make_unique<TcExecutor>(name, inputs, "", tcNameMap_.at(name));
   auto outputsInfo = executor->inferOutputTensorInfo();
   emplaceExecutor(std::move(executor));
   return outputsInfo;
@@ -92,13 +96,13 @@ size_t ExecutionEngine<ExecutorType>::compile(
   // Check if we already have a handle for this name+size+options combination.
   // If so, return it.
   size_t handle = getHandle(name, inputs, options);
-  if (handle != TcExecutor::InvalidHandle) {
+  if (handle != InvalidHandle) {
     return handle;
   }
 
   // Otherwise we need to compile.
-  std::unique_ptr<ExecutorType> p(new ExecutorType(
-      name, inputs, options, tcNameMap_.at(name), TcExecutor::InvalidHandle));
+  std::unique_ptr<ExecutorType> p(
+      new ExecutorType(name, inputs, options, tcNameMap_.at(name)));
   CHECK(p);
   p->compile(options);
   CHECK(p->hasRuntimeCompiledFunction());
@@ -223,6 +227,6 @@ size_t ExecutionEngine<ExecutorType>::getHandle(
   if (it != executors_.end()) {
     return it - executors_.begin();
   }
-  return TcExecutor::InvalidHandle;
+  return InvalidHandle;
 }
 } // namespace tc
