@@ -36,7 +36,11 @@ typedef int int32;
 typedef long int64;
 typedef float float32;
 typedef double float64;
+)C";
 
+constexpr auto defines = R"C(
+#define inff __int_as_float(0x7f800000)
+#define inf __longlong_as_double(0x7ff0000000000000LL)
 )C";
 
 constexpr auto mathFunctionDecl = R"C(
