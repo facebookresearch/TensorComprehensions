@@ -24,8 +24,8 @@
 namespace tc {
 
 ATenCompilationUnit::ATenCompilationUnit() {
-  executionEngine_ =
-      std::unique_ptr<CudaExecutionEngine>(new CudaExecutionEngine());
+  executionEngine_ = std::unique_ptr<ExecutionEngine<CudaTcExecutor>>(
+      new ExecutionEngine<CudaTcExecutor>());
 }
 
 void ATenCompilationUnit::define(const std::string& language) {
@@ -103,7 +103,8 @@ size_t ATenCompilationUnit::compile(
     const MappingOptions& options) {
   auto inputDLTensorsPair = toConstDlpackTensors(inputs);
   ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
-  return executionEngine_->compile(name, inputDLTensorsPair.first, options);
+  return executionEngine_->compile(
+      name, inputDLTensorsPair.first, options.toProtobufSerializedString());
 }
 
 std::vector<const DLTensor*> ATenCompilationUnit::inferOutputTensorInfo(

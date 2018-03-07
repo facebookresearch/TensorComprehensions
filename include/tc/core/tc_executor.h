@@ -16,6 +16,7 @@
 #pragma once
 
 #include <limits>
+#include <string>
 
 #include <dlpack/dlpack.h>
 
@@ -33,11 +34,11 @@ using namespace dlutils;
 class TcExecutor {
  public:
   TcExecutor(
-      const std::string& TcDefinition,
-      const std::vector<const DLTensor*>& inputsInfo);
-  TcExecutor(
-      lang::TreeRef TcDefinition,
-      const std::vector<const DLTensor*>& inputsInfo);
+      std::string id,
+      const std::vector<const DLTensor*>& inputsInfo,
+      const std::string& options,
+      lang::TreeRef tcDefinition);
+
   virtual ~TcExecutor();
 
   TcExecutor(TcExecutor&&) = delete;
@@ -90,7 +91,20 @@ class TcExecutor {
         << "TcExecutor::uncheckedRun is abstract and should not be called";
   }
 
-  const static size_t InvalidHandle = std::numeric_limits<size_t>::max();
+  virtual bool hasRuntimeCompiledFunction() {
+    LOG(FATAL)
+        << "TcExecutor::hasRuntimeCompiledFunction is abstract and should not be called";
+    return true;
+  }
+
+  virtual void clearRuntimeCompiledFunction() {
+    LOG(FATAL)
+        << "TcExecutor::clearRuntimeCompiledFunction is abstract and should not be called";
+  }
+
+  std::string identifier;
+  std::vector<dlutils::DLTensorUPtr> inputsInfo;
+  std::string options;
 
  protected:
   void checkSizesAndStridesAreCompliant(
@@ -107,13 +121,20 @@ class TcExecutor {
   void checkInputsCompliant(
       const std::vector<const DLTensor*>& inputsInfo) const;
 
+  // This data structure contains the basic information that a TcExecutor
+  // needs to run a compiled kernel.
+  // This information corresponds to information required to:
+  // 1. build the kernel signature (kernelName/kernelParams)
+  // 2. retrieve the mapped kernel from cache (kernelName, options, input,
+  //    output)
+  // 3. actually run the kernel (supporting input, output tensors)
   struct {
     std::string kernelName;
     std::vector<dlutils::DLTensorUPtr> inputsInfo;
     std::vector<dlutils::DLTensorUPtr> outputsInfo;
     std::vector<int> kernelParams;
     std::string options;
-  } execInfo_;
+  } executionInfo_;
 
   tc2halide::HalideComponents halideComponents_;
   lang::TreeRef tcTree_;

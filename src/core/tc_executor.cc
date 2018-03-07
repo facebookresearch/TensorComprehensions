@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "tc/core/tc_executor.h"
+
+#include <string>
+
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
@@ -22,19 +25,7 @@ namespace tc {
 
 using namespace dlutils;
 
-const size_t TcExecutor::InvalidHandle;
-
 namespace {
-lang::TreeRef parseOneFunction(const std::string& def) {
-  lang::Parser parser(def);
-  auto r = parser.parseFunction();
-  if (parser.L.cur().kind != lang::TK_EOF) {
-    throw lang::ErrorReport(parser.L.cur().range)
-        << "More than one TCs were passed to TcExecutor.";
-  }
-  return r;
-}
-
 int toTypeToken(DLDataType dtype) {
   return lang::TypeInfo(lang::TypeInfo::Code(dtype.code), dtype.bits)
       .toScalarToken();
@@ -42,21 +33,21 @@ int toTypeToken(DLDataType dtype) {
 } // namespace
 
 TcExecutor::TcExecutor(
-    const std::string& TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : TcExecutor(parseOneFunction(TcDefinition), inputsInfo) {}
-
-TcExecutor::TcExecutor(
-    lang::TreeRef TcDefinition,
-    const std::vector<const DLTensor*>& inputsInfo)
-    : tcTree_(TcDefinition) {
-  execInfo_.kernelName = lang::Def(tcTree_).name().name();
+    std::string id,
+    const std::vector<const DLTensor*>& inputsInfo,
+    const std::string& options,
+    lang::TreeRef tcDefinition)
+    : identifier(id),
+      inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
+      options(options),
+      tcTree_(tcDefinition) {
+  executionInfo_.kernelName = lang::Def(tcTree_).name().name();
   halideComponents_ =
       tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
   checkInputsCompliant(inputsInfo);
-  execInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
+  executionInfo_.inputsInfo = makeDLTensorVector(inputsInfo);
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
-  execInfo_.outputsInfo =
+  executionInfo_.outputsInfo =
       tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
 }
 
@@ -125,7 +116,7 @@ void TcExecutor::checkInputsCompliant(
 }
 
 std::vector<const DLTensor*> TcExecutor::inferOutputTensorInfo() {
-  return extractRawPtrs(execInfo_.outputsInfo);
+  return extractRawPtrs(executionInfo_.outputsInfo);
 }
 
 } // namespace tc

@@ -20,37 +20,21 @@
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/mapping_options.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/core/utils/time.h"
 #include "tc/lang/tree.h"
 
 namespace tc {
+template <typename ExecutorType>
 class ExecutionEngine {
  public:
-  struct ExecutorInfo {
-    ExecutorInfo(
-        std::string id,
-        std::vector<const DLTensor*> inputsInfo,
-        const std::string& options,
-        lang::TreeRef tc,
-        size_t handle)
-        : identifier(id),
-          inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
-          options(options),
-          exec(new TcExecutor(tc, inputsInfo)),
-          objectLocalHandle(handle) {}
-
-    std::string identifier;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::string options;
-    std::unique_ptr<TcExecutor> exec;
-    /// When run is called this is used to find the most recently compiled
-    /// version.
-    size_t objectLocalHandle;
-  };
-
   ExecutionEngine() = default;
+
+  lang::TreeRef treeForFunction(const std::string& name) {
+    return tcNameMap_.at(name);
+  }
 
   /// Parse TC definitions provided as string, store parsed trees internally.
   void define(const std::string& language);
@@ -70,48 +54,56 @@ class ExecutionEngine {
   /// the compilation options.  Must be overridden by a specific
   /// ExecutionEngine, which also interprets the options as it sees fit.
   /// \returns opaque handle of a compiled kernel.
-  virtual size_t compile(
+  size_t compile(
       const std::string& name,
       const std::vector<const DLTensor*>& inputs,
-      const std::string& options) = 0;
+      const std::string& options);
 
   /// Run a compiled TC kernel given its handle, on the given input tensors and
   /// fill in the outputs.  All tensors must be allocated and have appropriate
   /// shapes (inputs same as for copmilation, outputs same as returned by
   /// inferOutputTensorInfo).
   /// \returns The kernel runtime if profile is set, Duration::max() otherwise.
-  virtual Duration run(
+  Duration run(
       size_t handle,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) = 0;
+      bool profile = false,
+      std::function<bool(const ExecutorType*)> pruningFunction =
+          [](const ExecutorType*) { return false; });
 
   /// "Low-latency" execution mode in which we just propagate raw pointers to
   /// data in GPU address space.
   /// No tensor-related information can be checked so it is the user's
   /// responsibility to ensure that shapes and strides match.
-  virtual void uncheckedRun(
+  void uncheckedRun(
       size_t handle,
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) = 0;
+      const std::vector<void*>& outputs);
 
   /// Clear the compilation result for the given handle.
-  virtual void clear(size_t handle) {}
+  void clear(size_t handle);
 
  protected:
-  size_t emplaceExecutor(std::unique_ptr<ExecutorInfo> p);
+  size_t emplaceExecutor(std::unique_ptr<TcExecutor> p);
+
+  size_t getHandle(
+      const std::string& name,
+      const std::vector<const DLTensor*>& inputsInfo,
+      const std::string& optionsStr);
 
   /// For thread-safety perform all cheap operations under lock.
-  std::mutex executorInfoMutex;
+  std::mutex tcExecutorMutex_;
 
   /// Parsed TC trees.
   std::map<std::string, lang::TreeRef> tcNameMap_;
 
   /// List of executors, indexed by handle.  Derived ExecutionEngines can also
-  /// derive ExecutorInfo.
-  std::vector<std::unique_ptr<ExecutorInfo>> executors_;
+  /// derive TcExecutor.
+  std::vector<std::unique_ptr<TcExecutor>> executors_;
 
   size_t uidCounter = 0;
 };
-
 } // namespace tc
+
+#include "tc/core/execution_engine-inl.h"

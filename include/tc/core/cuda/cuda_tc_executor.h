@@ -15,6 +15,11 @@
  */
 #pragma once
 
+#include <string>
+#include <vector>
+
+#include <dlpack/dlpack.h>
+
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/mapping_options.h"
@@ -23,20 +28,17 @@
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/parser.h"
 
-#include <dlpack/dlpack.h>
-
 namespace tc {
 
 class CudaTcExecutor : public ::tc::TcExecutor {
  public:
   CudaTcExecutor(
-      const std::string& def,
-      const std::vector<const DLTensor*>& inputsInfo)
-      : TcExecutor(def, inputsInfo) {}
-  CudaTcExecutor(
-      lang::TreeRef tree,
-      const std::vector<const DLTensor*>& inputsInfo)
-      : TcExecutor(tree, inputsInfo) {}
+      std::string id,
+      const std::vector<const DLTensor*>& inputsInfo,
+      const std::string& options,
+      lang::TreeRef tcDefinition)
+      : TcExecutor(id, inputsInfo, options, tcDefinition) {}
+
   ~CudaTcExecutor() {}
 
   CudaTcExecutor(CudaTcExecutor&&) = delete;
@@ -80,21 +82,21 @@ class CudaTcExecutor : public ::tc::TcExecutor {
       const std::vector<const void*>& inputs,
       const std::vector<void*>& outputs) const;
 
-  bool hasRTCFun() {
+  bool hasRuntimeCompiledFunction() override {
     return rtcFun.get() != nullptr;
   }
 
   // It is necessary to clear the RTC manually because it can throw and we
   // can't have that in the destructor.
-  void clearRTC() {
-    if (!hasRTCFun()) {
+  void clearRuntimeCompiledFunction() override {
+    if (!hasRuntimeCompiledFunction()) {
       return;
     }
     rtcFun->clear();
   }
 
   std::string kernelName() const {
-    return execInfo_.kernelName;
+    return executionInfo_.kernelName;
   }
 
  private:
