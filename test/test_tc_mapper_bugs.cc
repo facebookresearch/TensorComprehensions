@@ -696,7 +696,6 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   atCompl.compile("layernorm", inputs, options);
 }
 
-// #124
 TEST(Halide2Isl, MinInUpperBound) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({1, 100, 184, 184});
   at::Tensor mat1_pad = at::CUDA(at::kFloat).rand({1, 100, 186, 186});
@@ -713,8 +712,7 @@ TEST(Halide2Isl, MinInUpperBound) {
 
   tc::ATenCompilationUnit atCompl;
   atCompl.define(TC);
-  EXPECT_THROW(
-      atCompl.compile("graph2", inputs, options), isl::exception_invalid);
+  atCompl.compile("graph2", inputs, options);
 }
 
 int main(int argc, char** argv) {
