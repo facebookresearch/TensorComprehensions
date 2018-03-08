@@ -89,6 +89,25 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   }
 };
 
+// TODO: see #124
+TEST_F(ATenCompilationUnitTest, DISABLED_Graph2) {
+  at::Tensor mat1 = at::CUDA(at::kFloat).rand({1, 100, 184, 184});
+  at::Tensor mat1_pad = at::CUDA(at::kFloat).rand({1, 100, 186, 186});
+  at::Tensor mat2 = at::CUDA(at::kFloat).rand({3, 3});
+  std::vector<at::Tensor> inputs = {mat1, mat1_pad, mat2};
+  std::vector<at::Tensor> outputs;
+
+  static constexpr auto TC = R"TC(
+    def graph2(float(N, C, H, W) I, float(N, C, R, T) J, float(KH, KW) W1) -> (O, Out) {
+        O(n, c, h, w) +=! J(n, c, h + kh, w + kw) * W1(kh, kw)
+        Out(i, j) +=! I(n, i, h, w) * O(n, j, h, w)
+    }
+  )TC";
+  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto name = "graph2";
+  autotune("", TC, name, inputs, options, {options});
+}
+
 TEST_F(ATenCompilationUnitTest, LayerNorm) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
   std::vector<at::Tensor> inputs = {mat1};
