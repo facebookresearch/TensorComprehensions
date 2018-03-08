@@ -312,6 +312,47 @@ bool isCoalesced(
 }
 
 /*
+ * Starting from the root, find bands where depth is reached.  Using
+ * DFSPreorder to make sure order is specified and consistent for tests.
+ */
+std::vector<detail::ScheduleTree*> bandsContainingScheduleDepth(
+    detail::ScheduleTree* root,
+    size_t depth) {
+  using namespace tc::polyhedral::detail;
+
+  auto bands =
+      ScheduleTree::collectDFSPreorder(root, detail::ScheduleTreeType::Band);
+  std::function<bool(ScheduleTree * st)> containsDepth = [&](ScheduleTree* st) {
+    auto depthBefore = st->scheduleDepth(root);
+    auto band = st->elemAs<ScheduleTreeElemBand>();
+    auto depthAfter = depthBefore + band->nMember();
+    return depthBefore < depth && depthAfter >= depth;
+  };
+  return functional::Filter(containsDepth, bands);
+}
+
+/*
+ * Split bands so that the "depth"-th dimension is always the last in some
+ * band.  Return such bands.
+ */
+std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
+    const std::vector<detail::ScheduleTree*>& bands,
+    detail::ScheduleTree* root,
+    size_t depth) {
+  using namespace tc::polyhedral::detail;
+
+  std::function<ScheduleTree*(ScheduleTree*)> splitAtDepth =
+      [&](ScheduleTree* st) {
+        auto nMember = st->elemAs<ScheduleTreeElemBand>()->nMember();
+        auto scheduleDepth = st->scheduleDepth(root);
+        auto depthAfter = scheduleDepth + nMember;
+        return depthAfter == depth ? st
+                                   : bandSplit(root, st, depth - scheduleDepth);
+      };
+  return functional::Map(splitAtDepth, bands);
+}
+
+/*
  * For every place in the schedule tree where schedule depth (i.e., the number
  * of preceding band members) is "depth", promote tensor reference groups to
  * shared memory.  Split bands if necessary to insert promotions.
@@ -336,37 +377,18 @@ void promoteToSharedGreedy(
 
   auto root = scop.scheduleRoot();
 
-  // 1. Starting from the root, find bands where depth is reached.
-  // Using DFSPreorder to make sure order is specified and consistent for
-  // tests.
-  auto bands =
-      ScheduleTree::collectDFSPreorder(root, detail::ScheduleTreeType::Band);
-  std::function<bool(ScheduleTree * st)> containsDepth = [&](ScheduleTree* st) {
-    auto depthBefore = st->scheduleDepth(root);
-    auto band = st->elemAs<ScheduleTreeElemBand>();
-    auto depthAfter = depthBefore + band->nMember();
-    return depthBefore < depth && depthAfter >= depth;
-  };
-  bands = functional::Filter(containsDepth, bands);
+  // 1. Collect all bands with a member located at the given depth in the
+  // overall schedule.  Make sure this is the last member of the band by
+  // splitting off the subsequent members into a different band.
+  auto bands = bandsContainingScheduleDepth(root, depth);
+  bands = bandsSplitAfterDepth(bands, root, depth);
 
-  // 2. Split bands so that the "depth"-th dimension is always the last in some
-  // band.  Keep such bands.
-  std::function<ScheduleTree*(ScheduleTree*)> splitAtDepth =
-      [&](ScheduleTree* st) {
-        auto nMember = st->elemAs<ScheduleTreeElemBand>()->nMember();
-        auto scheduleDepth = st->scheduleDepth(root);
-        auto depthAfter = scheduleDepth + nMember;
-        return depthAfter == depth ? st
-                                   : bandSplit(root, st, depth - scheduleDepth);
-      };
-  bands = functional::Map(splitAtDepth, bands);
-
-  // 3. Compute full schedule without mapping filters.  The filters would make
+  // 2. Compute full schedule without mapping filters.  The filters would make
   // it impossible to test for coalescing by incrementing a member of a band as
   // only the values divisible by grid or block size pass through the filter.
   auto fullSched = fullSchedule(root);
 
-  // 4. For each band that ends at "depth", take decisions about promotion
+  // 3. For each band that ends at "depth", take decisions about promotion
   // immediately below it in the tree.  In particular, promote if the
   // approximated footprint fits into the remaining memory, and the reference
   // group either features reuse or is accessed in a non-coalesced way, or
