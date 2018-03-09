@@ -135,6 +135,9 @@ namespace detail {
 // [1] Verdoolaege, Guelton, Grosser & Cohen (2014). "Schedule trees". In
 // IMPACT 2014.
 //////////////////////////////////////////////////////////////////////////////
+
+std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
+
 struct ScheduleTree {
   friend std::ostream& tc::polyhedral::detail::operator<<(
       std::ostream&,
@@ -509,8 +512,6 @@ struct ScheduleTree {
   detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
   std::unique_ptr<ScheduleTreeElemBase> elem_{nullptr};
 };
-
-std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
 
 } // namespace detail
 
