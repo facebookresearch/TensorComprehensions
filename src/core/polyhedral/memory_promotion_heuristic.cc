@@ -159,8 +159,7 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
       }
     }
 
-    prefixMupa = isl::manage(isl_multi_union_pw_aff_intersect_domain(
-        prefixMupa.release(), domain.copy()));
+    prefixMupa = prefixMupa.intersect_domain(domain);
 
     schedule = schedule.unite(isl::union_map::from(prefixMupa));
     if (!schedule.is_single_valued()) {
@@ -312,6 +311,67 @@ bool isCoalesced(
       }
     }
   }
+  return true;
+}
+
+/*
+ * Check if the given "group" can be promoted to registers for the given active
+ * domain points under full "schedule" where "nThreads" consecutive dimensions
+ * are mapped to threads (the innermost of them being mapped to thread x) and
+ * the depth of this mapping can be obtained from threadIdxxScheduleDepthState.
+ *
+ * In parciular, the group's footprint must contain only one element and the
+ * same tensor element should never be accessed by two different threads.
+ */
+bool isPromotableToRegisterBelowThreads(
+    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const TensorReferenceGroup& group,
+    isl::union_map schedule,
+    size_t nThreads,
+    isl::union_set activePoints) {
+  auto originalAccesses = group.originalAccesses();
+
+  // Return early if more than one element needs to be stored in registers.
+  // TODO: support arrays in registers if they are only accessed with constant
+  // subscripts, e.g. if the inner loops are fully unrolled.
+  auto sizes = group.approximationSizes();
+  auto nElements =
+      std::accumulate(sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
+  if (nElements != 1) {
+    return false;
+  }
+
+  // Since this function is only supposed to be called on groups seen _below_
+  // thread mapping, all refs in the group must all have the same thread-x
+  // depth.
+  auto depth = 1 +
+      computeThreadIdxxScheduleDepth(
+                   threadIdxxScheduleDepthState,
+                   originalAccesses.domain().intersect(activePoints));
+
+  auto scheduledAccesses =
+      originalAccesses.gist_domain(originalAccesses.domain())
+          .apply_domain(schedule);
+
+  // Scheduled accesses contain maps from schedule dimensions to tensor
+  // subscripts.  Compute the relation that between the schedule dimensions
+  // mapped to threads and tensor subscripts by first removing dimensions
+  // following the one mapped to thread x (last one assuming inverse mapping
+  // order), then by equating all dimensions not mapped to threads to
+  // parameters.  Promotion to registers is only allowed if the resulting
+  // relation is injective, i.e. the same tensor element is never accessed by
+  // more than one thread.  Note that our current check is overly conservative
+  // because different values of schedule dimension may get mapped to the same
+  // thread, in which case the could access the same tensor element.
+  for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
+    sa = sa.project_out(
+        isl::dim_type::in, depth, sa.dim(isl::dim_type::in) - depth);
+    sa = fixOuterInputDimsAsParameters(sa, depth - nThreads);
+    if (!sa.is_injective()) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -501,6 +561,112 @@ void promoteGreedilyAtDepth(
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);
+}
+
+namespace {
+isl::val getParamValIfFixed(isl::union_set uset, int pos) {
+  auto val = isl::val::nan(uset.get_ctx());
+  for (auto set : isl::UnionAsVector<isl::union_set>(uset)) {
+    auto currentVal = set.plain_get_val_if_fixed(isl::dim_type::param, pos);
+    if (currentVal.is_nan()) {
+      return currentVal;
+    }
+    if (!val.is_nan() && val != currentVal) {
+      return isl::val::nan(uset.get_ctx());
+    }
+    val = currentVal;
+  }
+  return val;
+}
+} // namespace
+
+// Assuming the mapping to threads happens in inverse order, i.e. the innermost
+// loop is mapped to thread x, promote below that depth.
+void promoteToRegistersBelowThreads(
+    Scop& scop,
+    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    size_t nRegisters) {
+  using namespace tc::polyhedral::detail;
+
+  auto root = scop.scheduleRoot();
+
+  auto fullSched = fullSchedule(root);
+  for (const auto& kvp : threadIdxxScheduleDepthState) {
+    auto depth = kvp.second + 1;
+    auto subdomain = kvp.first;
+
+    // Collect all bands where a member is located at the given depth.
+    auto bands = bandsContainingScheduleDepth(root, depth);
+    // We may have no band members mapped to thread x in case when we
+    // force-mapped everything to one thread.
+    if (bands.size() == 0) {
+      continue;
+    }
+
+    // Keep only those bands for which this depth was recorded.
+    std::function<bool(ScheduleTree*)> keepActive =
+        [root, subdomain](const ScheduleTree* tree) {
+          isl::union_set active = activeDomainPoints(root, tree);
+          return !active.intersect(subdomain).is_empty();
+        };
+    bands = functional::Filter(keepActive, bands);
+
+    // Make sure the band ends at thread x depth so we can promote below it.
+    bands = bandsSplitAfterDepth(bands, root, depth);
+
+    for (auto band : bands) {
+      // Find out how many threads are actually mapped.  Active domain points
+      // will involve all mapping parameters when we take them below the
+      // mapping.  Skip mapping parameters obviously mapped to 0, because they
+      // do not correspond to band members that should be fixed to obtain
+      // per-thread-group access relations.
+      auto points = activeDomainPoints(root, band);
+      size_t nMappedThreads = 0;
+      for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
+        auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
+        for (size_t i = 0; i < mapping::ThreadId::kMaxDim; ++i) {
+          if (id != mapping::ThreadId::makeId(i)) {
+            continue;
+          }
+          if (getParamValIfFixed(points, j) ==
+              isl::val::zero(points.get_ctx())) {
+            continue;
+          }
+          ++nMappedThreads;
+          break;
+        }
+      }
+
+      auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
+      for (const auto& tensorGroups : groupMap) {
+        auto tensorId = tensorGroups.first;
+
+        // TODO: sorting of groups and counting the number of promoted elements
+
+        for (const auto& group : tensorGroups.second) {
+          auto sizes = group->approximationSizes();
+          // No point in promoting a scalar that will go to a register anyway.
+          if (sizes.size() == 0) {
+            continue;
+          }
+          if (!isPromotableToRegisterBelowThreads(
+                  threadIdxxScheduleDepthState,
+                  *group,
+                  fullSched,
+                  nMappedThreads,
+                  points)) {
+            continue;
+          }
+          if (!hasReuse(*group, fullSched, depth)) {
+            continue;
+          }
+          // TODO: if something is already in shared, but reuse it within one
+          // thread only, there is no point in keeping it in shared _if_ it
+          // gets promoted into a register.
+        }
+      }
+    }
+  }
 }
 
 } // namespace polyhedral
