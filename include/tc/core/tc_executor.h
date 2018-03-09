@@ -60,9 +60,7 @@ class TcExecutor {
   // options then just instantiate another TcExecutor.
   // This is because for the time being we fully specialize all the sizes and
   // strides at runtime.
-  virtual void compile(const std::string& options) {
-    LOG(FATAL) << "TcExecutor::compile is abstract and should not be called";
-  }
+  virtual void compile(const std::string& options) = 0;
 
   // Run can be called multiple times given a compilation, inputs are allowed
   // to change in that their data pointer is allowed to change.
@@ -75,9 +73,7 @@ class TcExecutor {
   virtual Duration run(
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) const {
-    LOG(FATAL) << "TcExecutor::run is abstract and should not be called";
-  }
+      bool profile = false) const = 0;
 
   // This is the "low-latency" mode in which we just propagate raw pointers to
   // data in the address space where kernel is executed.
@@ -86,21 +82,11 @@ class TcExecutor {
   // doesn't then segfault will likely occur.
   virtual void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const {
-    LOG(FATAL)
-        << "TcExecutor::uncheckedRun is abstract and should not be called";
-  }
+      const std::vector<void*>& outputs) const = 0;
 
-  virtual bool hasRuntimeCompiledFunction() {
-    LOG(FATAL)
-        << "TcExecutor::hasRuntimeCompiledFunction is abstract and should not be called";
-    return true;
-  }
-
-  virtual void clearRuntimeCompiledFunction() {
-    LOG(FATAL)
-        << "TcExecutor::clearRuntimeCompiledFunction is abstract and should not be called";
-  }
+  // Interact with the runtime compiled objects
+  virtual bool hasRuntimeCompiledFunction() = 0;
+  virtual void clearRuntimeCompiledFunction() = 0;
 
   std::string identifier;
   std::vector<dlutils::DLTensorUPtr> inputsInfo;
