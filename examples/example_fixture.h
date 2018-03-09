@@ -52,7 +52,7 @@
   } while (0)
 
 DEFINE_bool(
-    disable_reproducibility_checks,
+    disable_version_checks,
     false,
     "Test on other platforms than we claim perf results for");
 DEFINE_bool(autotune, false, "Enable autotuning");
@@ -89,7 +89,7 @@ tc::MappingOptions loadOptionsFromProto(
 
 struct Benchmark : public ::testing::Test {
   void SetUp() {
-    if (!FLAGS_disable_reproducibility_checks) {
+    if (!FLAGS_disable_version_checks) {
       auto cudnnVersion = cudnnGetVersion();
       CHECK_GE(6021, cudnnVersion)
           << "[CUDNN][VERSION] Enforce version compatibility check";
