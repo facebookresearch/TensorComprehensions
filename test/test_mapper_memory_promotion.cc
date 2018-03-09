@@ -455,6 +455,31 @@ TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
       promotion::PromotionBelowThreadsException);
 }
 
+class MatMulBias : public TestMapper {
+ public:
+  std::string emitCode(
+      const std::unordered_map<std::string, size_t>& parameters,
+      const std::vector<size_t>& tileSizes) {
+    std::string tc = R"TC(
+def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
+  O(i,j) +=! A(i,k) * B(k,j)
+  O(i,j) = O(i,j) + C(i,j)
+}
+)TC";
+
+    auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
+                              .tile(tileSizes)
+                              .useSharedMemory(false)
+                              .usePrivateMemory(true);
+    auto mscop = makeMappedScop(tc, mappingOptions, parameters);
+    return std::get<0>(mscop->codegen("fun"));
+  }
+};
+
+TEST_F(MatMulBias, RegisterPromotion) {
+  emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, {32, 32, 32});
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
