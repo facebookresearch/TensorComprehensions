@@ -8,11 +8,11 @@ BUILD_TYPE=Release PYTHON=$(which python3) WITH_CAFFE2=ON CLANG_PREFIX=$HOME/cla
 ```
 
 # Reproducibility
-To reproduce results in our accompanying paper, we ensure cuda 8.0, nvrtc8.0 and cudnn6.0 are available. To disable those checks please use the ```--disable_reproducibility_checks=true``` flag.
+To reproduce results in our accompanying paper, we ensure cuda 8.0, nvrtc8.0 and cudnn6.0 are available. To disable those checks please use the ```--disable_version_checks=true``` flag.
 
 For instance:
 ```
-./build/examples/example_batchmatmul --disable_reproducibility_checks=true
+./build/examples/example_batchmatmul --disable_version_checks=true
 ```
 
 # Running the autotuner manually
@@ -20,7 +20,7 @@ By default a full evolutionary search is run with 25 generations and 100 candida
 
 For instance, a more reasonable search could iterate as such:
 ```
-./build/examples/example_batchmatmul --disable_reproducibility_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=20
+./build/examples/example_batchmatmul --disable_version_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=20
 ```
 
 Note
@@ -35,7 +35,7 @@ Also when running manually, the number of CPU compilation threads and GPUs used 
 
 For instance, on a 4 GPU system with 20 threads:
 ```
-./build/examples/example_batchmatmul --disable_reproducibility_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=10 --tuner_threads=20 --tuner_gpus="0,1,2,3"
+./build/examples/example_batchmatmul --disable_version_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=10 --tuner_threads=20 --tuner_gpus="0,1,2,3"
 ```
 
 # Running the autotuner with provided scripts

@@ -52,7 +52,7 @@
   } while (0)
 
 DEFINE_bool(
-    disable_reproducibility_checks,
+    disable_version_checks,
     false,
     "Test on other platforms than we claim perf results for");
 DEFINE_bool(autotune, false, "Enable autotuning");
@@ -89,36 +89,36 @@ tc::MappingOptions loadOptionsFromProto(
 
 struct Benchmark : public ::testing::Test {
   void SetUp() {
-    if (!FLAGS_disable_reproducibility_checks) {
+    if (!FLAGS_disable_version_checks) {
       auto cudnnVersion = cudnnGetVersion();
-      CHECK_EQ(6021, cudnnVersion)
-          << "[CUDNN][VERSION] Enforce strict result reproducibility";
+      CHECK_GE(6021, cudnnVersion)
+          << "[CUDNN][VERSION] Enforce version compatibility check";
 
       auto cudaRtVersion = cudnnGetCudartVersion();
-      CHECK_EQ(8000, cudaRtVersion)
-          << "[CUDART][VERSION] Enforce strict result reproducibility";
+      CHECK_GE(8000, cudaRtVersion)
+          << "[CUDART][VERSION] Enforce version compatibility check";
 
       int cublasVersion;
       cublasHandle_t handle;
       TC_CUDA_CUBLAS_ENFORCE(cublasCreate_v2(&handle));
       TC_CUDA_CUBLAS_ENFORCE(cublasGetVersion_v2(handle, &cublasVersion));
-      CHECK_EQ(8000, cublasVersion)
-          << "[CUBLAS][VERSION] Enforce strict result reproducibility";
+      CHECK_GE(8000, cublasVersion)
+          << "[CUBLAS][VERSION] Enforce version compatibility check";
       tc::ScopeGuard sg(
           [&handle]() { TC_CUDA_CUBLAS_ENFORCE(cublasDestroy_v2(handle)); });
 
       int cudaRuntimeVersion;
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaRuntimeGetVersion(&cudaRuntimeVersion));
-      CHECK_EQ(8000, cudaRuntimeVersion)
-          << "[CUDA RUNTIME][VERSION] Enforce strict result reproducibility";
+      CHECK_GE(8000, cudaRuntimeVersion)
+          << "[CUDA RUNTIME][VERSION] Enforce version compatibility check";
 
       int nvrtcVersionMajor;
       int nvrtcVersionMinor;
       TC_NVRTC_CHECK(nvrtcVersion(&nvrtcVersionMajor, &nvrtcVersionMinor));
-      CHECK_EQ(8, nvrtcVersionMajor)
-          << "[NVRTC][MAJOR][VERSION] Enforce strict result reproducibility";
-      CHECK_EQ(0, nvrtcVersionMinor)
-          << "[NVRTC][MINOR][VERSION] Enforce strict result reproducibility";
+      CHECK_GE(8, nvrtcVersionMajor)
+          << "[NVRTC][MAJOR][VERSION] Enforce version compatibility check";
+      CHECK_GE(0, nvrtcVersionMinor)
+          << "[NVRTC][MINOR][VERSION] Enforce version compatibility check";
     }
   }
 
