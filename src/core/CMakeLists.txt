@@ -14,6 +14,8 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
+  cpu/cpu_tc_executor.cc
+
   polyhedral/codegen_cuda.cc
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
