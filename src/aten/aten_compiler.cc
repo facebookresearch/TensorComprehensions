@@ -32,12 +32,6 @@ void ATenCompilationUnit::define(const std::string& language) {
   executionEngine_->define(language);
 }
 
-void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
-  for (auto& tensor : tensors) {
-    tensor->deleter(tensor);
-  }
-}
-
 namespace {
 
 // given the tensor shape and DLType, allocate storage for the tensor output
@@ -72,30 +66,6 @@ void prepareOutputs(
 }
 
 } // namespace
-
-std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
-toDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
-  for (auto tensor : tensors) {
-    auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
-  }
-  return make_pair(dlTensors, dlMTensors);
-}
-
-std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
-toConstDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<const DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
-  for (auto tensor : tensors) {
-    auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
-  }
-  return make_pair(dlTensors, dlMTensors);
-}
 
 size_t ATenCompilationUnit::compile(
     const std::string& name,
