@@ -32,6 +32,7 @@
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_rtc.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/scope_guard.h"
@@ -63,7 +64,7 @@ std::vector<const DLTensor*> inferOutputTensorInfo(
     const std::string& tc,
     const std::string& name,
     const std::vector<at::Tensor>& inputs) {
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   return atCompl.inferOutputTensorInfo(name, inputs);
 }
@@ -133,7 +134,7 @@ struct Benchmark : public ::testing::Test {
                                   std::vector<at::Tensor>& outputs) {
         return true;
       }) {
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);
@@ -281,7 +282,7 @@ struct Benchmark : public ::testing::Test {
     tc::CudaCache::loadCacheFromProtobuf(tc::makeCudaFilename(cacheFilename));
     tc::FLAGS_tuner_gen_restore_number = 1;
 
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc);
 
     auto mappingOptions = [&]() {
@@ -399,7 +400,7 @@ struct Benchmark : public ::testing::Test {
         return *options;
       }();
 
-      tc::ATenCompilationUnit atCompl;
+      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile(kernelName, inputs, bestOptions);
       std::vector<at::Tensor> outputs;

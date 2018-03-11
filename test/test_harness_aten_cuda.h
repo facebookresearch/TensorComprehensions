@@ -29,6 +29,7 @@
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 
 #include "test_harness_aten.h"
@@ -56,7 +57,7 @@ void benchmarkKernelOptions(
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
     const tc::MappingOptions mappingOptions) {
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   auto handle = atCompl.compile(name, inputs, mappingOptions);
   std::vector<at::Tensor> outputs;

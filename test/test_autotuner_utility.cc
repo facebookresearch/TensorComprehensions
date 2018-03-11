@@ -18,6 +18,7 @@
 #include "tc/autotuner/genetic_autotuner.h"
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
 
 using namespace tc;
@@ -79,7 +80,7 @@ TEST(RestoreCandidates, NoRuntimeRecorded) {
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
 
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc_);
   tc::MappingOptions options = tc::MappingOptions::makeMlpMappingOptions();
   std::vector<at::Tensor> outputs_;
@@ -95,7 +96,7 @@ TEST(RestoreCandidates, Hit) {
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
 
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc_);
   tc::MappingOptions options = tc::MappingOptions::makeMlpMappingOptions();
   std::vector<at::Tensor> outputs_;

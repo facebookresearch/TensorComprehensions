@@ -21,6 +21,7 @@
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/exceptions.h"
 
@@ -76,7 +77,7 @@ struct TensorDot_32_512_8_2_28_28 : public ::testing::Test {
     // slow in this mode
     if (!FLAGS_debug_cuda) {
       auto mappingOptions = tc::MappingOptions::makeNaiveMappingOptions();
-      tc::ATenCompilationUnit atCompl;
+      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("tensordot_naive", inputs, mappingOptions);
       atCompl.run("tensordot_naive", inputs, outputsNaive, handle);
@@ -97,7 +98,7 @@ struct TensorDot_32_512_8_2_28_28 : public ::testing::Test {
   )TC");
 
     std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(TC);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     if (runCuda) {
@@ -353,7 +354,7 @@ struct GroupConvolution_32_32_4_4_56_56_3_3 : public ::testing::Test {
     // slow in this mode
     if (!FLAGS_debug_cuda) {
       auto mappingOptions = tc::MappingOptions::makeNaiveMappingOptions();
-      tc::ATenCompilationUnit atCompl;
+      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle =
           atCompl.compile("group_convolution_naive", inputs, mappingOptions);
@@ -377,7 +378,7 @@ struct GroupConvolution_32_32_4_4_56_56_3_3 : public ::testing::Test {
 )TC");
 
     std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(TC);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     if (runCuda) {
@@ -467,7 +468,7 @@ struct C3_128_1000_1024 : public ::testing::Test {
     // slow in this mode
     if (!FLAGS_debug_cuda) {
       auto mappingOptions = tc::MappingOptions::makeNaiveMappingOptions();
-      tc::ATenCompilationUnit atCompl;
+      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("_C3_naive", inputs, mappingOptions);
       atCompl.run("_C3_naive", inputs, outputsNaive, handle);
@@ -486,7 +487,7 @@ struct C3_128_1000_1024 : public ::testing::Test {
 )TC");
 
     std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(TC);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     if (runCuda) {
@@ -582,7 +583,7 @@ struct TMM_128_1024_1024 : public ::testing::Test {
     // slow in this mode
     if (!FLAGS_debug_cuda) {
       auto mappingOptions = tc::MappingOptions::makeNaiveMappingOptions();
-      tc::ATenCompilationUnit atCompl;
+      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("tmm_naive", inputs, mappingOptions);
       atCompl.run("tmm_naive", inputs, outputsNaive, handle);
@@ -601,7 +602,7 @@ struct TMM_128_1024_1024 : public ::testing::Test {
 )TC");
 
     std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(TC);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     if (runCuda) {
@@ -690,7 +691,7 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
                      .unrollCopyShared(false)
                      .matchLibraryCalls(false);
 
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(TC);
   // Expecting this to compile without dying.
   atCompl.compile("layernorm", inputs, options);
@@ -710,7 +711,7 @@ TEST(Halide2Isl, MinInUpperBound) {
   )TC";
   auto options = tc::MappingOptions::makeNaiveMappingOptions();
 
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(TC);
   atCompl.compile("graph2", inputs, options);
 }

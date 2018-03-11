@@ -13,7 +13,6 @@ target_include_directories(tc PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(
   tc
 
-  tc_aten
   tc_autotuner
   tc_core
 
@@ -49,7 +48,6 @@ if (WITH_CUDA)
     autotuner
 
     tc_core
-    tc_aten
     tc_autotuner
 
     ${PYTHON_LIBRARIES}

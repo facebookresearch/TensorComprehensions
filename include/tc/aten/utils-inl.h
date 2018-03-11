@@ -21,6 +21,7 @@
 #include <ATen/ATen.h>
 #include <ATen/DLConvertor.h>
 namespace tc {
+namespace {
 std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
 toDlpackTensors(const std::vector<at::Tensor>& tensors) {
   std::vector<DLTensor*> dlTensors;
@@ -50,4 +51,5 @@ void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
     tensor->deleter(tensor);
   }
 }
+} // namespace
 } // namespace tc

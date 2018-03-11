@@ -24,9 +24,9 @@ target_link_libraries(tc_test INTERFACE ${GOOGLE_LIBS})
 # Basic tests of external functionalities we rely upon
 ################################################################################
 if (WITH_CUDA)
-add_executable(test_basic test_basic.cc)
-add_test(test_basic test_basic)
-target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
+  add_executable(test_basic test_basic.cc)
+  add_test(test_basic test_basic)
+  target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
 
   add_executable(test_basic_gpu test_basic_gpu.cc)
   add_test(test_basic_gpu test_basic_gpu)
@@ -55,7 +55,7 @@ endforeach()
 if (WITH_CUDA)
   add_executable(test_autotuner_utility test_autotuner_utility.cc)
   add_test(test_autotuner_utility test_autotuner_utility)
-  target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} tc_autotuner tc_aten tc_core)
+  target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc_autotuner tc_core)
 endif()
 
 
@@ -80,7 +80,7 @@ if (WITH_CUDA)
         ${i}
 
         ${GOOGLE_LIBS}
-        tc_aten
+        ${ATEN_LIBRARIES} 
         tc_autotuner)
   endforeach()
 endif()

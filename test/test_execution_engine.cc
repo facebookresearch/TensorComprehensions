@@ -24,6 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/mapping_options.h"
 #include "tc/library/common.h"
 
@@ -38,7 +39,7 @@ struct ATenCompilationUnitTest : public ::testing::Test {
       const tc::MappingOptions& mappingOptions,
       const std::vector<at::Tensor> inputs,
       std::vector<at::Tensor>& outputs) {
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);
