@@ -85,7 +85,7 @@ class ExecutionEngine {
   void clear(size_t handle);
 
  protected:
-  size_t emplaceExecutor(std::unique_ptr<TcExecutor> p);
+  size_t emplaceExecutor(std::unique_ptr<ExecutorType> p);
 
   size_t getHandle(
       const std::string& name,
@@ -100,7 +100,7 @@ class ExecutionEngine {
 
   /// List of executors, indexed by handle.  Derived ExecutionEngines can also
   /// derive TcExecutor.
-  std::vector<std::unique_ptr<TcExecutor>> executors_;
+  std::vector<std::unique_ptr<ExecutorType>> executors_;
 
   size_t uidCounter = 0;
 };

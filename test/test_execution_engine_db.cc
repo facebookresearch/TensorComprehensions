@@ -24,6 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/mapping_options.h"
 
 #include "test_harness_aten_cuda.h"
@@ -31,7 +32,7 @@
 TEST(ATenCompilationDbTest, MultiTc) {
   static constexpr uint32_t N = 8, C = 16, O = 6, H = 24, W = 27, KH = 3,
                             KW = 3;
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   auto tc = R"(
     def matmul(float(M,K) A, float(K,N) B) -> (output) {
       output(m, n) +=! A(m, kk) * B(kk, n)

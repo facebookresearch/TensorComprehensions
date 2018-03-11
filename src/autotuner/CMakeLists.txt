@@ -13,7 +13,7 @@ if (WITH_CUDA)
     utils/utils.cc)
 
   target_include_directories(tc_autotuner PUBLIC ${PROJECT_SOURCE_DIR}/include)
-  target_link_libraries(tc_autotuner PUBLIC tc_aten tc_core tc_proto)
+  target_link_libraries(tc_autotuner PUBLIC ${ATEN_LIBRARIES} tc_core tc_proto)
 
   install(TARGETS tc_autotuner DESTINATION lib)
 endif()

@@ -24,6 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/mapping_options.h"
 #include "tc/library/common.h"
 
@@ -56,7 +57,7 @@ static void Succeed(
     const tensor_list& inputs,
     tensor_list&& outputs,
     std::string fn = "f") {
-  tc::ATenCompilationUnit cu;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
   cu.define(str);
   auto handle =
       cu.compile(fn, inputs, tc::MappingOptions::makeNaiveMappingOptions());

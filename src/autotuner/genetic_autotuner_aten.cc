@@ -22,6 +22,7 @@
 
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/parser.h"
@@ -76,7 +77,7 @@ llvm::Optional<MappingOptions> GeneticAutotunerATen::tune(
     const TuningParameterFixer& fixedParams) {
   // create instance of ATenCompilationUnit so that we can get the outputsInfo
   // and convert those outputs to DLTensors.
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<CudaTcExecutor> atCompl;
   atCompl.define(tc_);
   auto handle = atCompl.compile(tcName, inputs, baseMapping);
   std::vector<at::Tensor> outputs;
