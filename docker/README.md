@@ -6,13 +6,17 @@ to build the images for various combinations. This directory contains everything
 
 ## Supported Build environments
 
-`linux-trusty-gcc4.8-cuda8-cudnn6-py3`
+Non-conda env and no python installs:
 
-`linux-trusty-gcc4.8-cuda8-cudnn6-py3-conda`
+`linux-trusty-gcc4.8-cuda8-cudnn7-py3`
 
 `linux-xenial-gcc5-cuda9-cudnn7-py3`
 
-`linux-xenial-gcc5-cuda9-cudnn7-py3-conda`
+Conda env with PyTorch conda install:
+
+`linux-trusty-gcc4.8-cuda8-cudnn7-py3-conda` [Run both C++ and Python tests]
+
+`linux-xenial-gcc5-cuda9-cudnn7-py3-conda` [Run only Python tests for now]
 
 See `docker_build.sh` for a full list of terms that are extracted from the build environment into parameters for the image build.
 
@@ -57,7 +61,7 @@ need to build images for some other combination, the steps are still valid, just
 make sure to change the paths below to fit your case.
 
 ```Shell
-image=linux-trusty-gcc4.8-cuda8-cudnn6-py3-conda ./docker_build.sh
+image=linux-trusty-gcc4.8-cuda8-cudnn7-py3-conda ./docker_build.sh
 ```
 
 This will build the image for the above permutation and then we can test this image
@@ -71,9 +75,9 @@ docker run --runtime=nvidia -i -t ${IMAGE_ID}
 # now clone the TC repo
 cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive && cd TensorComprehensions
 # build TC
+conda install -y -c pytorch pytorch
 WITH_PYTHON_C2=OFF CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 ./build.sh --all
 # Test the TC build is fine
-./test_cpu.sh
 ./test.sh
 ./test_python/run_test.sh
 ```

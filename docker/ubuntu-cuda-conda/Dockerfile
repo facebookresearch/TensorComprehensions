@@ -8,9 +8,14 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update
 
-# CUDA paths
+# CUDA paths - we install cudnn ourselves (only Trusty) so we can match the version with
+# PyTorch conda install
+ARG CUDA_VERSION
+ARG CUDNN_VERSION
+ADD ./common/install_cuda.sh install_cuda.sh
+RUN bash ./install_cuda.sh && rm install_cuda.sh
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
-ENV PATH /usr/local/bin:/usr/local/cuda/bin:$PATH
+ENV PATH /usr/local/cuda/bin:/usr/local/bin:$PATH
 
 # Install common dependencies
 ARG GCC_VERSION
