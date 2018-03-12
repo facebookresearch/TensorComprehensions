@@ -18,6 +18,7 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
+#include <sstream>
 
 #include "tc/external/isl.h"
 
