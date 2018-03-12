@@ -30,7 +30,6 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
-#include "llvm/Transforms/Tapir/CilkABI.h"
 
 #include "Halide/Halide.h"
 
@@ -45,6 +44,10 @@
 
 #ifndef LLVM_VERSION_MAJOR
 #error LLVM_VERSION_MAJOR not set
+#endif
+
+#ifdef TAPIR_VERSION_MAJOR
+#include "llvm/Transforms/Tapir/CilkABI.h"
 #endif
 
 using namespace Halide;
@@ -328,7 +331,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
     llvm::PassManagerBuilder b;
     b.OptLevel = kOptLevel;
+#ifdef TAPIR_VERSION_MAJOR
     b.tapirTarget = new llvm::CilkABI();
+#endif
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
     b.LoopVectorize = true;
     b.SLPVectorize = true;
@@ -515,6 +520,8 @@ class LLVMCodegen {
     bool parallel = false;
 
     llvm::Value* SyncRegion = nullptr;
+
+#ifdef TAPIR_VERSION_MAJOR
     if (parallel) {
       SyncRegion = halide_cg.get_builder().CreateCall(
           llvm::Intrinsic::getDeclaration(
@@ -522,6 +529,7 @@ class LLVMCodegen {
           {},
           "syncreg");
     }
+#endif
 
     halide_cg.get_builder().CreateBr(headerBB);
 
@@ -571,6 +579,7 @@ class LLVMCodegen {
     {
       halide_cg.get_builder().SetInsertPoint(loopBodyBB);
 
+#ifdef TAPIR_VERSION_MAJOR
       if (parallel) {
         auto* detachedBB =
             llvm::BasicBlock::Create(llvmCtx, "det.achd", function);
@@ -578,11 +587,14 @@ class LLVMCodegen {
             detachedBB, loopLatchBB, SyncRegion);
         halide_cg.get_builder().SetInsertPoint(detachedBB);
       }
+#endif
       auto* currentBB = emitAst(node.for_get_body());
       halide_cg.get_builder().SetInsertPoint(currentBB);
 
       if (parallel) {
+#ifdef TAPIR_VERSION_MAJOR
         halide_cg.get_builder().CreateReattach(loopLatchBB, SyncRegion);
+#endif
       } else {
         halide_cg.get_builder().CreateBr(loopLatchBB);
       }
@@ -601,11 +613,13 @@ class LLVMCodegen {
 
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
     halide_cg.sym_pop(node.for_get_iterator().get_id().get_name());
+#ifdef TAPIR_VERSION_MAJOR
     if (parallel) {
       auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
       halide_cg.get_builder().CreateSync(syncBB, SyncRegion);
       halide_cg.get_builder().SetInsertPoint(syncBB);
     }
+#endif
     return halide_cg.get_builder().GetInsertBlock();
   }
 
