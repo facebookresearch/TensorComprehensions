@@ -59,4 +59,7 @@ RUN python --version
 RUN which cmake
 RUN cmake --version
 
+# activate the root conda environment
+RUN source activate
+
 CMD ["bash"]
