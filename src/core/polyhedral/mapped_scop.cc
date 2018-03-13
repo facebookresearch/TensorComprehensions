@@ -689,10 +689,16 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
   }
 
-  // 8. Insert mapping context
+  // 8. Promote to registers below the loops mapped to threads.
+  if (options.proto.use_private_memory()) {
+    promoteToRegistersBelowThreads(
+        mappedScop->scop(), mappedScop->threadIdxxScheduleDepthState, -1ull);
+  }
+
+  // 9. Insert mapping context
   mappedScop->insertMappingContext();
 
-  // 9. Optionally insert reduction synchronizations
+  // 10. Optionally insert reduction synchronizations
   for (auto bandUpdate : mappedScop->reductionBandUpdates_) {
     for (auto updateId : bandUpdate.second.ids) {
       scop->insertReductionSync1D(
