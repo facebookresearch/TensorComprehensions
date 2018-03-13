@@ -707,7 +707,10 @@ void emitPromotedArrayViewsHalide(stringstream& ss, const Scop& scop) {
         t = i.type();
       }
     }
-    ss << "__shared__ " << t << " " << viewName;
+    if (p.second.kind == Scop::PromotedDecl::Kind::SharedMem) {
+      ss << "__shared__ ";
+    }
+    ss << t << " " << viewName;
     for (auto s : p.second.sizes) {
       ss << "[" << s << "]";
     }
