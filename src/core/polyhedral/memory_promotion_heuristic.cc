@@ -622,6 +622,9 @@ void promoteToRegistersBelowThreads(
       // do not correspond to band members that should be fixed to obtain
       // per-thread-group access relations.
       auto points = activeDomainPoints(root, band);
+      auto partialSched = partialSchedule(root, band);
+      auto activeStmts = activeStatements(root, band);
+
       size_t nMappedThreads = 0;
       for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
         auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
@@ -639,12 +642,12 @@ void promoteToRegistersBelowThreads(
       }
 
       auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
-      for (const auto& tensorGroups : groupMap) {
+      for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
 
         // TODO: sorting of groups and counting the number of promoted elements
 
-        for (const auto& group : tensorGroups.second) {
+        for (auto& group : tensorGroups.second) {
           auto sizes = group->approximationSizes();
           // No point in promoting a scalar that will go to a register anyway.
           if (sizes.size() == 0) {
@@ -664,6 +667,13 @@ void promoteToRegistersBelowThreads(
           // TODO: if something is already in shared, but reuse it within one
           // thread only, there is no point in keeping it in shared _if_ it
           // gets promoted into a register.
+          scop.promoteGroup(
+              Scop::PromotedDecl::Kind::Register,
+              tensorId,
+              std::move(group),
+              band,
+              activeStmts,
+              partialSched);
         }
       }
     }
