@@ -41,9 +41,9 @@ DEFINE_uint32(B, 128, "Batch size");
 // LUT part of the model
 DEFINE_uint32(D, 64, "LUT embedding size (in floats)");
 DEFINE_uint32(L1, 50, "LUT1 indices per batch");
-DEFINE_uint32(E1, 1e7, "LUT1 rows (number of embeddings)");
+DEFINE_uint32(E1, 1e5, "LUT1 rows (number of embeddings)");
 DEFINE_uint32(L2, 50, "LUT2 indices per batch");
-DEFINE_uint32(E2, 1e7, "LUT2 rows (number of embeddings)");
+DEFINE_uint32(E2, 1e5, "LUT2 rows (number of embeddings)");
 DEFINE_uint32(WX, 1000, "W rows");
 DEFINE_uint32(WY, 1024, "W cols");
 
