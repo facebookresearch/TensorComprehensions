@@ -114,7 +114,7 @@ size_t ExecutionEngine<ExecutorType>::compile(
   return handle;
 }
 
-// Steal ExecutorType and give it back under lock
+// Steal the executor instance and give it back under lock.
 // Run outside of lock on owning ExecutorType.
 template <typename ExecutorType>
 Duration ExecutionEngine<ExecutorType>::run(
@@ -188,6 +188,7 @@ void ExecutionEngine<ExecutorType>::uncheckedRun(
     }
   }
 }
+
 // Clear the underlying RTC object and executor under lock.
 template <typename ExecutorType>
 void ExecutionEngine<ExecutorType>::clear(size_t handle) {

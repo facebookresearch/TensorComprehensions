@@ -86,7 +86,7 @@ class CpuTcExecutor : public ::tc::TcExecutor {
       const std::vector<void*>& outputs) const;
 
   bool hasRuntimeCompiledFunction() override {
-    return rtcFun.get() != nullptr;
+    return rtcFunction.get() != nullptr;
   }
 
   // It is necessary to clear the RTC manually because it can throw and we
@@ -95,7 +95,7 @@ class CpuTcExecutor : public ::tc::TcExecutor {
     if (!hasRuntimeCompiledFunction()) {
       return;
     }
-    rtcFun->clear();
+    rtcFunction->clear();
   }
 
   std::string kernelName() const {
@@ -110,7 +110,7 @@ class CpuTcExecutor : public ::tc::TcExecutor {
   std::string cpuSource;
 
  protected:
-  std::shared_ptr<CpuRTCFunction> rtcFun;
+  std::shared_ptr<CpuRTCFunction> rtcFunction;
 };
 
 } // namespace tc
