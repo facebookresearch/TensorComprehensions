@@ -14,8 +14,6 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
-  cpu/cpu_tc_executor.cc
-
   polyhedral/codegen_cuda.cc
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
@@ -49,6 +47,32 @@ target_link_libraries(
 install(
   TARGETS
   tc_core
+
+  DESTINATION lib
+)
+
+add_library(
+  tc_core_cpu
+
+  SHARED
+
+  cpu/cpu_tc_executor.cc
+)
+target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(
+  tc_core_cpu
+
+  ${HALIDE_LIBRARIES}
+  ${ISL_LIBRARIES}
+  -lLLVM
+
+  tc_lang
+  tc_version
+  tc_proto
+)
+install(
+  TARGETS
+  tc_core_cpu
 
   DESTINATION lib
 )

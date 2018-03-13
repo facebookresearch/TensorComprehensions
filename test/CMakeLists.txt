@@ -97,7 +97,7 @@ set(CORE_TEST_FILES
 foreach(i ${CORE_TEST_FILES})
   add_executable(${i} ${i}.cc)
   add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core tc_lang)
+  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core tc_core_cpu tc_lang)
 #  target_compile_options(${i}  PUBLIC -fsanitize=address)
 #  set(CMAKE_EXE_LINKER_FLAGS  -fsanitize=address)
 endforeach()
