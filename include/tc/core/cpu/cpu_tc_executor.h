@@ -74,7 +74,7 @@ class CpuTcExecutor : public ::tc::TcExecutor {
   Duration run(
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) const;
+      bool profile = false) const override;
 
   // This is the "low-latency" mode in which we just propagate raw pointers to
   // data in GPU address space.
@@ -83,7 +83,7 @@ class CpuTcExecutor : public ::tc::TcExecutor {
   // doesn't then segfault will likely occur.
   void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const;
+      const std::vector<void*>& outputs) const override;
 
   bool hasRuntimeCompiledFunction() override {
     return rtcFunction.get() != nullptr;
