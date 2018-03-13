@@ -21,7 +21,7 @@ chown jenkins:jenkins /usr/local
 # Allow writing to conda root env
 if [[ "$BUILD_ENVIRONMENT" == *-conda* ]]; then
   echo "Chowning Conda"
-  chown jenkins:jenkins /opt/conda
+  chown -R jenkins:jenkins /opt/conda
 fi
 
 # Allow sudo
