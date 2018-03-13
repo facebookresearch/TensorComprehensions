@@ -14,11 +14,7 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
-  cpu/cpu_tc_executor.cc
-
-  polyhedral/codegen_cuda.cc
-  polyhedral/codegen_llvm.cc
-  polyhedral/llvm_jit.cc
+  polyhedral/codegen.cc
   polyhedral/mapped_scop.cc
   polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
@@ -53,6 +49,35 @@ install(
   DESTINATION lib
 )
 
+add_library(
+  tc_core_cpu
+
+  SHARED
+
+  cpu/cpu_tc_executor.cc
+
+  polyhedral/codegen_llvm.cc
+  polyhedral/llvm_jit.cc
+)
+target_include_directories(tc_core_cpu PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(
+  tc_core_cpu
+
+  ${HALIDE_LIBRARIES}
+  ${ISL_LIBRARIES}
+  -lLLVM
+
+  tc_lang
+  tc_version
+  tc_proto
+)
+install(
+  TARGETS
+  tc_core_cpu
+
+  DESTINATION lib
+)
+
 if (WITH_CUDA)
   find_library(CUDA_NVRTC_LIBRARIES nvrtc
     PATHS ${CUDA_TOOLKIT_ROOT_DIR}
@@ -67,6 +92,8 @@ if (WITH_CUDA)
     cuda/cuda_compilation_cache.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
+
+    polyhedral/codegen_cuda.cc
   )
   target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
   target_link_libraries(
