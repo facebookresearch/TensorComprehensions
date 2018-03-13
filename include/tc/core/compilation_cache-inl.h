@@ -114,7 +114,7 @@ auto CudaCache::searchKernelImpl(
       });
   if (it != c.entries_.end()) {
     if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "Proto version doesn't match. TC git version is: "
+      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
                 << tc::git_version
                 << " and Proto version is: " << it->key.gitVersion
                 << " .This proto might be incompatible"
@@ -143,7 +143,7 @@ auto OptionsCache::searchKernelImpl(
       });
   if (it != c.entries_.end()) {
     if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "Proto version doesn't match. TC git version is: "
+      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
                 << tc::git_version
                 << " and Proto version is: " << it->key.gitVersion
                 << " .This proto might be incompatible"
@@ -174,7 +174,7 @@ auto ManualCudaCache::searchKernelImpl(
   if (it != c.entries_.end()) {
     std::cout << "RETURNING IT: " << it->key.gitVersion << std::endl;
     if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "Proto version doesn't match. TC git version is: "
+      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
                 << tc::git_version
                 << " and Proto version is: " << it->key.gitVersion
                 << " .This proto might be incompatible"
