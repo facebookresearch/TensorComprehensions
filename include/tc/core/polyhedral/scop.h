@@ -306,8 +306,11 @@ struct Scop {
   void promoteEverythingAt(std::vector<size_t> pos);
 
   struct PromotedDecl {
+    enum class Kind { SharedMem, Register };
+
     isl::id tensorId;
     std::vector<size_t> sizes;
+    Kind kind;
   };
 
   struct PromotionInfo {
@@ -356,7 +359,8 @@ struct Scop {
   // Assumes such argument exists.
   const Halide::OutputImageParam& findArgument(isl::id id) const;
 
-  // Promote a tensor reference group to shared memory, inserting the copy
+  // Promote a tensor reference group to a storage of a given "kind",
+  // inserting the copy
   // statements below the given node.  Inserts an Extension node below the give
   // node, unless there is already another Extension node which introduces
   // copies.  The Extension node has a unique Sequence child, whose children
@@ -368,7 +372,8 @@ struct Scop {
   // If "forceLastExtentOdd" is set, the last extent in the declaration is
   // incremented if it is even.  This serves as a simple heuristic to reduce
   // shared memory bank conflicts.
-  void promoteGroupToShared(
+  void promoteGroup(
+      PromotedDecl::Kind kind,
       isl::id tensorId,
       std::unique_ptr<TensorReferenceGroup>&& gr,
       detail::ScheduleTree* tree,

@@ -179,7 +179,8 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
 }
 } // namespace
 
-void Scop::promoteGroupToShared(
+void Scop::promoteGroup(
+    PromotedDecl::Kind kind,
     isl::id tensorId,
     std::unique_ptr<TensorReferenceGroup>&& gr,
     ScheduleTree* tree,
@@ -192,7 +193,7 @@ void Scop::promoteGroupToShared(
   if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
     sizes.back() += 1;
   }
-  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes};
+  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
 
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
   for (const auto& id : activeStmts) {
@@ -248,7 +249,13 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
-      promoteGroupToShared(p.first, std::move(gr), tree, activeStmts, schedule);
+      promoteGroup(
+          PromotedDecl::Kind::SharedMem,
+          p.first,
+          std::move(gr),
+          tree,
+          activeStmts,
+          schedule);
     }
   }
   insertSyncsAroundCopies(tree);
