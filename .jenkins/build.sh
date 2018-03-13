@@ -11,6 +11,7 @@ source /etc/lsb-release
 if [[ "$DISTRIB_RELEASE" == 14.04 ]]; then
   if which conda &> /dev/null; then
     echo "Building TC in conda env"
+    source activate
     conda install -y -c pytorch pytorch
     conda install -y pyyaml
     WITH_PYTHON_C2=OFF CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
@@ -23,6 +24,7 @@ fi
 if [[ "$DISTRIB_RELEASE" == 16.04 ]]; then
   if which conda &> /dev/null; then
     echo "Building TC in conda env"
+    source activate
     conda install -y pytorch cuda90 -c pytorch
     conda install -y pyyaml
     WITH_PYTHON_C2=OFF CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
