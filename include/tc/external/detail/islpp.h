@@ -358,6 +358,47 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, paramValuesMap);
 }
 
+namespace detail {
+
+// Helper class used to support range-based for loops on isl::*_list types.
+// It only provides the minimal required implementation.
+// "L" is the list type, "E" is the corresponding element type.
+template <typename E, typename L>
+struct ListIter {
+  ListIter(L& list, int pos) : list_(list), pos_(pos) {}
+  bool operator!=(const ListIter& other) {
+    return pos_ != other.pos_;
+  }
+  void operator++() {
+    pos_++;
+  }
+  E operator*() {
+    return list_.get(pos_);
+  }
+
+ private:
+  L& list_;
+  int pos_;
+};
+
+template <typename L>
+auto begin(L& list) -> ListIter<decltype(list.get(0)), L> {
+  return ListIter<decltype(list.get(0)), L>(list, 0);
+}
+
+template <typename L>
+auto end(L& list) -> ListIter<decltype(list.get(0)), L> {
+  return ListIter<decltype(list.get(0)), L>(list, list.n());
+}
+
+} // namespace detail
+
+// The begin() and end() functions used for range-based for loops
+// need to be available in the same namespace as that of the class
+// of the object to which it is applied.
+using detail::begin;
+using detail::end;
+
 } // namespace isl
 
 namespace isl {
