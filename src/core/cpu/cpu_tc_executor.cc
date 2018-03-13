@@ -39,7 +39,8 @@ Duration CpuTcExecutor::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
     bool profile) const {
-  CHECK(rtcFun) << "Can't launch uncompiled: " << executionInfo_.kernelName;
+  CHECK(rtcFunction) << "Can't launch uncompiled: "
+                     << executionInfo_.kernelName;
   CHECK_NE(executionInfo_.options, "");
   checkSizesAndStridesAreCompliant(
       inputs, executionInfo_.inputsInfo, halideComponents_.getDef().params());
