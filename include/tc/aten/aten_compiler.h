@@ -22,16 +22,15 @@
 #include <ATen/ATen.h>
 #include <ATen/DLConvertor.h>
 
-#include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_tc_executor.h"
+#include "tc/aten/utils.h"
 #include "tc/core/execution_engine.h"
 #include "tc/lang/parser.h"
 
 namespace tc {
-
 /// This provides the basic interface for writing ATen style tensor operations
 /// based on Tensor Comprehensions.
 
+template <typename ExecutorType>
 class ATenCompilationUnit {
  public:
   explicit ATenCompilationUnit();
@@ -72,15 +71,8 @@ class ATenCompilationUnit {
       size_t handle);
 
  private:
-  std::unique_ptr<ExecutionEngine<CudaTcExecutor>> executionEngine_;
+  std::unique_ptr<ExecutionEngine<ExecutorType>> executionEngine_;
 };
-
-std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
-toDlpackTensors(const std::vector<at::Tensor>& tensors);
-
-std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
-toConstDlpackTensors(const std::vector<at::Tensor>& tensors);
-
-void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors);
-
 } // namespace tc
+
+#include "tc/aten/aten_compiler-inl.h"

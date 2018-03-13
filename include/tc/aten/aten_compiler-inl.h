@@ -23,19 +23,15 @@
 
 namespace tc {
 
-ATenCompilationUnit::ATenCompilationUnit() {
-  executionEngine_ = std::unique_ptr<ExecutionEngine<CudaTcExecutor>>(
-      new ExecutionEngine<CudaTcExecutor>());
+template <typename ExecutorType>
+ATenCompilationUnit<ExecutorType>::ATenCompilationUnit() {
+  executionEngine_ = std::unique_ptr<ExecutionEngine<ExecutorType>>(
+      new ExecutionEngine<ExecutorType>());
 }
 
-void ATenCompilationUnit::define(const std::string& language) {
+template <typename ExecutorType>
+void ATenCompilationUnit<ExecutorType>::define(const std::string& language) {
   executionEngine_->define(language);
-}
-
-void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
-  for (auto& tensor : tensors) {
-    tensor->deleter(tensor);
-  }
 }
 
 namespace {
@@ -73,31 +69,8 @@ void prepareOutputs(
 
 } // namespace
 
-std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
-toDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
-  for (auto tensor : tensors) {
-    auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
-  }
-  return make_pair(dlTensors, dlMTensors);
-}
-
-std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
-toConstDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<const DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
-  for (auto tensor : tensors) {
-    auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
-  }
-  return make_pair(dlTensors, dlMTensors);
-}
-
-size_t ATenCompilationUnit::compile(
+template <typename ExecutorType>
+size_t ATenCompilationUnit<ExecutorType>::compile(
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
     const MappingOptions& options) {
@@ -107,7 +80,9 @@ size_t ATenCompilationUnit::compile(
       name, inputDLTensorsPair.first, options.toProtobufSerializedString());
 }
 
-std::vector<const DLTensor*> ATenCompilationUnit::inferOutputTensorInfo(
+template <typename ExecutorType>
+std::vector<const DLTensor*>
+ATenCompilationUnit<ExecutorType>::inferOutputTensorInfo(
     const std::string& name,
     const std::vector<at::Tensor>& inputs) {
   auto inputDLTensorsPair = toConstDlpackTensors(inputs);
@@ -116,7 +91,8 @@ std::vector<const DLTensor*> ATenCompilationUnit::inferOutputTensorInfo(
       name, inputDLTensorsPair.first);
 }
 
-Duration ATenCompilationUnit::run(
+template <typename ExecutorType>
+Duration ATenCompilationUnit<ExecutorType>::run(
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs,
@@ -135,7 +111,8 @@ Duration ATenCompilationUnit::run(
       handle, inputDLTensorsPair.first, outputDLTensorsPair.first, profile);
 }
 
-void ATenCompilationUnit::uncheckedRun(
+template <typename ExecutorType>
+void ATenCompilationUnit<ExecutorType>::uncheckedRun(
     const std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs,
     size_t handle) {

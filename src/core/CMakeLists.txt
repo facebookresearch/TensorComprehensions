@@ -52,6 +52,32 @@ install(
   DESTINATION lib
 )
 
+add_library(
+  tc_core_cpu
+
+  SHARED
+
+  cpu/cpu_tc_executor.cc
+)
+target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(
+  tc_core_cpu
+
+  ${HALIDE_LIBRARIES}
+  ${ISL_LIBRARIES}
+  -lLLVM
+
+  tc_lang
+  tc_version
+  tc_proto
+)
+install(
+  TARGETS
+  tc_core_cpu
+
+  DESTINATION lib
+)
+
 if (WITH_CUDA)
   find_library(CUDA_NVRTC_LIBRARIES nvrtc
     PATHS ${CUDA_TOOLKIT_ROOT_DIR}

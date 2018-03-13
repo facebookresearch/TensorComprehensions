@@ -33,7 +33,6 @@ foreach(i ${EXAMPLES_FILES})
   add_test(${i} ${i})
   target_link_libraries(
      ${i}
-     tc_aten
      tc_autotuner
      tc_core
      tc_c2
@@ -43,5 +42,7 @@ foreach(i ${EXAMPLES_FILES})
      ${GTEST_LIBS}
      ${GFLAGS_LIBRARIES}
      ${GLOG_LIBRARIES}
+
+     ${ATEN_LIBRARIES}
   )
 endforeach()

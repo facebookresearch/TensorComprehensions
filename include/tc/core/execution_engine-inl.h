@@ -67,11 +67,11 @@ ExecutionEngine<ExecutorType>::inferOutputTensorInfo(
     CHECK_EQ(1, tcNameMap_.count(name))
         << "attempting to access undefined function " << name;
     // If we have already compiled for the given inputs, regardless of
-    // the options, we can get sizes from a corresponding TcExecutor.
+    // the options, we can get sizes from a corresponding ExecutorType.
     auto e = std::find_if(
         executors_.begin(),
         executors_.end(),
-        [&](const std::unique_ptr<TcExecutor>& e) {
+        [&](const std::unique_ptr<ExecutorType>& e) {
           return e && name == e->identifier &&
               compareDLTensorVectorMetadata(
                      extractRawPtrs(e->inputsInfo), inputs);
@@ -85,7 +85,7 @@ ExecutionEngine<ExecutorType>::inferOutputTensorInfo(
   // null options. It will be used for further size queries but
   // will fail if somebody attempts to run it.
   auto executor =
-      tc::make_unique<TcExecutor>(name, inputs, "", tcNameMap_.at(name));
+      tc::make_unique<ExecutorType>(name, inputs, "", tcNameMap_.at(name));
   auto outputsInfo = executor->inferOutputTensorInfo();
   emplaceExecutor(std::move(executor));
   return outputsInfo;
@@ -114,8 +114,8 @@ size_t ExecutionEngine<ExecutorType>::compile(
   return handle;
 }
 
-// Steal TcExecutor and give it back under lock
-// Run outside of lock on owning TcExecutor.
+// Steal the executor instance and give it back under lock.
+// Run outside of lock on owning ExecutorType.
 template <typename ExecutorType>
 Duration ExecutionEngine<ExecutorType>::run(
     size_t handle,
@@ -123,7 +123,7 @@ Duration ExecutionEngine<ExecutorType>::run(
     const std::vector<DLTensor*>& outputs,
     bool profile,
     std::function<bool(const ExecutorType*)> pruningFunction) {
-  std::unique_ptr<TcExecutor> executorUPtr(nullptr);
+  std::unique_ptr<ExecutorType> executorUPtr(nullptr);
   {
     std::lock_guard<std::mutex> lg(tcExecutorMutex_);
     std::swap(executorUPtr, executors_[handle]);
@@ -155,14 +155,14 @@ Duration ExecutionEngine<ExecutorType>::run(
   return res;
 }
 
-// Steal TcExecutor and give it back under lock
-// Run outside of lock on owning TcExecutor.
+// Steal ExecutorType and give it back under lock
+// Run outside of lock on owning ExecutorType.
 template <typename ExecutorType>
 void ExecutionEngine<ExecutorType>::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
-  std::unique_ptr<TcExecutor> executorUPtr(nullptr);
+  std::unique_ptr<ExecutorType> executorUPtr(nullptr);
   {
     std::lock_guard<std::mutex> lg(tcExecutorMutex_);
     std::swap(executorUPtr, executors_[handle]);
@@ -188,17 +188,18 @@ void ExecutionEngine<ExecutorType>::uncheckedRun(
     }
   }
 }
+
 // Clear the underlying RTC object and executor under lock.
 template <typename ExecutorType>
 void ExecutionEngine<ExecutorType>::clear(size_t handle) {
   std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   executors_[handle]->clearRuntimeCompiledFunction();
-  executors_[handle] = std::unique_ptr<TcExecutor>(nullptr);
+  executors_[handle] = std::unique_ptr<ExecutorType>(nullptr);
 }
 
 template <typename ExecutorType>
 size_t ExecutionEngine<ExecutorType>::emplaceExecutor(
-    std::unique_ptr<TcExecutor> executorUPtr) {
+    std::unique_ptr<ExecutorType> executorUPtr) {
   // Insert in vector under lock
   std::lock_guard<std::mutex> lg(tcExecutorMutex_);
   size_t handle = uidCounter++;
@@ -219,7 +220,7 @@ size_t ExecutionEngine<ExecutorType>::getHandle(
   auto it = std::find_if(
       executors_.begin(),
       executors_.end(),
-      [&](const std::unique_ptr<TcExecutor>& e) {
+      [&](const std::unique_ptr<ExecutorType>& e) {
         return e && // UPtrs get stolen by run to avoid underlying vector
                     // realloc issues, guard against that
             name == e->identifier &&
