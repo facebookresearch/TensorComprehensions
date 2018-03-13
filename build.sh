@@ -327,7 +327,7 @@ function install_tc_python() {
       export PYTHONPATH=${TC_DIR}/build/tensor_comprehensions/pybinds:${PYTHONPATH}
       echo "PYTHONPATH: ${PYTHONPATH}"
     else
-      if which conda &> /dev/null; then
+      if [[ $(conda --version | wc -c) -ne 0 ]]; then
           echo "Found conda, going to install Python packages"
           cd ${TC_DIR}
           export CONDA_PYTHON=$(which python3)
