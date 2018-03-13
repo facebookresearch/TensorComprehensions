@@ -82,44 +82,141 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t val) {
   return isl::aff(isl::local_space(space), v);
 }
 
-isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
+std::vector<isl::aff> makeIslAffBoundsFromExpr(
+    isl::space space,
+    const Expr& e,
+    bool allowMin,
+    bool allowMax);
+
+namespace {
+/*
+ * Convert Halide binary expression "op" into a list of isl affine functions by
+ * converting its LHS and RHS into lists of affs and concatenating those lists.
+ * This is intended to be used with Min/Max operations in upper/lower bound
+ * computations, respectively.  Essentially, this allows for replacements
+ *   x < min(a,min(b,c)) <=> x < a AND x < b AND x < c
+ *   x > max(a,max(b,c)) <=> x > a AND x > b AND x > c
+ */
+template <typename T>
+inline std::vector<isl::aff>
+concatAffs(isl::space space, T op, bool allowMin, bool allowMax) {
+  std::vector<isl::aff> result;
+
+  for (const auto& aff :
+       makeIslAffBoundsFromExpr(space, op->a, allowMin, allowMax)) {
+    result.push_back(aff);
+  }
+  for (const auto& aff :
+       makeIslAffBoundsFromExpr(space, op->b, allowMin, allowMax)) {
+    result.push_back(aff);
+  }
+
+  return result;
+}
+
+/*
+ * Convert Halide binary expression "op" into an isl affine function by
+ * converting its LHS and RHS into affs and combining them with "combine"
+ * into a single expression.  LHS and RHS are expected to only produce a single
+ * expression.
+ * This is intended for use with operations other than Min/Max that do not
+ * commute nicely in bounds, for example
+ *   x < a + max(b,c)  NOT <=>  x < a + b AND x < a + c for negative values.
+ */
+template <typename T>
+inline isl::aff combineSingleAffs(
+    isl::space space,
+    T op,
+    isl::aff (isl::aff::*combine)(isl::aff) const) {
+  auto left = makeIslAffBoundsFromExpr(space, op->a, false, false);
+  auto right = makeIslAffBoundsFromExpr(space, op->b, false, false);
+  CHECK_EQ(left.size(), 1);
+  CHECK_EQ(right.size(), 1);
+
+  return (left[0].*combine)(right[0]);
+}
+
+} // end namespace
+
+/*
+ * Convert Halide expression into list of isl affine expressions usable for
+ * defining constraints.  In particular, an expression starting with (nested)
+ * Max operations can be used for lower bounds
+ *   x > max(a,b) <=> x > a AND x > b
+ * while an expression starting with (nested) Min operations can be used for
+ * upper bounds
+ *   x < min(a,b) <=> x < a AND x < b.
+ * Arguments "allowMin" and "allowMax" control whether Min and Max operations,
+ * respecitvely, are allowed to be present in the expression. Note that they
+ * can only appear before any other operation and cannot appear together in an
+ * expression.
+ * If a Halide expression cannot be converted into a list of affine expressions,
+ * return an empty list.
+ */
+std::vector<isl::aff> makeIslAffBoundsFromExpr(
+    isl::space space,
+    const Expr& e,
+    bool allowMin,
+    bool allowMax) {
+  CHECK(!(allowMin && allowMax));
+
+  const Min* minOp = e.as<Min>();
+  const Max* maxOp = e.as<Max>();
+
   if (const Variable* op = e.as<Variable>()) {
     isl::local_space ls = isl::local_space(space);
     int pos = space.find_dim_by_name(isl::dim_type::param, op->name);
     if (pos >= 0) {
-      return isl::aff(ls, isl::dim_type::param, pos);
+      return {isl::aff(ls, isl::dim_type::param, pos)};
     } else {
+      // FIXME: thou shalt not rely upon set dimension names
       pos = space.find_dim_by_name(isl::dim_type::set, op->name);
       if (pos >= 0) {
-        return isl::aff(ls, isl::dim_type::set, pos);
+        return {isl::aff(ls, isl::dim_type::set, pos)};
       }
     }
     LOG(FATAL) << "Variable not found in isl::space: " << space << ": " << op
                << ": " << op->name << '\n';
-    return isl::aff();
+    return {};
+  } else if (minOp != nullptr && allowMin) {
+    return concatAffs(space, minOp, allowMin, allowMax);
+  } else if (maxOp != nullptr && allowMax) {
+    return concatAffs(space, maxOp, allowMin, allowMax);
   } else if (const Add* op = e.as<Add>()) {
-    return makeIslAffFromExpr(space, op->a)
-        .add(makeIslAffFromExpr(space, op->b));
+    return {combineSingleAffs(space, op, &isl::aff::add)};
   } else if (const Sub* op = e.as<Sub>()) {
-    return makeIslAffFromExpr(space, op->a)
-        .sub(makeIslAffFromExpr(space, op->b));
+    return {combineSingleAffs(space, op, &isl::aff::sub)};
   } else if (const Mul* op = e.as<Mul>()) {
-    return makeIslAffFromExpr(space, op->a)
-        .mul(makeIslAffFromExpr(space, op->b));
+    return {combineSingleAffs(space, op, &isl::aff::mul)};
   } else if (const Div* op = e.as<Div>()) {
-    return makeIslAffFromExpr(space, op->a)
-        .div(makeIslAffFromExpr(space, op->b));
+    return {combineSingleAffs(space, op, &isl::aff::div)};
   } else if (const Mod* op = e.as<Mod>()) {
+    std::vector<isl::aff> result;
+    // We cannot span multiple constraints if a modulo operation is involved.
+    // x > max(a,b) % C is not equivalent to (x > a % C && x > b % C).
+    auto lhs = makeIslAffBoundsFromExpr(space, e, false, false);
+    CHECK_EQ(lhs.size(), 1);
     if (const int64_t* b = as_const_int(op->b)) {
-      return makeIslAffFromExpr(space, op->a)
-          .mod(isl::val(space.get_ctx(), *b));
+      return {lhs[0].mod(isl::val(space.get_ctx(), *b))};
     }
   } else if (const int64_t* i = as_const_int(e)) {
-    return makeIslAffFromInt(space, *i);
+    return {makeIslAffFromInt(space, *i)};
   }
 
+  return {};
+}
+
+isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
+  auto list = makeIslAffBoundsFromExpr(space, e, false, false);
+  CHECK_LE(list.size(), 1) << "Halide expr " << e
+                           << " unrolled into more than 1 isl aff"
+                           << " but min/max operations were disabled";
+
   // Non-affine
-  return isl::aff();
+  if (list.size() == 0) {
+    return isl::aff();
+  }
+  return list[0];
 }
 
 isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable) {
@@ -247,10 +344,22 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
         isl::local_space(set.get_space()), isl::dim_type::set, thisLoopIdx);
 
     // Then we add our new loop bound constraints.
-    isl::aff lb = halide2isl::makeIslAffFromExpr(set.get_space(), op->min);
+    auto lbs = halide2isl::makeIslAffBoundsFromExpr(
+        set.get_space(), op->min, false, true);
+    CHECK_GT(lbs.size(), 0)
+        << "could not obtain polyhedral lower bounds from " << op->min;
+    for (auto lb : lbs) {
+      set = set.intersect(loopVar.ge_set(lb));
+    }
+
     Expr max = simplify(op->min + op->extent - 1);
-    isl::aff ub = halide2isl::makeIslAffFromExpr(set.get_space(), max);
-    set = set.intersect(loopVar.ge_set(lb).intersect(ub.ge_set(loopVar)));
+    auto ubs =
+        halide2isl::makeIslAffBoundsFromExpr(set.get_space(), max, true, false);
+    CHECK_GT(ubs.size(), 0)
+        << "could not obtain polyhedral upper bounds from " << max;
+    for (auto ub : ubs) {
+      set = set.intersect(ub.ge_set(loopVar));
+    }
 
     // Recursively descend.
     auto body = makeScheduleTreeHelper(

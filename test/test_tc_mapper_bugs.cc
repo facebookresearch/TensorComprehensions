@@ -696,6 +696,25 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   atCompl.compile("layernorm", inputs, options);
 }
 
+TEST(Halide2Isl, MinInUpperBound) {
+  at::Tensor mat1 = at::CUDA(at::kFloat).rand({1, 100, 184, 184});
+  at::Tensor mat1_pad = at::CUDA(at::kFloat).rand({1, 100, 186, 186});
+  at::Tensor mat2 = at::CUDA(at::kFloat).rand({3, 3});
+  std::vector<at::Tensor> inputs = {mat1, mat1_pad, mat2};
+
+  static constexpr auto TC = R"TC(
+    def graph2(float(N, C, H, W) I, float(N, C, R, T) J, float(KH, KW) W1) -> (O, Out) {
+        O(n, c, h, w) +=! J(n, c, h + kh, w + kw) * W1(kh, kw)
+        Out(i, j) +=! I(n, i, h, w) * O(n, j, h, w)
+    }
+  )TC";
+  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+
+  tc::ATenCompilationUnit atCompl;
+  atCompl.define(TC);
+  atCompl.compile("graph2", inputs, options);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
