@@ -35,6 +35,7 @@ RUN bash ./install_protobuf.sh && rm install_protobuf.sh
 ARG JENKINS
 ARG JENKINS_UID
 ARG JENKINS_GID
+ARG BUILD_ENVIRONMENT
 ADD ./common/add_jenkins_user.sh add_jenkins_user.sh
 RUN if [ -n "${JENKINS}" ]; then bash ./add_jenkins_user.sh ${JENKINS_UID} ${JENKINS_GID}; fi
 RUN rm add_jenkins_user.sh

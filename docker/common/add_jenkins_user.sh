@@ -18,5 +18,11 @@ chown jenkins:jenkins /var/lib/jenkins/.ccache
 # Allow writing to /usr/local (for make install)
 chown jenkins:jenkins /usr/local
 
+# Allow writing to conda root env
+if [[ "$BUILD_ENVIRONMENT" == *-conda* ]]; then
+  echo "Chowning Conda"
+  chown jenkins:jenkins /opt/conda
+fi
+
 # Allow sudo
 echo 'jenkins ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/jenkins
