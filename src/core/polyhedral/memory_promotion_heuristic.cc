@@ -121,9 +121,9 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
 /*
  * Transform schedule bands into a union_map.
  * Takes all partial schedules at leaves as MUPAs (without accounting for
- * intermediate non-band nodes), transforms them into union maps and intersects
+ * intermediate non-band nodes), intersects
  * their domain with the filters between the root and the
- * current leaves.
+ * current leaves and transforms them into union maps.
  * Mapping filters are ignored.
  */
 isl::union_map fullSchedule(const detail::ScheduleTree* root) {
@@ -145,21 +145,24 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
   auto schedule = isl::union_map::empty(
       root->elemAs<ScheduleTreeElemDomain>()->domain_.get_space());
   for (auto node : leaves) {
+    auto domain = root->elemAs<ScheduleTreeElemDomain>()->domain_;
     auto prefixMupa = prefixScheduleMupa(root, node);
     if (auto band = node->elemAs<ScheduleTreeElemBand>()) {
       prefixMupa = prefixMupa.flat_range_product(band->mupa_);
     }
-    auto current = isl::union_map::from(prefixMupa);
 
     auto pathToRoot = node->ancestors(root);
     pathToRoot.push_back(node);
     for (auto n : pathToRoot) {
       if (auto filterNode = n->elemAs<ScheduleTreeElemFilter>()) {
-        current = current.intersect_domain(filterNode->filter_);
+        domain = domain.intersect(filterNode->filter_);
       }
     }
 
-    schedule = schedule.unite(current);
+    prefixMupa = isl::manage(isl_multi_union_pw_aff_intersect_domain(
+        prefixMupa.release(), domain.copy()));
+
+    schedule = schedule.unite(isl::union_map::from(prefixMupa));
     if (!schedule.is_single_valued()) {
       std::stringstream ss;
       ss << "schedules must be single-valued " << schedule << std::endl
