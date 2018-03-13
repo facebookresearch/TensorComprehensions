@@ -321,8 +321,11 @@ void addSingletonReferenceGroups(
   // access relations have a shape :: [D -> ref] -> O
   // use currying to isolate the D part before intersecting with the domain
   // Compute initial groups with single reference per group.
-  accesses = accesses.curry().intersect_domain(domain).uncurry();
   for (auto a : isl::UnionAsVector<isl::union_map>(accesses)) {
+    if (isl::union_map(a.curry()).intersect_domain(domain).is_empty()) {
+      continue;
+    }
+
     auto tensorId = a.get_tuple_id(isl::dim_type::out);
     addSingletonReferenceGroup(tensorGroups, tensorId, schedule, a, type);
   }

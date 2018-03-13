@@ -278,7 +278,8 @@ size_t computeThreadIdxxScheduleDepth(
 bool isCoalesced(
     const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
     const TensorReferenceGroup& group,
-    isl::union_map schedule) {
+    isl::union_map schedule,
+    isl::union_set activePoints) {
   auto originalAccesses = group.originalAccesses();
 
   for (auto accessMap : isl::UnionAsVector<isl::union_map>(originalAccesses)) {
@@ -288,7 +289,7 @@ bool isCoalesced(
           tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
       auto domainUMap = isl::union_set(isl::set(access.domain()));
       int threadIdxxDepth = computeThreadIdxxScheduleDepth(
-          threadIdxxScheduleDepthState, domainUMap);
+          threadIdxxScheduleDepthState, domainUMap.intersect(activePoints));
       auto partialScheduleUMap =
           schedule.intersect_domain(domainUMap.universe());
       if (partialScheduleUMap.n_map() != 1) {
@@ -398,6 +399,7 @@ void promoteToSharedGreedy(
     auto groupMap = TensorReferenceGroup::accessedBySubtree(bandNode, scop);
     auto activeStmts = activeStatements(root, bandNode);
     auto partialSched = partialSchedule(root, bandNode);
+    auto activePoints = activeDomainPoints(root, bandNode);
 
     // Prepare groups for sorting, to have specified order necessary for
     // reproducibility and tests.
@@ -457,7 +459,11 @@ void promoteToSharedGreedy(
         // Do not promote if the group features no reuse and is accessed in a
         // coalesced way.
         if (!hasReuse(*group, fullSched, depth) &&
-            isCoalesced(threadIdxxScheduleDepthState, *group, fullSched)) {
+            isCoalesced(
+                threadIdxxScheduleDepthState,
+                *group,
+                fullSched,
+                activePoints)) {
           continue;
         }
 
