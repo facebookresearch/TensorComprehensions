@@ -187,6 +187,22 @@ void Scop::promoteGroup(
     const std::unordered_set<isl::id, isl::IslIdIslHash>& activeStmts,
     isl::union_map schedule,
     bool forceLastExtentOdd) {
+  for (const auto& id : activeStmts) {
+    for (const auto& prom : activePromotions_[id]) {
+      if (promotedDecls_.count(prom.groupId) != 0 &&
+          promotedDecls_[prom.groupId].tensorId == tensorId) {
+        // FIXME: allow double promotion if copies are inserted properly,
+        // in particular if the new promotion is strictly smaller in scope
+        // and size than the existing ones (otherwise we would need to find
+        // the all the existing ones and change their copy relations).
+        std::cerr << "FIXME: not promoting because another promotion of tensor "
+                  << promotedDecls_[prom.groupId].tensorId << " is active in "
+                  << id << std::endl;
+        return;
+      }
+    }
+  }
+
   auto groupId = nextGroupIdForTensor(tensorId);
   insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
   auto sizes = gr->approximationSizes();
