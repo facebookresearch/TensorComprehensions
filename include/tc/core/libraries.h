@@ -144,7 +144,7 @@ constexpr auto boundsAsTemplate = R"C(
 template<typename T> inline __device__ T floord(T n, T d) {
   return n < 0 ? - (-n + d - 1)/d : n / d;
 }
-#define if_then_else(cond,a,b) (cond) ? (a) : (b);
+#define if_then_else(cond,a,b) ((cond) ? (a) : (b))
 )C";
 } // namespace cpp
 
