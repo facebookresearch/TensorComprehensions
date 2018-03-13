@@ -2,6 +2,9 @@
 
 set -ex
 
+apt-get update
+apt-get install sudo
+
 # Mirror jenkins user in container
 echo "jenkins:x:$JENKINS_UID:$JENKINS_GID::/var/lib/jenkins:" >> /etc/passwd
 echo "jenkins:x:$JENKINS_GID:" >> /etc/group
