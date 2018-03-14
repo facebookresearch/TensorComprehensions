@@ -617,7 +617,6 @@ void promoteToRegistersBelowThreads(
       // per-thread-group access relations.
       auto points = activeDomainPoints(root, band);
       auto partialSched = partialSchedule(root, band);
-      auto activeStmts = activeStatements(root, band);
 
       size_t nMappedThreads = 0;
       for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
@@ -666,7 +665,6 @@ void promoteToRegistersBelowThreads(
               tensorId,
               std::move(group),
               band,
-              activeStmts,
               partialSched);
         }
       }

@@ -188,19 +188,19 @@ void Scop::promoteGroup(
     bool forceLastExtentOdd) {
   auto activePoints = activeDomainPoints(scheduleRoot(), tree);
 
-  for (const auto& id : activeStmts) {
-    for (const auto& prom : activePromotions_[id]) {
-      if (promotedDecls_.count(prom.groupId) != 0 &&
-          promotedDecls_[prom.groupId].tensorId == tensorId) {
-        // FIXME: allow double promotion if copies are inserted properly,
-        // in particular if the new promotion is strictly smaller in scope
-        // and size than the existing ones (otherwise we would need to find
-        // the all the existing ones and change their copy relations).
-        std::cerr << "FIXME: not promoting because another promotion of tensor "
-                  << promotedDecls_[prom.groupId].tensorId << " is active in "
-                  << id << std::endl;
-        return;
-      }
+  for (const auto& kvp : activePromotions_) {
+    if (kvp.first.intersect(activePoints).is_empty()) {
+      continue;
+    }
+
+    auto groupId = kvp.second.groupId;
+    if (promotedDecls_.count(groupId) != 0 &&
+        promotedDecls_[groupId].tensorId == tensorId) {
+      // FIXME: allow double promotion if copies are inserted properly,
+      // in particular if the new promotion is strictly smaller in scope
+      // and size than the existing ones (otherwise we would need to find
+      // the all the existing ones and change their copy relations).
+      return;
     }
   }
 
