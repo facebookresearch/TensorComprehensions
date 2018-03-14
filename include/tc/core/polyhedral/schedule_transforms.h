@@ -284,13 +284,6 @@ isl::union_set activeDomainPoints(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
-// Get the set of statement identifiers whose domains have at least one active
-// point at the given node, i.e. the statements that were not filtered away on
-// the path from root to node.
-std::unordered_set<isl::id, isl::IslIdIslHash> activeStatements(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
-
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental
 ////////////////////////////////////////////////////////////////////////////////
