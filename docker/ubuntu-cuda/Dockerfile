@@ -6,8 +6,6 @@ FROM nvidia/cuda:${CUDA_VERSION}-cudnn${CUDNN_VERSION}-devel-ubuntu${UBUNTU_VERS
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update
-
 # CUDA paths
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
 ENV PATH /usr/local/bin:/usr/local/cuda/bin:$PATH
@@ -17,6 +15,8 @@ ARG GCC_VERSION
 ARG CMAKE_VERSION
 ADD ./common/install_base.sh install_base.sh
 RUN bash ./install_base.sh && rm install_base.sh
+
+# Setup ccache env variables
 ENV PATH /usr/local/bin/ccache:$PATH
 ENV CUDA_NVCC_EXECUTABLE /usr/local/bin/nvcc
 ENV PATH /usr/local/cuda/bin:$PATH
