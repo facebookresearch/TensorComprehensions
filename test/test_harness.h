@@ -393,7 +393,7 @@ struct TestHarness {
       test->Check();
     }
 
-    return std::move(test);
+    return test;
   }
 
   static void RunGradient(Workspace& w, const OperatorDef& def) {
