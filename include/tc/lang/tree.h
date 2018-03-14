@@ -89,6 +89,7 @@ struct Tree : std::enable_shared_from_this<Tree> {
     }
   }
   int kind_;
+  virtual ~Tree() {}
 };
 
 struct String : public Tree {
