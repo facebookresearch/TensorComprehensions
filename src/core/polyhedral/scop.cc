@@ -179,14 +179,9 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
 }
 } // namespace
 
-void Scop::promoteGroup(
-    PromotedDecl::Kind kind,
-    isl::id tensorId,
-    std::unique_ptr<TensorReferenceGroup>&& gr,
-    ScheduleTree* tree,
-    isl::union_map schedule,
-    bool forceLastExtentOdd) {
-  auto activePoints = activeDomainPoints(scheduleRoot(), tree);
+std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
+Scop::activePromotions(isl::union_set activePoints, isl::id tensorId) {
+  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> result;
 
   for (const auto& kvp : activePromotions_) {
     if (kvp.first.intersect(activePoints).is_empty()) {
@@ -196,12 +191,32 @@ void Scop::promoteGroup(
     auto groupId = kvp.second.groupId;
     if (promotedDecls_.count(groupId) != 0 &&
         promotedDecls_[groupId].tensorId == tensorId) {
-      // FIXME: allow double promotion if copies are inserted properly,
-      // in particular if the new promotion is strictly smaller in scope
-      // and size than the existing ones (otherwise we would need to find
-      // the all the existing ones and change their copy relations).
-      return;
+      result.push_back(kvp);
     }
+  }
+
+  return result;
+}
+
+void Scop::promoteGroup(
+    PromotedDecl::Kind kind,
+    isl::id tensorId,
+    std::unique_ptr<TensorReferenceGroup>&& gr,
+    ScheduleTree* tree,
+    isl::union_map schedule,
+    bool forceLastExtentOdd) {
+  auto activePoints = activeDomainPoints(scheduleRoot(), tree);
+
+  auto activeProms = activePromotions(activePoints, tensorId);
+  if (activeProms.size() != 0) {
+    // FIXME: allow double promotion if copies are inserted properly,
+    // in particular if the new promotion is strictly smaller in scope
+    // and size than the existing ones (otherwise we would need to find
+    // the all the existing ones and change their copy relations).
+    std::cerr << "FIXME: not promoting because another promotion of tensor "
+              << tensorId << " is active in " << activeProms[0].first
+              << std::endl;
+    return;
   }
 
   auto groupId = nextGroupIdForTensor(tensorId);

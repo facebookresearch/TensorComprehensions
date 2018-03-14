@@ -329,6 +329,10 @@ struct Scop {
     return activePromotions_;
   }
 
+  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> activePromotions(
+      isl::union_set activePoints,
+      isl::id tensorId);
+
   detail::ScheduleTree* scheduleRoot() {
     return scheduleTreeUPtr.get();
   }
