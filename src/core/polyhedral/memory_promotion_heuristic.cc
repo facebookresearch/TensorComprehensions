@@ -300,9 +300,7 @@ bool isCoalesced(
       auto partialSchedule = isl::map::from_union_map(partialScheduleUMap);
       auto scheduleToNextX = makeNextElementMap(
           partialSchedule.get_space().range(), threadIdxxDepth);
-      auto scheduledAccess = isl::map(access)
-                                 .gist_domain(access.domain())
-                                 .apply_domain(partialSchedule);
+      auto scheduledAccess = isl::map(access).apply_domain(partialSchedule);
       auto accessedByAdjacentX = scheduleToNextX.apply_domain(scheduledAccess)
                                      .apply_range(scheduledAccess);
 
@@ -349,9 +347,7 @@ bool isPromotableToRegisterBelowThreads(
                    threadIdxxScheduleDepthState,
                    originalAccesses.domain().intersect(activePoints));
 
-  auto scheduledAccesses =
-      originalAccesses.gist_domain(originalAccesses.domain())
-          .apply_domain(schedule);
+  auto scheduledAccesses = originalAccesses.apply_domain(schedule);
 
   // Scheduled accesses contain maps from schedule dimensions to tensor
   // subscripts.  Compute the relation that between the schedule dimensions
@@ -460,7 +456,6 @@ void promoteToSharedGreedy(
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
     auto groupMap = TensorReferenceGroup::accessedBySubtree(bandNode, scop);
-    auto activeStmts = activeStatements(root, bandNode);
     auto partialSched = partialSchedule(root, bandNode);
     auto activePoints = activeDomainPoints(root, bandNode);
 
@@ -535,7 +530,6 @@ void promoteToSharedGreedy(
             tensorId,
             std::move(group),
             bandNode,
-            activeStmts,
             partialSched,
             true);
         remainingMemory -= memoryRequirement;

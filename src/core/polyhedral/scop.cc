@@ -184,9 +184,10 @@ void Scop::promoteGroup(
     isl::id tensorId,
     std::unique_ptr<TensorReferenceGroup>&& gr,
     ScheduleTree* tree,
-    const std::unordered_set<isl::id, isl::IslIdIslHash>& activeStmts,
     isl::union_map schedule,
     bool forceLastExtentOdd) {
+  auto activePoints = activeDomainPoints(scheduleRoot(), tree);
+
   for (const auto& id : activeStmts) {
     for (const auto& prom : activePromotions_[id]) {
       if (promotedDecls_.count(prom.groupId) != 0 &&
@@ -211,10 +212,10 @@ void Scop::promoteGroup(
   }
   promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
 
+  // FIXME: we can now store a unique pointer...
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
-  for (const auto& id : activeStmts) {
-    activePromotions_[id].push_back(PromotionInfo{group, schedule, groupId});
-  }
+  activePromotions_.emplace_back(
+      std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
 }
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
@@ -259,7 +260,6 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   auto tree = scheduleRoot()->child(pos);
 
   checkFiltersDisjointStatements(scheduleRoot());
-  auto activeStmts = activeStatements(root, tree);
   auto schedule = partialSchedule(root, tree);
 
   auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
@@ -270,7 +270,6 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
           p.first,
           std::move(gr),
           tree,
-          activeStmts,
           schedule);
     }
   }

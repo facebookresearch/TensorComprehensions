@@ -324,9 +324,8 @@ struct Scop {
     return promotedDecls_;
   }
 
-  const std::
-      unordered_map<isl::id, std::vector<PromotionInfo>, isl::IslIdIslHash>&
-      activePromotions() const {
+  const std::vector<std::pair<isl::union_set, PromotionInfo>>&
+  activePromotions() const {
     return activePromotions_;
   }
 
@@ -377,7 +376,6 @@ struct Scop {
       isl::id tensorId,
       std::unique_ptr<TensorReferenceGroup>&& gr,
       detail::ScheduleTree* tree,
-      const std::unordered_set<isl::id, isl::IslIdIslHash>& activeStmts,
       isl::union_map schedule,
       bool forceLastExtentOdd = false);
 
@@ -468,9 +466,10 @@ struct Scop {
   std::unordered_map<isl::id, size_t, isl::IslIdIslHash> groupCounts_;
   // groupId -> (tensorId, groupSizes)
   std::unordered_map<isl::id, PromotedDecl, isl::IslIdIslHash> promotedDecls_;
-  // stmtId -> (group, partial schedule, groupId)
-  std::unordered_map<isl::id, std::vector<PromotionInfo>, isl::IslIdIslHash>
-      activePromotions_;
+  // (domain, group, partial schedule, groupId)
+  // Note that domain is a non-unique key, i.e. multiple groups can be listed
+  // for the same domain, or for partially intersecting domains.
+  std::vector<std::pair<isl::union_set, PromotionInfo>> activePromotions_;
 };
 
 std::ostream& operator<<(std::ostream& os, const Scop&);

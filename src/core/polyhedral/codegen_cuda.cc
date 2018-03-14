@@ -503,17 +503,6 @@ isl::space findDomainSpaceById(const CodegenStatementContext& context) {
   return isl::space();
 }
 
-isl::map findScheduleByStmtId(isl::union_map schedule, isl::id stmtId) {
-  for (auto s : isl::UnionAsVector<isl::union_map>(schedule)) {
-    if (s.get_tuple_id(isl::dim_type::in) == stmtId) {
-      return s;
-    }
-  }
-  CHECK(false) << "could not find schedule for " << stmtId << " in "
-               << schedule;
-  return isl::map();
-}
-
 isl::multi_aff makeMultiAffAccess(
     isl::id tensorId,
     const std::vector<Halide::Expr>& subscripts,
@@ -633,9 +622,9 @@ void emitMappedTensorAccess(
   auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
   promotion = promotion.set_tuple_id(isl::dim_type::out, promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
-  auto schedule = findScheduleByStmtId(
-      promotionInfo.outerSchedule,
-      context.statementId()); // map :: D -> S
+  auto schedule =
+      isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(
+          context.domain())); // map :: D -> S
 
   CHECK(schedule.is_single_valued())
       << "expected single-valued schedule, got " << schedule;
