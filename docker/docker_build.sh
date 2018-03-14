@@ -54,7 +54,6 @@ echo "============Summary Ended================"
 docker build \
        --build-arg "BUILD_ENVIRONMENT=${image}" \
        --build-arg "CMAKE_VERSION=${CMAKE_VERSION}" \
-       --build-arg "EC2=${EC2:-}" \
        --build-arg "JENKINS=${JENKINS:-}" \
        --build-arg "JENKINS_UID=${JENKINS_UID:-}" \
        --build-arg "JENKINS_GID=${JENKINS_GID:-}" \

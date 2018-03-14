@@ -22,6 +22,9 @@ ARG GCC_VERSION
 ARG CMAKE_VERSION
 ADD ./common/install_base.sh install_base.sh
 RUN bash ./install_base.sh && rm install_base.sh
+ENV PATH /usr/local/bin/ccache:$PATH
+ENV CUDA_NVCC_EXECUTABLE /usr/local/bin/nvcc
+ENV PATH /usr/local/cuda/bin:$PATH
 
 # Anaconda3
 ADD ./common/install_conda.sh install_conda.sh
@@ -45,8 +48,8 @@ ARG BUILD_ENVIRONMENT
 ENV BUILD_ENVIRONMENT ${BUILD_ENVIRONMENT}
 
 # Set all the environment variables now
-ENV CC /usr/bin/gcc
-ENV CXX /usr/bin/g++
+ENV CC /usr/local/bin/gcc
+ENV CXX /usr/local/bin/g++
 ENV PATH /opt/conda/bin:$PATH
 ENV CMAKE_VERSION cmake
 
