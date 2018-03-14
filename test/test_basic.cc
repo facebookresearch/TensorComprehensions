@@ -87,7 +87,7 @@ TEST(Math, Median) {
   std::vector<int> v0{};
   EXPECT_THROW(tc::median(v0), std::out_of_range);
 
-  std::vector<int> v1{{1}};
+  std::vector<int> v1({1});
   EXPECT_EQ(tc::median(v1), 1);
 
   std::vector<int> v2{{1, 3}};

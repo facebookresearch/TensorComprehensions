@@ -47,7 +47,7 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
                                 .tile({4, 8, 8})
                                 .mapToThreads({32, 4, 4})
                                 .mapToBlocks({100, 100, 100})
-                                .unroll({128});
+                                .unroll(128);
     this->gradMappingOptions_ =
         tc::MappingOptions::makePointwiseMappingOptions();
   }
