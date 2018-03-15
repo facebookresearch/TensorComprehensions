@@ -20,7 +20,7 @@ CMAKE_VERSION=${CMAKE_VERSION:="`which cmake3 || which cmake`"}
 CAFFE2_BUILD_CACHE=${CAFFE2_BUILD_CACHE:=${TC_DIR}/third-party/.caffe2_build_cache}
 HALIDE_BUILD_CACHE=${HALIDE_BUILD_CACHE:=${TC_DIR}/third-party/.halide_build_cache}
 INSTALL_PREFIX=${INSTALL_PREFIX:=${TC_DIR}/third-party-install/}
-CCACHE_WRAPPER_DIR=${CCACHE_WRAPPER_DIR:=/usr/local/bin/ccache}
+CCACHE_WRAPPER_DIR=${CCACHE_WRAPPER_DIR:=/usr/local/bin/}
 CC=${CC:="`which gcc`"}
 CXX=${CXX:="`which g++`"}
 
