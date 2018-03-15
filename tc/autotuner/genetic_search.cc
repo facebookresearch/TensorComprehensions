@@ -193,6 +193,7 @@ GeneticSearch::GeneticSearch(
     : population(),
       lastBestConf(confs[0]),
       kMaxPopulationSize(n),
+      kMatingPoolSize(n * 3),
       kCrossOverRate(crossOverRate),
       kMutationRate(mutationRate),
       kNumberElites(numberElites),
@@ -225,6 +226,7 @@ GeneticSearch::GeneticSearch(
     : population(),
       lastBestConf(conf),
       kMaxPopulationSize(n),
+      kMatingPoolSize(n * 3),
       kCrossOverRate(crossOverRate),
       kMutationRate(mutationRate),
       kNumberElites(numberElites),
@@ -275,19 +277,41 @@ TuningConfiguration GeneticSearch::crossover(
   return a;
 }
 
+std::vector<TuningConfiguration> GeneticSearch::stochasticUniversalSampling(
+    const std::vector<double>& fitness) const {
+  std::vector<TuningConfiguration> matingPool;
+  matingPool.reserve(kMatingPoolSize);
+
+  auto r =
+      std::uniform_real_distribution<double>(0, 1.0 / kMatingPoolSize)(rng);
+  size_t count = 0;
+  size_t i = 0;
+  while (count < kMatingPoolSize) {
+    while (r <= fitness[i]) {
+      matingPool.push_back(population[i]->configuration);
+      r += 1.0 / kMatingPoolSize;
+      ++count;
+    }
+    ++i;
+  }
+  return matingPool;
+}
+
 void GeneticSearch::breed() {
-  auto accFitness = computeAccumulatedFitness(population);
+  auto matingPool =
+      stochasticUniversalSampling(computeAccumulatedFitness(population));
+
   Population new_population;
-  new_population.reserve(kMaxPopulationSize);
+  new_population.reserve(kMatingPoolSize);
   for (size_t c = 0; c < kNumberElites; ++c) {
     new_population.push_back(
         make_unique<CandidateConfiguration>(population.at(c)->configuration));
   }
 
   auto select = [&]() -> TuningConfiguration& {
-    auto limit = std::uniform_real_distribution<double>{}(rng);
-    auto lb = std::lower_bound(accFitness.begin(), accFitness.end(), limit);
-    return population.at(std::distance(accFitness.begin(), lb))->configuration;
+    auto idx = std::uniform_int_distribution<size_t>{
+        size_t(0), matingPool.size() - 1}(rng);
+    return matingPool.at(idx);
   };
   auto shouldCrossOver = [&]() -> bool {
     /*
