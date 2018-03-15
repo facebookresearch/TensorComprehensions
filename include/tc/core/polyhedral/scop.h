@@ -383,6 +383,8 @@ struct Scop {
       isl::union_map schedule,
       bool forceLastExtentOdd = false);
 
+  void demoteGroup(isl::id groupId);
+
   // Given a tree node under which the promotion copy statements were
   // introduced, insert syncthread statements before and after the copies.
   // The tree should match the structure:

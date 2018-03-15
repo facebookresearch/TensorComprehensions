@@ -558,6 +558,15 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
+namespace {
+template <typename T>
+T projectOutNamedParam(T t, isl::id paramId) {
+  auto space = t.get_space();
+  int pos = space.find_dim_by_id(isl::dim_type::param, paramId);
+  return (pos == -1) ? t : t.project_out(isl::dim_type::param, pos, 1);
+}
+} // namespace
+
 // Assuming the mapping to threads happens in inverse order, i.e. the innermost
 // loop is mapped to thread x, promote below that depth.
 void promoteToRegistersBelowThreads(
@@ -617,6 +626,21 @@ void promoteToRegistersBelowThreads(
         }
       }
 
+      // Compute the set of active points without constraints introduced by
+      // thread mapping.
+      auto mappingTree = band;
+      while (mappingTree &&
+             !mappingTree->elemAs<ScheduleTreeElemMappingFilter>()) {
+        mappingTree = mappingTree->ancestor(scop.scheduleRoot(), 1);
+      }
+      CHECK(mappingTree);
+      auto mappingElem = mappingTree->elemAs<ScheduleTreeElemMappingFilter>();
+      auto pointsNoThreadMapping = points.gist(mappingElem->filter_);
+      for (size_t j = 0; j < mapping::ThreadId::kMaxDim; ++j) {
+        pointsNoThreadMapping = projectOutNamedParam(
+            pointsNoThreadMapping, mapping::ThreadId::makeId(j));
+      }
+
       auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
@@ -640,9 +664,19 @@ void promoteToRegistersBelowThreads(
           if (!hasReuse(*group, fullSched, depth)) {
             continue;
           }
-          // TODO: if something is already in shared, but reuse it within one
-          // thread only, there is no point in keeping it in shared _if_ it
-          // gets promoted into a register.
+
+          // If a group of references was promoted into shared memory, but it
+          // could be also promoted to registers while covering exactly the
+          // same statement instances accessing it, demote it from shared
+          // memory first.
+          auto outerScopePromotions = scop.activePromotions(points, tensorId);
+          if (outerScopePromotions.size() == 1 &&
+              outerScopePromotions[0]
+                  .first.subtract(pointsNoThreadMapping)
+                  .is_empty()) {
+            scop.demoteGroup(outerScopePromotions[0].second.groupId);
+          }
+
           scop.promoteGroup(
               Scop::PromotedDecl::Kind::Register,
               tensorId,
