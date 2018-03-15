@@ -79,6 +79,8 @@ class GeneticSearch {
   void updateParameters();
 
  private:
+  std::vector<TuningConfiguration> stochasticUniversalSampling(
+      const std::vector<double>& fitness) const;
   void breed();
 
   TuningConfiguration crossover(
@@ -99,6 +101,7 @@ class GeneticSearch {
   TuningConfiguration lastBestConf;
   const size_t numGenerations;
   const size_t maxPopulationSize;
+  const size_t matingPoolSize;
   const uint8_t crossOverRate;
   const uint8_t mutationRate;
   const size_t numberElites;
