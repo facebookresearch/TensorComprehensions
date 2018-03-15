@@ -210,5 +210,15 @@ detail::ScheduleTree* insertCopiesUnder(
     const TensorReferenceGroup& group,
     isl::id tensorId,
     isl::id groupId = isl::id());
+
+detail::ScheduleTree* insertIntraCopiesUnder(
+    Scop& scop,
+    detail::ScheduleTree* tree,
+    const TensorReferenceGroup& group,
+    const TensorReferenceGroup& outerScopeGroup,
+    isl::id tensorId,
+    isl::id groupId,
+    isl::id outerScopeGroupId);
+
 } // namespace polyhedral
 } // namespace tc

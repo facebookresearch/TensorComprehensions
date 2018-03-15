@@ -228,31 +228,178 @@ void Scop::promoteGroup(
     isl::union_map schedule,
     bool forceLastExtentOdd) {
   auto activePoints = activeDomainPoints(scheduleRoot(), tree);
+  // Allow promoting the second group the same tensor if:
+  // - footprints don't overlap (copy from global)
+  // - footprints do overlap but
+  //   - all groups are read-only (this should have been grouped, not with the
+  //   sum-of-footprint sizes heuristic) (copy from global)
+  //   - the new group is a strict subset (and is promoted deeper?, otherwise
+  //   have to play with the order of copies) (copy from existing)
 
   auto activeProms = activePromotions(activePoints, tensorId);
-  if (activeProms.size() != 0) {
-    // FIXME: allow double promotion if copies are inserted properly,
-    // in particular if the new promotion is strictly smaller in scope
-    // and size than the existing ones (otherwise we would need to find
-    // the all the existing ones and change their copy relations).
-    std::cerr << "FIXME: not promoting because another promotion of tensor "
-              << tensorId << " is active in " << activeProms[0].first
-              << std::endl;
-    return;
+  auto activePromIndexes = activePromotionsIndexes(activePoints, tensorId);
+
+  auto footprints = isl::set::empty(gr->approximateFootprint().get_space());
+  auto allReadOnly = gr->isReadOnly();
+  for (const auto& prom : activeProms) {
+    footprints = footprints.unite(prom.second.group->approximateFootprint());
+    allReadOnly = allReadOnly && prom.second.group->isReadOnly();
+  }
+  auto footprintsOverlap =
+      !footprints.intersect(gr->approximateFootprint()).is_empty();
+
+  if (!footprintsOverlap || allReadOnly) {
+    auto groupId = nextGroupIdForTensor(tensorId);
+    insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+    auto sizes = gr->approximationSizes();
+    if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
+      sizes.back() += 1;
+    }
+    promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
+
+    // FIXME: we can now store a unique pointer...
+    auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
+    activePromotions_.emplace_back(
+        std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
+  } else {
+    std::vector<size_t> possibleParents;
+    // If the new promotion is a subset of some old promotion, and the new has
+    // writes, then the old one also must have writes and must have been
+    // grouped with other references reading from the same value.  If the new
+    // one is read-only, and is a subset of some old promotion that has a
+    // write, all other read-only promotions at the previous level must have
+    // been grouped with it.  If everything is read-only, we just have multiple
+    // cached copies.  Therefore, we can find the first old promotion that is a
+    // superset of the new one, and copy to/from that.
+    for (auto i : activePromIndexes) {
+      if (gr->approximateFootprint().is_subset(
+              activePromotions_[i].second.group->approximateFootprint())) {
+        possibleParents.emplace_back(i);
+      } else if (gr->approximateFootprint().intersect(
+                     activePromotions_[i]
+                         .second.group->approximateFootprint())) {
+        LOG(WARNING)
+            << "not performing nested promotion because the inner footprint\n"
+            << gr->approximateFootprint() << "\n"
+            << "overlaps with one of the outer footprints\n"
+            << activePromotions_[i].second.group->approximateFootprint() << "\n"
+            << "without being its subset";
+        return;
+      }
+    }
+    // If the new promotion is not a strict subset of any other parent
+    // promotion, cannot promote because don't know where to read it from.
+    // TODO: if everything is read-only, can read from global.
+    if (possibleParents.size() == 0) {
+      return;
+    }
+    auto parentPromIdx = possibleParents.front();
+
+    auto groupId = nextGroupIdForTensor(tensorId);
+    insertIntraCopiesUnder(
+        *this,
+        tree,
+        *gr,
+        *activePromotions_[parentPromIdx].second.group,
+        tensorId,
+        groupId,
+        activePromotions_[parentPromIdx].second.groupId);
+    promotedDecls_[groupId] =
+        PromotedDecl{tensorId, gr->approximationSizes(), kind};
+
+    for (auto i : possibleParents) {
+      activePromotions_[i].first = activePromotions_[i].first.subtract(
+          projectOutNamedParam(activePoints, mapping::ThreadId::makeId(0)));
+    }
+
+    auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
+    activePromotions_.emplace_back(
+        std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
+  }
+}
+
+namespace {
+inline bool rangeOfUMapContainsTupleId(isl::union_map umap, isl::id id) {
+  for (auto s : isl::UnionAsVector<isl::union_set>(umap.range())) {
+    if (s.get_tuple_id() == id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+inline isl::union_map dropMapsWithRangeTupleId(
+    isl::union_map umap,
+    isl::id id) {
+  isl::union_map result = isl::union_map::empty(umap.get_space());
+  for (auto m : isl::UnionAsVector<isl::union_map>(umap)) {
+    if (!m.can_uncurry()) {
+      result = result.add_map(m);
+      continue;
+    }
+    if (m.uncurry().get_tuple_id(isl::dim_type::out) != id) {
+      result = result.add_map(m);
+    }
+  }
+  return result;
+}
+} // namespace
+
+void Scop::demoteGroup(isl::id groupId) {
+  using namespace polyhedral::detail;
+
+  auto extensions = match(
+      extension(
+          [groupId](isl::union_map m) {
+            return rangeOfUMapContainsTupleId(m.range().unwrap(), groupId);
+          },
+          sequence(any())),
+      scheduleRoot());
+
+  CHECK_EQ(extensions.size(), 1)
+      << "group " << groupId << " is not present as schedule extension.";
+
+  auto extensionTree = const_cast<ScheduleTree*>(extensions[0]);
+
+  auto sequenceTree = extensionTree->child({0});
+  for (size_t i = sequenceTree->numChildren(); i > 0; --i) {
+    auto filterElem =
+        sequenceTree->child({i - 1})->elemAs<ScheduleTreeElemFilter>();
+    CHECK(filterElem) << "expected children of a sequence node to be filters "
+                      << "got\n"
+                      << *sequenceTree;
+    if (!rangeOfUMapContainsTupleId(filterElem->filter_.unwrap(), groupId)) {
+      continue;
+    }
+    CHECK_EQ(filterElem->filter_.n_set(), 1)
+        << "filter for copy code contains more than one statement";
+    sequenceTree->detachChild({i - 1});
   }
 
-  auto groupId = nextGroupIdForTensor(tensorId);
-  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
-  auto sizes = gr->approximationSizes();
-  if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
-    sizes.back() += 1;
-  }
-  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
+  auto extensionElem = extensionTree->elemAs<ScheduleTreeElemExtension>();
+  extensionElem->extension_ =
+      dropMapsWithRangeTupleId(extensionElem->extension_, groupId);
 
-  // FIXME: we can now store a unique pointer...
-  auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
-  activePromotions_.emplace_back(
-      std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
+  if (extensionElem->extension_.is_empty()) {
+    auto parent = extensionTree->ancestor(scheduleRoot(), 1);
+    auto pos = extensionTree->positionInParent(parent);
+    if (sequenceTree->numChildren() > 1) {
+      auto ownedSequenceTree = extensionTree->detachChildren();
+      parent->detachChild(pos);
+      parent->insertChildren(pos, std::move(ownedSequenceTree));
+    } else {
+      auto ownedChildren = sequenceTree->detachChildren();
+      parent->detachChild(pos);
+      parent->insertChildren(pos, std::move(ownedChildren));
+    }
+  }
+
+  for (size_t i = activePromotions_.size(); i > 0; --i) {
+    if (activePromotions_[i - 1].second.groupId == groupId) {
+      activePromotions_.erase(activePromotions_.begin() + (i - 1));
+    }
+  }
+  promotedDecls_.erase(groupId);
 }
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
