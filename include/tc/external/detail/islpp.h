@@ -268,6 +268,10 @@ inline bool operator==(const isl::id& id1, const isl::id& id2) {
   return id1.get() == id2.get();
 }
 
+inline bool operator!=(const isl::id& id1, const isl::id& id2) {
+  return id1.get() != id2.get();
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
