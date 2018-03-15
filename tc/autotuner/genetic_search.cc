@@ -250,9 +250,9 @@ void GeneticSearch::breed() {
   auto accFitness = computeAccumulatedFitness(population);
   Population new_population;
   new_population.reserve(kMaxPopulationSize);
-  for (auto& p : population) {
+  for (size_t c = 0; c < kNumberElites; ++c) {
     new_population.push_back(
-        make_unique<CandidateConfiguration>(p->configuration));
+        make_unique<CandidateConfiguration>(population.at(c)->configuration));
   }
 
   auto select = [&]() -> TuningConfiguration& {
