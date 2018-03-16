@@ -19,7 +19,7 @@ import torch
 from torch.autograd import Variable
 
 from tensor_comprehensions.tc import ATenCompilationUnit
-from tensor_comprehensions.tc import global_debug_init as GlobalDebugInit
+from tensor_comprehensions.tc import set_debug_lang, set_debug_halide, set_debug_tc_mapper, set_debug_cuda, set_debug_tuner, set_dump_cuda
 from tensor_comprehensions.torch_tc.tc_function import TCFunction, unpack_variables, get_tensors, make_contiguous
 from tensor_comprehensions.autotuner import ATenAutotuner
 from tensor_comprehensions.mapping_options import Options
@@ -37,6 +37,25 @@ autotuner_settings = {"threads": 32}
 small_sizes_autotuner_settings = {
     "threads": 32, "generations": 5, "tuner_min_launch_total_threads": 1,
 }
+
+###############################################################################
+# Set global debugging flags
+###############################################################################
+class GlobalDebugInit(object):
+    def __init__(self, **kwargs):
+        self.set_gflags(**kwargs)
+
+    def set_gflags(
+        self, debug_lang=False, debug_halide=False, debug_tc_mapper=False,
+        debug_cuda=False, debug_tuner=False, dump_cuda=False, **kwargs
+    ):
+        set_debug_lang(debug_lang)
+        set_debug_halide(debug_halide)
+        set_debug_tc_mapper(debug_tc_mapper)
+        set_debug_cuda(debug_cuda)
+        set_debug_tuner(debug_tuner)
+        set_dump_cuda(dump_cuda)
+
 
 ###############################################################################
 # Some helper functions

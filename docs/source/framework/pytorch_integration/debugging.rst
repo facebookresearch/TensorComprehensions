@@ -28,7 +28,7 @@ Example usage
     import tensor_comprehensions as tc
     import torch
 
-    tc.GlobalDebugInit(["--debug_tc_mapper=true", "--debug_lang=false"])
+    tc.GlobalDebugInit(debug_tc_mapper=True, debug_lang=False)
 
     matmul = tc.define(tc.database['matmul']['lang'], name='matmul')
     mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
@@ -50,7 +50,7 @@ and the generated CUDA code will be printed on command line.
     import tensor_comprehensions as tc
     import torch
 
-    tc.GlobalDebugInit(["--dump_cuda=true"])
+    tc.GlobalDebugInit(dump_cuda=True)
 
     matmul = tc.define(tc.database['matmul']['lang'], name='matmul')
     mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()

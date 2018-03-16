@@ -61,10 +61,4 @@ DECLARE_bool(schedule_tree_verbose_validation);
 // random seed setting for reproducibility and debugging purposes
 uint64_t initRandomSeed();
 const uint64_t& randomSeed();
-
-// python
-namespace python {
-bool globalDebugGflagsGlogInit(int* pargc, char*** pargv);
-} // namespace python
-
 } // namespace tc
