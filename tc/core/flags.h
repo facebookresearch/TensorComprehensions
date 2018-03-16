@@ -40,10 +40,11 @@ DECLARE_uint32(benchmark_iterations);
 
 // Used in autotuning
 DECLARE_uint32(tuner_gen_pop_size);
+DECLARE_uint32(tuner_gen_mating_pool_size);
+DECLARE_uint32(tuner_gen_selection_pool_size);
 DECLARE_uint32(tuner_gen_crossover_rate);
 DECLARE_uint32(tuner_gen_mutation_rate);
 DECLARE_uint32(tuner_gen_generations);
-DECLARE_uint32(tuner_gen_number_elites);
 DECLARE_uint32(tuner_threads);
 DECLARE_string(tuner_gpus);
 DECLARE_bool(tuner_print_best);

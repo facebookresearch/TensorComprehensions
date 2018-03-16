@@ -70,10 +70,16 @@ PYBIND11_MODULE(autotuner, m) {
             tc::FLAGS_tuner_gen_generations = generations;
           })
       .def(
-          "number_elites",
+          "mating_pool_size",
           [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& number_elites) {
-            tc::FLAGS_tuner_gen_number_elites = number_elites;
+             uint32_t& mating_pool_size) {
+            tc::FLAGS_tuner_gen_mating_pool_size = mating_pool_size;
+          })
+      .def(
+          "selection_pool_size",
+          [](tc::autotune::GeneticAutotunerATen& instance,
+             uint32_t& selection_pool_size) {
+            tc::FLAGS_tuner_gen_selection_pool_size = selection_pool_size;
           })
       .def(
           "threads",

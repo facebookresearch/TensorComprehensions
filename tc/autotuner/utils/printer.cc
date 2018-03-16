@@ -41,8 +41,7 @@ void Printer::printLoop() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::stringstream ss;
-    ss << "Generation " << generation_;
-    ss << "\tJobs(Compiled, GPU)/total  ("
+    ss << prefix_ << "\tJobs(Compiled, GPU)/total  ("
        << std::min(total_, currentCompilationJob_.load()) << ", "
        << std::min(total_, numEvaluations_.load()) << ")/" << total_;
 
@@ -76,11 +75,11 @@ void Printer::printLoop() {
 }
 
 Printer::Printer(
-    size_t generation,
+    std::string prefix,
     size_t total,
     const std::atomic_size_t& currentCompilationJob,
     const std::atomic_size_t& numEvaluations)
-    : generation_(generation),
+    : prefix_(std::move(prefix)),
       printerThread_([this]() { printLoop(); }),
       total_(total),
       currentCompilationJob_(currentCompilationJob),

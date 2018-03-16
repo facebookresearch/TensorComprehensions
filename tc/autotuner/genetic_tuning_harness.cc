@@ -44,7 +44,8 @@ GeneticTunerHarness::GeneticTunerHarness(
     size_t n,
     uint8_t crossoverRate,
     uint8_t mutationRate,
-    size_t numberElites,
+    size_t matingPoolSize,
+    size_t selectionPoolSize,
     lang::TreeRef tc,
     std::string kernelName,
     const std::unordered_map<size_t, std::vector<const DLTensor*>>& inputs,
@@ -55,7 +56,8 @@ GeneticTunerHarness::GeneticTunerHarness(
     : kMaxPopulationSize(n),
       kCrossOverRate(crossoverRate),
       kMutationRate(mutationRate),
-      kNumberElites(numberElites),
+      kMatingPoolSize(matingPoolSize),
+      kSelectionPoolSize(selectionPoolSize),
       bestCudaMappingOptions_(baseMapping),
       kTc_(std::move(tc)),
       kKernelName_(std::move(kernelName)),
@@ -85,14 +87,16 @@ GeneticTunerHarness::GeneticTunerHarness(
         kMaxPopulationSize,
         kCrossOverRate,
         kMutationRate,
-        kNumberElites);
+        kMatingPoolSize,
+        kSelectionPoolSize);
   } else {
     tuner_ = make_unique<GeneticSearch>(
         configuration,
         kMaxPopulationSize,
         kCrossOverRate,
         kMutationRate,
-        kNumberElites);
+        kMatingPoolSize,
+        kSelectionPoolSize);
   }
 }
 
@@ -300,15 +304,17 @@ bool GeneticTunerHarness::warmupOrPrune(
   return false;
 }
 
-template <typename ExecutorType>
-void GeneticTunerHarness::doCompile(ExecutorType& engine) {
+template <typename ExecutorType, typename Population>
+void GeneticTunerHarness::doCompile(
+    ExecutorType& engine,
+    Population& population) {
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
-    if (current >= tuner_->population.size()) {
+    if (current >= population.size()) {
       break;
     }
-    auto& pConf = tuner_->population.at(current);
+    auto& pConf = population.at(current);
     auto options = makeOptions(*pConf);
     try {
       if (FLAGS_debug_tuner) {
@@ -340,10 +346,11 @@ void GeneticTunerHarness::doCompile(ExecutorType& engine) {
   }
 }
 
-template <typename ExecutorType>
+template <typename ExecutorType, typename Population>
 void GeneticTunerHarness::doGpuWork(
     size_t gpu,
     ExecutorType& engine,
+    Population& population,
     Printer& printer) {
   WithDevice wd(gpu);
   CHECK_EQ(1, kInputs_.count(gpu));
@@ -367,7 +374,7 @@ void GeneticTunerHarness::doGpuWork(
       // Found work to do, increment number of evaluations performed
       numEvaluations_.fetch_add(1);
     } else {
-      if (numEvaluations_.load() >= tuner_->population.size()) {
+      if (numEvaluations_.load() >= population.size()) {
         // No more work can arrive, exit
         return;
       }
@@ -376,7 +383,7 @@ void GeneticTunerHarness::doGpuWork(
       continue;
     }
 
-    auto& pConf = tuner_->population.at(current);
+    auto& pConf = population.at(current);
     if (pConf->invalid) {
       continue;
     }
@@ -479,17 +486,18 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
   tc::ExecutionEngine<tc::CudaTcExecutor> engine;
   engine.define({kTc_});
 
-  {
+  auto setUpJobsAndRun = [&](GeneticSearch::Population& population,
+                             const std::string& printerText) {
     // Initialize for this round
     currentCompilationJob_.store(0);
     numEvaluations_.store(0);
     readyToEvaluate_.resize(0);
-    for (int i = 0; i < kMaxPopulationSize; ++i) {
+    for (size_t i = 0; i < population.size(); ++i) {
       readyToEvaluate_.emplace_back();
       readyToEvaluate_[i].store(false);
     }
     Printer printer(
-        generation,
+        printerText,
         readyToEvaluate_.size(),
         currentCompilationJob_,
         numEvaluations_);
@@ -510,8 +518,9 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
       }
     });
     for (int i = 0; i < FLAGS_tuner_threads; ++i) {
-      cpuCompilationThreads.emplace_back(
-          [this, &engine]() { this->doCompile(engine); });
+      cpuCompilationThreads.emplace_back([this, &engine, &population]() {
+        this->doCompile(engine, population);
+      });
     }
 
     // Just spawn and join new threads for each generation
@@ -523,13 +532,18 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
       }
     });
     for (auto gpu : gpus) {
-      gpuWorkerThreads.emplace_back([this, gpu, &engine, &printer]() {
-        this->doGpuWork(gpu, engine, printer);
-      });
+      gpuWorkerThreads.emplace_back(
+          [this, gpu, &engine, &population, &printer]() {
+            this->doGpuWork(gpu, engine, population, printer);
+          });
     }
-  }
-
-  // At this point everything is synchronized because out of scope, done
+    // At this point everything is synchronized because out of scope, done
+  };
+  std::cout << "Generation " << generation << std::endl;
+  setUpJobsAndRun(tuner_->population, "Population");
+  tuner_->generateSelectionPool();
+  setUpJobsAndRun(tuner_->selectionPool, "Selection Pool");
+  tuner_->selectSurvivors();
 
   if (FLAGS_debug_tuner) {
     LOG(INFO) << "[TUNER][GENERATION LOG] best option so far:";
@@ -538,7 +552,6 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
     infoPrinter << bestMappingOption();
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }
-  tuner_->updateParameters();
 }
 
 } // namespace detail

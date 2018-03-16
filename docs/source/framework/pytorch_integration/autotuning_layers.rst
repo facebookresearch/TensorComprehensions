@@ -58,7 +58,6 @@ You can read about all the parameters here - :ref:`autotuner_parameters`.
 - :code:`threads` - set this to number of CPU cores available.
 - :code:`generations` - 5 to 10 generations is a good number.
 - :code:`pop_size` - 10 is usually reasonable. You can try 10 to 20.
-- :code:`number_elites` - number of candidates preserved intact between generations. `1` is usually sufficient.
 - :code:`min_launch_total_threads` - If you have really input small sizes, set this to `1`.
 - :code:`gpus`: Number of gpus to use for autotuning. Default value is "0". Set this to "0,1" if you wish to use two gpus (for example).
 
@@ -70,7 +69,7 @@ kernel timing. You can adopt the following parameter settings as starters for au
 .. code::
 
      settings = {
-         "threads": 32, "generations": 2, "pop_size": 10, "number_elites": 1
+         "threads": 32, "generations": 2, "pop_size": 10
      }
 
 * The good defaults that run for a bit longer (in exchange for better performance):
@@ -78,7 +77,7 @@ kernel timing. You can adopt the following parameter settings as starters for au
 .. code::
 
      settings = {
-         "threads": 32, "generations": 5, "pop_size": 10, "number_elites": 1
+         "threads": 32, "generations": 5, "pop_size": 10
      }
 
 
@@ -87,7 +86,7 @@ kernel timing. You can adopt the following parameter settings as starters for au
 .. code::
 
      settings = {
-         "threads": 32, "generations": 25, "pop_size": 100, "number_elites": 10
+         "threads": 32, "generations": 25, "pop_size": 100
      }
 
 

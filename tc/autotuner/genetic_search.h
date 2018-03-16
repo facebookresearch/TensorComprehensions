@@ -70,7 +70,8 @@ class GeneticSearch {
       size_t n,
       uint8_t crossOverRate,
       uint8_t mutationRate,
-      size_t numberElites);
+      size_t matingPoolSize,
+      size_t selectionPoolSize);
 
   /**
    * confs are used to seed the first generation, the rest of the population is
@@ -92,14 +93,21 @@ class GeneticSearch {
       size_t n,
       uint8_t crossOverRate,
       uint8_t mutationRate,
-      size_t numberElites);
+      size_t matingPoolSize,
+      size_t selectionPoolSize);
 
-  void updateParameters();
+  void generateSelectionPool();
+  void selectSurvivors();
 
  private:
   std::vector<TuningConfiguration> stochasticUniversalSampling(
       const std::vector<double>& fitness) const;
+
   void breed();
+
+  void updateBestCandidate(const TuningConfiguration& c);
+
+  void resetPopulationIfNotEnoughCandidates();
 
   TuningConfiguration crossover(
       TuningConfiguration&,
@@ -113,12 +121,13 @@ class GeneticSearch {
   using Population = std::vector<std::unique_ptr<CandidateConfiguration>>;
 
   Population population;
+  Population selectionPool;
   TuningConfiguration lastBestConf;
   const size_t kMaxPopulationSize;
   const size_t kMatingPoolSize;
+  const size_t kSelectionPoolSize;
   const uint8_t kCrossOverRate;
   const uint8_t kMutationRate;
-  const size_t kNumberElites;
 
   /*
    * c++11 seeding is (apparently) not of the highest quality:
