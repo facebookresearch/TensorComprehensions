@@ -403,7 +403,8 @@ void GeneticSearch::selectSurvivors() {
           std::min(selectionPool.size(), kMaxPopulationSize),
       std::back_inserter(population),
       [](const std::unique_ptr<CandidateConfiguration>& c) {
-        return make_unique<CandidateConfiguration>(c->configuration);
+        CHECK(c);
+        return make_unique<CandidateConfiguration>(*c);
       });
 
   if (selectionPool.size() < kMaxPopulationSize) {

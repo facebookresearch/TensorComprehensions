@@ -314,6 +314,7 @@ void GeneticTunerHarness::doCompile(
     if (current >= population.size()) {
       break;
     }
+
     auto& pConf = population.at(current);
     auto options = makeOptions(*pConf);
     try {
@@ -432,7 +433,7 @@ void GeneticTunerHarness::doGpuWork(
       LOG_LINE_BY_LINE(INFO, ssInfo);
     }
 
-    auto runtimes =
+    std::vector<Duration> runtimes =
         retrieveCachedRuntimes(engine, kKernelName_, inputs, outputs, options);
     if (runtimes.empty()) {
       try {
@@ -526,59 +527,77 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
 
   auto setUpJobsAndRun = [&](GeneticSearch::Population& population,
                              const std::string& printerText) {
-    // Initialize for this round
-    currentCompilationJob_.store(0);
-    numEvaluations_.store(0);
-    readyToEvaluate_.resize(0);
-    for (size_t i = 0; i < population.size(); ++i) {
-      readyToEvaluate_.emplace_back();
-      readyToEvaluate_[i].store(false);
-    }
-    Printer printer(
-        printerText,
-        readyToEvaluate_.size(),
-        currentCompilationJob_,
-        numEvaluations_);
-    auto logGenerations = FLAGS_tuner_gen_log_generations;
-    ScopeGuard sgPrinter([logGenerations, &printer]() {
-      printer.stop();
-      if (logGenerations) {
-        printer.printAll();
+    // Most candidates should have been evaluated during the previous
+    // generation's selection phase.
+    // There are two exceptions:
+    // 1) the 1st generation
+    // 2) too many invalid configurations were previously encounted and the
+    //    valid ones were not enough to form a new generation.
+    auto firstNew = std::partition(
+        population.begin(),
+        population.end(),
+        [](const std::unique_ptr<CandidateConfiguration>& c) {
+          return c->runtime != Duration::zero();
+        });
+    GeneticSearch::Population newCandidates(
+        std::distance(firstNew, population.end()));
+    std::move(firstNew, population.end(), newCandidates.begin());
+    {
+      // Initialize for this round
+      currentCompilationJob_.store(0);
+      numEvaluations_.store(0);
+      readyToEvaluate_.resize(0);
+      for (size_t i = 0; i < newCandidates.size(); ++i) {
+        readyToEvaluate_.emplace_back();
+        readyToEvaluate_[i].store(false);
       }
-    });
-
-    // Just spawn and join new threads for each generation
-    std::vector<std::thread> cpuCompilationThreads;
-    cpuCompilationThreads.reserve(FLAGS_tuner_threads);
-    ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
-      for (auto& cpuCompilationThread : cpuCompilationThreads) {
-        cpuCompilationThread.join();
-      }
-    });
-    for (int i = 0; i < FLAGS_tuner_threads; ++i) {
-      cpuCompilationThreads.emplace_back([this, &engine, &population]() {
-        this->doCompile(engine, population);
+      Printer printer(
+          printerText,
+          readyToEvaluate_.size(),
+          currentCompilationJob_,
+          numEvaluations_);
+      auto logGenerations = FLAGS_tuner_gen_log_generations;
+      ScopeGuard sgPrinter([logGenerations, &printer]() {
+        printer.stop();
+        if (logGenerations) {
+          printer.printAll();
+        }
       });
-    }
 
-    // Just spawn and join new threads for each generation
-    std::vector<std::thread> gpuWorkerThreads;
-    gpuWorkerThreads.reserve(gpus.size());
-    ScopeGuard sgGpuWorkerThreads([&gpuWorkerThreads]() {
-      for (auto& gpuWorkerThread : gpuWorkerThreads) {
-        gpuWorkerThread.join();
+      // Just spawn and join new threads for each generation
+      std::vector<std::thread> cpuCompilationThreads;
+      cpuCompilationThreads.reserve(FLAGS_tuner_threads);
+      ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
+        for (auto& cpuCompilationThread : cpuCompilationThreads) {
+          cpuCompilationThread.join();
+        }
+      });
+      for (int i = 0; i < FLAGS_tuner_threads; ++i) {
+        cpuCompilationThreads.emplace_back([this, &engine, &newCandidates]() {
+          this->doCompile(engine, newCandidates);
+        });
       }
-    });
-    for (auto gpu : gpus) {
-      gpuWorkerThreads.emplace_back(
-          [this, gpu, &engine, &population, &printer]() {
-            this->doGpuWork(gpu, engine, population, printer);
-          });
+
+      // Just spawn and join new threads for each generation
+      std::vector<std::thread> gpuWorkerThreads;
+      gpuWorkerThreads.reserve(gpus.size());
+      ScopeGuard sgGpuWorkerThreads([&gpuWorkerThreads]() {
+        for (auto& gpuWorkerThread : gpuWorkerThreads) {
+          gpuWorkerThread.join();
+        }
+      });
+      for (auto gpu : gpus) {
+        gpuWorkerThreads.emplace_back(
+            [this, gpu, &engine, &newCandidates, &printer]() {
+              this->doGpuWork(gpu, engine, newCandidates, printer);
+            });
+      }
     }
     // At this point everything is synchronized because out of scope, done
+    std::move(newCandidates.begin(), newCandidates.end(), firstNew);
   };
-  std::cout << "Generation " << generation << std::endl;
-  setUpJobsAndRun(tuner_->population, "Population");
+  std::cout << "Generation " << generation << ':' << std::endl;
+  setUpJobsAndRun(tuner_->population, "New Candidates");
   tuner_->generateSelectionPool();
   setUpJobsAndRun(tuner_->selectionPool, "Selection Pool");
   tuner_->selectSurvivors();
