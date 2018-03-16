@@ -107,7 +107,7 @@ class GeneticSearch {
 
   void updateBestCandidate(const TuningConfiguration& c);
 
-  void resetPopulationIfNotEnoughCandidates();
+  bool resetPopulationIfNotEnoughCandidates();
 
   TuningConfiguration crossover(
       TuningConfiguration&,

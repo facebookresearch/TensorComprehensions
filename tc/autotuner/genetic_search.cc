@@ -301,7 +301,7 @@ void GeneticSearch::breed() {
   }
 }
 
-void GeneticSearch::resetPopulationIfNotEnoughCandidates() {
+bool GeneticSearch::resetPopulationIfNotEnoughCandidates() {
   if (population.size() < kMinCandidatesForBreeding) {
     LOG_IF(ERROR, FLAGS_debug_tuner)
         << population.size() << " out of " << kMaxPopulationSize
@@ -320,7 +320,16 @@ void GeneticSearch::resetPopulationIfNotEnoughCandidates() {
     // Don't lose the first one which was the best from before
     CHECK_LT(0, population.size());
     randomizePopulation(population.begin() + 1, population.end(), rng);
+
+    selectionPool.clear();
+    for (size_t i = 0; i < kSelectionPoolSize; ++i) {
+      selectionPool.emplace_back(
+          make_unique<CandidateConfiguration>(lastBestConf));
+    }
+    randomizePopulation(selectionPool.begin() + 1, selectionPool.end(), rng);
+    return true;
   }
+  return false;
 }
 
 namespace {
@@ -352,8 +361,9 @@ void GeneticSearch::generateSelectionPool() {
   sortByRuntime(population);
   updateBestCandidate(
       population.size() > 0 ? population.front()->configuration : lastBestConf);
-  resetPopulationIfNotEnoughCandidates();
-  breed();
+  if (resetPopulationIfNotEnoughCandidates()) {
+    return;
+  }
   selectionPool.clear();
   selectionPool.emplace_back(make_unique<CandidateConfiguration>(lastBestConf));
   breed();
