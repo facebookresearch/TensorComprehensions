@@ -21,6 +21,8 @@
 #include <random>
 #include <sstream>
 
+#include "tc/autotuner/utils/utils.h"
+
 namespace tc {
 namespace autotune {
 
@@ -72,39 +74,6 @@ void mutate(
     }
     res.configuration = candidate.configuration;
   }
-}
-
-double mean(std::vector<double>& v) {
-  if (v.empty()) {
-    throw std::invalid_argument("Cannot compute the mean of an empty vector.");
-  }
-  auto sum = std::accumulate(v.begin(), v.end(), 0.0);
-  return sum / v.size();
-}
-
-double stdv(std::vector<double>& v, double mean) {
-  std::vector<double> diffs(v.size());
-  std::transform(v.begin(), v.end(), diffs.begin(), [mean](double val) {
-    return val - mean;
-  });
-
-  auto squareSum =
-      std::inner_product(diffs.begin(), diffs.end(), diffs.begin(), 0.0);
-  return std::sqrt(squareSum / v.size());
-}
-
-void sigmaScale(std::vector<double>& v) {
-  auto m = mean(v);
-  auto s = stdv(v, m);
-  std::transform(v.begin(), v.end(), v.begin(), [m, s](double val) {
-    return std::max(val - (m - 2 * s), 0.0);
-  });
-}
-
-void normalizeVector(std::vector<double>& v) {
-  auto sum = std::accumulate(v.begin(), v.end(), 0.0);
-  std::transform(
-      v.begin(), v.end(), v.begin(), [sum](double v) { return v / sum; });
 }
 
 std::vector<double> computeNormalizedFitness(
