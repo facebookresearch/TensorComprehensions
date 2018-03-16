@@ -403,6 +403,21 @@ auto end(L& list) -> ListIter<decltype(list.get(0)), L> {
 using detail::begin;
 using detail::end;
 
+template <typename T>
+isl::val getParamValIfFixed(T t, int pos) {
+  auto val = isl::val::nan(t.get_ctx());
+  for (auto set : isl::UnionAsVector<T>(t)) {
+    auto currentVal = set.plain_get_val_if_fixed(isl::dim_type::param, pos);
+    if (currentVal.is_nan()) {
+      return currentVal;
+    }
+    if (!val.is_nan() && val != currentVal) {
+      return isl::val::nan(t.get_ctx());
+    }
+    val = currentVal;
+  }
+  return val;
+}
 } // namespace isl
 
 namespace isl {

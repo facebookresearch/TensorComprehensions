@@ -558,23 +558,6 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
-namespace {
-isl::val getParamValIfFixed(isl::union_set uset, int pos) {
-  auto val = isl::val::nan(uset.get_ctx());
-  for (auto set : isl::UnionAsVector<isl::union_set>(uset)) {
-    auto currentVal = set.plain_get_val_if_fixed(isl::dim_type::param, pos);
-    if (currentVal.is_nan()) {
-      return currentVal;
-    }
-    if (!val.is_nan() && val != currentVal) {
-      return isl::val::nan(uset.get_ctx());
-    }
-    val = currentVal;
-  }
-  return val;
-}
-} // namespace
-
 // Assuming the mapping to threads happens in inverse order, i.e. the innermost
 // loop is mapped to thread x, promote below that depth.
 void promoteToRegistersBelowThreads(
@@ -625,7 +608,7 @@ void promoteToRegistersBelowThreads(
           if (id != mapping::ThreadId::makeId(i)) {
             continue;
           }
-          if (getParamValIfFixed(points, j) ==
+          if (isl::getParamValIfFixed(points, j) ==
               isl::val::zero(points.get_ctx())) {
             continue;
           }
