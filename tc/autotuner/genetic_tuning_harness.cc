@@ -346,6 +346,39 @@ void GeneticTunerHarness::doCompile(
   }
 }
 
+namespace {
+std::vector<const DLTensor*> toConstDlpackTensors(
+    const std::vector<DLTensor*>& v) {
+  std::vector<const DLTensor*> out(v.begin(), v.end());
+  return out;
+}
+} // namespace
+
+template <typename ExecutorType>
+std::vector<Duration> retrieveCachedRuntimes(
+    ExecutorType& engine,
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<DLTensor*>& outputs,
+    const CudaMappingOptions& options) {
+  if (not OptionsCache::cacheEnabled()) {
+    return {};
+  }
+  auto cache = OptionsCache::getCache();
+  auto allResults = cache->retrieveOptionsAndRuntimes(
+      id, inputs, toConstDlpackTensors(outputs));
+  auto wantedResult = std::find_if(
+      allResults.begin(),
+      allResults.end(),
+      [&options](const OptionsCache::RetrievalResult& r) {
+        return r.options == options;
+      });
+  if (wantedResult == allResults.end()) {
+    return {};
+  }
+  return wantedResult->recordedRuntimes;
+}
+
 template <typename ExecutorType, typename Population>
 void GeneticTunerHarness::doGpuWork(
     size_t gpu,
@@ -399,51 +432,56 @@ void GeneticTunerHarness::doGpuWork(
       LOG_LINE_BY_LINE(INFO, ssInfo);
     }
 
-    std::vector<Duration> runtimes;
-    try {
-      size_t bestTimeSoFar;
-      {
-        std::lock_guard<std::mutex> lock(bestTimeMtx_);
-        bestTimeSoFar = bestTime_;
-      }
-      auto prune =
-          warmupOrPrune(engine, outputs, inputs, handle, bestTimeSoFar);
-      if (prune) {
+    auto runtimes =
+        retrieveCachedRuntimes(engine, kKernelName_, inputs, outputs, options);
+    if (runtimes.empty()) {
+      try {
+        size_t bestTimeSoFar;
+        {
+          std::lock_guard<std::mutex> lock(bestTimeMtx_);
+          bestTimeSoFar = bestTime_;
+        }
+        auto prune =
+            warmupOrPrune(engine, outputs, inputs, handle, bestTimeSoFar);
+        if (prune) {
+          pConf->invalid = true;
+          continue;
+        } else {
+          runtimes.reserve(kReducedBenchmarkIterations);
+          for (size_t i = 0; i < kReducedBenchmarkIterations; ++i) {
+            runtimes.push_back(engine.run(handle, inputs, outputs, true));
+          }
+          engine.clear(handle);
+        }
+      } catch (std::exception& e) {
+        if (FLAGS_debug_tuner) {
+          LOG(WARNING) << "Runtime error gpu " << gpu << ": " << e.what();
+          std::stringstream ssWarning;
+          CudaMappingOptionsCppPrinter warningPrinter(ssWarning);
+          warningPrinter << options;
+          LOG(WARNING) << "Aborted execution on gpu " << gpu;
+          LOG_LINE_BY_LINE(WARNING, ssWarning);
+        }
+        while (cudaGetLastError() != cudaSuccess) {
+          // In case of errors in the generated, we cannot rely on deviceReset
+          // to set the GPU in a clean state. So instead we just pop and discard
+          // all the errors accumulated on the GPU until we get to a clean slate
+          // (i.e. cudaSuccess).
+          ;
+        }
+        try {
+          // Some errors, such as illegal memory access, cannot be recovered
+          // from without a cudaDeviceReset (i.e. because user protection) In
+          // those cases we have no choice than to fail hard.
+          TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+        } catch (const std::exception& e) {
+          LOG(FATAL) << "[CUDA][FATAL] cuda error on gpu " << gpu << ": "
+                     << e.what() << "\n"
+                     << CudaMappingOptionsAsCpp(options);
+        }
         pConf->invalid = true;
         continue;
-      } else {
-        runtimes.reserve(kReducedBenchmarkIterations);
-        for (size_t i = 0; i < kReducedBenchmarkIterations; ++i) {
-          runtimes.push_back(engine.run(handle, inputs, outputs, true));
-        }
-        engine.clear(handle);
       }
-    } catch (std::exception& e) {
-      LOG(WARNING) << "Runtime error gpu " << gpu << ": " << e.what();
-      std::stringstream ssWarning;
-      CudaMappingOptionsCppPrinter warningPrinter(ssWarning);
-      warningPrinter << options;
-      LOG(WARNING) << "Aborted execution on gpu " << gpu;
-      LOG_LINE_BY_LINE(WARNING, ssWarning);
-      while (cudaGetLastError() != cudaSuccess) {
-        // In case of errors in the generated, we cannot rely on deviceReset to
-        // set the GPU in a clean state. So instead we just pop and discard all
-        // the errors accumulated on the GPU until we get to a clean slate
-        // (i.e. cudaSuccess).
-        ;
-      }
-      try {
-        // Some errors, such as illegal memory access, cannot be recovered from
-        // without a cudaDeviceReset (i.e. because user protection)
-        // In those cases we have no choice than to fail hard.
-        TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      } catch (const std::exception& e) {
-        LOG(FATAL) << "[CUDA][FATAL] cuda error on gpu " << gpu << ": "
-                   << e.what() << "\n"
-                   << CudaMappingOptionsAsCpp(options);
-      }
-      pConf->invalid = true;
-      continue;
     }
 
     auto prof = median(runtimes);
