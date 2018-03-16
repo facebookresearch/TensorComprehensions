@@ -156,12 +156,12 @@ isl::schedule_node insertExtension(
     }
     node = node.ancestor(node.get_tree_depth() - depth0);
   }
-  for (auto i = corePos[0]; i >= 1; --i) {
-    auto graft = graftFromFilterSubtree(child->child({i - 1}), extension);
+  for (size_t i = 0; i < corePos[0]; ++i) {
+    auto graft = graftFromFilterSubtree(child->child({i}), extension);
     node = node.graft_before(graft);
   }
-  for (auto i = corePos.back() + 1; i < child->numChildren(); ++i) {
-    auto graft = graftFromFilterSubtree(child->child({i}), extension);
+  for (auto i = child->numChildren(); i > corePos.back() + 1; --i) {
+    auto graft = graftFromFilterSubtree(child->child({i - 1}), extension);
     node = node.graft_after(graft);
   }
   node = node.ancestor(node.get_tree_depth() - depth0);
