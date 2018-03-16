@@ -36,7 +36,7 @@ class TestCase(unittest.TestCase):
 
     def autotune_store(self, cache_file, lang, tc_name, inputs, tc_type):
         tuner = TcAutotuner(
-            lang, threads=16, pop_size=10, number_elites=1, generations=1
+            lang, threads=16, pop_size=10, generations=1
         )
         best_options = tuner.tune_and_store(
             tc_name, inputs, mapping_options=tc_type, cache_file=cache_file

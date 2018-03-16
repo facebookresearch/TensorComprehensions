@@ -243,56 +243,58 @@ void TuningHarness<Backend>::runOneIteration(
     size_t iteration) {
   // Define tensors per device once globally
   auto devices = detail::parseDevices<Backend>(FLAGS_tuner_devices);
-  CHECK(executors_.empty());
-  CHECK(configurations_.empty());
   for (uint64_t step = 0; step < searchStrategy.stepsPerIteration; ++step) {
-    auto& candidates = searchStrategy.candidatesOfStep(step);
-    // Initialize for this round
-    currentCompilationJob_.store(0);
-    numEvaluations_.store(0);
-    Printer printer(
-        iteration,
-        step,
-        candidates.size(),
-        currentCompilationJob_,
-        numEvaluations_);
-    auto logIterations = FLAGS_tuner_gen_log_generations;
-    ScopeGuard sgPrinter([logIterations, &printer]() {
-      printer.stop();
-      if (logIterations) {
-        printer.printAll();
-      }
-    });
-
-    // Just spawn and join new threads for each iteration
-    std::vector<std::thread> cpuCompilationThreads;
-    cpuCompilationThreads.reserve(FLAGS_tuner_threads);
-    ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
-      for (auto& cpuCompilationThread : cpuCompilationThreads) {
-        cpuCompilationThread.join();
-      }
-    });
-    for (size_t i = 0; i < FLAGS_tuner_threads; ++i) {
-      cpuCompilationThreads.emplace_back(
-          [this, &candidates]() { this->doCompile(candidates); });
-    }
-
-    // Just spawn and join new threads for each device
-    std::vector<std::thread> workerThreads;
-    workerThreads.reserve(devices.size());
-    LOG_IF(INFO, tc::FLAGS_debug_tuner)
-        << "Start evaluation: " << devices.size() << " " << executors_.size()
-        << " " << configurations_.size();
-    ScopeGuard sgDeviceWorkerThreads([&workerThreads]() {
-      for (auto& workerThread : workerThreads) {
-        workerThread.join();
-      }
-    });
-    auto populationSize = candidates.size();
-    for (auto device : devices) {
-      workerThreads.emplace_back([this, device, populationSize, &printer]() {
-        this->doEvaluate(device, populationSize, printer);
+    {
+      CHECK(executors_.empty());
+      CHECK(configurations_.empty());
+      auto& candidates = searchStrategy.candidatesOfStep(step);
+      // Initialize for this round
+      currentCompilationJob_.store(0);
+      numEvaluations_.store(0);
+      Printer printer(
+          iteration,
+          step,
+          candidates.size(),
+          currentCompilationJob_,
+          numEvaluations_);
+      auto logIterations = FLAGS_tuner_gen_log_generations;
+      ScopeGuard sgPrinter([logIterations, &printer]() {
+        printer.stop();
+        if (logIterations) {
+          printer.printAll();
+        }
       });
+
+      // Just spawn and join new threads for each iteration
+      std::vector<std::thread> cpuCompilationThreads;
+      cpuCompilationThreads.reserve(FLAGS_tuner_threads);
+      ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
+        for (auto& cpuCompilationThread : cpuCompilationThreads) {
+          cpuCompilationThread.join();
+        }
+      });
+      for (size_t i = 0; i < FLAGS_tuner_threads; ++i) {
+        cpuCompilationThreads.emplace_back(
+            [this, &candidates]() { this->doCompile(candidates); });
+      }
+
+      // Just spawn and join new threads for each device
+      std::vector<std::thread> workerThreads;
+      workerThreads.reserve(devices.size());
+      LOG_IF(INFO, tc::FLAGS_debug_tuner)
+          << "Start evaluation: " << devices.size() << " " << executors_.size()
+          << " " << configurations_.size();
+      ScopeGuard sgDeviceWorkerThreads([&workerThreads]() {
+        for (auto& workerThread : workerThreads) {
+          workerThread.join();
+        }
+      });
+      auto populationSize = candidates.size();
+      for (auto device : devices) {
+        workerThreads.emplace_back([this, device, populationSize, &printer]() {
+          this->doEvaluate(device, populationSize, printer);
+        });
+      }
     }
     searchStrategy.finishStep(step);
   }
@@ -305,7 +307,6 @@ void TuningHarness<Backend>::runOneIteration(
     infoPrinter << bestMappingOptions();
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }
-  searchStrategy.updateParameters();
 }
 } // namespace detail
 
@@ -462,13 +463,15 @@ Autotuner<Backend, SearchStrategy>::tune(
       });
 
   // searchStrategy is passed to tuningHarness.run()
+  // XXX: this not generic
   SearchStrategy searchStrategy(
       configs,
       FLAGS_tuner_gen_generations,
       FLAGS_tuner_gen_pop_size,
       FLAGS_tuner_gen_crossover_rate,
       FLAGS_tuner_gen_mutation_rate,
-      FLAGS_tuner_gen_number_elites);
+      FLAGS_tuner_gen_mating_pool_size,
+      FLAGS_tuner_gen_selection_pool_size);
 
   // Create a tuning harness
   detail::TuningHarness<Backend> tuningHarness(

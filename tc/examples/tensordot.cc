@@ -100,7 +100,8 @@ TEST(TensorDotGPU, SimpleAutotune) {
 
 // From root, run with:
 //   ./build/examples/tensordot --tuner_threads=10 --tuner_gen_pop_size=10
-//   --tuner_gen_generations=3 --tuner_gen_number_elites=4
+//   --tuner_gen_generations=3 --tuner_gen_mating_pool_size=20
+//   --tuner_gen_selection_pool_size=20
 //   --proto_path="/tmp/tensordot"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

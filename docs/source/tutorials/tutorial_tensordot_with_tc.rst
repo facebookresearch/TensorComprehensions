@@ -132,7 +132,7 @@ later.
 You can control the amount of autotuning by changing the autotuner parameters. See
 :ref:`autotune_parameters` for how to change the settings.
 
-For the setting ``settings={"generations": 25, "pop_size": 100, "number_elites": 10}``, we
+For the setting ``settings={"generations": 25, "pop_size": 100}``, we
 get a decent kernel performance as shown in the screenshot below (tuned on one M40 GPU):
 
 .. figure:: ../_static/img/autotuning-py.jpg

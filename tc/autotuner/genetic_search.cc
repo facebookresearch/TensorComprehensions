@@ -33,11 +33,8 @@ void randomizeParameter(Parameter& param, RNG& rng) {
   param.selectOption(paramIndex);
 }
 
-template <typename RNG>
-void randomizePopulation(
-    GeneticSearch::Population::iterator begin,
-    GeneticSearch::Population::iterator end,
-    RNG& rng) {
+template <typename RNG, typename Iterator>
+void randomizePopulation(Iterator begin, Iterator end, RNG& rng) {
   for (auto candidate = begin; candidate != end; ++candidate) {
     auto& conf = (*candidate)->configuration;
     do {
@@ -160,7 +157,8 @@ void dropInvalidConfigurations(GeneticSearch::Population& population) {
 } // namespace
 
 #define VALIDATE()                                   \
-  CHECK_LT(numberElites, maxPopulationSize);         \
+  CHECK_LT(maxPopulationSize, matingPoolSize);       \
+  CHECK_LT(maxPopulationSize, selectionPoolSize);    \
   CHECK(mutationRate >= 0 and mutationRate <= 100)   \
       << "the mutation rate (" << mutationRate       \
       << ") should be in the [0,100] interval";      \
@@ -188,15 +186,16 @@ GeneticSearch::GeneticSearch(
     size_t populationSize,
     uint8_t crossOverRate,
     uint8_t mutationRate,
-    size_t numberElites)
+    size_t matingPoolSize,
+    size_t selectionPoolSize)
     : population(),
       lastBestConf(confs[0]),
       numGenerations(numGenerations),
       maxPopulationSize(populationSize),
-      matingPoolSize(populationSize * 3),
+      matingPoolSize(matingPoolSize),
+      selectionPoolSize(selectionPoolSize),
       crossOverRate(crossOverRate),
       mutationRate(mutationRate),
-      numberElites(numberElites),
       rng{std::random_device{}()} {
   restoreRngState(rng);
   VALIDATE();
@@ -276,13 +275,6 @@ void GeneticSearch::breed() {
   auto matingPool =
       stochasticUniversalSampling(computeAccumulatedFitness(population));
 
-  Population new_population;
-  new_population.reserve(matingPoolSize);
-  for (size_t c = 0; c < numberElites; ++c) {
-    new_population.push_back(
-        make_unique<CandidateConfiguration>(population.at(c)->configuration));
-  }
-
   auto select = [&]() -> TuningConfiguration& {
     auto idx = std::uniform_int_distribution<size_t>{
         size_t(0), matingPool.size() - 1}(rng);
@@ -298,39 +290,20 @@ void GeneticSearch::breed() {
     return dist(rng);
   };
 
-  while (new_population.size() < maxPopulationSize) {
+  while (selectionPool.size() < selectionPoolSize) {
     if (shouldCrossOver()) {
       auto parent1 = select();
       auto parent2 = select();
       auto parent3 = select();
-      new_population.emplace_back(make_unique<CandidateConfiguration>(
+      selectionPool.emplace_back(make_unique<CandidateConfiguration>(
           crossover(parent1, parent2, parent3)));
     } else {
-      new_population.emplace_back(
-          make_unique<CandidateConfiguration>(select()));
+      selectionPool.emplace_back(make_unique<CandidateConfiguration>(select()));
     }
   }
-  population = std::move(new_population);
 }
 
-void GeneticSearch::updateParameters() {
-  dropInvalidConfigurations(population);
-
-  // Sort population before taking any decision
-  std::sort(
-      population.begin(),
-      population.end(),
-      [](const std::unique_ptr<CandidateConfiguration>& a,
-         const std::unique_ptr<CandidateConfiguration>& b) {
-        checkRuntimeRecorded(a->runtime);
-        checkRuntimeRecorded(b->runtime);
-        return a->runtime < b->runtime;
-      });
-
-  // Update failsafe lastBestConf
-  lastBestConf =
-      population.size() > 0 ? population.front()->configuration : lastBestConf;
-
+bool GeneticSearch::resetPopulationIfNotEnoughCandidates() {
   if (population.size() < minCandidatesForBreeding) {
     LOG_IF(ERROR, FLAGS_debug_tuner)
         << population.size() << " out of " << maxPopulationSize
@@ -341,30 +314,94 @@ void GeneticSearch::updateParameters() {
            "--tuner_min_launch_total_threads=1. This is mostly relevant "
            "when autotuning a TC operating on small tensors. The next "
            "generation will be randomly initialized.";
-    population.resize(0);
-    for (size_t i = 0; i < maxPopulationSize; ++i) {
-      population.emplace_back(
+    selectionPool.clear();
+    for (size_t i = 0; i < selectionPoolSize; ++i) {
+      selectionPool.emplace_back(
           make_unique<CandidateConfiguration>(lastBestConf));
     }
     // Don't lose the first one which was the best from before
-    CHECK_LT(0u, population.size());
-    randomizePopulation(population.begin() + 1, population.end(), rng);
+    randomizePopulation(selectionPool.begin() + 1, selectionPool.end(), rng);
+    return true;
+  }
+  return false;
+}
+
+namespace {
+void sortByRuntime(GeneticSearch::Population& population) {
+  std::sort(
+      population.begin(),
+      population.end(),
+      [](const std::unique_ptr<CandidateConfiguration>& a,
+         const std::unique_ptr<CandidateConfiguration>& b) {
+        checkRuntimeRecorded(a->runtime);
+        checkRuntimeRecorded(b->runtime);
+        return a->runtime < b->runtime;
+      });
+}
+} // namespace
+
+void GeneticSearch::generateSelectionPool() {
+  dropInvalidConfigurations(population);
+  sortByRuntime(population);
+  lastBestConf =
+      population.size() > 0 ? population.front()->configuration : lastBestConf;
+  if (resetPopulationIfNotEnoughCandidates()) {
     return;
   }
-
   breed();
-  for (size_t i = numberElites; i < population.size(); ++i) {
-    mutate(*population[i], mutationRate, mutateIterations, rng);
+  selectionPool.clear();
+  selectionPool.emplace_back(make_unique<CandidateConfiguration>(lastBestConf));
+  breed();
+  for (size_t i = 1; i < selectionPool.size(); ++i) {
+    mutate(*selectionPool[i], mutationRate, mutateIterations, rng);
+  }
+}
+
+void GeneticSearch::selectSurvivors() {
+  dropInvalidConfigurations(selectionPool);
+  sortByRuntime(selectionPool);
+  population.clear();
+  std::transform(
+      selectionPool.begin(),
+      selectionPool.begin() + std::min(selectionPool.size(), maxPopulationSize),
+      std::back_inserter(population),
+      [](const std::unique_ptr<CandidateConfiguration>& c) {
+        return make_unique<CandidateConfiguration>(c->configuration);
+      });
+
+  if (selectionPool.size() < maxPopulationSize) {
+    auto numberMissing = maxPopulationSize - selectionPool.size();
+
+    for (size_t i = 0; i < numberMissing; ++i) {
+      selectionPool.emplace_back(
+          make_unique<CandidateConfiguration>(lastBestConf));
+    }
+    randomizePopulation(
+        selectionPool.rbegin(), selectionPool.rbegin() + numberMissing, rng);
   }
 }
 
 GeneticSearch::Population& GeneticSearch::candidatesOfStep(uint64_t step) {
-  if (step != 0) {
-    throw std::invalid_argument("GeneticSearch has only one step");
+  if (step > 1) {
+    throw std::invalid_argument("GeneticSearch has only 2 steps.");
   }
-  return population;
+  if (step == 0) {
+    return population;
+  } else {
+    return selectionPool;
+  }
 }
 
+void GeneticSearch::finishStep(uint64_t step) {
+  if (step > 1) {
+    throw std::invalid_argument("GeneticSearch has only 2 steps.");
+  }
+  if (step == 0) {
+    generateSelectionPool();
+  } else {
+    selectSurvivors();
+  }
+}
 } // namespace autotune
 } // namespace tc
 
