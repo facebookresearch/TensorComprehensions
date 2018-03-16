@@ -24,12 +24,13 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/mapping_options.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 TEST(ATenCompilationCacheTest, Matmul) {
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   auto tc = R"(
     def matmul(float(M,K) A, float(K,N) B) -> (output) {
       output(m, n) +=! A(m, kk) * B(kk, n)

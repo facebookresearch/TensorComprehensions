@@ -20,9 +20,14 @@
 
 #include <ATen/ATen.h>
 
+#include "tc/aten/utils.h"
+#include "tc/core/cpu/cpu_tc_executor.h"
+#include "tc/core/execution_engine.h"
+#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
 #include "tc/core/polyhedral/llvm_jit.h"
 #include "tc/core/polyhedral/scop.h"
+#include "tc/core/scope_guard.h"
 
 #include "test_harness_aten.h"
 
@@ -59,6 +64,29 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   fptr(A.data<float>(), B.data<float>(), C.data<float>());
 
   checkRtol(Cc - C, {A, B}, N * M);
+}
+
+TEST(LLVMCodegen, DISABLED_BasicExecutionEngine) {
+  string tc = R"TC(
+def fun(float(N, M) A, float(N, M) B) -> (C) {
+  C(i, j) = A(i, j) + B(i, j)
+}
+)TC";
+
+  auto N = 40;
+  auto M = 24;
+
+  at::Tensor A = at::CPU(at::kFloat).rand({N, M});
+  at::Tensor B = at::CPU(at::kFloat).rand({N, M});
+  at::Tensor C = at::CPU(at::kFloat).rand({N, M});
+
+  ExecutionEngine<CpuTcExecutor> engine;
+  engine.define(tc);
+  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto inputDLTensorsPair = toConstDlpackTensors({A, B});
+  ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
+  engine.compile(
+      "fun", inputDLTensorsPair.first, options.toProtobufSerializedString());
 }
 
 TEST(LLVMCodegen, MultiStmt) {
@@ -162,13 +190,6 @@ TEST(LLVMCodegen, BatchMatMul) {
   fptr(X.data<float>(), Y.data<float>(), Oc.data<float>());
   checkRtol(O - Oc, {Y, X}, M, 3e-7);
 }
-
-DEFINE_int32(C, 4, "C");
-DEFINE_int32(O, 5, "O");
-DEFINE_int32(W, 14, "W");
-DEFINE_int32(H, 13, "H");
-DEFINE_int32(KW, 2, "KW");
-DEFINE_int32(KH, 3, "KH");
 
 TEST(LLVMCodegen, Convolution) {
   auto NN = 12;

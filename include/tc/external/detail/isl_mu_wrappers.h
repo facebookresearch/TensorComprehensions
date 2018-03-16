@@ -17,7 +17,7 @@
 
 #include <vector>
 
-#include <isl/interface/isl.h>
+#include <isl/cpp.h>
 
 #include "tc/external/isl.h"
 

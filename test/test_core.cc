@@ -26,7 +26,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
-#include "tc/core/tc_executor.h"
+#include "tc/core/polyhedral/scop.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/external/isl.h"
 #include "tc/lang/error_report.h"

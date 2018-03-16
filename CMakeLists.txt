@@ -104,36 +104,44 @@ link_directories(${LLVM_LIBDIR})
 # TODO: check if this respects CMAKE_PREFIX_PATH
 find_package(Protobuf REQUIRED)
 
+################################################################################
+
 # cuda
-find_package(CUDA REQUIRED)
-include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
+set(WITH_CUDA ON CACHE BOOL "Whether to build with CUDA support")
 
-# modified CUB
-find_path(CUB_INCLUDE_DIR NAMES cub)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCUDA_HOME=\"\\\"${CUDA_INCLUDE_DIRS}\\\"\" -DCUB_HOME=\"\\\"${CUB_INCLUDE_DIR}\\\"\" ")
+if(WITH_CUDA)
+  find_package(CUDA REQUIRED)
+  include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
 
-# Inherited from Torch, see
-# https://github.com/torch/cutorch/blob/master/lib/THC/cmake/select_compute_arch.cmake
-INCLUDE(cmake/select_compute_arch.cmake)
-CUDA_SELECT_NVCC_ARCH_FLAGS(NVCC_FLAGS_EXTRA)
+  # modified CUB
+  find_path(CUB_INCLUDE_DIR NAMES cub)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_CUDA -DCUDA_HOME=\"\\\"${CUDA_INCLUDE_DIRS}\\\"\" -DCUB_HOME=\"\\\"${CUB_INCLUDE_DIR}\\\"\" ")
 
-# TODO: Investigate these
-set (CUDA_VERBOSE_BUILD ON)
-set (CUDA_PROPAGATE_HOST_FLAGS ON)
+  # Inherited from Torch, see
+  # https://github.com/torch/cutorch/blob/master/lib/THC/cmake/select_compute_arch.cmake
+  INCLUDE(cmake/select_compute_arch.cmake)
+  CUDA_SELECT_NVCC_ARCH_FLAGS(NVCC_FLAGS_EXTRA)
 
-################################################################################
-# FindCUDA doesn't find all the libraries we need, add the extra ones
-# Cribbed from /lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib
-################################################################################
-find_library(CUDA_CUDA_LIBRARIES cuda
-  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-  PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
+  # TODO: Investigate these
+  set (CUDA_VERBOSE_BUILD ON)
+  set (CUDA_PROPAGATE_HOST_FLAGS ON)
 
-set(CUDA_CUDA_LIBRARY ${CUDA_CUDA_LIBRARIES})
+  ##############################################################################
+  # FindCUDA doesn't find all the libraries we need, add the extra ones
+  # Cribbed from /lib64 ${CUDA_TOOLKIT_ROOT_DIR}/lib
+  ##############################################################################
+  find_library(CUDA_CUDA_LIBRARIES cuda
+    PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+    PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
 
-# Needed to build C2 and some of our tests
-INCLUDE(cmake/FindCuDNN.cmake)
-include_directories(${CUDNN_INCLUDE_DIR})
+  set(CUDA_CUDA_LIBRARY ${CUDA_CUDA_LIBRARIES})
+
+  # Needed to build C2 and some of our tests
+  INCLUDE(cmake/FindCuDNN.cmake)
+  include_directories(${CUDNN_INCLUDE_DIR})
+else()
+  message(STATUS "Building TC without CUDA support")
+endif()
 
 ################################################################################
 
@@ -143,7 +151,7 @@ if(NOT HALIDE_PREFIX)
 endif()
 message(STATUS "HALIDE_PREFIX: ${HALIDE_PREFIX}")
 message(STATUS "Finding Halide")
-find_path(HALIDE_INCLUDE_DIR NAMES Halide)
+find_path(HALIDE_INCLUDE_DIR NAMES Halide.h)
 message(STATUS "HALIDE_INCLUDE_DIRS: ${HALIDE_INCLUDE_DIR}")
 include_directories(${HALIDE_INCLUDE_DIR})
 find_library(HALIDE_LIBRARIES NAMES Halide PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
@@ -166,8 +174,10 @@ if (WITH_CAFFE2)
   include_directories(${CAFFE2_INCLUDE_DIR})
   find_library(CAFFE2_CPU_LIBRARIES NAMES caffe2 PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
   message(STATUS "Found Caffe2_CPU: ${CAFFE2_CPU_LIBRARIES}")
-  find_library(CAFFE2_GPU_LIBRARIES NAMES caffe2_gpu PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
-  message(STATUS "Found Caffe2_GPU: ${CAFFE2_GPU_LIBRARIES}")
+  if (WITH_CUDA)
+    find_library(CAFFE2_GPU_LIBRARIES NAMES caffe2_gpu PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
+    message(STATUS "Found Caffe2_GPU: ${CAFFE2_GPU_LIBRARIES}")
+  endif()
 else()
   message(STATUS "Caffe2 installation is turned off")
 endif()
@@ -236,12 +246,20 @@ message(STATUS "Found glog: ${GLOG_LIBRARIES}")
 # endforeach()
 
 add_subdirectory(src)
+
+# At the moment pybind is only supported in CUDA mode and compilation fails
+# for non-CUDA mode (CUDA_HOME and CUB_HOME undefined error).
+# Once the core CPU mapper is stabilized we can worry about pybind, deactivate
+# conditionally for now
+if (WITH_CUDA)
+  add_subdirectory(tensor_comprehensions/pybinds)
+endif()
+
 enable_testing()
-add_subdirectory(tensor_comprehensions/pybinds)
 add_subdirectory(test)
 
-if (WITH_CAFFE2)
+if (WITH_CAFFE2 AND WITH_CUDA)
   add_subdirectory(examples)
 else()
-  message(STATUS "Not building examples, caffe2 not available")
+  message(STATUS "Not building examples, caffe2 or CUDA not available")
 endif()

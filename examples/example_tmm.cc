@@ -27,11 +27,11 @@
 #include "tc/core/mapping_options.h"
 
 #include "../test/test_harness.h"
-#include "../test/test_harness_aten.h"
+#include "../test/test_harness_aten_cuda.h"
 #include "example_fixture.h"
 
 #include "tc/c2/context.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/flags.h"
 
 using namespace caffe2;

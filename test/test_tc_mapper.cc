@@ -20,11 +20,12 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/compilation_cache.h"
-#include "tc/core/cuda.h"
+#include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 using namespace std;
 
@@ -45,7 +46,7 @@ struct TcMapperTest : public ::testing::Test {
     tc::CudaCache::enableCache();
 
     std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);

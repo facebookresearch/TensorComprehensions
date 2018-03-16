@@ -59,17 +59,21 @@ class GeneticTunerHarness {
   void runOneGeneration(size_t generation);
 
   /// Helper function to get a kernel into benchmark-able state
+  template <typename ExecutorType>
   bool warmupOrPrune(
-      tc::ExecutionEngine& executionEngine,
+      ExecutorType& executionEngine,
       const std::vector<DLTensor*>& outputs,
       const std::vector<const DLTensor*>& inputs,
       size_t handle,
       size_t bestTimeSoFar);
 
   /// Helper function to delegate compiling on the cpu to different threads
-  void doCompile(tc::ExecutionEngine& engine);
+  template <typename ExecutorType>
+  void doCompile(ExecutorType& engine);
+
   /// Helper function to delegate running on the gpu to different threads
-  void doGpuWork(size_t gpu, tc::ExecutionEngine& engine, Printer& printer);
+  template <typename ExecutorType>
+  void doGpuWork(size_t gpu, ExecutorType& engine, Printer& printer);
 
   /// Make options from conf
   tc::MappingOptions makeOptions(const CandidateConfiguration& conf);

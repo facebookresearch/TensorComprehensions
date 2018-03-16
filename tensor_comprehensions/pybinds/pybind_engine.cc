@@ -25,7 +25,8 @@
 
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/scope_guard.h"
@@ -34,6 +35,8 @@ namespace tc {
 namespace python {
 
 namespace py = pybind11;
+
+using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
 
 PYBIND11_MODULE(tc, m) {
   m.def(
@@ -59,13 +62,13 @@ PYBIND11_MODULE(tc, m) {
     std::cerr << "\n PyTorch installation is missing, binary will be useless \n"
               << e.what() << std::endl;
   }
-  py::class_<tc::ATenCompilationUnit>(m, "ATenCompilationUnit")
+  py::class_<ATenCudaCompilationUnit>(m, "ATenCompilationUnit")
       .def(py::init<>())
-      .def("define", &tc::ATenCompilationUnit::define, "Define the TC language")
+      .def("define", &ATenCudaCompilationUnit::define, "Define the TC language")
       .def(
           "compile",
           [dlpack](
-              tc::ATenCompilationUnit& instance,
+              ATenCudaCompilationUnit& instance,
               const std::string& name,
               py::list& inputs,
               const tc::MappingOptions& options) {
@@ -75,7 +78,7 @@ PYBIND11_MODULE(tc, m) {
       .def(
           "run",
           [dlpack](
-              tc::ATenCompilationUnit& instance,
+              ATenCudaCompilationUnit& instance,
               const std::string& name,
               py::list& inputs,
               py::list& outputs,
@@ -90,7 +93,7 @@ PYBIND11_MODULE(tc, m) {
       .def(
           "uncheckedRun",
           [dlpack](
-              tc::ATenCompilationUnit& instance,
+              ATenCudaCompilationUnit& instance,
               py::list& inputs,
               py::list& outputs,
               size_t handle) {
@@ -102,7 +105,7 @@ PYBIND11_MODULE(tc, m) {
       .def(
           "inject_cuda",
           [dlpack](
-              tc::ATenCompilationUnit& instance,
+              ATenCudaCompilationUnit& instance,
               const std::string& name,
               const std::string& injectedKernelName,
               const std::string& cudaSource,

@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#pragma once
 
-#include "tc/core/cuda.h"
+#include <string>
+#include <vector>
+
+#include <ATen/ATen.h>
+#include <ATen/DLConvertor.h>
 
 namespace tc {
+namespace {
+std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
+toDlpackTensors(const std::vector<at::Tensor>& tensors);
 
-size_t querySharedMemorySize() {
-  int nDevices;
-  // Do not enforce the check in case no device is present.
-  auto ret = cudaGetDeviceCount(&nDevices);
-  if (ret != cudaSuccess || nDevices == 0) {
-    return 0;
-  } else {
-    int dev;
-    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
-    cudaDeviceProp prop;
-    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDeviceProperties(&prop, dev));
-    return prop.sharedMemPerBlock;
-  }
-}
+std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
+toConstDlpackTensors(const std::vector<at::Tensor>& tensors);
+
+void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors);
+} // namespace
 } // namespace tc
+
+#include "tc/aten/utils-inl.h"

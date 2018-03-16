@@ -24,6 +24,7 @@
 #include "tc/core/halide2isl.h"
 #include "tc/core/islpp_wrap.h"
 #include "tc/core/libraries.h"
+#include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/codegen_cuda.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/memory_promotion.h"
@@ -34,8 +35,6 @@ using namespace std;
 
 namespace tc {
 namespace polyhedral {
-
-const static string kLoopIteratorDefaultPrefix = "c";
 
 namespace {
 
@@ -559,24 +558,6 @@ void AstPrinter::emitAst(isl::ast_node node) {
   }
 }
 
-// Create a list of isl ids to be used as loop iterators when building the AST.
-//
-// Note that this function can be scrapped as ISL can generate some default
-// iterator names.  However, it may come handy for associating extra info with
-// iterators.
-isl::list<isl::id> makeLoopIterators(
-    isl::ctx ctx,
-    int n,
-    const std::string& prefix = kLoopIteratorDefaultPrefix) {
-  std::vector<isl::id> loopIterators;
-  for (int i = 0; i < n; ++i) {
-    std::stringstream ss;
-    ss << prefix << i;
-    loopIterators.emplace_back(ctx, ss.str());
-  }
-  return isl::list<isl::id>(ctx, loopIterators.begin(), loopIterators.end());
-}
-
 } // namespace
 
 namespace detail {
@@ -941,8 +922,8 @@ string emitCudaKernel(
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = isl::manage(isl_ast_build_set_at_each_domain(
       astBuild.release(), collect, &iteratorMaps));
-  astBuild = astBuild.set_iterators(makeLoopIterators(ctx, maxDepth));
-  auto astNode = astBuild.node_from_schedule(schedule);
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
+  auto astNode = astBuild.node_from(schedule);
   AstPrinter(CodegenContext(ss, mscop, iteratorMaps)).emit(astNode);
   ss << "}" << endl;
 

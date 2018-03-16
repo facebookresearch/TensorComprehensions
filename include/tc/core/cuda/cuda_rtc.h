@@ -25,10 +25,11 @@
 #include <cuda.h>
 #include <driver_types.h> // cuda driver types
 
+#include "tc/core/utils/time.h"
+
 namespace tc {
 
 extern std::mutex nvrtc_mutex;
-using Duration = std::chrono::high_resolution_clock::duration;
 
 //
 // Basic interface to expose NVRTC JIT compilation and module

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present, Facebook, Inc.
+ * Copyright (c) 2017, Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+#include "tc/core/polyhedral/codegen.h"
 
-#include <isl/cpp.h>
+namespace tc {
+namespace polyhedral {
 
-#include "tc/external/detail/isl_mu_wrappers.h"
-#include "tc/external/detail/islpp.h"
+isl::id_list
+Codegen::makeLoopIterators(isl::ctx ctx, int n, const std::string& prefix) {
+  isl::id_list loopIterators(ctx, n);
+  for (int i = 0; i < n; ++i) {
+    std::stringstream ss;
+    ss << prefix << i;
+    loopIterators = loopIterators.add(isl::id(ctx, ss.str()));
+  }
+  return loopIterators;
+}
+
+} // namespace polyhedral
+} // namespace tc

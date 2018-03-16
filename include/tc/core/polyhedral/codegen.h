@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present, Facebook, Inc.
+ * Copyright (c) 2017, Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,29 +15,28 @@
  */
 #pragma once
 
-#include <memory>
 #include <string>
 
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
-#include "llvm/Target/TargetMachine.h"
-
-#include "Halide.h"
+#include "tc/external/isl.h"
 
 namespace tc {
 namespace polyhedral {
-struct Scop;
 
-std::unique_ptr<llvm::Module> emitLLVMKernel(
-    const std::string& specializedName,
-    const Scop& scop,
-    const llvm::DataLayout& dataLayout);
+class Codegen {
+  constexpr static const char* kLoopIteratorDefaultPrefix = "c";
 
-// TODO: I want to do something like the following, but compilation was unhappy
-//  using initialize_llvm = Halide::Internal::CodeGen_LLVM::initialize_llvm;
-static inline void initialize_llvm() {
-  Halide::Internal::CodeGen_LLVM::initialize_llvm();
-}
+ public:
+  // Create a list of isl ids to be used as loop iterators when building the
+  // AST.
+  //
+  // Note that this function can be scrapped as ISL can generate some default
+  // iterator names.  However, it may come handy for associating extra info with
+  // iterators.
+  static isl::id_list makeLoopIterators(
+      isl::ctx ctx,
+      int n,
+      const std::string& prefix = kLoopIteratorDefaultPrefix);
+};
 
 } // namespace polyhedral
 } // namespace tc

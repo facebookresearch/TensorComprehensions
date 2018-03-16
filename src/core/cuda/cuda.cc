@@ -13,28 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/utils/cuda_info.h"
+
+#include "tc/core/cuda/cuda.h"
 
 #include <memory>
 #include <stdexcept>
+#include <tuple>
+#include <vector>
 
 #include <cuda_runtime_api.h>
 
 #include "tc/core/flags.h"
 
 namespace tc {
-
-#define TC_CUDA_DRIVERAPI_ENFORCE(condition)                  \
-  do {                                                        \
-    cudaError_t error_id = condition;                         \
-    if (error_id != 0) {                                      \
-      throw std::runtime_error(cudaGetErrorString(error_id)); \
-    }                                                         \
-  } while (0)
-
 namespace {
 
-std::vector<std::string> init() {
+std::tuple<std::vector<std::string>, std::vector<size_t>> init() {
   int deviceCount = 0;
   auto err_id = cudaGetDeviceCount(&deviceCount);
   if (err_id == 35 or err_id == 30) {
@@ -42,18 +36,20 @@ std::vector<std::string> init() {
     LOG(INFO) << "Cuda driver not available.\n";
     return {};
   }
-  TC_CUDA_DRIVERAPI_ENFORCE(err_id);
+  TC_CUDA_RUNTIMEAPI_ENFORCE(err_id);
   if (deviceCount == 0) {
     return {};
   }
   std::vector<std::string> gpuNames;
+  std::vector<size_t> sharedMemSizes;
   gpuNames.reserve(deviceCount);
   for (int i = 0; i < deviceCount; ++i) {
     cudaDeviceProp deviceProp;
-    TC_CUDA_DRIVERAPI_ENFORCE(cudaGetDeviceProperties(&deviceProp, i));
+    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDeviceProperties(&deviceProp, i));
     gpuNames.emplace_back(deviceProp.name);
+    sharedMemSizes.emplace_back(deviceProp.sharedMemPerBlock);
   }
-  return gpuNames;
+  return std::make_tuple(gpuNames, sharedMemSizes);
 }
 
 } // namespace
@@ -62,7 +58,9 @@ CudaGPUInfo& CudaGPUInfo::GPUInfo() {
   static thread_local std::unique_ptr<CudaGPUInfo> pInfo;
   static thread_local bool inited = false;
   if (!inited) {
-    pInfo = std::unique_ptr<CudaGPUInfo>(new CudaGPUInfo(init()));
+    auto infos = init();
+    pInfo = std::unique_ptr<CudaGPUInfo>(
+        new CudaGPUInfo(std::get<0>(infos), std::get<1>(infos)));
     inited = true;
   }
   return *pInfo;
@@ -81,12 +79,12 @@ std::string CudaGPUInfo::GetGPUName(int id) const {
 
 int CudaGPUInfo::CurrentGPUId() const {
   int deviceID = 0;
-  TC_CUDA_DRIVERAPI_ENFORCE(cudaGetDevice(&deviceID));
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&deviceID));
   return deviceID;
 }
 
 void CudaGPUInfo::SynchronizeCurrentGPU() const {
-  TC_CUDA_DRIVERAPI_ENFORCE(cudaDeviceSynchronize());
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
 }
 
 std::string CudaGPUInfo::GetCudaDeviceStr() const {
@@ -96,4 +94,10 @@ std::string CudaGPUInfo::GetCudaDeviceStr() const {
   return GetGPUName(CurrentGPUId());
 }
 
+size_t CudaGPUInfo::SharedMemorySize() const {
+  if (NumberGPUs() == 0) {
+    return 0; // no shared memory if no GPUs
+  }
+  return sharedMemSizes_.at(CurrentGPUId());
+}
 } // namespace tc

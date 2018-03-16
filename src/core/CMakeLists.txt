@@ -1,20 +1,12 @@
-find_library(CUDA_NVRTC_LIBRARIES nvrtc
-  PATHS ${CUDA_TOOLKIT_ROOT_DIR}
-  PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
-
 add_library(
   tc_core
 
   SHARED
 
   flags.cc
-  compilation_cache.cc
-  cuda.cc
-  execution_engine.cc
-  tc_executor.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
-  rtc.cc
+  tc_executor.cc
   islpp.cc
 
   tc2halide.cc
@@ -22,11 +14,7 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
-  utils/cuda_info.cc
-
-  polyhedral/codegen_cuda.cc
-  polyhedral/codegen_llvm.cc
-  polyhedral/llvm_jit.cc
+  polyhedral/codegen.cc
   polyhedral/mapped_scop.cc
   polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
@@ -42,16 +30,10 @@ add_library(
   polyhedral/tighten_launch_bounds.cc
   polyhedral/unroll.cc
 )
-
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
-
 target_link_libraries(
   tc_core
 
-  ${CUDA_CUDA_LIBRARIES}
-  ${CUDA_curand_LIBRARY}
-  ${CUDA_LIBRARIES}
-  ${CUDA_NVRTC_LIBRARIES}
   ${HALIDE_LIBRARIES}
   ${ISL_LIBRARIES}
   -lLLVM
@@ -60,10 +42,78 @@ target_link_libraries(
   tc_version
   tc_proto
 )
-
 install(
   TARGETS
   tc_core
 
   DESTINATION lib
 )
+
+add_library(
+  tc_core_cpu
+
+  SHARED
+
+  cpu/cpu_tc_executor.cc
+
+  polyhedral/codegen_llvm.cc
+  polyhedral/llvm_jit.cc
+)
+target_include_directories(tc_core_cpu PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(
+  tc_core_cpu
+
+  ${HALIDE_LIBRARIES}
+  ${ISL_LIBRARIES}
+  -lLLVM
+
+  tc_lang
+  tc_version
+  tc_proto
+)
+install(
+  TARGETS
+  tc_core_cpu
+
+  DESTINATION lib
+)
+
+if (WITH_CUDA)
+  find_library(CUDA_NVRTC_LIBRARIES nvrtc
+    PATHS ${CUDA_TOOLKIT_ROOT_DIR}
+    PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
+
+  add_library(
+    tc_core_cuda
+
+    SHARED
+
+    cuda/cuda.cc
+    cuda/cuda_compilation_cache.cc
+    cuda/cuda_rtc.cc
+    cuda/cuda_tc_executor.cc
+
+    polyhedral/codegen_cuda.cc
+  )
+  target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+  target_link_libraries(
+    tc_core_cuda
+
+    ${CUDA_CUDA_LIBRARIES}
+    ${CUDA_curand_LIBRARY}
+    ${CUDA_LIBRARIES}
+    ${CUDA_NVRTC_LIBRARIES}
+    ${ISL_LIBRARIES}
+
+    tc_lang
+    tc_version
+    tc_proto
+  )
+  target_link_libraries(tc_core tc_core_cuda)
+  install(
+    TARGETS
+    tc_core_cuda
+
+    DESTINATION lib
+  )
+endif()

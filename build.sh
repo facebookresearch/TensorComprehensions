@@ -8,8 +8,13 @@ if ! test ${CLANG_PREFIX}; then
     exit 1
 fi
 
-ATEN_NO_CUDA=${ATEN_NO_CUDA:=0}
 WITH_CAFFE2=${WITH_CAFFE2:=ON}
+WITH_CUDA=${WITH_CUDA:=ON}
+if [ "${WITH_CUDA,,}" = "off" -o "${WITH_CUDA,,}" = "no" -o "${WITH_CUDA}" = "0" ]; then
+  ATEN_NO_CUDA=1
+else
+  ATEN_NO_CUDA=${ATEN_NO_CUDA:=0}
+fi
 WITH_PYTHON_C2=${WITH_PYTHON_C2:=OFF}
 WITH_NNPACK=${WITH_NNPACK:=OFF}
 PYTHON=${PYTHON:="`which python3`"}
@@ -382,6 +387,7 @@ function install_tc() {
         -DPROTOBUF_PROTOC_EXECUTABLE=${PROTOC} \
         -DCLANG_PREFIX=${CLANG_PREFIX} \
         -DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR} \
+        -DWITH_CUDA=${WITH_CUDA} \
         -DCMAKE_C_COMPILER=${CC} \
         -DCMAKE_CXX_COMPILER=${CXX} .. || exit 1
   fi
@@ -399,14 +405,13 @@ function install_halide() {
   mkdir -p ${TC_DIR}/third-party/halide/build || exit 1
   cd       ${TC_DIR}/third-party/halide/build || exit 1
 
-  if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${INSTALL_PREFIX}/include/Halide" ]; then
+  if ! test ${USE_CONTBUILD_CACHE} || [ ! -e "${INSTALL_PREFIX}/include/Halide.h" ]; then
+    LLVM_CONFIG_FROM_PREFIX=${CLANG_PREFIX}/bin/llvm-config
+    LLVM_CONFIG=$( which $LLVM_CONFIG_FROM_PREFIX || which llvm-config-4.0 || which llvm-config )
+    CLANG_FROM_PREFIX=${CLANG_PREFIX}/bin/clang
+    CLANG=$( which $CLANG_FROM_PREFIX || which clang-4.0 || which clang )
 
     if should_rebuild ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}; then
-      LLVM_CONFIG_FROM_PREFIX=${CLANG_PREFIX}/bin/llvm-config
-      LLVM_CONFIG=$( which $LLVM_CONFIG_FROM_PREFIX || which llvm-config-4.0 || which llvm-config )
-      CLANG_FROM_PREFIX=${CLANG_PREFIX}/bin/clang
-      CLANG=$( which $CLANG_FROM_PREFIX || which clang-4.0 || which clang )
-
       CLANG=${CLANG} \
       LLVM_CONFIG=${LLVM_CONFIG} \
       VERBOSE=${VERBOSE} \
@@ -416,11 +421,20 @@ function install_halide() {
       WITH_OPENGL= \
       WITH_METAL= \
       WITH_EXCEPTIONS=1 \
-      make -f ../Makefile -j $CORES install || exit 1
-      mkdir -p ${INSTALL_PREFIX}/include/Halide
-      mv ${INSTALL_PREFIX}/include/Halide*.h  ${INSTALL_PREFIX}/include/Halide/
+      make -f ../Makefile -j $CORES || exit 1
       set_bcache ${TC_DIR}/third-party/halide ${HALIDE_BUILD_CACHE}
     fi
+
+    CLANG=${CLANG} \
+    LLVM_CONFIG=${LLVM_CONFIG} \
+    VERBOSE=${VERBOSE} \
+    PREFIX=${INSTALL_PREFIX} \
+    WITH_LLVM_INSIDE_SHARED_LIBHALIDE= \
+    WITH_OPENCL= \
+    WITH_OPENGL= \
+    WITH_METAL= \
+    WITH_EXCEPTIONS=1 \
+    make -f ../Makefile -j $CORES install || exit 1
 
     echo "Successfully installed Halide"
 

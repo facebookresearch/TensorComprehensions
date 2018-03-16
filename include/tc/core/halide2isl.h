@@ -20,7 +20,7 @@
 #include <string>
 #include <unordered_map>
 
-#include <Halide/Halide.h>
+#include <Halide.h>
 
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"

@@ -23,8 +23,8 @@
 #include <stdexcept>
 #include <unordered_set>
 
-#include "tc/core/cuda.h"
 #include "tc/core/flags.h"
+#include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen_cuda.h"
 #include "tc/core/polyhedral/exceptions.h"
@@ -37,7 +37,6 @@
 #include "tc/core/polyhedral/separation.h"
 #include "tc/core/polyhedral/tighten_launch_bounds.h"
 #include "tc/core/polyhedral/unroll.h"
-#include "tc/core/rtc.h"
 #include "tc/core/scope_guard.h"
 
 #include <glog/logging.h>

@@ -20,7 +20,8 @@
 #include <csignal>
 #include <thread>
 
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/parser.h"
@@ -76,7 +77,7 @@ std::vector<MappingOptions> GeneticAutotuner::load(
   enableOrLoadCache(cacheFileName);
   tc::FLAGS_tuner_gen_restore_number =
       std::min(numCandidates, size_t(FLAGS_tuner_gen_pop_size) - 1);
-  ExecutionEngine ee;
+  ExecutionEngine<CudaTcExecutor> ee;
   ee.define(tc_);
   auto outputs = ee.inferOutputTensorInfo(tcName, inputs);
   return tc::autotune::restoreCandidates(tcName, inputs, outputs);
@@ -165,7 +166,7 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
     storeCaches(cacheFileName);
   }
 
-  ExecutionEngine ee;
+  ExecutionEngine<CudaTcExecutor> ee;
   ee.define(tc_);
   auto outputPtrs = ee.inferOutputTensorInfo(tcName, inputs.begin()->second);
 

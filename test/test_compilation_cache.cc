@@ -20,11 +20,12 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/compilation_cache.h"
+#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 
-#include "test_harness_aten.h"
+#include "test_harness_aten_cuda.h"
 
 class CudaCacheTest : public ::testing::Test {
  protected:
@@ -977,7 +978,7 @@ TEST(
  *                at::CUDA(at::kFloat).rand({N})},
  *        M{M} {}
  *  void Run() {
- *    tc::ATenCompilationUnit atCompl;
+ *    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
  *    atCompl.define(tc_);
  *    std::vector<at::Tensor> outputs_;
  *    atCompl.run(
@@ -1011,7 +1012,7 @@ class MatMulTester {
   void Run(
       tc::MappingOptions options =
           tc::MappingOptions::makeMlpMappingOptions()) {
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc_);
     std::vector<at::Tensor> outputs_;
     auto handle = atCompl.compile("matmul", inputs_, options);
@@ -1041,7 +1042,7 @@ class ConvolutionTester {
   void Run(
       tc::MappingOptions options =
           tc::MappingOptions::makeConvolutionMappingOptions()) {
-    tc::ATenCompilationUnit atCompl;
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc_);
     std::vector<at::Tensor> outputs_;
     auto handle = atCompl.compile("convolution", inputs_, options);
@@ -1360,7 +1361,7 @@ TEST(CompilationCache, ManualInjection) {
       })";
 
   tc::ManualCudaCache::enableCache();
-  tc::ATenCompilationUnit atCompl;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   std::vector<at::Tensor> outputs;
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({100}),

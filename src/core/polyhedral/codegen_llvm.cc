@@ -31,13 +31,14 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
-#include "Halide/Halide.h"
+#include "Halide.h"
 
 #include "isl/ast.h"
 
 #include "tc/core/constants.h"
 //#include "tc/core/polyhedral/isl_mu_wrappers.h"
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
@@ -53,6 +54,17 @@
 using namespace Halide;
 
 namespace tc {
+
+namespace {
+template <typename T>
+std::string toString(T* llvmObject) {
+  std::string output;
+  llvm::raw_string_ostream rso(output);
+  llvmObject->print(rso, nullptr, false, true);
+  rso.str();
+  return output;
+}
+} // namespace
 
 namespace halide2isl {
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
@@ -116,22 +128,12 @@ int64_t islIdToInt(isl::ast_expr e, isl::set context) {
 }
 
 int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
-  if (context.get_space().is_params()) {
-    context = context.from_params();
-  }
   // isl will take care of substituting parameter values if they are known and
   // simplifying the expression.
-  auto pwAff =
-      isl::pw_aff(halide2isl::makeIslAffFromExpr(context.get_space(), e));
-  pwAff = pwAff.intersect_params(context);
-  isl::PA pwAffs(pwAff);
-  CHECK_EQ(pwAffs.size(), 1);
-  isl::map m(pwAffs[0].second);
-  auto r = m.range();
-  r = r.project_out(isl::dim_type::param, 0, r.n_dim());
-  CHECK(r.is_singleton());
-  auto p = r.sample_point();
-  return toSInt(p.get_coordinate_val(isl::dim_type::out, 0));
+  auto aff = halide2isl::makeIslAffFromExpr(context.get_space(), e);
+  auto p = context.sample_point();
+  CHECK(context.is_equal(p));
+  return toSInt(aff.eval(p));
 }
 
 std::vector<int64_t> getTensorSizesWithoutLeadingDim(
@@ -208,8 +210,6 @@ class IslAstExprInterpeter {
   }
 };
 
-DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
-DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
 static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
@@ -313,9 +313,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
  public:
   void optimize_module() {
-    if (FLAGS_llvm_dump_before_opt) {
-      module->print(llvm::dbgs(), nullptr, false, true);
-    }
+    LOG_IF(INFO, FLAGS_llvm_dump_before_opt)
+        << "[LLVM-IR] Before optimization:\n"
+        << toString(module.get());
 
     llvm::legacy::FunctionPassManager functionPassManager(module.get());
     llvm::legacy::PassManager modulePassManager;
@@ -353,9 +353,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       functionPassManager.doFinalization();
       modulePassManager.run(*module);
 
-      if (FLAGS_llvm_dump_after_opt) {
-        module->print(llvm::dbgs(), nullptr, false, true);
-      }
+      LOG_IF(INFO, FLAGS_llvm_dump_after_opt)
+          << "[LLVM-IR] After optimization:\n"
+          << toString(module.get());
     }
   }
 };
@@ -448,7 +448,7 @@ class LLVMCodegen {
     halide_cg.get_builder().CreateRetVoid();
 
     if (llvm::verifyModule(*halide_cg.get_module())) {
-      std::cout << str() << std::endl;
+      LOG(ERROR) << str();
       llvm::verifyModule(*halide_cg.get_module(), &llvm::outs());
       throw std::runtime_error("LLVM generated module is invalid.");
     }
@@ -666,13 +666,7 @@ class LLVMCodegen {
 
  public:
   std::string str() const {
-    std::string output;
-    {
-      llvm::raw_string_ostream rso(output);
-      halide_cg.get_module()->print(rso, nullptr);
-      rso.str();
-    }
-    return output;
+    return toString(halide_cg.get_module());
   }
 
  private:
@@ -686,23 +680,6 @@ class LLVMCodegen {
  public:
   CodeGen_TC halide_cg;
 };
-
-// Create a list of isl ids to be used as loop iterators when building the
-// AST.
-//
-// Note that this function can be scrapped as ISL can generate some default
-// iterator names.  However, it may come handy for associating extra info with
-// iterators.
-isl::list<isl::id>
-makeLoopIterators(isl::ctx ctx, int n, const std::string& prefix = "c") {
-  std::vector<isl::id> loopIterators;
-  for (int i = 0; i < n; ++i) {
-    std::stringstream ss;
-    ss << prefix << i;
-    loopIterators.emplace_back(ctx, ss.str());
-  }
-  return isl::list<isl::id>(ctx, loopIterators.begin(), loopIterators.end());
-}
 
 struct IslCodegenRes {
   IteratorMapsType iteratorMaps;
@@ -795,8 +772,8 @@ IslCodegenRes codegenISL(const Scop& scop) {
   auto t = std::tie(iteratorMaps, scop, stmtSubscripts);
   astBuild = isl::manage(
       isl_ast_build_set_at_each_domain(astBuild.release(), collect, &t));
-  astBuild = astBuild.set_iterators(makeLoopIterators(ctx, maxDepth));
-  auto astNode = astBuild.node_from_schedule(schedule);
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
+  auto astNode = astBuild.node_from(schedule);
   return {
       std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};
 }
@@ -815,9 +792,6 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
   cg.createSignature(scop.halide.inputs, scop.halide.outputs, specializedName);
   cg.CodeGen(islCg.astNode);
   cg.halide_cg.optimize_module();
-  if (FLAGS_llvm_dump_ir) {
-    std::cout << cg.str() << std::endl;
-  }
   return cg.halide_cg.move_module();
 }
 

@@ -15,7 +15,23 @@
  */
 #pragma once
 
-#include <isl/cpp.h>
+// Conditionally include CUDA-specific headers.  This file should compile even
+// without them.
+#ifdef CUDA_HOME
+#include "tc/core/cuda/cuda.h"
+#endif
 
-#include "tc/external/detail/isl_mu_wrappers.h"
-#include "tc/external/detail/islpp.h"
+namespace tc {
+
+/// Get the shared memory size of the GPU device active in the current thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+inline size_t querySharedMemorySize() {
+#ifdef CUDA_HOME
+  return CudaGPUInfo::GPUInfo().SharedMemorySize();
+#else
+  return 0;
+#endif
+}
+
+} // namespace tc

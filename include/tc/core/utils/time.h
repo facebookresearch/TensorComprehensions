@@ -15,7 +15,8 @@
  */
 #pragma once
 
-#include <isl/cpp.h>
+#include <chrono>
 
-#include "tc/external/detail/isl_mu_wrappers.h"
-#include "tc/external/detail/islpp.h"
+namespace tc {
+using Duration = std::chrono::high_resolution_clock::duration;
+} // namespace tc
