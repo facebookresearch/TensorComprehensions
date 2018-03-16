@@ -41,7 +41,7 @@ small_sizes_autotuner_settings = {
 ###############################################################################
 # Set global debugging flags
 ###############################################################################
-class GlobalDebugInit(object):
+class SetDebugFlags(object):
     def __init__(self, **kwargs):
         self.set_gflags(**kwargs)
 

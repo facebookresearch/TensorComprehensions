@@ -19,7 +19,7 @@ import torch
 import torch.cuda
 import tensor_comprehensions as tc
 
-tc.GlobalDebugInit(dump_cuda=True, debug_tc_mapper=True)
+tc.SetDebugFlags(dump_cuda=True, debug_tc_mapper=True)
 
 
 class TestDebugInit(unittest.TestCase):

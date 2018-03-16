@@ -18,7 +18,7 @@ from tensor_comprehensions.tc_unit import define
 from tensor_comprehensions.tc_unit import TcUnit
 from tensor_comprehensions.tc_unit import TcAutotuner
 from tensor_comprehensions.tc_unit import TcCompilationUnit
-from tensor_comprehensions.tc_unit import GlobalDebugInit
+from tensor_comprehensions.tc_unit import SetDebugFlags
 from tensor_comprehensions.tc_unit import autotuner_settings
 from tensor_comprehensions.tc_unit import small_sizes_autotuner_settings
 from tensor_comprehensions.tc_unit import ATenCompilationUnit
@@ -27,6 +27,6 @@ from tensor_comprehensions.library import database
 
 __all__ = [
     'define', 'TcUnit', 'TcAutotuner', 'TcCompilationUnit', 'autotuner_settings',
-    'small_sizes_autotuner_settings', 'GlobalDebugInit', 'ATenCompilationUnit',
+    'small_sizes_autotuner_settings', 'SetDebugFlags', 'ATenCompilationUnit',
     'Options', 'database', 'decode',
 ]

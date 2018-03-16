@@ -24,7 +24,7 @@ import tensor_comprehensions as tc
 from tensor_comprehensions.mapping_options import Options
 from common import TestCase, run_tests
 
-tc.GlobalDebugInit(dump_cuda=False)
+tc.SetDebugFlags(dump_cuda=False)
 
 
 MATMUL_LANG = """
