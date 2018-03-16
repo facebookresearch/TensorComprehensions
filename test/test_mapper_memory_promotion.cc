@@ -459,7 +459,7 @@ class MatMulBias : public TestMapper {
  public:
   std::string emitCode(
       const std::unordered_map<std::string, size_t>& parameters,
-      const std::vector<size_t>& tileSizes) {
+      const MappingOptions& mappingOptions) {
     std::string tc = R"TC(
 def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
   O(i,j) +=! A(i,k) * B(k,j)
@@ -467,17 +467,59 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 }
 )TC";
 
-    auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
-                              .tile(tileSizes)
-                              .useSharedMemory(false)
-                              .usePrivateMemory(true);
     auto mscop = makeMappedScop(tc, mappingOptions, parameters);
     return std::get<0>(mscop->codegen("fun"));
   }
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
-  emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, {32, 32, 32});
+  auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
+                            .tile({32, 32, 32})
+                            .useSharedMemory(false)
+                            .usePrivateMemory(true);
+
+  auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  auto declPos = code.find("float32 _O_0");
+  auto copyToPos =
+      code.find("_O_0[0][0] = O[32*b0 + c3][t0 + 32*b1]", declPos + 1);
+  auto copyFromPos =
+      code.find("O[32*b0 + c3][t0 + 32*b1] = _O_0[0][0]", copyToPos + 1);
+
+  auto originalAccPos = code.find("O[32*b0 + c3][t0 + 32*b1]", copyToPos + 1);
+  auto cDeclPos = code.find("float32 _C_0");
+  auto aDeclPos = code.find("float32 _A_0");
+
+  EXPECT_TRUE(declPos != std::string::npos) << "no declaration of the register";
+  EXPECT_TRUE(copyToPos != std::string::npos) << "expected copy to register";
+  EXPECT_TRUE(copyFromPos != std::string::npos)
+      << "expected copy from register";
+
+  EXPECT_NE(originalAccPos, copyFromPos)
+      << "global array reference is used in main computation";
+  EXPECT_TRUE(cDeclPos == std::string::npos)
+      << "tensor C promoted to register but has no reuse";
+  EXPECT_TRUE(aDeclPos == std::string::npos)
+      << "tensor A promoted to register but has elements accessed by multiple threads";
+}
+
+TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
+  auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
+                            .tile({32, 32, 32})
+                            .maxSharedMemory(32768)
+                            .useSharedMemory(true)
+                            .usePrivateMemory(true);
+
+  auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  auto declPos = code.find("float32 _O_0[1][1]");
+  auto cDeclPos = code.find("float32 _C_0[1][1]");
+  auto aDeclPos = code.find("float32 _A_0[1][1]");
+
+  EXPECT_TRUE(declPos == std::string::npos)
+      << "not expected promotion to register because promoted to shared";
+  EXPECT_TRUE(cDeclPos == std::string::npos)
+      << "tensor C promoted to register but has no reuse";
+  EXPECT_TRUE(aDeclPos == std::string::npos)
+      << "tensor A promoted to register but has elements accessed by multiple threads";
 }
 
 int main(int argc, char** argv) {
