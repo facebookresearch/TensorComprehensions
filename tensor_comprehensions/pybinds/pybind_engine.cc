@@ -39,6 +39,9 @@ namespace py = pybind11;
 using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
 
 PYBIND11_MODULE(tc, m) {
+  m.def("set_logtostderr", [](bool logtostderr) {
+    FLAGS_logtostderr = logtostderr;
+  });
   m.def("set_debug_lang", [](bool debug_lang) {
     tc::FLAGS_debug_lang = debug_lang;
   });

@@ -19,7 +19,7 @@ import torch
 from torch.autograd import Variable
 
 from tensor_comprehensions.tc import ATenCompilationUnit
-from tensor_comprehensions.tc import set_debug_lang, set_debug_halide, set_debug_tc_mapper, set_debug_cuda, set_debug_tuner, set_dump_cuda
+from tensor_comprehensions.tc import set_logtostderr, set_debug_lang, set_debug_halide, set_debug_tc_mapper, set_debug_cuda, set_debug_tuner, set_dump_cuda
 from tensor_comprehensions.torch_tc.tc_function import TCFunction, unpack_variables, get_tensors, make_contiguous
 from tensor_comprehensions.autotuner import ATenAutotuner
 from tensor_comprehensions.mapping_options import Options
@@ -49,6 +49,7 @@ class SetDebugFlags(object):
         self, debug_lang=False, debug_halide=False, debug_tc_mapper=False,
         debug_cuda=False, debug_tuner=False, dump_cuda=False, **kwargs
     ):
+        set_logtostderr(True)
         set_debug_lang(debug_lang)
         set_debug_halide(debug_halide)
         set_debug_tc_mapper(debug_tc_mapper)

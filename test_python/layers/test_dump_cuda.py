@@ -16,7 +16,6 @@
 import tensor_comprehensions as tc
 
 import torch
-import torch.cuda
 import unittest
 
 # enable this to dump cuda code generated whenever tc layer runs: simple run or
