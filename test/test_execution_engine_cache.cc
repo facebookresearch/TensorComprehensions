@@ -24,8 +24,9 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
-#include "tc/core/mapping_options.h"
 
 #include "test_harness_aten_cuda.h"
 
@@ -45,7 +46,8 @@ TEST(ATenCompilationCacheTest, Matmul) {
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
   std::vector<at::Tensor> outputs;
-  auto mappingOptions = tc::MappingOptions::makeMlpMappingOptions();
+
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   auto handle = atCompl.compile("matmul", inputs, mappingOptions);
   atCompl.run("matmul", inputs, outputs, handle);
   at::Tensor diff = outputs[0].sub(a.mm(b));

@@ -24,7 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
@@ -48,7 +48,7 @@ class BatchMatMul : public Benchmark {
       uint32_t N,
       uint32_t M,
       uint32_t K,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
 };
 
@@ -57,7 +57,7 @@ void BatchMatMul::runBatchMatMul(
     uint32_t N,
     uint32_t M,
     uint32_t K,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   at::Tensor X = at::CUDA(at::kFloat).rand({B, N, M});
   at::Tensor Y = at::CUDA(at::kFloat).rand({B, M, K});
@@ -116,7 +116,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul) {
   auto N = FLAGS_N;
   auto M = FLAGS_M;
   auto K = FLAGS_K;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .tile({1})
                      .mapToThreads({128})
                      .mapToBlocks({B})
@@ -131,7 +131,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul_P100_autotuned_B_500_K_26_M_72_N_26) {
   uint32_t K = 26;
   uint32_t M = 72;
   uint32_t N = 26;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)

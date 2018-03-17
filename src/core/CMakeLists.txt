@@ -30,6 +30,8 @@ add_library(
   polyhedral/unroll.cc
 
   # Builds and runs without the CUDA SDK and used in cross-compilation tests
+  cuda/cuda_mapping_options.cc
+  cuda/cuda_mapping_options_cpp_printer.cc
   polyhedral/codegen_cuda.cc
   polyhedral/cuda/cuda_mapping_types.cc
   polyhedral/cuda/cuda_tighten_launch_bounds.cc

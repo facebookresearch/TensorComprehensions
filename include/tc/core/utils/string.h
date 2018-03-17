@@ -15,31 +15,34 @@
  */
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 
-#include "tc/c2/tc_op.h"
-#include "tc/library/2fcrelu.h"
+namespace tc {
 
-namespace caffe2 {
-
-template <typename T, class Context, class Engine = caffe2::DefaultEngine>
-class Tc2FCReluOp : public TcOp<T, Context, Engine> {
+// Sets the std::boolalpha flags of the given std::ostream and resets it to
+// the previous value on scope exit.
+class OstreamBoolalphaScope {
  public:
-  static constexpr auto description = tc::TC_2FCRELU;
-
-  Tc2FCReluOp(const caffe2::OperatorDef& operator_def, caffe2::Workspace* ws)
-      : TcOp<T, Context, Engine>(operator_def, ws) {
-    this->tc_ = tc::TC_2FCRELU;
-    this->tcName_ = tc::TC_2FCRELU_NAME;
+  OstreamBoolalphaScope(std::ostream& os)
+      : os_(os), hasBoolalpha_(os.flags() & std::ios_base::boolalpha) {
+    os << std::boolalpha;
+  }
+  ~OstreamBoolalphaScope() {
+    if (!hasBoolalpha_) {
+      os_ << std::noboolalpha;
+    }
   }
 
-  ~Tc2FCReluOp() override {}
-
- protected:
-  void setupNaiveCudaMappingOptions() {
-    this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  }
+ private:
+  std::ostream& os_;
+  bool hasBoolalpha_;
 };
-} // namespace caffe2
+
+template <typename T>
+inline std::vector<T> parseCommaSeparatedIntegers(const std::string& sizes);
+
+} // namespace tc
+
+#include "tc/core/utils/string-inl.h"

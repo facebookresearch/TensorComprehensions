@@ -67,7 +67,7 @@ void GeneticAutotuner::storeCaches(const std::string& filename) {
   }
 }
 
-std::vector<MappingOptions> GeneticAutotuner::load(
+std::vector<CudaMappingOptions> GeneticAutotuner::load(
     const std::string& cacheFileName,
     const std::string& tcName,
     const std::vector<const DLTensor*>& inputs,
@@ -88,13 +88,13 @@ volatile std::sig_atomic_t sigint_ = 0;
 volatile std::sig_atomic_t sigterm_ = 0;
 } // namespace
 
-llvm::Optional<MappingOptions> GeneticAutotuner::tune(
+llvm::Optional<CudaMappingOptions> GeneticAutotuner::tune(
     const std::string& cacheFileName,
     const std::string& tcName,
     const std::unordered_map<size_t, std::vector<const DLTensor*>>& inputs,
     std::unordered_map<size_t, std::vector<DLTensor*>>& outputs,
-    MappingOptions baseMapping,
-    std::vector<MappingOptions> startingPoints,
+    CudaMappingOptions baseMapping,
+    std::vector<CudaMappingOptions> startingPoints,
     const TuningParameterFixer& fixedParams) {
   CHECK_EQ(1, tcNameMap_.count(tcName)) << "Error looking up " << tcName;
   enableOrLoadCache(cacheFileName);

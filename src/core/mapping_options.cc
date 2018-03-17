@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 #include <fstream>
 #include <iomanip>
@@ -24,31 +24,11 @@
 #include <mapping_options.pb.h>
 
 #include "tc/core/flags.h"
+#include "tc/core/mapping_options_cpp_printer.h"
+#include "tc/core/utils/string.h"
 #include "tc/external/isl.h"
 
 namespace tc {
-
-const uint64_t CudaDimView::defaultDim;
-
-//
-// Output operators and string conversion
-//
-std::string CudaDimView::toCommaSeparatedString() const {
-  std::stringstream ss;
-  ss << proto.x();
-  if (proto.has_y()) {
-    ss << ", " << proto.y();
-  }
-  if (proto.has_z()) {
-    ss << ", " << proto.z();
-  }
-  return ss.str();
-}
-
-std::ostream& operator<<(std::ostream& os, const CudaDimView& view) {
-  os << "CudaDim(" << view.toCommaSeparatedString() << ") @" << &view.proto;
-  return os;
-}
 
 std::string TilingView::toCommaSeparatedString() const {
   std::stringstream ss;
@@ -66,27 +46,6 @@ std::ostream& operator<<(std::ostream& os, const TilingView& view) {
   return os;
 }
 
-namespace {
-// Sets the std::boolalpha flags of the given std::ostream and resets it to the
-// previous value on scope exit.
-class OstreamBoolalphaScope {
- public:
-  OstreamBoolalphaScope(std::ostream& os)
-      : os_(os), hasBoolalpha_(os.flags() & std::ios_base::boolalpha) {
-    os << std::boolalpha;
-  }
-  ~OstreamBoolalphaScope() {
-    if (!hasBoolalpha_) {
-      os_ << std::noboolalpha;
-    }
-  }
-
- private:
-  std::ostream& os_;
-  bool hasBoolalpha_;
-};
-} // namespace
-
 std::ostream& operator<<(
     std::ostream& os,
     const SchedulerOptionsView& options) {
@@ -103,155 +62,41 @@ std::ostream& operator<<(
 
 std::ostream& operator<<(std::ostream& os, const MappingOptions& options) {
   OstreamBoolalphaScope scope(os);
-
   os << "MappingOptions("
-     << "outer_schedule_options: " << options.outerScheduleOptions << ","
+     << "outer_schedule_options: " << options.view.outerScheduleOptions << ","
      << std::endl;
-  if (options.proto.has_intra_tile_schedule_options()) {
-    os << "intra_tile_schedule_options: " << options.intraTileScheduleOptions;
+  if (options.view.proto.has_intra_tile_schedule_options()) {
+    os << "intra_tile_schedule_options: "
+       << options.view.intraTileScheduleOptions;
   } else {
     os << "#none";
   }
   os << ","
      << "fix_parameters_before_scheduling: "
-     << options.proto.fix_parameters_before_scheduling() << "," << std::endl
-     << "tiling: " << options.tiling << "," << std::endl
-     << "block: " << options.block << "," << std::endl
-     << "grid: " << options.grid << "," << std::endl
+     << options.view.proto.fix_parameters_before_scheduling() << ","
+     << std::endl
+     << "tiling: " << options.view.tiling << "," << std::endl
      << "unroll: "
-     << (options.proto.has_unroll() ? std::to_string(options.proto.unroll())
-                                    : "#none")
-     << "," << std::endl
-     << "tile_imperfectly_nested: " << options.proto.tile_imperfectly_nested()
-     << "," << std::endl
-     << "use_shared_memory: " << options.proto.use_shared_memory() << ","
-     << std::endl
-     << "use_private_memory: " << options.proto.use_private_memory() << ","
-     << std::endl
-     << "unroll_copy_shared: " << options.proto.unroll_copy_shared() << ","
-     << std::endl
-     << "max_shared_memory: "
-     << (options.proto.has_max_shared_memory()
-             ? std::to_string(options.proto.max_shared_memory())
+     << (options.view.proto.has_unroll()
+             ? std::to_string(options.view.proto.unroll())
              : "#none")
      << "," << std::endl
-     << "match_library_calls: " << options.proto.match_library_calls() << ") @"
-     << &options.proto;
+     << "tile_imperfectly_nested: "
+     << options.view.proto.tile_imperfectly_nested() << "," << std::endl
+     << "," << std::endl
+     << "match_library_calls: " << options.view.proto.match_library_calls()
+     << ") @" << &options.view.proto;
   return os;
 }
 
-//
-// String-based chainable constructors.
-//
-namespace {
-template <typename T>
-std::vector<T> parseCommaSeparatedIntegers(const std::string& sizes) {
-  std::stringstream ss(sizes);
-  T size;
-  std::vector<T> res;
-  while (ss >> size) {
-    res.push_back(size);
-    if (ss.peek() == ',') {
-      ss.ignore();
-    }
-  }
-  return res;
+std::ostream& operator<<(std::ostream& os, const MappingOptionsView& view) {
+  os << MappingOptions(view);
+  return os;
 }
-} // namespace
 
-MappingOptions& MappingOptions::tile(const std::string& commaSeparatedSizes) {
+MappingOptionsView& MappingOptionsView::tile(
+    const std::string& commaSeparatedSizes) {
   return tile(parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes));
-}
-
-MappingOptions& MappingOptions::mapToThreads(
-    const std::string& commaSeparatedSizes) {
-  auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
-  CHECK_GT(sizes.size(), 0)
-      << "expected at least one block size in " << commaSeparatedSizes;
-  CHECK_LE(sizes.size(), 3)
-      << "expected at most three block sizes in " << commaSeparatedSizes;
-  sizes.resize(3, CudaDimView::defaultDim);
-  return mapToThreads(sizes[0], sizes[1], sizes[2]);
-}
-
-MappingOptions& MappingOptions::mapToBlocks(
-    const std::string& commaSeparatedSizes) {
-  auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
-  CHECK_GT(sizes.size(), 0)
-      << "expected at least one grid size in " << commaSeparatedSizes;
-  CHECK_LE(sizes.size(), 3)
-      << "expected at most three grid sizes in " << commaSeparatedSizes;
-  sizes.resize(3, CudaDimView::defaultDim);
-  return mapToBlocks(sizes[0], sizes[1], sizes[2]);
-}
-
-//
-// Predefined stratgies
-//
-
-MappingOptions MappingOptions::makeUnmappedMappingOptions() {
-  MappingOptions mo;
-  mo.useSharedMemory(false)
-      .usePrivateMemory(false)
-      .unrollCopyShared(false)
-      .outerScheduleFusionStrategy(FusionStrategy::Preserve3Coincident)
-      .outerScheduleAllowSkewing(false)
-      .outerSchedulePositiveOrthant(true)
-      .intraTileScheduleFusionStrategy(FusionStrategy::Preserve3Coincident)
-      .intraTileScheduleAllowSkewing(false)
-      .intraTileSchedulePositiveOrthant(true)
-      .fixParametersBeforeScheduling(false)
-      .matchLibraryCalls(false)
-      .tileImperfectlyNested(false);
-  return mo;
-}
-
-MappingOptions MappingOptions::makeNaiveMappingOptions() {
-  auto mo = makeUnmappedMappingOptions();
-  mo =
-      mo.tile({32, 32, 32}).mapToThreads(32, 8).mapToBlocks(256, 256).unroll(1);
-  return mo;
-}
-
-MappingOptions MappingOptions::makeSingleThreadMappingOptions() {
-  return makeUnmappedMappingOptions()
-      .tile({1})
-      .mapToThreads(1)
-      .mapToBlocks(1)
-      .unroll(1);
-}
-
-MappingOptions MappingOptions::makePointwiseMappingOptions() {
-  return makeUnmappedMappingOptions()
-      .tile({32, 32, 32})
-      .mapToThreads(32, 4, 4)
-      .mapToBlocks(100, 100, 100)
-      .unroll(128);
-}
-
-MappingOptions MappingOptions::makeMlpMappingOptions() {
-  return makeUnmappedMappingOptions()
-      .outerScheduleFusionStrategy(FusionStrategy::Max)
-      .tile({1})
-      .mapToThreads(128)
-      .mapToBlocks(128)
-      .unroll(1);
-}
-
-MappingOptions MappingOptions::makeConvolutionMappingOptions() {
-  return makeUnmappedMappingOptions()
-      .tile({4, 8, 8, 8})
-      .mapToThreads(4, 16, 4)
-      .mapToBlocks(256, 256, 256)
-      .unroll(1);
-}
-
-MappingOptions MappingOptions::makeGroupConvolutionMappingOptions() {
-  return makeUnmappedMappingOptions()
-      .tile({1, 1})
-      .mapToThreads(4, 16, 4)
-      .mapToBlocks(256, 256)
-      .unroll(1);
 }
 
 //

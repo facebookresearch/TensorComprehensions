@@ -42,14 +42,15 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
   }
 
  protected:
-  void setupNaiveMappingOptions() override {
-    this->mappingOptions_ = tc::MappingOptions::makePointwiseMappingOptions()
-                                .tile({4, 8, 8})
-                                .mapToThreads({32, 4, 4})
-                                .mapToBlocks({100, 100, 100})
-                                .unroll(128);
-    this->gradMappingOptions_ =
-        tc::MappingOptions::makePointwiseMappingOptions();
+  void setupNaiveCudaMappingOptions() override {
+    this->cudaMappingOptions_ =
+        tc::CudaMappingOptions::makePointwiseCudaMappingOptions()
+            .tile({4, 8, 8})
+            .mapToThreads({32, 4, 4})
+            .mapToBlocks({100, 100, 100})
+            .unroll(128);
+    this->gradCudaMappingOptions_ =
+        tc::CudaMappingOptions::makePointwiseCudaMappingOptions();
   }
 };
 } // namespace caffe2

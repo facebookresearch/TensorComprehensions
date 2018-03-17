@@ -87,7 +87,8 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     auto filter = node->elemAs<ScheduleTreeElemFilter>()->filter_;
     auto filterSets = isl::UnionAsVector<isl::union_set>(filter);
     int t = 0;
-    for (int i = band->nMember() - 1; i >= 0 && t < mscop.numThreads.size();
+    for (int i = band->nMember() - 1;
+         i >= 0 && t < mscop.numThreads.view.size();
          --i) {
       auto skip = std::all_of(
           filterSets.begin(), filterSets.end(), [&mscop, i](isl::set s) {
@@ -106,10 +107,15 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       }
 
       mapToParameterWithExtent(
-          root, bandNode, i, mapping::ThreadId::makeId(t), mscop.numThreads[t]);
+          root,
+          bandNode,
+          i,
+          mapping::ThreadId::makeId(t),
+          mscop.numThreads.view[t]);
       ++t;
     }
-    mscop.mapRemaining<mapping::ThreadId>(bandNode, t, mscop.numThreads.size());
+    mscop.mapRemaining<mapping::ThreadId>(
+        bandNode, t, mscop.numThreads.view.size());
 
     // Unroll if requested.
     if (unroll) {

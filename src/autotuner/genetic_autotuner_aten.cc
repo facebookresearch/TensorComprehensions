@@ -35,7 +35,7 @@ GeneticAutotunerATen::GeneticAutotunerATen(const std::string tc) : tc_(tc) {
       new detail::GeneticAutotuner(tc));
 }
 
-std::vector<MappingOptions> GeneticAutotunerATen::load(
+std::vector<CudaMappingOptions> GeneticAutotunerATen::load(
     const std::string& cacheFileName,
     const std::string& tcName,
     const std::vector<at::Tensor> inputs,
@@ -68,12 +68,12 @@ std::vector<at::Tensor> cloneTensors(const std::vector<at::Tensor>& inputs) {
 
 } // namespace
 
-llvm::Optional<MappingOptions> GeneticAutotunerATen::tune(
+llvm::Optional<CudaMappingOptions> GeneticAutotunerATen::tune(
     const std::string& cacheFileName,
     const std::string& tcName,
     const std::vector<at::Tensor>& inputs,
-    MappingOptions baseMapping,
-    std::vector<MappingOptions> startingPoints,
+    CudaMappingOptions baseMapping,
+    std::vector<CudaMappingOptions> startingPoints,
     const TuningParameterFixer& fixedParams) {
   // create instance of ATenCompilationUnit so that we can get the outputsInfo
   // and convert those outputs to DLTensors.

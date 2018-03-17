@@ -42,25 +42,36 @@ message MappingOptionsProto {
   required bool fix_parameters_before_scheduling = 3;
   // Tile sizes.  If empty or not provided, do not tile.
   optional TilingProto tiling = 4;
-  // Block dimensions (min 1, max 3 values).
-  required CudaDimProto block = 5;
-  // Grid dimensions (min 1, max 3 values).
-  required CudaDimProto grid = 6;
   // Unroll innermost loops to until at most "unroll" copies.  If not provided,
   // do not unroll.
   optional uint64 unroll = 7;
   // Apply tiling to imperfectly nested loops if possible.  Same tilesizes are
   // used.
   required bool tile_imperfectly_nested = 8;
+  // reserved 5, 6, 9 to 13; can only activate with proto3
+  // Reserved: 5, 6, 9-13 -> factored out into CudaMappingOptionsProto
+  required bool match_library_calls = 14;
+}
+
+message CudaMappingOptionsProto {
+  // Target-independent mapping options.
+  required MappingOptionsProto generic_mapping_options = 1;
+  // Block dimensions (min 1, max 3 values).
+  required CudaDimProto block = 2;
+  // Grid dimensions (min 1, max 3 values).
+  required CudaDimProto grid = 3;
   // Generate code that copies frequently accessed elements to shared memory.
-  required bool use_shared_memory = 9;
+  required bool use_shared_memory = 4;
   // Generate code that copies frequently accessed elements to private memory.
-  required bool use_private_memory = 10;
+  required bool use_private_memory = 5;
   // Unroll loops copying to and from shared memory.
-  required bool unroll_copy_shared = 11;
+  required bool unroll_copy_shared = 6;
   // Maximum size of shred memory to use, in bytes.  If not provided, all
   // shared memory available on the current active device will be used.
-  optional uint64 max_shared_memory = 12;
-  // Swap in library calls when possible.
-  required bool match_library_calls = 14;
+  optional uint64 max_shared_memory = 7;
+}
+
+message CpuMappingOptionsProto {
+  // Target-independent mapping options.
+  required MappingOptionsProto generic_mapping_options = 1;
 }

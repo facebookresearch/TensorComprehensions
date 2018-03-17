@@ -15,14 +15,23 @@
  */
 #pragma once
 
-#include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
-
 namespace tc {
-namespace polyhedral {
-std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
-    const tc::Grid& grid,
-    const tc::Block& block);
-} // namespace polyhedral
+
+//
+// String-based chainable constructors.
+//
+template <typename T>
+std::vector<T> parseCommaSeparatedIntegers(const std::string& sizes) {
+  std::stringstream ss(sizes);
+  T size;
+  std::vector<T> res;
+  while (ss >> size) {
+    res.push_back(size);
+    if (ss.peek() == ',') {
+      ss.ignore();
+    }
+  }
+  return res;
+}
+
 } // namespace tc

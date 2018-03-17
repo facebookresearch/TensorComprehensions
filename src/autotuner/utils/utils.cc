@@ -70,7 +70,7 @@ std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
   return c;
 }
 
-std::vector<MappingOptions> restoreCandidates(
+std::vector<CudaMappingOptions> restoreCandidates(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
@@ -86,7 +86,7 @@ std::vector<MappingOptions> restoreCandidates(
       [](const OptionsWithMedianTime& a, const OptionsWithMedianTime& b) {
         return a.medianRuntime < b.medianRuntime;
       });
-  std::vector<MappingOptions> res;
+  std::vector<CudaMappingOptions> res;
   res.reserve(restoreNumber);
   std::transform(
       candidates.begin(),
@@ -96,7 +96,7 @@ std::vector<MappingOptions> restoreCandidates(
   return res;
 }
 
-llvm::Optional<MappingOptions> getBestOptions(
+llvm::Optional<CudaMappingOptions> getBestOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
@@ -105,7 +105,7 @@ llvm::Optional<MappingOptions> getBestOptions(
   if (bestOptions) {
     return *bestOptions;
   }
-  return llvm::Optional<MappingOptions>{};
+  return llvm::Optional<CudaMappingOptions>{};
 }
 
 } // namespace autotune

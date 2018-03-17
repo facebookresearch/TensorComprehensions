@@ -273,37 +273,49 @@ std::vector<ParameterView> TuningConfiguration::collectParameters() {
   return params;
 }
 
-void TuningConfiguration::fromMappingOptions(const MappingOptions& options) {
+void TuningConfiguration::fromMappingOptions(
+    const MappingOptionsView& options) {
   outerScheduleOptions.fromMappingOptions(options.outerScheduleOptions);
   intraTileScheduleOptions.fromMappingOptions(options.intraTileScheduleOptions);
   fixParametersBeforeScheduling.selectValue(
       options.proto.fix_parameters_before_scheduling());
   tilingParams.fromMappingOptions(options.tiling);
-  blockParams.fromMappingOptions(options.block);
-  gridParams.fromMappingOptions(options.grid);
   unrollFactor.selectFromValue(
       (options.proto.has_unroll() ? options.proto.unroll() : 1));
   tileImperfectlyNested.selectValue(options.proto.tile_imperfectly_nested());
-  useSharedMemory.selectValue(options.proto.use_shared_memory());
-  usePrivateMemory.selectValue(options.proto.use_private_memory());
-  unrollCopyShared.selectValue(options.proto.unroll_copy_shared());
   matchLibraryCalls.selectValue(options.proto.match_library_calls());
 }
 
-void TuningConfiguration::applyToMappingOptions(MappingOptions& options) const {
+void TuningConfiguration::fromCudaMappingOptions(
+    const CudaMappingOptions& options) {
+  fromMappingOptions(options.generic);
+  blockParams.fromMappingOptions(options.block);
+  gridParams.fromMappingOptions(options.grid);
+  useSharedMemory.selectValue(options.proto().use_shared_memory());
+  usePrivateMemory.selectValue(options.proto().use_private_memory());
+  unrollCopyShared.selectValue(options.proto().unroll_copy_shared());
+}
+
+void TuningConfiguration::applyToMappingOptions(
+    MappingOptionsView& options) const {
   outerScheduleOptions.applyToMappingOptions(options.outerScheduleOptions);
   intraTileScheduleOptions.applyToMappingOptions(
       options.intraTileScheduleOptions);
   options.fixParametersBeforeScheduling(fixParametersBeforeScheduling.value());
   tilingParams.applyToMappingOptions(options.tiling);
-  blockParams.applyToMappingOptions(options.block);
-  gridParams.applyToMappingOptions(options.grid);
   options.unroll(unrollFactor.value());
   options.tileImperfectlyNested(tileImperfectlyNested.value());
+  options.matchLibraryCalls(matchLibraryCalls.value());
+}
+
+void TuningConfiguration::applyToCudaMappingOptions(
+    CudaMappingOptions& options) const {
+  applyToMappingOptions(options.generic);
+  blockParams.applyToMappingOptions(options.block);
+  gridParams.applyToMappingOptions(options.grid);
   options.useSharedMemory(useSharedMemory.value());
   options.usePrivateMemory(usePrivateMemory.value());
   options.unrollCopyShared(unrollCopyShared.value());
-  options.matchLibraryCalls(matchLibraryCalls.value());
 }
 
 TuningConfiguration::TuningConfiguration()

@@ -24,7 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
@@ -109,7 +109,7 @@ class ProductionModel : public Benchmark {
       uint32_t D,
       uint32_t L1,
       uint32_t E1,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
   void run2LUT(
       uint32_t B,
@@ -118,19 +118,19 @@ class ProductionModel : public Benchmark {
       uint32_t L2,
       uint32_t E1,
       uint32_t E2,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
   void runC3(
       uint32_t B,
       uint32_t WX,
       uint32_t WY,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
   void runMLP1(
       uint32_t B,
       uint32_t N,
       uint32_t M,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
   void runMLP3(
       uint32_t B,
@@ -138,7 +138,7 @@ class ProductionModel : public Benchmark {
       uint32_t O,
       uint32_t P,
       uint32_t Q,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
 };
 
@@ -147,7 +147,7 @@ void ProductionModel::run1LUT(
     uint32_t D,
     uint32_t L1,
     uint32_t E1,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   CHECK_LT(0, E1);
 
@@ -232,7 +232,7 @@ void ProductionModel::run2LUT(
     uint32_t L2,
     uint32_t E1,
     uint32_t E2,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   CHECK_LT(0, E1);
   CHECK_LT(0, E2);
@@ -335,7 +335,7 @@ void ProductionModel::runC3(
     uint32_t B,
     uint32_t WX,
     uint32_t WY,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   at::Tensor I = at::CUDA(at::kFloat).rand({B, WX});
   at::Tensor W = at::CUDA(at::kFloat).rand({WY, WX});
@@ -389,7 +389,7 @@ void ProductionModel::runMLP1(
     uint32_t B,
     uint32_t N,
     uint32_t M,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   at::Tensor I = at::CUDA(at::kFloat).rand({B, M});
   at::Tensor W1 = at::CUDA(at::kFloat).rand({M, N});
@@ -448,7 +448,7 @@ void ProductionModel::runMLP3(
     uint32_t O,
     uint32_t P,
     uint32_t Q,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   at::Tensor I = at::CUDA(at::kFloat).rand({B, N});
   at::Tensor W2 = at::CUDA(at::kFloat).rand({O, N});
@@ -520,7 +520,7 @@ TEST_F(ProductionModel, 1LUT) {
   auto D = FLAGS_D;
   auto L1 = FLAGS_L1;
   auto E1 = FLAGS_E1;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .tile({1, 32})
                      .mapToThreads({1, 32})
                      .mapToBlocks({128, 128})
@@ -534,7 +534,7 @@ TEST_F(ProductionModel, 1LUT_P100_autotuned_B_128_D_64_L1_50_E1_10000000) {
   uint32_t L1 = 50;
   uint32_t E1 = 10000000;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .fixParametersBeforeScheduling(true)
           .tile(1)
@@ -551,7 +551,7 @@ TEST_F(ProductionModel, 1LUT_P100_autotuned_B_16_D_64_L1_50_E1_10000000) {
   uint32_t L1 = 50;
   uint32_t E1 = 10000000;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .fixParametersBeforeScheduling(false)
           .tile(1, 32)
@@ -597,7 +597,7 @@ TEST_F(ProductionModel, 2LUT) {
   auto L2 = FLAGS_L2;
   auto E1 = FLAGS_E1;
   auto E2 = FLAGS_E2;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .tile({1, 32})
                      .mapToThreads({1, 32})
                      .mapToBlocks({128, 128})
@@ -615,7 +615,7 @@ TEST_F(
   uint32_t L2 = 50;
   uint32_t E2 = 10000000;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .fixParametersBeforeScheduling(false)
           .tile(1, 256, 1250000)
@@ -636,7 +636,7 @@ TEST_F(
   uint32_t L2 = 50;
   uint32_t E2 = 10000000;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .fixParametersBeforeScheduling(false)
           .tile(1, 64)
@@ -686,7 +686,7 @@ TEST_F(ProductionModel, C3) {
   auto B = FLAGS_B;
   auto WX = FLAGS_WX;
   auto WY = FLAGS_WY;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
                      .tile({32, 32, 32})
                      .mapToThreads({4, 32})
@@ -702,7 +702,7 @@ TEST_F(ProductionModel, C3_P100_autotuned_B_128_WX_1000_WY_1024) {
   uint32_t B = 128;
   uint32_t WX = 1000;
   uint32_t WY = 1024;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -725,7 +725,7 @@ TEST_F(ProductionModel, C3_P100_autotuned_B_16_WX_1000_WY_1024) {
   uint32_t B = 16;
   uint32_t WX = 1000;
   uint32_t WY = 1024;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -781,7 +781,7 @@ TEST_F(ProductionModel, MLP1) {
   auto B = FLAGS_B;
   auto N = FLAGS_N;
   auto M = FLAGS_M;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
                      .tile({16, 16, 128})
                      .mapToThreads({16, 16})
@@ -797,7 +797,7 @@ TEST_F(ProductionModel, MLP1_P100_autotuned_B_128_M_2000_N_128) {
   uint32_t M = 2000;
   uint32_t N = 128;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -821,7 +821,7 @@ TEST_F(ProductionModel, MLP1_P100_autotuned_B_16_M_2000_N_128) {
   uint32_t M = 2000;
   uint32_t N = 128;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -880,7 +880,7 @@ TEST_F(ProductionModel, MLP3) {
   auto O = FLAGS_O;
   auto P = FLAGS_P;
   auto Q = FLAGS_Q;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
                      .tile({16, 16, 128})
                      .mapToThreads({16, 16})
@@ -897,7 +897,7 @@ TEST_F(ProductionModel, MLP3_P100_autotuned_B_128_N_128_O_64_P_32_Q_2) {
   auto O = 64;
   auto P = 32;
   auto Q = 2;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -923,7 +923,7 @@ TEST_F(ProductionModel, MLP3_P100_autotuned_B_16_M_2000_N_128_Q_2) {
   auto O = 64;
   auto P = 32;
   auto Q = 2;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)

@@ -15,14 +15,29 @@
  */
 #pragma once
 
-#include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
+#include <mapping_options.pb.h>
+
+#include "tc/core/mapping_options.h"
 
 namespace tc {
-namespace polyhedral {
-std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
-    const tc::Grid& grid,
-    const tc::Block& block);
-} // namespace polyhedral
+
+class CpuMappingOptions {
+ public:
+  CpuMappingOptions();
+
+  /// Construct from a serialized protocol buffer message.
+  inline explicit CpuMappingOptions(const std::string& str);
+
+  inline bool operator==(const CpuMappingOptions& options);
+
+  inline std::string toProtobufSerializedString() const;
+
+ private:
+  CpuMappingOptionsProto ownedProto_;
+
+ public:
+  MappingOptionsView generic;
+};
 } // namespace tc
+
+#include "tc/core/cpu/cpu_mapping_options-inl.h"

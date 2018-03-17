@@ -15,21 +15,21 @@
  */
 #include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 namespace tc {
 namespace polyhedral {
 namespace mapping {
 size_t ThreadId::mappingSize(const Block& vals) const {
-  if (vals.size() > dim) {
-    return vals[static_cast<size_t>(dim)];
+  if (vals.view.size() > dim) {
+    return vals.view[static_cast<size_t>(dim)];
   }
   return MappingId::unmapped;
 }
 
 size_t BlockId::mappingSize(const Grid& vals) const {
-  if (vals.size() > dim) {
-    return vals[static_cast<size_t>(dim)];
+  if (vals.view.size() > dim) {
+    return vals.view[static_cast<size_t>(dim)];
   }
   return MappingId::unmapped;
 }

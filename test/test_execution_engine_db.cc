@@ -24,8 +24,8 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
-#include "tc/core/mapping_options.h"
 
 #include "test_harness_aten_cuda.h"
 
@@ -52,7 +52,7 @@ TEST(ATenCompilationDbTest, MultiTc) {
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
   std::vector<at::Tensor> outputs;
-  auto mappingOptions = tc::MappingOptions::makeMlpMappingOptions();
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   auto handle = atCompl.compile("matmul", inputs, mappingOptions);
   atCompl.run("matmul", inputs, outputs, handle);
   at::Tensor diff = outputs[0].sub(a.mm(b));
@@ -65,7 +65,8 @@ TEST(ATenCompilationDbTest, MultiTc) {
   at::Tensor B = at::CUDA(at::kFloat).rand({O});
   std::vector<at::Tensor> inputs1 = {I, W1, B};
   std::vector<at::Tensor> outputs1;
-  mappingOptions = tc::MappingOptions::makeGroupConvolutionMappingOptions();
+  mappingOptions =
+      tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
   handle = atCompl.compile("convolution", inputs1, mappingOptions);
   atCompl.run("convolution", inputs1, outputs1, handle);
   at::Tensor expected = at::conv2d(I, W1, at::IntList({KH, KW}), B);

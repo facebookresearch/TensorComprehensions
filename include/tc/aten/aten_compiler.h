@@ -45,7 +45,7 @@ class ATenCompilationUnit {
   size_t compile(
       const std::string& name,
       const std::vector<at::Tensor>& inputs,
-      const MappingOptions& options);
+      const typename ExecutorType::MappingOptionsType& options);
 
   /// Get the output Tensor info
   std::vector<const DLTensor*> inferOutputTensorInfo(

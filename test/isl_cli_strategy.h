@@ -18,7 +18,7 @@
 #include <gflags/gflags.h>
 #include <vector>
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 #define DEFAULT_FUSION_STRATEGY "Preserve3Coincident"
 #define DEFAULT_ALLOW_SKEWING false
@@ -74,51 +74,52 @@ namespace tc {
 // 2. override relevant options
 //    (at a minimum: tile, mapToThreads and mapToBlocks)
 // 3. call makeCliStrategy with the overridden options
-tc::MappingOptions makeBaseCliStrategy() {
+tc::CudaMappingOptions makeBaseCliStrategy() {
   tc::FusionStrategy fs;
   CHECK(tc::FusionStrategy_Parse(DEFAULT_FUSION_STRATEGY, &fs));
-  MappingOptions options =
-      MappingOptions::makeNaiveMappingOptions()
-          .scheduleFusionStrategy(fs)
-          .fixParametersBeforeScheduling(
-              DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING)
-          .tile(DEFAULT_TILE)
-          .tileImperfectlyNested(DEFAULT_TILE_IMPERFECTLY_NESTED)
+  CudaMappingOptions options =
+      CudaMappingOptions::makeNaiveCudaMappingOptions()
           .mapToThreads(DEFAULT_BLOCK)
           .mapToBlocks(DEFAULT_GRID)
           .useSharedMemory(DEFAULT_USE_SHARED_MEMORY)
           .usePrivateMemory(DEFAULT_USE_PRIVATE_MEMORY)
-          .unrollCopyShared(DEFAULT_UNROLL_COPY_SHARED)
-          .unroll(DEFAULT_UNROLL_FACTOR);
-  options.outerScheduleOptions.proto.set_allow_skewing(DEFAULT_ALLOW_SKEWING);
-  options.outerScheduleOptions.proto.set_positive_orthant(
+          .unrollCopyShared(DEFAULT_UNROLL_COPY_SHARED);
+  options.generic.scheduleFusionStrategy(fs)
+      .fixParametersBeforeScheduling(DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING)
+      .tile(DEFAULT_TILE)
+      .tileImperfectlyNested(DEFAULT_TILE_IMPERFECTLY_NESTED)
+      .unroll(DEFAULT_UNROLL_FACTOR);
+  options.generic.outerScheduleOptions.proto.set_allow_skewing(
+      DEFAULT_ALLOW_SKEWING);
+  options.generic.outerScheduleOptions.proto.set_positive_orthant(
       DEFAULT_POSITIVE_ORTHANT);
   return options;
 }
 
-tc::MappingOptions makeCliStrategy(tc::MappingOptions options) {
+tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
   if (FLAGS_fusion_strategy != std::string(DEFAULT_FUSION_STRATEGY)) {
     tc::FusionStrategy fs;
     if (tc::FusionStrategy_Parse(FLAGS_fusion_strategy, &fs)) {
-      options.scheduleFusionStrategy(fs);
+      options.generic.scheduleFusionStrategy(fs);
     } else {
       CHECK(false) << "Unknown fusion_strategy: " << FLAGS_fusion_strategy;
     }
   }
-  options.outerScheduleOptions.proto.set_allow_skewing(FLAGS_allow_skewing);
-  options.outerScheduleOptions.proto.set_positive_orthant(
+  options.generic.outerScheduleOptions.proto.set_allow_skewing(
+      FLAGS_allow_skewing);
+  options.generic.outerScheduleOptions.proto.set_positive_orthant(
       FLAGS_positive_orthant);
 
   if (FLAGS_fix_parameters_before_scheduling !=
       DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING) {
-    options.fixParametersBeforeScheduling(
+    options.generic.fixParametersBeforeScheduling(
         FLAGS_fix_parameters_before_scheduling);
   }
   if (FLAGS_tile != DEFAULT_TILE) {
-    options.tile(FLAGS_tile);
+    options.generic.tile(FLAGS_tile);
   }
   if (FLAGS_tile_imperfectly_nested != DEFAULT_TILE_IMPERFECTLY_NESTED) {
-    options.tileImperfectlyNested(FLAGS_tile_imperfectly_nested);
+    options.generic.tileImperfectlyNested(FLAGS_tile_imperfectly_nested);
   }
   if (FLAGS_block != DEFAULT_BLOCK) {
     options.mapToThreads(FLAGS_block);
@@ -136,7 +137,7 @@ tc::MappingOptions makeCliStrategy(tc::MappingOptions options) {
     options.unrollCopyShared(FLAGS_unroll_copy_shared);
   }
   if (FLAGS_unroll != DEFAULT_UNROLL_FACTOR) {
-    options.unroll(FLAGS_unroll);
+    options.generic.unroll(FLAGS_unroll);
   }
   return options;
 }

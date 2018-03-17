@@ -51,7 +51,7 @@
 /// possible to assign a view referring to a part of top-level message from a
 /// "materialized" temporary.  For example,
 ///
-///     MappingOptions mo;
+///     CudaMappingOptions mo;
 ///     // Copy of a view refers to the same object.
 ///     CudaDimView view = mo.block;
 ///     // Ultimately assigns mo.proto.mutable_block.
@@ -59,7 +59,7 @@
 ///
 /// is equivalent to
 ///
-///     MappingOptions mo;
+///     CudaMappingOptions mo;
 ///     mo.proto.mutable_block()->set_x(42);
 ///     mo.proto.mutable_block()->set_y(100);
 ///     mo.proto.mutable_block()->set_z(2);
@@ -68,14 +68,14 @@
 /// publicly.  They can be changed directly, and changes are immediately visible
 /// through all views referring to (a part of) the message.  For example,
 ///
-///     MappingOptions mo;
+///     CudaMappingOptions mo;
 ///     mo.proto.mutable_block()->set_x(42);
 ///     cout << mo.block[0];    // outputs 42;
 ///
 /// "Materialized" views do not expose the message they own, only a modifiable
 /// reference through the view interface.
 ///
-/// The top-level interface (MappingOptions) owns and publicly exposes the
+/// The top-level interface (CudaMappingOptions) owns and publicly exposes the
 /// top-level protocol buffer message along with views to its sub-messages.
 
 namespace tc {
@@ -110,109 +110,6 @@ class ValueAccessor {
  private:
   Setter setter_;
   Getter getter_;
-};
-
-/// View of a CudaDimProto.
-///
-/// Provides sequence container-like access to a CudaDimProto, which holds at
-/// least one (x) and at most three (x,y,z) values.
-class CudaDimView {
- private:
-  CudaDimView() = default;
-
- public:
-  /// Construct a view that refers to a protocol buffers message.
-  CudaDimView(const CudaDimView&) = default;
-  explicit CudaDimView(CudaDimProto& buf) : proto(buf) {}
-
-  /// Number of values held.
-  inline size_t size() const;
-
-  /// Return a copy of values as std::vector.
-  inline std::vector<uint64_t> extractVector() const;
-
-  /// Return a copy of values as std::array of size 3 padded with defaultDim.
-  inline std::array<uint64_t, 3> extractDefaultedArray() const;
-
-  /// Return a modifiable object which replicates assignments back to the
-  /// underlying protocol buffers message.
-  inline ValueAccessor<uint64_t> operator[](size_t i);
-
-  /// Access the values positionally (x=0, y=1, z=2).
-  inline uint64_t operator[](size_t i) const;
-
-  /// Assign the values from another view.
-  inline CudaDimView& operator=(const CudaDimView& view);
-
-  /// Compare the values with those from another view.
-  inline bool operator==(const CudaDimView& view) const;
-  inline bool operator!=(const CudaDimView& view) const;
-
-  /// Conversion to string and output operators.
-  std::string toCommaSeparatedString() const;
-  friend std::ostream& operator<<(std::ostream& os, const CudaDimView& view);
-
- public:
-  CudaDimProto& proto;
-
-  static const uint64_t defaultDim = 1;
-};
-
-/// "Materialized" CudaDimView.
-///
-/// When constructed from values, ignores trailing defaultDim, e.g.,
-///
-///   CudaDim(42, defaultDim);
-///
-/// will only set x, but
-///
-///   CudaDim(42, defaultDim, 32);
-///
-/// will x, y and z.
-class CudaDim : public CudaDimView {
- public:
-  CudaDim() : CudaDimView(ownedProto_) {}
-  CudaDim(const CudaDim& cudaDim)
-      : CudaDimView(ownedProto_), ownedProto_(cudaDim.proto) {}
-  CudaDim(const CudaDimProto& proto)
-      : CudaDimView(ownedProto_), ownedProto_(proto) {}
-  CudaDim(const CudaDimView& view)
-      : CudaDimView(ownedProto_), ownedProto_(view.proto) {}
-  inline CudaDim(std::initializer_list<uint64_t> il);
-  inline CudaDim(std::vector<uint64_t> il);
-  inline CudaDim(
-      uint64_t x,
-      uint64_t y = CudaDimView::defaultDim,
-      uint64_t z = CudaDimView::defaultDim);
-
-  using CudaDimView::operator=;
-
- private:
-  CudaDimProto ownedProto_;
-};
-
-/// Specializing CudaDim to differentiate between Block and Grid sizes.
-class Block : public CudaDim {
- public:
-  Block() = default;
-  Block(const CudaDimView& view) : CudaDim(view.proto) {}
-  Block(const CudaDimProto& proto) : CudaDim(proto) {}
-  Block(std::initializer_list<uint64_t> il) : CudaDim(il) {}
-  Block(std::vector<uint64_t> il) : CudaDim(il) {}
-
-  using CudaDimView::operator=;
-};
-
-/// Specializing CudaDim to differentiate between Block and Grid sizes.
-class Grid : public CudaDim {
- public:
-  Grid() = default;
-  Grid(const CudaDimView& view) : CudaDim(view.proto) {}
-  Grid(const CudaDimProto& proto) : CudaDim(proto) {}
-  Grid(std::initializer_list<uint64_t> il) : CudaDim(il) {}
-  Grid(std::vector<uint64_t> il) : CudaDim(il) {}
-
-  using CudaDimView::operator=;
 };
 
 /// View of a TilingProto.
@@ -256,19 +153,20 @@ class TilingView {
 };
 
 /// "Materialized" TilingView.
-class Tiling : public TilingView {
+class Tiling {
  public:
-  Tiling() : TilingView(ownedProto_) {}
-  Tiling(const Tiling& t) : TilingView(ownedProto_), ownedProto_(t.proto) {}
-  Tiling(const TilingProto& proto)
-      : TilingView(ownedProto_), ownedProto_(proto) {}
-  Tiling(const TilingView& view)
-      : TilingView(ownedProto_), ownedProto_(view.proto) {}
+  Tiling() : ownedProto_(), view(ownedProto_) {}
+  Tiling(const Tiling& t) : ownedProto_(t.ownedProto_), view(ownedProto_) {}
+  Tiling(const TilingProto& proto) : ownedProto_(proto), view(ownedProto_) {}
+  Tiling(const TilingView& view) : ownedProto_(view.proto), view(ownedProto_) {}
   inline Tiling(std::initializer_list<uint64_t> il);
   inline Tiling(const std::vector<uint64_t>& sizes);
 
  private:
   TilingProto ownedProto_;
+
+ public:
+  TilingView view;
 };
 
 //// View of a SchedulerOptionsProto.
@@ -313,18 +211,21 @@ class SchedulerOptionsView {
 };
 
 /// "Materialized" SchedulerOptionsView.
-class SchedulerOptions : public SchedulerOptionsView {
+class SchedulerOptions {
  public:
-  SchedulerOptions() : SchedulerOptionsView(ownedProto_) {}
+  SchedulerOptions() : ownedProto_(), view(ownedProto_) {}
   SchedulerOptions(const SchedulerOptions& options)
-      : SchedulerOptionsView(ownedProto_), ownedProto_(options.proto) {}
+      : ownedProto_(options.ownedProto_), view(ownedProto_) {}
   explicit SchedulerOptions(const SchedulerOptionsProto& proto)
-      : SchedulerOptionsView(ownedProto_), ownedProto_(proto) {}
+      : ownedProto_(proto), view(ownedProto_) {}
   explicit SchedulerOptions(const SchedulerOptionsView& view)
-      : SchedulerOptionsView(ownedProto_), ownedProto_(view.proto) {}
+      : ownedProto_(view.proto), view(ownedProto_) {}
 
  private:
   SchedulerOptionsProto ownedProto_;
+
+ public:
+  SchedulerOptionsView view;
 };
 
 /// Top-level interface to MappingOptionsProto.
@@ -332,115 +233,115 @@ class SchedulerOptions : public SchedulerOptionsView {
 /// Contains views of the sub-messages (scheduler options, tiling, grid and
 /// block sizes).  Provides static constructors for common operator options.
 /// Provides fluent (chainable) API for progressively modifying the options.
-class MappingOptions {
+class MappingOptionsView {
  private:
-  inline MappingOptions();
-  static MappingOptions makeUnmappedMappingOptions();
+  MappingOptionsView() = delete;
 
  public:
   /// Construct a deep copy of the options.
-  inline MappingOptions(const MappingOptions& options);
-  inline explicit MappingOptions(const MappingOptionsProto& buf);
+  inline MappingOptionsView(const MappingOptionsView& options);
+  inline explicit MappingOptionsView(MappingOptionsProto& buf);
 
-  /// Construct from a serialized protocol buffer message.
-  inline explicit MappingOptions(const std::string& str);
+  /// Assign from another view.
+  inline MappingOptionsView& operator=(const MappingOptionsView&);
 
-  /// Assign from another message.
-  MappingOptions& operator=(const MappingOptions&) = default;
-
-  /// Compare with another message.
-  inline bool operator==(const MappingOptions& options) const;
-  inline bool operator!=(const MappingOptions& options) const;
-
-  /// Get a string with a serialized protocol buffers message.
-  inline std::string toProtobufSerializedString() const;
+  /// Compare with another view.
+  inline bool operator==(const MappingOptionsView& options) const;
+  inline bool operator!=(const MappingOptionsView& options) const;
 
   /**
    * @name Chainable Modifiers
    * See protobuf for documentation on each option.
    * @{
    */
-  inline MappingOptions& tile(const std::vector<uint64_t>& sizes);
-  inline MappingOptions& tile(std::initializer_list<uint64_t> sizes);
-  MappingOptions& tile(const std::string& commaSeparatedSizes);
-  inline MappingOptions& tile(const char* commaSeparatedSizes);
+  inline MappingOptionsView& tile(const std::vector<uint64_t>& sizes);
+  inline MappingOptionsView& tile(std::initializer_list<uint64_t> sizes);
+  MappingOptionsView& tile(const std::string& commaSeparatedSizes);
+  inline MappingOptionsView& tile(const char* commaSeparatedSizes);
   template <typename... Args>
-  MappingOptions& tile(Args...);
+  MappingOptionsView& tile(Args...);
 
-  inline MappingOptions& mapToThreads(std::initializer_list<uint64_t> threads);
-  inline MappingOptions& mapToThreads(
-      uint64_t x,
-      uint64_t y = CudaDimView::defaultDim,
-      uint64_t z = CudaDimView::defaultDim);
-  inline MappingOptions& mapToThreads(const std::vector<uint64_t>& threads);
-  MappingOptions& mapToThreads(const std::string& commaSeparatedSizes);
-
-  inline MappingOptions& mapToBlocks(std::initializer_list<uint64_t> blocks);
-  inline MappingOptions& mapToBlocks(
-      uint64_t x,
-      uint64_t y = CudaDimView::defaultDim,
-      uint64_t z = CudaDimView::defaultDim);
-  inline MappingOptions& mapToBlocks(const std::vector<uint64_t>& blocks);
-  MappingOptions& mapToBlocks(const std::string& commaSeparatedSizes);
-
-  inline MappingOptions& unroll(uint64_t size);
-
-  inline MappingOptions& useSharedMemory(bool b);
-  inline MappingOptions& usePrivateMemory(bool b);
-  inline MappingOptions& maxSharedMemory(uint64_t size);
-  inline MappingOptions& fixParametersBeforeScheduling(bool b);
-  inline MappingOptions& unrollCopyShared(bool b);
-  inline MappingOptions& tileImperfectlyNested(bool b);
-  inline MappingOptions& matchLibraryCalls(bool b);
+  inline MappingOptionsView& unroll(uint64_t size);
+  inline MappingOptionsView& fixParametersBeforeScheduling(bool b);
+  inline MappingOptionsView& tileImperfectlyNested(bool b);
+  inline MappingOptionsView& matchLibraryCalls(bool b);
   ///@}
 
   /// Set single fusion strategy.
   ///@{
-  inline MappingOptions& scheduleFusionStrategy(FusionStrategy fs);
-  inline MappingOptions& scheduleFusionStrategy(const std::string& str);
+  inline MappingOptionsView& scheduleFusionStrategy(FusionStrategy fs);
+  inline MappingOptionsView& scheduleFusionStrategy(const std::string& str);
   ///@}
 
   /// Set fusion strategy for outer scheduling.
   ///@{
-  inline MappingOptions& outerScheduleFusionStrategy(FusionStrategy fs);
-  inline MappingOptions& outerScheduleFusionStrategy(const std::string& str);
-  inline MappingOptions& outerScheduleAllowSkewing(bool b);
-  inline MappingOptions& outerSchedulePositiveOrthant(bool b);
+  inline MappingOptionsView& outerScheduleFusionStrategy(FusionStrategy fs);
+  inline MappingOptionsView& outerScheduleFusionStrategy(
+      const std::string& str);
+  inline MappingOptionsView& outerScheduleAllowSkewing(bool b);
+  inline MappingOptionsView& outerSchedulePositiveOrthant(bool b);
   ///@}
 
   /// Set fusion strategy for intra-tile scheduling.
   ///@{
-  inline MappingOptions& intraTileScheduleFusionStrategy(FusionStrategy fs);
-  inline MappingOptions& intraTileScheduleFusionStrategy(
+  inline MappingOptionsView& intraTileScheduleFusionStrategy(FusionStrategy fs);
+  inline MappingOptionsView& intraTileScheduleFusionStrategy(
       const std::string& str);
-  inline MappingOptions& intraTileScheduleAllowSkewing(bool b);
-  inline MappingOptions& intraTileSchedulePositiveOrthant(bool b);
-  ///@}
-
-  /// Static constructors for predefined strategies.
-  ///@{
-  static MappingOptions makeNaiveMappingOptions();
-  static MappingOptions makeSingleThreadMappingOptions();
-  static MappingOptions makePointwiseMappingOptions();
-  static MappingOptions makeMlpMappingOptions();
-  static MappingOptions makeConvolutionMappingOptions();
-  static MappingOptions makeGroupConvolutionMappingOptions();
+  inline MappingOptionsView& intraTileScheduleAllowSkewing(bool b);
+  inline MappingOptionsView& intraTileSchedulePositiveOrthant(bool b);
   ///@}
 
   /// Output operator.
   friend std::ostream& operator<<(
       std::ostream& os,
-      const MappingOptions& options);
+      const MappingOptionsView& options);
 
  public:
-  MappingOptionsProto proto;
+  MappingOptionsProto& proto;
 
   // Views of sub-messages.
-  CudaDimView block;
-  CudaDimView grid;
   TilingView tiling;
   SchedulerOptionsView outerScheduleOptions;
   SchedulerOptionsView intraTileScheduleOptions;
+};
+
+/// "Materialized" MappingOptionsView.
+class MappingOptions {
+ public:
+  MappingOptions() : ownedProto_(), view(ownedProto_) {}
+  MappingOptions(const MappingOptions& options)
+      : ownedProto_(options.ownedProto_), view(ownedProto_) {}
+  /// Performs an underlying copy of the proto ```proto```
+  explicit MappingOptions(const MappingOptionsProto& proto)
+      : ownedProto_(proto), view(ownedProto_) {}
+  /// Performs an underlying copy of the proto viewed by ```view```
+  explicit MappingOptions(const MappingOptionsView& view)
+      : ownedProto_(view.proto), view(ownedProto_) {}
+
+  std::string toProtobufSerializedString() const {
+    return ownedProto_.SerializeAsString();
+  }
+
+  /// Static constructors for predefined strategies.
+  ///@{
+  inline static MappingOptions makeUnmappedMappingOptions();
+  inline static MappingOptions makeNaiveMappingOptions();
+  inline static MappingOptions makeSingleThreadMappingOptions();
+  inline static MappingOptions makePointwiseMappingOptions();
+  inline static MappingOptions makeMlpMappingOptions();
+  inline static MappingOptions makeConvolutionMappingOptions();
+  inline static MappingOptions makeGroupConvolutionMappingOptions();
+  ///@}
+
+  friend std::ostream& operator<<(
+      std::ostream& os,
+      const MappingOptions& options);
+
+ private:
+  MappingOptionsProto ownedProto_;
+
+ public:
+  MappingOptionsView view;
 };
 
 namespace callbacks {

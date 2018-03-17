@@ -41,8 +41,8 @@ class Tc2LUTOp : public TcOp<T, Context, Engine> {
   ~Tc2LUTOp() override {}
 
  protected:
-  void setupNaiveMappingOptions() override {
-    this->mappingOptions_.mapToBlocks(256)
+  void setupNaiveCudaMappingOptions() override {
+    this->cudaMappingOptions_.mapToBlocks(256)
         .mapToThreads(64)
         .tile({1})
         .unroll(1)

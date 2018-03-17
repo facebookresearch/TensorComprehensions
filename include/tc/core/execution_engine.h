@@ -20,7 +20,7 @@
 
 #include <dlpack/dlpack.h>
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/core/utils/time.h"
