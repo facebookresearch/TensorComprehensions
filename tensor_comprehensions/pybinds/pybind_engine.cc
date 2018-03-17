@@ -39,21 +39,26 @@ namespace py = pybind11;
 using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
 
 PYBIND11_MODULE(tc, m) {
+  m.def("set_logtostderr", [](bool logtostderr) {
+    FLAGS_logtostderr = logtostderr;
+  });
+  m.def("set_debug_lang", [](bool debug_lang) {
+    tc::FLAGS_debug_lang = debug_lang;
+  });
+  m.def("set_debug_halide", [](bool debug_halide) {
+    tc::FLAGS_debug_halide = debug_halide;
+  });
+  m.def("set_debug_tc_mapper", [](bool debug_tc_mapper) {
+    tc::FLAGS_debug_tc_mapper = debug_tc_mapper;
+  });
+  m.def("set_debug_cuda", [](bool debug_cuda) {
+    tc::FLAGS_debug_cuda = debug_cuda;
+  });
+  m.def("set_debug_tuner", [](bool debug_tuner) {
+    tc::FLAGS_debug_tuner = debug_tuner;
+  });
   m.def(
-      "global_debug_init", // exposing the debugging flags to people
-      [](std::vector<std::string> args) {
-        if (args.size() > 0) {
-          args.insert(args.begin(), "tc");
-        }
-        int numArgs = args.size();
-        // now we construct a char** argv type from args
-        std::vector<char*> vargs; // char* vector args
-        for (auto& arg : args) {
-          vargs.push_back(const_cast<char*>(arg.data()));
-        }
-        char** argv = vargs.data();
-        tc::python::globalDebugGflagsGlogInit(&numArgs, &argv);
-      });
+      "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
   py::object dlpack;
   try {

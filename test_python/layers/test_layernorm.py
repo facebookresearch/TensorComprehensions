@@ -19,7 +19,7 @@ import torch
 import torch.cuda
 import unittest
 
-tc.GlobalDebugInit(["--debug_tuner=false", "--debug_tc_mapper=false"])
+tc.SetDebugFlags(debug_tuner=False, debug_tc_mapper=False)
 
 
 class TestLayerNorm(unittest.TestCase):
