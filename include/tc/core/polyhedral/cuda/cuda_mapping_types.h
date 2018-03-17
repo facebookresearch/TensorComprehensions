@@ -133,4 +133,4 @@ struct ThreadId : public MappingId {
 } // namespace polyhedral
 } // namespace tc
 
-#include "tc/core/polyhedral/mapping_types-inl.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types-inl.h"

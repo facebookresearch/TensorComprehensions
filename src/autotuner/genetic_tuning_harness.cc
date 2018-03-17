@@ -32,7 +32,7 @@
 #include "tc/core/execution_engine.h"
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options_cpp_printer.h"
-#include "tc/core/polyhedral/mapping_types.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/utils/math.h"
 
