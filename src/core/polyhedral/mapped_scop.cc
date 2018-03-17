@@ -27,15 +27,15 @@
 #include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#include "tc/core/polyhedral/cuda/cuda_tighten_launch_bounds.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
-#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/polyhedral/separation.h"
-#include "tc/core/polyhedral/tighten_launch_bounds.h"
 #include "tc/core/polyhedral/unroll.h"
 #include "tc/core/scope_guard.h"
 
@@ -563,7 +563,6 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   auto mappedScopForCodegen = makeSpecializedMappedScop(*this);
 
   std::stringstream code;
-#if WITH_CUDA
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines
        << std::endl;
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
@@ -573,9 +572,6 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   code << "extern \"C\" {" << std::endl
        << emitCudaKernel(specializedName, *mappedScopForCodegen) << "}"
        << std::endl;
-#else
-  code << "TC was compiled with -DWITH_CUDA=0 which disabled cuda compilation";
-#endif
 
   return std::make_tuple(
       code.str(),

@@ -16,7 +16,6 @@ add_library(
 
   polyhedral/codegen.cc
   polyhedral/mapped_scop.cc
-  polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
   polyhedral/memory_promotion_heuristic.cc
   polyhedral/reduction_matcher.cc
@@ -27,8 +26,12 @@ add_library(
   polyhedral/schedule_print.cc
   polyhedral/scop.cc
   polyhedral/separation.cc
-  polyhedral/tighten_launch_bounds.cc
   polyhedral/unroll.cc
+
+  # Builds and runs without the CUDA SDK and used in cross-compilation tests
+  polyhedral/codegen_cuda.cc
+  polyhedral/cuda/cuda_mapping_types.cc
+  polyhedral/cuda/cuda_tighten_launch_bounds.cc
 )
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
@@ -92,8 +95,6 @@ if (WITH_CUDA)
     cuda/cuda_compilation_cache.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
-
-    polyhedral/codegen_cuda.cc
   )
   target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
   target_link_libraries(
