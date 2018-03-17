@@ -16,6 +16,7 @@ add_library(
 
   polyhedral/codegen.cc
   polyhedral/mapped_scop.cc
+  polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
   polyhedral/memory_promotion_heuristic.cc
   polyhedral/reduction_matcher.cc
