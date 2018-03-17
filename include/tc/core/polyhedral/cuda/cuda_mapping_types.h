@@ -17,47 +17,11 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/polyhedral/mapping_types.h"
+
 namespace tc {
-
-struct Block;
-struct Grid;
-
 namespace polyhedral {
 namespace mapping {
-
-struct BlockId;
-struct ThreadId;
-
-struct MappingId : public isl::id {
- protected:
-  MappingId(isl::id i, unsigned char l) : isl::id(i), dim(l) {}
-
- public:
-  MappingId(const MappingId& id) : isl::id(id), dim(id.dim) {}
-
-  inline bool isBlockId();
-  inline BlockId* asBlockId();
-
-  inline bool isThreadId();
-  inline ThreadId* asThreadId();
-
-  // For indexing into positional arrays
-  // TODO: this should go away but this probably requires tinkering with
-  // mapping_options.h::Grid/Block.
-  // Also, generally can't have fully static types and dynamic behavior
-  // like is used in mapped_scop.cc, so pick your poison:
-  //   API bloat/templates or dynamic checks
-  const unsigned char dim;
-
-  // Placeholder value to use in absence of mapping size.
-  static constexpr size_t unmapped = 1;
-
-  struct Hash {
-    size_t operator()(const MappingId& id) const {
-      return isl::IslIdIslHash().operator()(id);
-    }
-  };
-};
 
 // Note: do not add members to ThreadId or slicing will ensue.
 // We use containers of MappingId. This makes sense because of isl::id
