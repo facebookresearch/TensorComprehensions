@@ -51,21 +51,11 @@ MappingOptionsCppPrinter& operator<<(
   if (options.proto.has_tiling()) {
     prn.printListOption("tile", options.tiling.extractVector());
   }
-  prn.printListOption("mapToThreads", options.block.extractVector());
-  prn.printListOption("mapToBlocks", options.grid.extractVector());
   if (options.proto.has_unroll()) {
     prn.printValueOption("unroll", options.proto.unroll());
   }
   prn.printBooleanOption(
       "tileImperfectlyNested", options.proto.tile_imperfectly_nested());
-  prn.printBooleanOption("useSharedMemory", options.proto.use_shared_memory());
-  prn.printBooleanOption(
-      "usePrivateMemory", options.proto.use_private_memory());
-  prn.printBooleanOption(
-      "unrollCopyShared", options.proto.unroll_copy_shared());
-  if (options.proto.has_max_shared_memory()) {
-    prn.printValueOption("maxSharedMemory", options.proto.max_shared_memory());
-  }
   prn.printBooleanOption(
       "matchLibraryCalls", options.proto.match_library_calls());
   prn.endStmt();

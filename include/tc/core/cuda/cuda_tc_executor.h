@@ -20,9 +20,9 @@
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/halide_utils.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
@@ -32,6 +32,8 @@ namespace tc {
 
 class CudaTcExecutor : public ::tc::TcExecutor {
  public:
+  using MappingOptionsType = CudaMappingOptions;
+
   CudaTcExecutor(
       std::string id,
       const std::vector<const DLTensor*>& inputsInfo,
@@ -55,9 +57,9 @@ class CudaTcExecutor : public ::tc::TcExecutor {
   // strides at runtime.
   // @{
   void compile(const std::string& options) override {
-    compile(MappingOptions(options));
+    compile(CudaMappingOptions(options));
   }
-  void compile(const tc::MappingOptions& options);
+  void compile(const tc::CudaMappingOptions& options);
   // @}
 
   // Run can be called multiple times given a compilation, inputs are allowed

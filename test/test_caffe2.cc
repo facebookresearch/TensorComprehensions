@@ -20,8 +20,8 @@
 #include <gtest/gtest.h>
 
 #include "tc/c2/context.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 
 #include "isl_cli_strategy.h"
 #include "test_harness.h"
@@ -50,10 +50,10 @@ struct Caffe2CopyTest : public Caffe2Test {
 
   Argument strategyArg;
   Caffe2CopyTest() {
-    MappingOptions options = tc::makeBaseCliStrategy()
-                                 .tile({32, 32})
-                                 .mapToThreads({32, 32})
-                                 .mapToBlocks({32, 32, 32});
+    CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                     .tile({32, 32})
+                                     .mapToThreads({32, 32})
+                                     .mapToBlocks({32, 32, 32});
     strategyArg = MakeArgument<string>(
         "mappingOptions",
         tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -183,10 +183,10 @@ TEST_F(Caffe2Test, TcMatMulOp) {
     AddInput(w, {K, N}, "W");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32, 32})
-                               .mapToThreads({4, 32})
-                               .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32, 32})
+                                   .mapToThreads({4, 32})
+                                   .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -204,10 +204,10 @@ TEST_F(Caffe2Test, DISABLED_TcMatMulOp_Gradient) {
     AddInput(w, {M, N}, "O_grad");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32, 32})
-                               .mapToThreads({4, 32})
-                               .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32, 32})
+                                   .mapToThreads({4, 32})
+                                   .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -226,10 +226,10 @@ TEST_F(Caffe2Test, TcLUTOp) {
     TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL, "__lengths");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32})
-                               .mapToThreads({32, 32})
-                               .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32})
+                                   .mapToThreads({32, 32})
+                                   .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options)
@@ -257,7 +257,7 @@ TEST_F(Caffe2Test, Tc2LUTOp) {
     TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL2, "__lengths2");
   };
 
-  MappingOptions options =
+  CudaMappingOptions options =
       tc::makeBaseCliStrategy().tile({1, 32}).mapToThreads({1, 32}).mapToBlocks(
           {100, 100});
   Argument strategyArg = MakeArgument<string>(
@@ -367,10 +367,10 @@ TEST_F(Caffe2Test, TcFCReluOp) {
     AddInput(w, {N}, "B1");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32, 32})
-                               .mapToThreads({32, 4})
-                               .mapToBlocks({32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32, 32})
+                                   .mapToThreads({32, 4})
+                                   .mapToBlocks({32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -390,13 +390,13 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
     AddInput(w, {O}, "B2");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .scheduleFusionStrategy("Max")
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({128})
-                               .useSharedMemory(false)
-                               .usePrivateMemory(false);
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .scheduleFusionStrategy("Max")
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({128})
+                                   .useSharedMemory(false)
+                                   .usePrivateMemory(false);
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -420,11 +420,11 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
     AddConstInput(w, vector<TIndex>{P}, 1., "B3");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .scheduleFusionStrategy("Max")
-                               .tile({1})
-                               .mapToThreads({200})
-                               .mapToBlocks({32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .scheduleFusionStrategy("Max")
+                                   .tile({1})
+                                   .mapToThreads({200})
+                                   .mapToBlocks({32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -450,11 +450,11 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
     AddConstInput(w, vector<TIndex>{Q}, 1., "B4");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .scheduleFusionStrategy("Max")
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({128});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .scheduleFusionStrategy("Max")
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({128});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -474,11 +474,11 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
     AddInput(w, {G * F}, 1., "B");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .scheduleFusionStrategy("Max")
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({128});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .scheduleFusionStrategy("Max")
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({128});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -538,10 +538,10 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
     AddInput(w, {F}, "bias");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32})
-                               .mapToThreads({32, 32})
-                               .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32})
+                                   .mapToThreads({32, 32})
+                                   .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -577,10 +577,10 @@ TEST_F(Caffe2Test, DISABLED_TcConvolutionOp_Gradient) {
     AddInput(w, {NN, F, H - KH + 1, W - KW + 1}, "H_grad");
   };
 
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({32, 32})
-                               .mapToThreads({32, 32})
-                               .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({32, 32})
+                                   .mapToThreads({32, 32})
+                                   .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -629,11 +629,11 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
   init_ws(w_test);
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({1000})
-                               .unroll(1024);
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({1000})
+                                   .unroll(1024);
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -678,11 +678,11 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
 
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({1000})
-                               .unroll(1024);
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({1000})
+                                   .unroll(1024);
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -718,11 +718,11 @@ def fun(float(B, N, M) X) -> (Z) {
   init_ws(w_test);
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
-  MappingOptions options = tc::makeBaseCliStrategy()
-                               .tile({1})
-                               .mapToThreads({128})
-                               .mapToBlocks({1000})
-                               .unroll(1024);
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile({1})
+                                   .mapToThreads({128})
+                                   .mapToBlocks({1000})
+                                   .unroll(1024);
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());

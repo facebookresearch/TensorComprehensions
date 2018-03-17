@@ -53,7 +53,7 @@ class TestMapper : public ::testing::Test {
  protected:
   std::unique_ptr<MappedScop> makeMappedScop(
       std::string tc,
-      const MappingOptions& mappingOptions,
+      const CudaMappingOptions& mappingOptions,
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     auto scop = Scop::makeScop(ctx, tc);
@@ -75,7 +75,7 @@ class MapperMemoryPromotion2DHelper : public TestMapper {
       std::unordered_map<std::string, size_t> problemSizes,
       std::vector<size_t> tileSizes) {
     auto mappingOptions =
-        MappingOptions::makeNaiveMappingOptions()
+        CudaMappingOptions::makeNaiveCudaMappingOptions()
             .tile(tileSizes) // passing more tiling values triggers a check...
             .useSharedMemory(false) // do not auto-promote
             .usePrivateMemory(true);
@@ -95,7 +95,7 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
 }
 )TC";
 
-    auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
+    auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
                               .tile(tileSizes)
                               .useSharedMemory(false) // do not autopromote
                               .usePrivateMemory(true);

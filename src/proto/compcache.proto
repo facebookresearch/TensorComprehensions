@@ -18,7 +18,7 @@ message TensorInfoProto {
 
 message CudaCacheEntryProto {
   required string id = 1;
-  required MappingOptionsProto kernel_options = 2;
+  required CudaMappingOptionsProto kernel_options = 2;
   repeated TensorInfoProto inputs = 3;
   repeated TensorInfoProto outputs = 4;
   required string device_str = 5;
@@ -44,7 +44,7 @@ message ManualCudaCacheEntryProto {
 }
 
 message OptionsCacheValuesProto{
-  required MappingOptionsProto kernel_options = 1;
+  required CudaMappingOptionsProto kernel_options = 1;
   repeated uint64 recorded_runtimes = 2;
 }
 
@@ -66,6 +66,7 @@ message CudaCacheProto {
 message ManualCudaCacheProto {
   repeated ManualCudaCacheEntryProto entries = 1;
 }
+
 message OptionsCacheProto {
   repeated OptionsCacheEntryProto entries = 1;
 }

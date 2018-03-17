@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#pragma once
 
-#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/mapping_options.h"
 
 namespace tc {
-namespace polyhedral {
-namespace mapping {
-size_t ThreadId::mappingSize(const Block& vals) const {
-  if (vals.size() > dim) {
-    return vals[static_cast<size_t>(dim)];
-  }
-  return MappingId::unmapped;
-}
 
-size_t BlockId::mappingSize(const Grid& vals) const {
-  if (vals.size() > dim) {
-    return vals[static_cast<size_t>(dim)];
+class CpuMappingOptions : public MappingOptions {
+ public:
+  /// Construct from a serialized protocol buffer message.
+  inline explicit CpuMappingOptions(const std::string& str) {
+    bool parsed = proto.ParseFromString(str);
+    CHECK(parsed) << "could not parse protobuf string";
   }
-  return MappingId::unmapped;
-}
-} // namespace mapping
-} // namespace polyhedral
+
+  std::string toProtobufSerializedString() const {
+    return proto.SerializeAsString();
+  }
+};
 } // namespace tc

@@ -31,10 +31,10 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/scope_guard.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2
@@ -69,7 +69,7 @@ std::vector<const DLTensor*> inferOutputTensorInfo(
   return atCompl.inferOutputTensorInfo(name, inputs);
 }
 
-tc::MappingOptions loadOptionsFromProto(
+tc::CudaMappingOptions loadOptionsFromProto(
     const std::string cacheFilename,
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
@@ -127,7 +127,7 @@ struct Benchmark : public ::testing::Test {
   void Check(
       const std::string& tc,
       const std::string& name,
-      const tc::MappingOptions& mappingOptions,
+      const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor>& inputs,
       std::vector<at::Tensor>& outputs,
       CheckFunction checkFun = [](const std::vector<at::Tensor>& inputs,
@@ -379,8 +379,8 @@ struct Benchmark : public ::testing::Test {
       std::string TC,
       std::string kernelName,
       std::vector<at::Tensor> inputs,
-      tc::MappingOptions baseMapping,
-      std::vector<tc::MappingOptions> startingPoints,
+      tc::CudaMappingOptions baseMapping,
+      std::vector<tc::CudaMappingOptions> startingPoints,
       CheckFunction checkFun =
           [](const std::vector<at::Tensor>&, const std::vector<at::Tensor>&) {
             return true;

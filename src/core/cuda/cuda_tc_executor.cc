@@ -16,8 +16,8 @@
 #include "tc/core/cuda/cuda_tc_executor.h"
 
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/halide_utils.h"
-#include "tc/core/mapping_options_cpp_printer.h"
 #include "tc/core/polyhedral/mapped_scop.h"
 #include "tc/core/tc2halide.h"
 #include "tc/core/utils/dlpack.h"
@@ -36,17 +36,17 @@ namespace {
 
 std::string appendOptionsAndGitHash(
     const std::string& source,
-    const MappingOptions& options) {
+    const CudaMappingOptions& options) {
   std::stringstream ss;
   ss << source << "\n/*\nMapping Options:\n"
-     << MappingOptionsAsCpp(options) << "TC version: " << git_version
+     << CudaMappingOptionsAsCpp(options) << "TC version: " << git_version
      << "\n*/\n";
   return ss.str();
 }
 
 } // namespace
 
-void CudaTcExecutor::compile(const tc::MappingOptions& options) {
+void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
   if (rtcFun) {
     throw std::runtime_error{
         "CudaTcExecutor::compile cannot be called multiple tines."};
@@ -153,13 +153,14 @@ void CudaTcExecutor::compileWithTcMapper() {
   scopTmp = polyhedral::Scop::makeSpecializedScop(
       *scopTmp,
       globalParameterContext.intersect(scopTmp->globalParameterContext));
-  LOG_IF(INFO, FLAGS_debug_tc_mapper) << MappingOptions(executionInfo_.options);
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << CudaMappingOptions(executionInfo_.options);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << *(scopTmp->scheduleRoot());
 
   // Now we can build stuff
   auto mappedScop =
       polyhedral::MappedScop::makeWithOuterBlockInnerThreadStrategy(
-          std::move(scopTmp), MappingOptions(executionInfo_.options));
+          std::move(scopTmp), CudaMappingOptions(executionInfo_.options));
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
 
@@ -216,7 +217,7 @@ Duration CudaTcExecutor::run(
     OptionsCache::getCache()->recordRuntime(
         // TODO:replace this with pretty printed TC
         executionInfo_.kernelName,
-        MappingOptions(executionInfo_.options),
+        CudaMappingOptions(executionInfo_.options),
         inputs,
         constPtrs(outputs),
         res);

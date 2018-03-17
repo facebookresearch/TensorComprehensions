@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/polyhedral/scop.h"
 
 namespace tc {

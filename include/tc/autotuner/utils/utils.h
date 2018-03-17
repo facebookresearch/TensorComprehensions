@@ -19,7 +19,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/dlpack.h"
 
 #include <llvm/ADT/Optional.h>
@@ -28,7 +28,7 @@ namespace tc {
 namespace autotune {
 
 struct OptionsWithMedianTime {
-  MappingOptions options;
+  CudaMappingOptions options;
   Duration medianRuntime;
 };
 
@@ -44,12 +44,12 @@ std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs);
 
-std::vector<MappingOptions> restoreCandidates(
+std::vector<CudaMappingOptions> restoreCandidates(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
 
-llvm::Optional<MappingOptions> getBestOptions(
+llvm::Optional<CudaMappingOptions> getBestOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
