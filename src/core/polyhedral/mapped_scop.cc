@@ -563,6 +563,7 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   auto mappedScopForCodegen = makeSpecializedMappedScop(*this);
 
   std::stringstream code;
+#if WITH_CUDA
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines
        << std::endl;
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
@@ -572,6 +573,9 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   code << "extern \"C\" {" << std::endl
        << emitCudaKernel(specializedName, *mappedScopForCodegen) << "}"
        << std::endl;
+#else
+  code << "TC was compiled with -DWITH_CUDA=0 which disabled cuda compilation";
+#endif
 
   return std::make_tuple(
       code.str(),
