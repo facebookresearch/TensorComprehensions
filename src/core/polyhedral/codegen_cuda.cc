@@ -872,8 +872,6 @@ string emitCudaKernel(
            IteratorMapsType* iteratorMaps) -> isl::ast_node {
       auto expr = node.user_get_expr();
       auto stmtId = expr.get_op_arg(0).get_id();
-      // Note that the schedule obtained from build does NOT live in the
-      // schedule space obtained from build, despite the naming.
       // We rename loop-related dimensions manually.
       auto schedule = build.get_schedule();
       auto scheduleSpace = build.get_schedule_space();
