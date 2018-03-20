@@ -539,6 +539,9 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
         [](const std::unique_ptr<CandidateConfiguration>& c) {
           return c->runtime != Duration::zero();
         });
+    if (std::distance(firstNew, population.end()) == 0) {
+      return;
+    }
     GeneticSearch::Population newCandidates(
         std::distance(firstNew, population.end()));
     std::move(firstNew, population.end(), newCandidates.begin());
