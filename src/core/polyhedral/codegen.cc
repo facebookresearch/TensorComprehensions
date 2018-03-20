@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include <sstream>
 #include "tc/core/polyhedral/codegen.h"
+#include <sstream>
 
 namespace tc {
 namespace polyhedral {
