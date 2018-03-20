@@ -22,7 +22,7 @@
 #include <ATen/DLConvertor.h>
 namespace tc {
 namespace {
-std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
+inline std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
 toDlpackTensors(const std::vector<at::Tensor>& tensors) {
   std::vector<DLTensor*> dlTensors;
   std::vector<DLManagedTensor*> dlMTensors;
@@ -34,7 +34,7 @@ toDlpackTensors(const std::vector<at::Tensor>& tensors) {
   return make_pair(dlTensors, dlMTensors);
 }
 
-std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
+inline std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
 toConstDlpackTensors(const std::vector<at::Tensor>& tensors) {
   std::vector<const DLTensor*> dlTensors;
   std::vector<DLManagedTensor*> dlMTensors;
@@ -46,7 +46,7 @@ toConstDlpackTensors(const std::vector<at::Tensor>& tensors) {
   return make_pair(dlTensors, dlMTensors);
 }
 
-void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
+inline void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
   for (auto& tensor : tensors) {
     tensor->deleter(tensor);
   }
