@@ -45,7 +45,7 @@ class MappingOptionsCppPrinter {
       MappingOptionsCppPrinter& prn,
       const MappingOptions& options);
 
- private:
+ public:
   inline MappingOptionsCppPrinter& tab();
   inline MappingOptionsCppPrinter& endl();
   inline MappingOptionsCppPrinter& endStmt();

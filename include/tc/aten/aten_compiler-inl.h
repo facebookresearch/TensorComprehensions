@@ -73,7 +73,7 @@ template <typename ExecutorType>
 size_t ATenCompilationUnit<ExecutorType>::compile(
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
-    const MappingOptions& options) {
+    const typename ExecutorType::MappingOptionsType& options) {
   auto inputDLTensorsPair = toConstDlpackTensors(inputs);
   ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
   return executionEngine_->compile(

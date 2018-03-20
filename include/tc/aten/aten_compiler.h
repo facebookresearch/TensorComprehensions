@@ -23,6 +23,7 @@
 #include <ATen/DLConvertor.h>
 
 #include "tc/aten/utils.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/execution_engine.h"
 #include "tc/lang/parser.h"
 
@@ -45,7 +46,7 @@ class ATenCompilationUnit {
   size_t compile(
       const std::string& name,
       const std::vector<at::Tensor>& inputs,
-      const MappingOptions& options);
+      const typename ExecutorType::MappingOptionsType& options);
 
   /// Get the output Tensor info
   std::vector<const DLTensor*> inferOutputTensorInfo(

@@ -13,32 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/mapping_types.h"
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#pragma once
+
+#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/polyhedral/scop.h"
 
 namespace tc {
 namespace polyhedral {
-namespace mapping {
-bool MappingId::isBlockId() {
-  return *this == BlockId::x() or *this == BlockId::y() or
-      *this == BlockId::z();
-}
-BlockId* MappingId::asBlockId() {
-  if (!isBlockId()) {
-    return nullptr;
-  }
-  return static_cast<BlockId*>(this);
-}
-bool MappingId::isThreadId() {
-  return *this == ThreadId::x() or *this == ThreadId::y() or
-      *this == ThreadId::z();
-}
-ThreadId* MappingId::asThreadId() {
-  if (!isThreadId()) {
-    return nullptr;
-  }
-  return static_cast<ThreadId*>(this);
-}
-} // namespace mapping
+std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
+    const Scop& scop,
+    const tc::Grid& grid,
+    const tc::Block& block);
 } // namespace polyhedral
 } // namespace tc

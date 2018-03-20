@@ -303,8 +303,9 @@ void GeneticSearch::updateParameters() {
   lastBestConf =
       population.size() > 0 ? population.front()->configuration : lastBestConf;
   if (FLAGS_tuner_print_best) {
-    MappingOptions options(MappingOptions::makeSingleThreadMappingOptions());
-    lastBestConf.applyToMappingOptions(options);
+    CudaMappingOptions options(
+        CudaMappingOptions::makeSingleThreadCudaMappingOptions());
+    lastBestConf.applyToCudaMappingOptions(options);
     LOG(INFO) << "Best so far:\n" << options;
   }
 

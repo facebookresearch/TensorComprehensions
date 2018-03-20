@@ -21,8 +21,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tc/core/mapping_options.h"
-#include "tc/core/polyhedral/mapping_types.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/polyhedral/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/utils/dlpack.h"
@@ -85,7 +85,7 @@ class MappedScop {
   // Apply the hand-written OuterBlockInnerThread mapping strategy.
   static std::unique_ptr<MappedScop> makeWithOuterBlockInnerThreadStrategy(
       std::unique_ptr<Scop>&& scopUPtr,
-      const MappingOptions& mappingOptions);
+      const CudaMappingOptions& mappingOptions);
 
   // Map a particular "pos"-th dimension in a _band_ node identified by "tree"
   // to the block or thread dimension.  Ancestors or descendants of "tree" must

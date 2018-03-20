@@ -24,12 +24,12 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/constants.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/libraries.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/mapped_scop.h"
-#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -68,8 +68,8 @@ struct PolyhedralMapperTest : public ::testing::Test {
     return MappedScop::makeOneBlockOneThread(Prepare(tc));
   }
 
-  static MappingOptions DefaultOptions() {
-    return MappingOptions::makeNaiveMappingOptions();
+  static CudaMappingOptions DefaultOptions() {
+    return CudaMappingOptions::makeNaiveCudaMappingOptions();
   }
 
   std::unique_ptr<MappedScop> TileAndMapThreads(
@@ -149,7 +149,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
 
   std::string codegenMapped(
       std::string tc,
-      const MappingOptions& mappingOptions) {
+      const CudaMappingOptions& mappingOptions) {
     auto scop = Prepare(tc);
     auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
         std::move(scop), mappingOptions);
@@ -466,7 +466,7 @@ TEST_F(PolyhedralMapperTest, Unroll2D) {
 }
 
 /*
- * Map 1D code to 2D grid (set up by makeNaiveMappingOptions()) and
+ * Map 1D code to 2D grid (set up by makeNaiveCudaMappingOptions()) and
  * check that the code is pinned to one particular value of
  * block identifier b1 and thread identifier t1.
  */

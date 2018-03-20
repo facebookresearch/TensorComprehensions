@@ -27,8 +27,8 @@
 #include <compcache.pb.h>
 
 #include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/utils/time.h"
 
 namespace tc {
@@ -129,7 +129,7 @@ class CudaCache : public Cache<CudaCache> {
         const std::vector<int>& kernelParameters,
         const Grid& grid,
         const Block& block,
-        const MappingOptions& mappingOptions,
+        const CudaMappingOptions& mappingOptions,
         const std::vector<const DLTensor*>& inputs,
         const std::vector<const DLTensor*>& outputs,
         const std::string& cudaSource,
@@ -140,7 +140,7 @@ class CudaCache : public Cache<CudaCache> {
 
     struct Key {
       std::string id;
-      MappingOptions mappingOptions;
+      CudaMappingOptions mappingOptions;
       std::vector<detail::TensorInfo> inputs;
       std::vector<detail::TensorInfo> outputs;
       std::string deviceStr;
@@ -164,23 +164,23 @@ class CudaCache : public Cache<CudaCache> {
   /**
    * SearchKernel (through SearchKernelImpl) searches op in the cache
    * if a cached entry that corresponds to the op's configuration
-   * (MappingOptions and TargetDevice) and the shape of inputs matches it is
+   * (CudaMappingOptions and TargetDevice) and the shape of inputs matches it is
    * returned
    */
 
   CachedEntry* searchKernel(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<detail::TensorInfo>& inputs,
       const std::vector<detail::TensorInfo>& outputs);
   CachedEntry* searchKernel(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs);
   const CachedEntry* searchKernel(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
@@ -189,7 +189,7 @@ class CudaCache : public Cache<CudaCache> {
   static auto searchKernelImpl(
       C& c,
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<TensorTy>& inputs,
       const std::vector<TensorTy>& outputs)
       -> decltype(c.searchKernel(id, options, inputs, outputs));
@@ -206,7 +206,7 @@ class CudaCache : public Cache<CudaCache> {
    */
   void cacheKernel(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs,
       const std::string& kernelSpecializedName,
@@ -221,7 +221,7 @@ class CudaCache : public Cache<CudaCache> {
    */
   std::unique_ptr<RetrievalResult> retrieveKernel(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
@@ -252,7 +252,7 @@ class OptionsCache : public Cache<OptionsCache> {
         const std::vector<const DLTensor*>& inputs,
         const std::vector<const DLTensor*>& outputs,
         const std::string& deviceStr,
-        const MappingOptions& options,
+        const CudaMappingOptions& options,
         Duration runtime);
     CachedEntry(const OptionsCacheEntryProto& buf);
     OptionsCacheEntryProto toProtobuf() const;
@@ -278,9 +278,11 @@ class OptionsCache : public Cache<OptionsCache> {
     };
 
     struct Values {
-      Values(const MappingOptions& options, Duration runtime);
-      Values(const MappingOptions& options, std::vector<Duration>&& runtimes);
-      MappingOptions mappingOptions;
+      Values(const CudaMappingOptions& options, Duration runtime);
+      Values(
+          const CudaMappingOptions& options,
+          std::vector<Duration>&& runtimes);
+      CudaMappingOptions mappingOptions;
       std::vector<Duration> recordedRuntimes;
     };
     Key key;
@@ -293,7 +295,7 @@ class OptionsCache : public Cache<OptionsCache> {
   /**
    * SearchKernel (through SearchKernelImpl) searches op in the cache
    * if a cached entry that corresponds to the op's configuration
-   * (MappingOptions and TargetDevice) and the shape of inputs matches it is
+   * (CudaMappingOptions and TargetDevice) and the shape of inputs matches it is
    * returned
    */
 
@@ -324,7 +326,7 @@ class OptionsCache : public Cache<OptionsCache> {
 
   OptionsCacheProto toProtobuf() const;
   struct RetrievalResult {
-    MappingOptions options;
+    CudaMappingOptions options;
     std::vector<Duration> recordedRuntimes;
   };
 
@@ -334,7 +336,7 @@ class OptionsCache : public Cache<OptionsCache> {
 
   void recordRuntime(
       const std::string& id,
-      const MappingOptions& options,
+      const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs,
       Duration runtime);
@@ -344,12 +346,12 @@ class OptionsCache : public Cache<OptionsCache> {
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
-  std::unique_ptr<MappingOptions> retrieveBestOptions(
+  std::unique_ptr<CudaMappingOptions> retrieveBestOptions(
       const std::string& id,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
-  std::vector<MappingOptions> retrieveTopKOptions(
+  std::vector<CudaMappingOptions> retrieveTopKOptions(
       const std::string& id,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs,
@@ -490,4 +492,5 @@ std::string makeOptionsFilename(const std::string& filename);
 std::string makeCudaFilename(const std::string& filename);
 
 } // namespace tc
-#include "tc/core/compilation_cache-inl.h"
+
+#include "tc/core/cuda/cuda_compilation_cache-inl.h"

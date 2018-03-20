@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "tc/core/polyhedral/mapping_types.h"
+#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/utils/memory.h"
 
 #include "tc/lang/parser.h"
@@ -216,7 +216,7 @@ size_t ExecutionEngine<ExecutorType>::getHandle(
     const std::vector<const DLTensor*>& inputsInfo,
     const std::string& optionsStr) {
   std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-  MappingOptions options(optionsStr);
+  typename ExecutorType::MappingOptionsType options(optionsStr);
   auto it = std::find_if(
       executors_.begin(),
       executors_.end(),
@@ -226,7 +226,8 @@ size_t ExecutionEngine<ExecutorType>::getHandle(
             name == e->identifier &&
             compareDLTensorVectorMetadata(
                    extractRawPtrs(e->inputsInfo), inputsInfo) &&
-            e->options != "" && MappingOptions(e->options) == options;
+            e->options != "" &&
+            typename ExecutorType::MappingOptionsType(e->options) == options;
       });
   if (it != executors_.end()) {
     return it - executors_.begin();

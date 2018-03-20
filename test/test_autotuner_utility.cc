@@ -42,7 +42,7 @@ TEST(DivisorsAndPowers, Default) {
   ASSERT_EQ(dp, expected);
 }
 
-std::vector<MappingOptions> restoreCandidates(
+std::vector<CudaMappingOptions> restoreCandidates(
     const std::string& kernelName,
     std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs) {
@@ -82,7 +82,8 @@ TEST(RestoreCandidates, NoRuntimeRecorded) {
 
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc_);
-  tc::MappingOptions options = tc::MappingOptions::makeMlpMappingOptions();
+  tc::CudaMappingOptions options =
+      tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   std::vector<at::Tensor> outputs_;
   auto handle = atCompl.compile("matmul", inputs, options);
   atCompl.run("matmul", inputs, outputs_, handle);
@@ -98,12 +99,13 @@ TEST(RestoreCandidates, Hit) {
 
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc_);
-  tc::MappingOptions options = tc::MappingOptions::makeMlpMappingOptions();
+  tc::CudaMappingOptions options =
+      tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   std::vector<at::Tensor> outputs_;
   auto handle = atCompl.compile("matmul", inputs, options);
   atCompl.run("matmul", inputs, outputs_, handle, true);
 
-  options = tc::MappingOptions::makeNaiveMappingOptions();
+  options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   handle = atCompl.compile("matmul", inputs, options);
   atCompl.run("matmul", inputs, outputs_, handle, true);
 

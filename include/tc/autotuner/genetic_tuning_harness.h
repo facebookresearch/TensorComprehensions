@@ -46,8 +46,8 @@ class GeneticTunerHarness {
       std::string kernelName,
       const std::unordered_map<size_t, std::vector<const DLTensor*>>& inputs,
       std::unordered_map<size_t, std::vector<DLTensor*>>& outputs,
-      MappingOptions baseMapping,
-      std::vector<MappingOptions> startingPoints,
+      CudaMappingOptions baseMapping,
+      std::vector<CudaMappingOptions> startingPoints,
       const TuningParameterFixer& fixedParams);
   void run(size_t numGenerations);
 
@@ -76,11 +76,12 @@ class GeneticTunerHarness {
   void doGpuWork(size_t gpu, ExecutorType& engine, Printer& printer);
 
   /// Make options from conf
-  tc::MappingOptions makeOptions(const CandidateConfiguration& conf);
-  TuningConfiguration makeTuningConfiguration(const MappingOptions& options);
-  MappingOptions bestMappingOption() {
+  tc::CudaMappingOptions makeOptions(const CandidateConfiguration& conf);
+  TuningConfiguration makeTuningConfiguration(
+      const CudaMappingOptions& options);
+  CudaMappingOptions bestMappingOption() {
     std::lock_guard<std::mutex> lock(bestTimeMtx_);
-    return bestMappingOptions_;
+    return bestCudaMappingOptions_;
   }
 
  public:
@@ -98,7 +99,7 @@ class GeneticTunerHarness {
  private:
   std::mutex bestTimeMtx_;
   size_t bestTime_ = std::numeric_limits<size_t>::max();
-  MappingOptions bestMappingOptions_;
+  CudaMappingOptions bestCudaMappingOptions_;
 
   const lang::TreeRef kTc_;
   const std::string kKernelName_;
@@ -108,8 +109,8 @@ class GeneticTunerHarness {
   std::atomic_size_t numEvaluations_;
   const std::unordered_map<size_t, std::vector<const DLTensor*>> kInputs_;
   std::unordered_map<size_t, std::vector<DLTensor*>> outputs_;
-  const MappingOptions kBaseMapping_;
-  const std::vector<MappingOptions> kStartingPoints_;
+  const CudaMappingOptions kBaseMapping_;
+  const std::vector<CudaMappingOptions> kStartingPoints_;
 };
 
 std::vector<size_t> parseGpus();

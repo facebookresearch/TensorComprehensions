@@ -26,9 +26,9 @@
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/scope_guard.h"
 
 namespace tc {
@@ -76,7 +76,7 @@ PYBIND11_MODULE(tc, m) {
               ATenCudaCompilationUnit& instance,
               const std::string& name,
               py::list& inputs,
-              const tc::MappingOptions& options) {
+              const tc::CudaMappingOptions& options) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
             return instance.compile(name, atInputs, options);
           })
@@ -118,8 +118,8 @@ PYBIND11_MODULE(tc, m) {
               std::vector<uint64_t> grid,
               std::vector<uint64_t> block) {
             tc::ManualCudaCache::enableCache();
-            tc::MappingOptions options =
-                tc::MappingOptions::makeNaiveMappingOptions();
+            tc::CudaMappingOptions options =
+                tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
             auto tensorsPair = tc::toConstDlpackTensors(atInputs);
             tc::ScopeGuard g(

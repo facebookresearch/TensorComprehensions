@@ -41,8 +41,9 @@ class TcOp : public Operator<Context> {
         tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
         tcName_(
             OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
-        mappingOptions_(tc::MappingOptions::makeNaiveMappingOptions()),
-        gradMappingOptions_(tc::MappingOptions::makeNaiveMappingOptions()) {
+        mappingOptions_(tc::CudaMappingOptions::makeNaiveCudaMappingOptions()),
+        gradCudaMappingOptions_(
+            tc::CudaMappingOptions::makeNaiveCudaMappingOptions()) {
     gradTc_ =
         OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =
@@ -50,17 +51,18 @@ class TcOp : public Operator<Context> {
     profile_ = OperatorBase::GetSingleArgument<bool>("profile", false);
     ArgumentHelper args(operator_def);
     if (args.HasArgument("mappingOptions")) {
-      mappingOptions_ = tc::MappingOptions(
+      mappingOptions_ = tc::CudaMappingOptions(
           args.GetSingleArgument<std::string>("mappingOptions", "ERROR"));
     } else {
-      setupNaiveMappingOptions();
+      setupNaiveCudaMappingOptions();
     }
 
-    if (args.HasArgument("gradMappingOptions")) {
-      gradMappingOptions_ = tc::MappingOptions(
-          args.GetSingleArgument<std::string>("gradMappingOptions", "ERROR"));
+    if (args.HasArgument("gradCudaMappingOptions")) {
+      gradCudaMappingOptions_ =
+          tc::CudaMappingOptions(args.GetSingleArgument<std::string>(
+              "gradCudaMappingOptions", "ERROR"));
     } else {
-      setupDefaultGradMappingOptions();
+      setupDefaultGradCudaMappingOptions();
     }
     executionEngine_ = std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>>(
         new tc::ExecutionEngine<tc::CudaTcExecutor>());
@@ -74,12 +76,12 @@ class TcOp : public Operator<Context> {
   /// Hook called when the mappingOptions are not provided in the Caffe2
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
-  virtual void setupNaiveMappingOptions() {}
+  virtual void setupNaiveCudaMappingOptions() {}
 
-  /// Hook called when the gradMappingOptions are not provided in the Caffe2
+  /// Hook called when the gradCudaMappingOptions are not provided in the Caffe2
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
-  virtual void setupDefaultGradMappingOptions() {}
+  virtual void setupDefaultGradCudaMappingOptions() {}
 
   void prepareOutputs(const std::vector<const DLTensor*> tensorInfo) {
     for (int i = 0; i < tensorInfo.size(); ++i) {
@@ -131,8 +133,8 @@ class TcOp : public Operator<Context> {
   std::string tcName_;
   std::string gradTcName_;
   bool profile_;
-  tc::MappingOptions mappingOptions_;
-  tc::MappingOptions gradMappingOptions_;
+  tc::CudaMappingOptions mappingOptions_;
+  tc::CudaMappingOptions gradCudaMappingOptions_;
 
  private:
   std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>> executionEngine_;

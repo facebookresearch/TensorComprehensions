@@ -16,13 +16,19 @@
 #pragma once
 
 #include "tc/core/mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
 
 namespace tc {
-namespace polyhedral {
-std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
-    const tc::Grid& grid,
-    const tc::Block& block);
-} // namespace polyhedral
+
+class CpuMappingOptions : public MappingOptions {
+ public:
+  /// Construct from a serialized protocol buffer message.
+  inline explicit CpuMappingOptions(const std::string& str) {
+    bool parsed = proto.ParseFromString(str);
+    CHECK(parsed) << "could not parse protobuf string";
+  }
+
+  std::string toProtobufSerializedString() const {
+    return proto.SerializeAsString();
+  }
+};
 } // namespace tc

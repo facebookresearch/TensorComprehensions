@@ -1,3 +1,9 @@
+################################################################################
+# tc_core
+#
+# Core CPU library with cross-compilation capabilities linked from
+# tc_core_cuda_cross_compile
+################################################################################
 add_library(
   tc_core
 
@@ -27,7 +33,6 @@ add_library(
   polyhedral/schedule_print.cc
   polyhedral/scop.cc
   polyhedral/separation.cc
-  polyhedral/tighten_launch_bounds.cc
   polyhedral/unroll.cc
 )
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
@@ -41,6 +46,7 @@ target_link_libraries(
   tc_lang
   tc_version
   tc_proto
+  tc_core_cuda_cross_compile
 )
 install(
   TARGETS
@@ -49,6 +55,47 @@ install(
   DESTINATION lib
 )
 
+################################################################################
+# tc_core_cuda_cross_compile
+#
+# Core CUDA cross-compilation library for compiling to CUDA and not running
+# Builds **without** the CUDA SDK and used in cross-compilation tests
+################################################################################
+add_library(
+  tc_core_cuda_cross_compile
+
+  SHARED
+
+  cuda/cuda_mapping_options.cc
+  cuda/cuda_mapping_options_cpp_printer.cc
+  polyhedral/codegen_cuda.cc
+  polyhedral/cuda/cuda_mapping_types.cc
+  polyhedral/cuda/cuda_tighten_launch_bounds.cc
+)
+target_include_directories(tc_core_cuda_cross_compile PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
+target_link_libraries(
+  tc_core_cuda_cross_compile
+
+  ${HALIDE_LIBRARIES}
+  ${ISL_LIBRARIES}
+  -lLLVM
+
+  tc_lang
+  tc_version
+  tc_proto
+)
+install(
+  TARGETS
+  tc_core_cuda_cross_compile
+
+  DESTINATION lib
+)
+
+################################################################################
+# tc_core_cpu
+#
+# Core CPU library for compiling to LLVMIR and running on CPUs
+################################################################################
 add_library(
   tc_core_cpu
 
@@ -78,6 +125,11 @@ install(
   DESTINATION lib
 )
 
+################################################################################
+# tc_core_cuda
+#
+# Core CUDA library for compiling to PTX and running on actual GPUs
+################################################################################
 if (WITH_CUDA)
   find_library(CUDA_NVRTC_LIBRARIES nvrtc
     PATHS ${CUDA_TOOLKIT_ROOT_DIR}
@@ -92,8 +144,6 @@ if (WITH_CUDA)
     cuda/cuda_compilation_cache.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
-
-    polyhedral/codegen_cuda.cc
   )
   target_include_directories(tc_core_cuda PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
   target_link_libraries(

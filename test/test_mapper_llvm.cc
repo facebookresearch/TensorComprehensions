@@ -22,8 +22,8 @@
 
 #include "tc/aten/utils.h"
 #include "tc/core/cpu/cpu_tc_executor.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/execution_engine.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
 #include "tc/core/polyhedral/llvm_jit.h"
 #include "tc/core/polyhedral/scop.h"
@@ -82,7 +82,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   ExecutionEngine<CpuTcExecutor> engine;
   engine.define(tc);
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputDLTensorsPair = toConstDlpackTensors({A, B});
   ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
   engine.compile(

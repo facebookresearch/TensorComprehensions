@@ -26,8 +26,8 @@
 
 #include "pybind_utils.h"
 #include "tc/autotuner/genetic_autotuner_aten.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 
 namespace tc {
 namespace python {
@@ -122,8 +122,8 @@ PYBIND11_MODULE(autotuner, m) {
               const std::string& cacheFileName,
               const std::string& tcName,
               py::list& inputs,
-              tc::MappingOptions& baseMapping,
-              std::vector<tc::MappingOptions>& startingOptions) {
+              tc::CudaMappingOptions& baseMapping,
+              std::vector<tc::CudaMappingOptions>& startingOptions) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
             auto bestOptions = instance.tune(
                 cacheFileName, tcName, atInputs, baseMapping, startingOptions);
@@ -144,7 +144,7 @@ PYBIND11_MODULE(autotuner, m) {
               py::list& inputs,
               const size_t& numCandidates) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<tc::MappingOptions> mappingOptions =
+            std::vector<tc::CudaMappingOptions> mappingOptions =
                 instance.load(cacheFileName, tcName, atInputs, numCandidates);
             return mappingOptions;
           });

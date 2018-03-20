@@ -22,7 +22,7 @@
 #include <numeric>
 #include <tuple>
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/math.h"
 
 namespace tc {
@@ -204,7 +204,7 @@ CudaCache::CachedEntry::CachedEntry(
     const std::vector<int>& kernelParameters,
     const Grid& grid,
     const Block& block,
-    const MappingOptions& mappingOptions,
+    const CudaMappingOptions& mappingOptions,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
     const std::string& cudaSource,
@@ -220,7 +220,7 @@ CudaCache::CachedEntry::CachedEntry(
 
 CudaCache::CachedEntry::CachedEntry(const CudaCacheEntryProto& buf)
     : key{buf.id(),
-          MappingOptions{buf.kernel_options()},
+          CudaMappingOptions{buf.kernel_options()},
           ProtoToTensorInfoVector(buf.inputs()),
           ProtoToTensorInfoVector(buf.outputs()),
           buf.device_str(),
@@ -233,7 +233,7 @@ CudaCache::CachedEntry::CachedEntry(const CudaCacheEntryProto& buf)
 
 void CudaCache::cacheKernel(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
     const std::string& kernelSpecializedName,
@@ -268,7 +268,7 @@ void CudaCache::cacheKernel(
 
 CudaCache::CachedEntry* CudaCache::searchKernel(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<detail::TensorInfo>& inputs,
     const std::vector<detail::TensorInfo>& outputs) {
   return searchKernelImpl(*this, id, options, inputs, outputs);
@@ -276,7 +276,7 @@ CudaCache::CachedEntry* CudaCache::searchKernel(
 
 CudaCache::CachedEntry* CudaCache::searchKernel(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
   return searchKernelImpl(*this, id, options, inputs, outputs);
@@ -284,7 +284,7 @@ CudaCache::CachedEntry* CudaCache::searchKernel(
 
 const CudaCache::CachedEntry* CudaCache::searchKernel(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
   return searchKernelImpl(*this, id, options, inputs, outputs);
@@ -292,7 +292,7 @@ const CudaCache::CachedEntry* CudaCache::searchKernel(
 
 std::unique_ptr<CudaCache::RetrievalResult> CudaCache::retrieveKernel(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
   std::lock_guard<std::mutex> lock(mtx_);
@@ -336,7 +336,7 @@ size_t OptionsCache::totalSize() const {
       [](size_t sum, const CachedEntry& e) { return sum + e.values.size(); });
 }
 
-std::unique_ptr<MappingOptions> OptionsCache::retrieveBestOptions(
+std::unique_ptr<CudaMappingOptions> OptionsCache::retrieveBestOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
@@ -344,7 +344,8 @@ std::unique_ptr<MappingOptions> OptionsCache::retrieveBestOptions(
   if (ret.empty()) {
     return nullptr;
   }
-  return std::unique_ptr<MappingOptions>(new MappingOptions(ret.front()));
+  return std::unique_ptr<CudaMappingOptions>(
+      new CudaMappingOptions(ret.front()));
 }
 
 std::vector<OptionsCache::RetrievalResult>
@@ -371,7 +372,7 @@ OptionsCache::retrieveOptionsAndRuntimes(
   return res;
 }
 
-std::vector<MappingOptions> OptionsCache::retrieveTopKOptions(
+std::vector<CudaMappingOptions> OptionsCache::retrieveTopKOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
@@ -384,7 +385,7 @@ std::vector<MappingOptions> OptionsCache::retrieveTopKOptions(
   }
 
   struct OptionsWithMedian {
-    const MappingOptions* options;
+    const CudaMappingOptions* options;
     Duration medianRuntime;
   };
 
@@ -411,7 +412,7 @@ std::vector<MappingOptions> OptionsCache::retrieveTopKOptions(
     k = candidatesMedian.size();
   }
 
-  std::vector<MappingOptions> res;
+  std::vector<CudaMappingOptions> res;
   res.reserve(k);
   std::transform(
       candidatesMedian.begin(),
@@ -443,7 +444,7 @@ void OptionsCache::keepOnlyBestCandidates(size_t numberToKeep) {
 
 void OptionsCache::recordRuntime(
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
     Duration runtime) {
@@ -489,7 +490,7 @@ OptionsCache::CachedEntry::CachedEntry(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
     const std::string& deviceStr,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     Duration runtime)
     : key(id, inputs, outputs, deviceStr, git_version) {
   values.emplace_back(options, runtime);
@@ -520,12 +521,12 @@ OptionsCache::CachedEntry::Key::Key(
       gitVersion(gitVersion) {}
 
 OptionsCache::CachedEntry::Values::Values(
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     Duration runtime)
     : mappingOptions(options), recordedRuntimes{runtime} {}
 
 OptionsCache::CachedEntry::Values::Values(
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     std::vector<Duration>&& runtimes)
     : mappingOptions(options), recordedRuntimes(std::move(runtimes)) {}
 
@@ -567,7 +568,7 @@ OptionsCache::CachedEntry::CachedEntry(const OptionsCacheEntryProto& buf)
         std::back_inserter(runtimes),
         [](int64_t us) { return std::chrono::microseconds(us); });
     values.emplace_back(
-        MappingOptions(value.kernel_options()), std::move(runtimes));
+        CudaMappingOptions(value.kernel_options()), std::move(runtimes));
   }
 }
 
