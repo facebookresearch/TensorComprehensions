@@ -80,9 +80,9 @@ struct AstPrinter {
   }
 
  private:
-  void emitFor(isl::ast_node node);
-  void emitIf(isl::ast_node node);
-  void emitStmt(isl::ast_node node);
+  void emitFor(isl::ast_node_for node);
+  void emitIf(isl::ast_node_if node);
+  void emitStmt(isl::ast_node_user node);
   void emitAst(isl::ast_node node);
 
  private:
@@ -216,26 +216,26 @@ void emitTensorViews(
   }
 }
 
-void AstPrinter::emitFor(isl::ast_node node) {
+void AstPrinter::emitFor(isl::ast_node_for node) {
   WS ws;
   context_.ss << ws.tab();
-  string iter = node.for_get_iterator().to_C_str();
-  context_.ss << "for (int " << iter << " = " << node.for_get_init().to_C_str()
-              << "; " << node.for_get_cond().to_C_str() << "; " << iter
-              << " += " << node.for_get_inc().to_C_str() << ") {" << endl;
-  emitAst(node.for_get_body());
+  string iter = node.get_iterator().to_C_str();
+  context_.ss << "for (int " << iter << " = " << node.get_init().to_C_str()
+              << "; " << node.get_cond().to_C_str() << "; " << iter
+              << " += " << node.get_inc().to_C_str() << ") {" << endl;
+  emitAst(node.get_body());
   context_.ss << ws.tab() << "}" << endl;
 }
 
-void AstPrinter::emitIf(isl::ast_node node) {
+void AstPrinter::emitIf(isl::ast_node_if node) {
   WS ws;
   context_.ss << ws.tab();
-  context_.ss << "if (" << node.if_get_cond().to_C_str() << ") {" << endl;
-  emitAst(node.if_get_then());
+  context_.ss << "if (" << node.get_cond().to_C_str() << ") {" << endl;
+  emitAst(node.get_then());
   context_.ss << ws.tab() << "}";
-  if (node.if_has_else()) {
+  if (node.has_else()) {
     context_.ss << " else {" << endl;
-    emitAst(node.if_get_else());
+    emitAst(node.get_else());
     context_.ss << ws.tab() << "}";
   }
   context_.ss << endl;
@@ -388,8 +388,8 @@ void emitCopyStmt(const CodegenStatementContext& context) {
   context.ss << ";" << std::endl;
 }
 
-void AstPrinter::emitStmt(isl::ast_node node) {
-  isl::ast_expr usrExp = node.user_get_expr();
+void AstPrinter::emitStmt(isl::ast_node_user node) {
+  isl::ast_expr usrExp = node.get_expr();
   auto stmtId = usrExp.get_op_arg(0).get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
@@ -428,28 +428,21 @@ void AstPrinter::emitStmt(isl::ast_node node) {
 }
 
 void AstPrinter::emitAst(isl::ast_node node) {
-  switch (node.get_type()) {
-    case isl::ast_node_type::_for:
-      emitFor(node);
-      break;
-    case isl::ast_node_type::_if:
-      emitIf(node);
-      break;
-    case isl::ast_node_type::block:
-      for (auto child : node.block_get_children()) {
-        emitAst(child);
-      }
-      break;
-    case isl::ast_node_type::mark:
-      CHECK(false) << "mark";
-      // emitAst(node.mark_get_node());
-      break;
-    case isl::ast_node_type::user:
-      emitStmt(node);
-      break;
-    default:
-      LOG(FATAL) << "NYI " << node << endl;
-      return;
+  if (auto forNode = node.as<isl::ast_node_for>()) {
+    emitFor(forNode);
+  } else if (auto ifNode = node.as<isl::ast_node_if>()) {
+    emitIf(ifNode);
+  } else if (auto blockNode = node.as<isl::ast_node_block>()) {
+    for (auto child : blockNode.get_children()) {
+      emitAst(child);
+    }
+  } else if (node.as<isl::ast_node_mark>()) {
+    CHECK(false) << "mark";
+    // emitAst(node.mark_get_node());
+  } else if (auto userNode = node.as<isl::ast_node_user>()) {
+    emitStmt(userNode);
+  } else {
+    LOG(FATAL) << "NYI " << node << endl;
   }
 }
 
@@ -746,7 +739,9 @@ string emitCudaKernel(
         [](isl::ast_node node,
            isl::ast_build build,
            IteratorMapsType* iteratorMaps) -> isl::ast_node {
-      auto expr = node.user_get_expr();
+      auto user = node.as<isl::ast_node_user>();
+      CHECK(user);
+      auto expr = user.get_expr();
       auto stmtId = expr.get_op_arg(0).get_id();
       // We rename loop-related dimensions manually.
       auto schedule = build.get_schedule();
