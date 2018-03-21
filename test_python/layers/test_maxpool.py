@@ -26,7 +26,7 @@ class TestMaxPool(unittest.TestCase):
         # NOTE: take note of use of {{ }}
         LANG = """
         def maxpool(float(B, C, H, W) input) -> (output) {{
-            output(b, c, h, w) max= input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
+            output(b, c, h, w) max=! input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
         }}
         """
         maxpool = tc.define(LANG, name="maxpool", constants={"sH":1, "sW":1, "kH":2, "kW":2})

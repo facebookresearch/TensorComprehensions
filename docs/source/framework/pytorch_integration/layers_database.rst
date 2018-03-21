@@ -33,7 +33,7 @@ Average pooling
 .. code::
 
     def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) += input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
+        output(b, c, h, w) +=! input(b, c, h * {sH} + kh, w * {sW} + kw) / ({kH} * {kW}) where kh in 0:{kH}, kw in 0:{kW}
     }}
 
 
@@ -43,7 +43,7 @@ Max pooling
 .. code::
 
     def maxpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) max= input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
+        output(b, c, h, w) max=! input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
     }}
 
 Convolution layers
