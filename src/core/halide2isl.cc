@@ -316,6 +316,20 @@ struct ScheduleTreeAndDomain {
   isl::union_set domain;
 };
 
+/*
+ * Helper function for extracting a schedule tree from a Halide Stmt,
+ * recursively descending over the Stmt.
+ * "s" is the current position in the recursive descent.
+ * "set" describes the bounds on the outer loop iterators.
+ * Return the schedule tree corresponding to the subtree at "s",
+ * along with a separated out domain.
+ *
+ * "reads" and "writes" collect the accesses found along the way.
+ * "accesses" collects the mapping from Call (for the reads) and Provide nodes
+ * (for the writes) to the corresponding tag in the access relations.
+ * "statements" collects the mapping from instance set tuple identifiers
+ * to the corresponding Provide node.
+ */
 ScheduleTreeAndDomain makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
