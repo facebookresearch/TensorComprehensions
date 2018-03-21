@@ -646,7 +646,7 @@ class LLVMCodegen {
         }
         case isl_ast_expr_type::isl_ast_expr_int: {
           auto val = isl::manage(isl_ast_expr_get_val(subscript.get()));
-          CHECK_EQ(val.get_den_si(), 1);
+          CHECK(val.is_int());
           subscriptValues.push_back(
               getLLVMConstantSignedInt64(val.get_num_si()));
           break;
