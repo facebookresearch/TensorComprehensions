@@ -259,102 +259,6 @@ void emitReductionOpName(const Halide::Expr& e, const CodegenContext& context) {
   }
 }
 
-namespace {
-// Compute the range of parameter values in a given set.  Both sides of the
-// range are inclusive.
-std::pair<isl::val, isl::val> computeParamRange(isl::set domain, int pos) {
-  // Coerce the set to the shape [N] -> {[i]: only N here }
-  domain = domain.params().from_params();
-  domain = domain.project_out(isl::dim_type::param, 0, pos);
-  domain = domain.project_out(
-      isl::dim_type::param, 1, domain.dim(isl::dim_type::param) - 1);
-  domain = domain.insert_dims(isl::dim_type::set, 0, 1);
-
-  // Connect parameter to a set dimension [N] -> {[i]: i = N and ...}
-  auto lspace = isl::local_space(domain.get_space());
-  auto paramAff = isl::aff(lspace, isl::dim_type::param, 0);
-  auto varAff = isl::aff(lspace, isl::dim_type::set, 0);
-  domain = domain & (isl::aff_set(paramAff) == varAff);
-
-  // Remove the remaining parameter to move its constraints to the set dimension
-  domain = domain.project_out(isl::dim_type::param, 0, 1);
-
-  // Get min and max.
-  auto lower = domain.dim_min(0);
-  auto upper = domain.dim_max(0);
-
-  // Compute the range
-  CHECK(lower.is_cst() && upper.is_cst())
-      << "expected constant lower and upper bounds";
-
-  // Without parameters at all, we must have a single piece in the bound PA.
-  auto lowerPA = isl::PA(lower);
-  auto upperPA = isl::PA(upper);
-  CHECK(lowerPA.size() == 1 && upperPA.size() == 1);
-
-  return std::make_pair(
-      lowerPA[0].second.get_constant_val(),
-      upperPA[0].second.get_constant_val());
-}
-
-// Given the iteratorMaps, whose domain was affected by the mapping filters, in
-// the provided context, compute the range of thread mapping parameters.  If
-// the statement is not mapped to some threads, they will not appear in the
-// result.
-std::unordered_map<isl::id, long, isl::IslIdIslHash> activeThreadsInBlock(
-    const CodegenStatementContext& context) {
-  auto iterMap = context.iteratorMap();
-  auto dom =
-      iterMap.domain()
-          .intersect_params(context.mappedScop.scop().globalParameterContext)
-          .params()
-          .from_params();
-
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::vector<isl::id> threadIds{TX, TY, TZ};
-  std::unordered_map<isl::id, long, isl::IslIdIslHash> activeThreads;
-
-  for (auto id : threadIds) {
-    int pos = dom.find_dim_by_id(isl::dim_type::param, id);
-    if (pos < 0) {
-      continue;
-    }
-    auto range = computeParamRange(dom, pos);
-    CHECK_EQ(range.first.get_den_si(), 1) << "fractional parameters?";
-    CHECK_EQ(range.second.get_den_si(), 1) << "fractional parameters?";
-    CHECK_EQ(range.first.get_num_si(), 0)
-        << "NYI: active threads starting not from 0";
-
-    activeThreads[id] =
-        range.second.get_num_si() - range.first.get_num_si() + 1;
-  }
-  return activeThreads;
-}
-
-// Given the iteratorMaps, whose domain was affected by the mapping filters, in
-// the provided context, compute the range of thread mapping parameters.  If
-// the statement is not mapped to some threads, they will _still appear_ in the
-// result with the range 1.
-std::array<long, 3> activeThreadsInBlockWithDefaults(
-    const CodegenStatementContext& context) {
-  auto active = activeThreadsInBlock(context);
-  std::array<long, 3> result;
-
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::vector<isl::id> threadIds{TX, TY, TZ};
-  int i = 0;
-  for (auto id : threadIds) {
-    if (active.count(id) != 1) {
-      result[i] = MappingId::unmapped;
-    } else {
-      result[i] = active[id];
-    }
-    ++i;
-  }
-  return result;
-}
-} // namespace
-
 // Emit a cross-thread tree reduce.
 // For now this is only expected to work with threadIdx.x.
 void emitTreeSyncCall(
@@ -373,25 +277,16 @@ void emitTreeSyncCall(
   std::array<size_t, 3> dims = {TX.mappingSize(context.mappedScop.numThreads),
                                 TY.mappingSize(context.mappedScop.numThreads),
                                 TZ.mappingSize(context.mappedScop.numThreads)};
-  std::array<long, 3> active = activeThreadsInBlockWithDefaults(context);
-
-  for (int i = 0; i < 3; ++i) {
-    if (active[i] < dims[i]) {
-      LOG(INFO) << "Reduction statement " << updateId << " mapped to "
-                << dims[i] << "threads along dim: " << i << "but only "
-                << active[i] << " are non-empty";
-    }
-  }
 
   context.ss << tc::code::cuda::kCUBReductionName;
 
   // Template mapping dimension
   context.ss << "<";
-  context.ss << active[0];
+  context.ss << dims[0];
   context.ss << ",";
-  context.ss << active[1];
+  context.ss << dims[1];
   context.ss << ",";
-  context.ss << active[2];
+  context.ss << dims[2];
   context.ss << ",";
   emitReductionOpName(provide->values[0], context);
   context.ss << ">(";
