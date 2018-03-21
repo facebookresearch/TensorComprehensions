@@ -179,24 +179,46 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
 }
 } // namespace
 
-std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
-Scop::activePromotions(isl::union_set activePoints, isl::id tensorId) {
-  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> result;
+std::vector<size_t> Scop::activePromotionsIndexes(
+    isl::union_set activePoints,
+    isl::id tensorId) const {
+  std::vector<size_t> result;
 
-  for (const auto& kvp : activePromotions_) {
+  for (size_t i = 0, e = activePromotions_.size(); i < e; ++i) {
+    const auto& kvp = activePromotions_[i];
     if (kvp.first.intersect(activePoints).is_empty()) {
       continue;
     }
 
     auto groupId = kvp.second.groupId;
     if (promotedDecls_.count(groupId) != 0 &&
-        promotedDecls_[groupId].tensorId == tensorId) {
-      result.push_back(kvp);
+        promotedDecls_.at(groupId).tensorId == tensorId) {
+      result.push_back(i);
     }
   }
 
   return result;
 }
+
+std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
+Scop::activePromotions(isl::union_set activePoints, isl::id tensorId) const {
+  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> result;
+
+  for (auto idx : activePromotionsIndexes(activePoints, tensorId)) {
+    result.emplace_back(activePromotions_[idx]);
+  }
+
+  return result;
+}
+
+namespace {
+template <typename T>
+T projectOutNamedParam(T t, isl::id paramId) {
+  auto space = t.get_space();
+  int pos = space.find_dim_by_id(isl::dim_type::param, paramId);
+  return (pos == -1) ? t : t.project_out(isl::dim_type::param, pos, 1);
+}
+} // namespace
 
 void Scop::promoteGroup(
     PromotedDecl::Kind kind,
