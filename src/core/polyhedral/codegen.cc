@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "tc/core/polyhedral/codegen.h"
+#include <sstream>
 
 namespace tc {
 namespace polyhedral {
