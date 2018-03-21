@@ -201,10 +201,10 @@ std::vector<size_t> Scop::activePromotionsIndexes(
 }
 
 std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
-Scop::activePromotions(isl::union_set activePoints, isl::id tensorId) const {
+Scop::promotionsAtIndexes(const std::vector<size_t>& indexes) const {
   std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> result;
 
-  for (auto idx : activePromotionsIndexes(activePoints, tensorId)) {
+  for (auto idx : indexes) {
     result.emplace_back(activePromotions_[idx]);
   }
 
@@ -236,8 +236,8 @@ void Scop::promoteGroup(
   //   - the new group is a strict subset (and is promoted deeper?, otherwise
   //   have to play with the order of copies) (copy from existing)
 
-  auto activeProms = activePromotions(activePoints, tensorId);
   auto activePromIndexes = activePromotionsIndexes(activePoints, tensorId);
+  auto activeProms = promotionsAtIndexes(activePromIndexes);
 
   auto footprints = isl::set::empty(gr->approximateFootprint().get_space());
   auto allReadOnly = gr->isReadOnly();
