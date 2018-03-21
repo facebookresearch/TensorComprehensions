@@ -423,6 +423,15 @@ struct Scop {
   std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
   promotionsAtIndexes(const std::vector<size_t>& indexes) const;
 
+  void promoteWithCopyFromGlobal(
+      isl::union_set activePoints,
+      PromotedDecl::Kind kind,
+      isl::id tensorId,
+      std::unique_ptr<TensorReferenceGroup>&& gr,
+      detail::ScheduleTree* tree,
+      isl::union_map schedule,
+      bool forceLastExtentOdd = false);
+
  public:
   // Halide stuff
   struct {

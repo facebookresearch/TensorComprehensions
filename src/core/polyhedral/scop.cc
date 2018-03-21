@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "tc/core/halide2isl.h"
+#include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
@@ -220,6 +221,28 @@ T projectOutNamedParam(T t, isl::id paramId) {
 }
 } // namespace
 
+void Scop::promoteWithCopyFromGlobal(
+    isl::union_set activePoints,
+    PromotedDecl::Kind kind,
+    isl::id tensorId,
+    std::unique_ptr<TensorReferenceGroup>&& gr,
+    ScheduleTree* tree,
+    isl::union_map schedule,
+    bool forceLastExtentOdd) {
+  auto groupId = nextGroupIdForTensor(tensorId);
+  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+  auto sizes = gr->approximationSizes();
+  if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
+    sizes.back() += 1;
+  }
+  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
+
+  // FIXME: we can now store a unique pointer...
+  auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
+  activePromotions_.emplace_back(
+      std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
+}
+
 void Scop::promoteGroup(
     PromotedDecl::Kind kind,
     isl::id tensorId,
@@ -229,12 +252,14 @@ void Scop::promoteGroup(
     bool forceLastExtentOdd) {
   auto activePoints = activeDomainPoints(scheduleRoot(), tree);
   // Allow promoting the second group the same tensor if:
-  // - footprints don't overlap (copy from global)
+  // - footprints don't overlap => copy from global
   // - footprints do overlap but
-  //   - all groups are read-only (this should have been grouped, not with the
-  //   sum-of-footprint sizes heuristic) (copy from global)
-  //   - the new group is a strict subset (and is promoted deeper?, otherwise
-  //   have to play with the order of copies) (copy from existing)
+  //   - the footprint of the new group is a subset some existing group and the
+  //     new promotion is deeper
+  //     => copy from existing
+  //   - all groups are read-only and [the footprint of the new group is not a
+  //     subset of any other group OR the new promotion is not deeper]
+  //     => copy from global
 
   auto activePromIndexes = activePromotionsIndexes(activePoints, tensorId);
   auto activeProms = promotionsAtIndexes(activePromIndexes);
@@ -249,18 +274,14 @@ void Scop::promoteGroup(
       !footprints.intersect(gr->approximateFootprint()).is_empty();
 
   if (!footprintsOverlap || allReadOnly) {
-    auto groupId = nextGroupIdForTensor(tensorId);
-    insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
-    auto sizes = gr->approximationSizes();
-    if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
-      sizes.back() += 1;
-    }
-    promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
-
-    // FIXME: we can now store a unique pointer...
-    auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
-    activePromotions_.emplace_back(
-        std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
+    promoteWithCopyFromGlobal(
+        activePoints,
+        kind,
+        tensorId,
+        std::move(gr),
+        tree,
+        schedule,
+        forceLastExtentOdd);
   } else {
     std::vector<size_t> possibleParents;
     // If the new promotion is a subset of some old promotion, and the new has
@@ -278,6 +299,20 @@ void Scop::promoteGroup(
       } else if (gr->approximateFootprint().intersect(
                      activePromotions_[i]
                          .second.group->approximateFootprint())) {
+        // If the new promotion is not a subset of some other promotion, but
+        // overlaps with it, can only promote if all accesses are reads (no
+        // consistency problem).  Warn and return otherwise.
+        if (allReadOnly) {
+          promoteWithCopyFromGlobal(
+              activePoints,
+              kind,
+              tensorId,
+              std::move(gr),
+              tree,
+              schedule,
+              forceLastExtentOdd);
+          return;
+        }
         LOG(WARNING)
             << "not performing nested promotion because the inner footprint\n"
             << gr->approximateFootprint() << "\n"
@@ -287,11 +322,13 @@ void Scop::promoteGroup(
         return;
       }
     }
-    // If the new promotion is not a strict subset of any other parent
-    // promotion, cannot promote because don't know where to read it from.
-    // TODO: if everything is read-only, can read from global.
+    // This should not happen: if the footprint of the current group is not a
+    // subset of some other group but overlaps with some (top-level branch
+    // condition), it must have been picked up in the loop above and caused
+    // early return.
     if (possibleParents.size() == 0) {
-      return;
+      throw promotion::PromotionLogicError(
+          "group overlaps with existing groups and can't be read from global");
     }
     auto parentPromIdx = possibleParents.front();
 
