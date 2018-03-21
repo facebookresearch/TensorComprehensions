@@ -21,6 +21,81 @@ namespace lang {
 
 /// TreeView provides a statically-typed way to access the members of a TreeRef
 /// instead of using TK_MATCH
+//
+// A few notes on types and their aliases:
+// - List<T> is really a Tree with kind TK_LIST and elements as subtrees
+// - Maybe<T> is really a Tree with kind TK_OPTION that has 0 or 1 subtree of type T
+// - Builtin types are: Ident (TK_IDENT), String (TK_STRING)
+//
+// -- NB: dim_list can only contain Const and Ident trees
+// -- NB: dim_list is optional (can be empty)
+// Type  = TensorType(ScalarType scalar_type, List<Expr> dim_list)      TK_TENSOR_TYPE
+// Param = Param(Ident name, Type type)                                 TK_PARAM
+//
+// Def   = Def(Ident name, List<Param> params, List<Param> returns, List<Stmt> body) TK_DEF
+//
+// -- NB: reduction_variables are only filled during semantic analysis
+// Stmt  = Comprehension(Ident lhs_ident, List<Ident> lhs_indices,      TK_COMPREHENSION
+//                       AssignKind assignment, Expr rhs,
+//                       List<WhereClause> range_constraints,
+//                       Option<Equivalent> eqiuvalent_stmt,
+//                       List<Ident> reduction_variables)
+//
+// WhereClause = Let(Ident name, Expr expr)                             TK_LET
+//             | RangeConstraint(Ident name, Expr l, Expr r)            TK_RANGE_CONSTRAINT
+//             | Exists(Expr expr)                                      TK_EXISTS
+//
+// Equivalent = Equivalent(String name, List<Expr> accesses)            TK_EQUIVALENT
+//
+// Expr  = TernaryIf(Expr cond, Expr true_expr, Expr false_expr)        TK_IF_EXPR
+//       | BinOp(Expr lhs, Expr rhs)
+//       |     And                                                      TK_AND
+//       |     Or                                                       TK_OR
+//       |     Lt                                                       '<'
+//       |     Gt                                                       '>'
+//       |     Eq                                                       TK_EQ
+//       |     Le                                                       TK_LE
+//       |     Ge                                                       TK_GE
+//       |     Ne                                                       TK_NE
+//       |     Add                                                      '+'
+//       |     Sub                                                      '-'
+//       |     Mul                                                      '*'
+//       |     Div                                                      '/'
+//       | UnaryOp(Expr expr)
+//       |     Not                                                      '!'
+//       |     USub                                                     '-'
+//       | Const(Number value, ScalarType type)                         TK_CONST
+//       | Cast(Expr expr, ScalarType type)                             TK_CAST
+//       | Select(Expr base, Number dim)                                '.'
+//       -- XXX: Apply is emitted by the parser, and gets desugared into
+//       -- Access and BuiltIn as part of the Sema pass.
+//       | Apply(Ident name, List<Expr> args)                           TK_APPLY
+//       | Access(Ident name, List<Expr> args)                          TK_ACCESS
+//       | BuiltIn(Ident name, List<Expr> args, Type type)              TK_BUILT_IN
+//       -- XXX: yes, Ident is a valid Expr too
+//       | Ident name                                                   TK_IDENT
+//
+// ScalarType = Int8()                                                  TK_INT8
+//            | Int16()                                                 TK_INT16
+//            | Int32()                                                 TK_INT32
+//            | Int64()                                                 TK_INT64
+//            | UInt8()                                                 TK_UINT8
+//            | UInt16()                                                TK_UINT16
+//            | UInt32()                                                TK_UINT32
+//            | UInt64()                                                TK_UINT64
+//            | Bool()                                                  TK_BOOL
+//            | Float()                                                 TK_FLOAT
+//            | Double()                                                TK_DOUBLE
+//
+// AssignKind = PlusEq()                                                TK_PLUS_EQ
+//            | TimesEq()                                               TK_TIMES_EQ
+//            | MinEq()                                                 TK_MIN_EQ
+//            | MaxEq()                                                 TK_MAX_EQ
+//            | PlusEqB()                                               TK_PLUS_EQ_B
+//            | TimesEqB()                                              TK_TIMES_EQ_B
+//            | MinEqB()                                                TK_MIN_EQ_B
+//            | MaxEqB()                                                TK_MAX_EQ_B
+
 struct TreeView {
   explicit TreeView(const TreeRef& tree_) : tree_(tree_) {}
   TreeRef tree() const {
