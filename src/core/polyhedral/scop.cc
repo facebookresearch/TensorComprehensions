@@ -70,6 +70,7 @@ ScopUPtr Scop::makeScop(
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
+  scop->halide.iterators = std::move(tree.iterators);
 
   // Set partial schedule tuples for proper comparison with ISL
   // schedules (needs DFSPreorder numbering). Just for testing.

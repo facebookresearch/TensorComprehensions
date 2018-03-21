@@ -321,6 +321,8 @@ struct ScheduleTreeAndDomain {
  * recursively descending over the Stmt.
  * "s" is the current position in the recursive descent.
  * "set" describes the bounds on the outer loop iterators.
+ * "outer" contains the names of the outer loop iterators
+ * from outermost to innermost.
  * Return the schedule tree corresponding to the subtree at "s",
  * along with a separated out domain.
  *
@@ -329,14 +331,18 @@ struct ScheduleTreeAndDomain {
  * (for the writes) to the corresponding tag in the access relations.
  * "statements" collects the mapping from instance set tuple identifiers
  * to the corresponding Provide node.
+ * "iterators" collects the mapping from instance set tuple identifiers
+ * to the corresponding outer loop iterator names, from outermost to innermost.
  */
 ScheduleTreeAndDomain makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
+    std::vector<std::string>& outer,
     isl::union_map* reads,
     isl::union_map* writes,
     AccessMap* accesses,
-    StatementMap* statements) {
+    StatementMap* statements,
+    IteratorMap* iterators) {
   ScheduleTreeAndDomain result;
   if (auto op = s.as<For>()) {
     // Add one additional dimension to our set of loop variables
@@ -372,8 +378,17 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     }
 
     // Recursively descend.
+    auto outerNext = outer;
+    outerNext.push_back(op->name);
     auto body = makeScheduleTreeHelper(
-        op->body, set, reads, writes, accesses, statements);
+        op->body,
+        set,
+        outerNext,
+        reads,
+        writes,
+        accesses,
+        statements,
+        iterators);
 
     // Create an affine function that defines an ordering for all
     // the statements in the body of this loop over the values of
@@ -419,8 +434,8 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     // children.
     std::vector<ScheduleTreeUPtr> trees;
     for (Stmt s : stmts) {
-      auto mem =
-          makeScheduleTreeHelper(s, set, reads, writes, accesses, statements);
+      auto mem = makeScheduleTreeHelper(
+          s, set, outer, reads, writes, accesses, statements, iterators);
       ScheduleTreeUPtr filter;
       if (mem.tree) {
         // No statement instances are shared between the blocks, so we
@@ -452,6 +467,7 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     size_t stmtIndex = statements->size();
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
+    iterators->emplace(id, outer);
     isl::set domain = set.set_tuple_id(id);
     result.domain = domain;
 
@@ -474,13 +490,16 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   result.writes = result.reads = isl::union_map::empty(paramSpace);
 
   // Walk the IR building a schedule tree
+  std::vector<std::string> outer;
   auto treeAndDomain = makeScheduleTreeHelper(
       s,
       isl::set::universe(paramSpace),
+      outer,
       &result.reads,
       &result.writes,
       &result.accesses,
-      &result.statements);
+      &result.statements,
+      &result.iterators);
 
   // TODO: This fails if the stmt is just a Provide node, I'm not sure
   // what the schedule tree should look like in that case.
