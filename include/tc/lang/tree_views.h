@@ -22,6 +22,8 @@ namespace lang {
 /// TreeView provides a statically-typed way to access the members of a TreeRef
 /// instead of using TK_MATCH
 //
+// clang-format off
+//
 // A few notes on types and their aliases:
 // - List<T> is really a Tree with kind TK_LIST and elements as subtrees
 // - Maybe<T> is really a Tree with kind TK_OPTION that has 0 or 1 subtree of type T
@@ -95,6 +97,8 @@ namespace lang {
 //            | TimesEqB()                                              TK_TIMES_EQ_B
 //            | MinEqB()                                                TK_MIN_EQ_B
 //            | MaxEqB()                                                TK_MAX_EQ_B
+//
+// clang-format on
 
 struct TreeView {
   explicit TreeView(const TreeRef& tree_) : tree_(tree_) {}
