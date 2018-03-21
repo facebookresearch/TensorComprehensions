@@ -421,7 +421,7 @@ struct Scop {
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
   } halide;
 
-  // Poyhedral IR
+  // Polyhedral IR
   //
   // The domain is collected from the root of the ScheduleTree; no redundant
   // state is kept.
