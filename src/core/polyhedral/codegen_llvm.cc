@@ -250,6 +250,7 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
   }
 
  protected:
+  using CodeGen_X86::visit;
   void visit(const Halide::Internal::Call* call) override {
     if (call->call_type == Halide::Internal::Call::CallType::Image ||
         call->call_type == Halide::Internal::Call::CallType::Halide) {
