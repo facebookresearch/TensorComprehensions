@@ -331,7 +331,7 @@ struct Scop {
 
   std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> activePromotions(
       isl::union_set activePoints,
-      isl::id tensorId);
+      isl::id tensorId) const;
 
   detail::ScheduleTree* scheduleRoot() {
     return scheduleTreeUPtr.get();
@@ -411,6 +411,11 @@ struct Scop {
   static std::unique_ptr<detail::ScheduleTree> computeSchedule(
       isl::schedule_constraints constraints,
       const SchedulerOptionsView& schedulerOptions);
+
+  // Get the indexes of active promotions in the activePromotions_.
+  std::vector<size_t> activePromotionsIndexes(
+      isl::union_set domain,
+      isl::id tensorId) const;
 
  public:
   // Halide stuff
