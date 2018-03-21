@@ -754,13 +754,8 @@ void emitMappedTensorAccess(
   auto astToPromoted =
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
-  auto pma = isl::PMA(astToPromoted);
-  CHECK_EQ(pma.size(), 1) << "expected one piece, got " << astToPromoted;
-  auto ma = isl::MA(pma[0].second);
-  context.ss << promotionInfo.groupId.get_name();
-  for (int i = 0; i < ma.size(); ++i) {
-    context.ss << "[" << toString(ma[i]) << "]";
-  }
+  auto astBuild = isl::ast_build::from_context(astToPromoted.domain());
+  context.ss << astBuild.access_from(astToPromoted).to_C_str();
 }
 
 void emitDirectSubscripts(
