@@ -72,8 +72,9 @@ isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
 namespace polyhedral {
 
+using IteratorMapType = isl::pw_multi_aff;
 using IteratorMapsType =
-    std::unordered_map<isl::id, isl::pw_multi_aff, isl::IslIdIslHash>;
+    std::unordered_map<isl::id, IteratorMapType, isl::IslIdIslHash>;
 
 using IteratorLLVMValueMapType =
     std::unordered_map<isl::id, llvm::Value*, isl::IslIdIslHash>;
@@ -214,7 +215,7 @@ static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
-  const isl::pw_multi_aff* iteratorMap_;
+  const IteratorMapType* iteratorMap_;
   CodeGen_TC(Target t) : CodeGen_X86(t) {}
 
   using CodeGen_X86::codegen;
