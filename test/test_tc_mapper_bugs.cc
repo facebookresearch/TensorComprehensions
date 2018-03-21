@@ -659,20 +659,30 @@ TEST_F(TMM_128_1024_1024, Tightening) {
   Check(options);
 }
 
-TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
-  at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
-  std::vector<at::Tensor> inputs = {mat1};
-  std::vector<at::Tensor> outputs;
+class LayerNorm : public ::testing::Test {
+ public:
+  void CheckCompiles(const tc::MappingOptions& options) {
+    at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
+    std::vector<at::Tensor> inputs = {mat1};
+    std::vector<at::Tensor> outputs;
+    static constexpr auto TC = R"TC(
+      def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
+         mean(t, b) +=! I(t, b, c) / C
+         centered(t, b, c) = I(t, b, c) - mean(t, b)
+         var(t, b) +=! centered(t, b, c) * centered(t, b, c)
+         var(t, b) = (var(t, b)) / C
+         O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
+      }
+    )TC";
 
-  static constexpr auto TC = R"TC(
-    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
-       mean(t, b) +=! I(t, b, c) / C
-       centered(t, b, c) = I(t, b, c) - mean(t, b)
-       var(t, b) +=! centered(t, b, c) * centered(t, b, c)
-       var(t, b) = (var(t, b)) / C
-       O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
-    }
-  )TC";
+    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
+    atCompl.define(TC);
+    // Expecting this to compile without dying.
+    atCompl.compile("layernorm", inputs, options);
+  }
+};
+
+TEST_F(LayerNorm, ReferenceBelongsToTwoGroups1) {
   auto options = tc::MappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
@@ -690,11 +700,47 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
                      .usePrivateMemory(true)
                      .unrollCopyShared(false)
                      .matchLibraryCalls(false);
+  CheckCompiles(options);
+}
 
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(TC);
-  // Expecting this to compile without dying.
-  atCompl.compile("layernorm", inputs, options);
+TEST_F(LayerNorm, MultiGroupSharedPromotion) {
+  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+                     .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+                     .outerScheduleAllowSkewing(false)
+                     .outerSchedulePositiveOrthant(true)
+                     .intraTileScheduleFusionStrategy(tc::FusionStrategy::Max)
+                     .intraTileScheduleAllowSkewing(false)
+                     .intraTileSchedulePositiveOrthant(true)
+                     .tile(16, 8, 8, 64)
+                     .mapToThreads(1, 64)
+                     .mapToBlocks(7, 1, 32)
+                     .unroll(4)
+                     .tileImperfectlyNested(false)
+                     .useSharedMemory(true)
+                     .usePrivateMemory(true)
+                     .unrollCopyShared(false)
+                     .matchLibraryCalls(true);
+  CheckCompiles(options);
+}
+
+TEST_F(LayerNorm, ReferenceBelongsToTwoGroups2) {
+  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+                     .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+                     .outerScheduleAllowSkewing(false)
+                     .outerSchedulePositiveOrthant(true)
+                     .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+                     .intraTileScheduleAllowSkewing(false)
+                     .intraTileSchedulePositiveOrthant(true)
+                     .tile(128, 8)
+                     .mapToThreads(32)
+                     .mapToBlocks(2)
+                     .unroll(1)
+                     .tileImperfectlyNested(false)
+                     .useSharedMemory(true)
+                     .usePrivateMemory(true)
+                     .unrollCopyShared(false)
+                     .matchLibraryCalls(true);
+  CheckCompiles(options);
 }
 
 // This case was observed when running the autotuner on example_MLP_model
