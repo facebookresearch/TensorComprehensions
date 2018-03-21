@@ -249,6 +249,11 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     return std::move(module);
   }
 
+  // Convert an isl AST expression into an llvm::Value.
+  // Only expressions that consist of a pure identifier or
+  // a pure integer constant are currently supported.
+  llvm::Value* getValue(isl::ast_expr expr);
+
  protected:
   using CodeGen_X86::visit;
   void visit(const Halide::Internal::Call* call) override {
@@ -360,6 +365,21 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     }
   }
 };
+
+llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
+  switch (isl_ast_expr_get_type(expr.get())) {
+    case isl_ast_expr_type::isl_ast_expr_id:
+      return sym_get(expr.get_id().get_name());
+    case isl_ast_expr_type::isl_ast_expr_int: {
+      auto val = isl::manage(isl_ast_expr_get_val(expr.get()));
+      CHECK(val.is_int());
+      return getLLVMConstantSignedInt64(val.get_num_si());
+    }
+    default:
+      LOG(FATAL) << "NYI";
+      return nullptr;
+  }
+}
 
 class LLVMCodegen {
   void collectTensor(const Halide::OutputImageParam& t) {
@@ -638,22 +658,7 @@ class LLVMCodegen {
     llvm::SmallVector<llvm::Value*, 5> subscriptValues;
 
     for (const auto& subscript : subscripts) {
-      switch (isl_ast_expr_get_type(subscript.get())) {
-        case isl_ast_expr_type::isl_ast_expr_id: {
-          subscriptValues.push_back(
-              halide_cg.sym_get(subscript.get_id().get_name()));
-          break;
-        }
-        case isl_ast_expr_type::isl_ast_expr_int: {
-          auto val = isl::manage(isl_ast_expr_get_val(subscript.get()));
-          CHECK(val.is_int());
-          subscriptValues.push_back(
-              getLLVMConstantSignedInt64(val.get_num_si()));
-          break;
-        }
-        default:
-          LOG(FATAL) << "NYI";
-      }
+      subscriptValues.push_back(halide_cg.getValue(subscript));
     }
 
     auto destAddr = halide_cg.get_builder().CreateInBoundsGEP(
