@@ -187,7 +187,12 @@ std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
 
 std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
   WS w;
-  os << w.tab() << "extension(" << extension_ << ")";
+  os << w.tab() << "extension(";
+  for (const auto& u : isl::UnionAsVector<isl::union_map>(extension_)) {
+    WS w2;
+    os << std::endl << w2.tab() << u;
+  }
+  os << ")";
   return os;
 }
 
