@@ -403,32 +403,18 @@ isl::schedule makeScheduleTreeHelper(
 
     schedule = body.insert_partial_schedule(mupa);
   } else if (auto op = s.as<Halide::Internal::Block>()) {
-    // Flatten a nested block. Halide Block statements always nest
-    // rightwards. Flattening it is not strictly necessary, but it
-    // keeps things uniform with the PET lowering path.
     std::vector<Stmt> stmts;
     stmts.push_back(op->first);
     stmts.push_back(op->rest);
-    while (const Halide::Internal::Block* b =
-               stmts.back().as<Halide::Internal::Block>()) {
-      Stmt f = b->first;
-      Stmt r = b->rest;
-      stmts.pop_back();
-      stmts.push_back(f);
-      stmts.push_back(r);
-    }
 
-    // Build a schedule tree for each member of the block and
-    // collect them in a sequence.
+    // Build a schedule tree for both members of the block and
+    // combine them in a sequence.
+    std::vector<isl::schedule> schedules;
     for (Stmt s : stmts) {
-      auto mem = makeScheduleTreeHelper(
-          s, set, outer, reads, writes, accesses, statements, iterators);
-      if (schedule) {
-        schedule = schedule.sequence(mem);
-      } else {
-        schedule = mem;
-      }
+      schedules.push_back(makeScheduleTreeHelper(
+          s, set, outer, reads, writes, accesses, statements, iterators));
     }
+    schedule = schedules[0].sequence(schedules[1]);
 
   } else if (auto op = s.as<Provide>()) {
     // Make an ID for this leaf statement. This *is* semantically
