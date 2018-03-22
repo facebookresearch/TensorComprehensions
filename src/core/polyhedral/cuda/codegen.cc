@@ -364,12 +364,9 @@ void emitCopyStmt(const CodegenStatementContext& context) {
 
   auto stmtId = context.statementId();
 
-  // Casting to map for more advanced projection functionality.  No information
-  // loss expected.
-  auto map = isl::map::from(context.iteratorMap());
-  auto promoted = isl::pw_multi_aff(map.range_factor_range());
-  auto original =
-      isl::pw_multi_aff(map.range_factor_domain().range_factor_range());
+  auto iteratorMap = context.iteratorMap();
+  auto promoted = iteratorMap.range_factor_range();
+  auto original = iteratorMap.range_factor_domain().range_factor_range();
   auto isRead = stmtId.get_name() == kReadIdName;
   auto originalName = original.get_tuple_id(isl::dim_type::out).get_name();
   auto promotedName = promoted.get_tuple_id(isl::dim_type::out).get_name();
