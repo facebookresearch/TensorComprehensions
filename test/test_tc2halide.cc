@@ -33,9 +33,6 @@ using namespace tc::dlutils;
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}
   void Check(const string& tc, const std::vector<long>& inputSizes) {
-    // Make sure the Halide lowering path produces the same schedule
-    // trees as the PET path. This test will be deleted when we remove
-    // PET.
     auto ctx = getCPUDLContext();
     DLDataType dtype;
     dtype.code = kDLFloat;
