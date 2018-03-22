@@ -182,7 +182,7 @@ adopt whatever feels more convenient.
     import torch
     lang = """
     def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) += input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
+        output(b, c, h, w) +=! input(b, c, h * {sH} + kh, w * {sW} + kw) / ({kH} * {kW}) where kh in 0:{kH}, kw in 0:{kW}
     }}
     """
     avgpool = tc.define(lang, name="avgpool", constants={"sH":1, "sW":1, "kH":2, "kW":2})
@@ -205,7 +205,7 @@ adopt whatever feels more convenient.
     import re
     LANG="""
     def avgpool(float(B, C, H, W) input) -> (output) {
-        output(b, c, h, w) += input(b, c, h * <sh> + kh, w * <sw> + kw) where kh in 0:<kH>, kw in 0:<kW>
+        output(b, c, h, w) +=! input(b, c, h * <sh> + kh, w * <sw> + kw) / (<kH> * <kW>) where kh in 0:<kH>, kw in 0:<kW>
     }
     """
     sH, sW, kH, kW = 1, 1, 2, 2

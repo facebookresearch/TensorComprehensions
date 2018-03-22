@@ -25,7 +25,7 @@ class TestCase(unittest.TestCase):
         # NOTE: take note of use of {{ }} below for handling TC with scalars
         LANG = """
         def avgpool(float(B, C, H, W) input) -> (output) {{
-            output(b, c, h, w) += input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}
+            output(b, c, h, w) +=! input(b, c, h * {sH} + kh, w * {sW} + kw) / ({kH} * {kW}) where kh in 0:{kH}, kw in 0:{kW}
         }}
         """
         avgpool = tc.define(LANG, name="avgpool", constants={"sH":1, "sW":1, "kH":2, "kW":2})
@@ -36,7 +36,7 @@ class TestCase(unittest.TestCase):
         # NOTE: take note of use of {{ }}
         LANG="""
         def avgpool(float(B, C, H, W) input) -> (output) {{
-            output(b, c, h, w) += input(b, c, h * {sh} + kh, w * {sw} + kw) where kh = [0, {kH}[, kw = [0, {kW}[
+            output(b, c, h, w) +=! input(b, c, h * {sh} + kh, w * {sw} + kw) / ({kH} * {kW}) where kh = [0, {kH}[, kw = [0, {kW}[
         }}
         """
         sH, sW, kH, kW = 1, 1, 2, 2
@@ -51,7 +51,7 @@ class TestCase(unittest.TestCase):
         import re
         LANG="""
         def avgpool(float(B, C, H, W) input) -> (output) {
-            output(b, c, h, w) += input(b, c, h * <sh> + kh, w * <sw> + kw) where kh in 0:<kH>, kw in 0:<kW>
+            output(b, c, h, w) +=! input(b, c, h * <sh> + kh, w * <sw> + kw) / (<kH> * <kW>) where kh in 0:<kH>, kw in 0:<kW>
         }
         """
         sH, sW, kH, kW = 1, 1, 2, 2

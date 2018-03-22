@@ -397,7 +397,7 @@ class TcUnit(object):
 
                 * :attr:`conv`: if kernel resembles a convolution operation
 
-                * :attr:`group_conv`: if kernel resembles a convolution operation
+                * :attr:`group_conv`: if kernel resembles a group convolution operation
 
                 * :attr:`naive`: if none of the above, then chose naive *Default*
 
@@ -542,7 +542,7 @@ class TcUnit(object):
 
                 * :attr:`conv`: if kernel resembles a convolution operation
 
-                * :attr:`group_conv`: if kernel resembles a convolution operation
+                * :attr:`group_conv`: if kernel resembles a group convolution operation
 
                 * :attr:`naive`: if none of the above, then chose naive *Default*
 
