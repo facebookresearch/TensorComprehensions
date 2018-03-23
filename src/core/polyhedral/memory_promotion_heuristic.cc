@@ -626,21 +626,6 @@ void promoteToRegistersBelowThreads(
         }
       }
 
-      // Compute the set of active points without constraints introduced by
-      // thread mapping.
-      auto mappingTree = band;
-      while (mappingTree &&
-             !mappingTree->elemAs<ScheduleTreeElemMappingFilter>()) {
-        mappingTree = mappingTree->ancestor(scop.scheduleRoot(), 1);
-      }
-      CHECK(mappingTree);
-      auto mappingElem = mappingTree->elemAs<ScheduleTreeElemMappingFilter>();
-      auto pointsNoThreadMapping = points.gist(mappingElem->filter_);
-      for (size_t j = 0; j < mapping::ThreadId::kMaxDim; ++j) {
-        pointsNoThreadMapping = projectOutNamedParam(
-            pointsNoThreadMapping, mapping::ThreadId::makeId(j));
-      }
-
       auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
@@ -663,18 +648,6 @@ void promoteToRegistersBelowThreads(
           }
           if (!hasReuse(*group, fullSched, depth)) {
             continue;
-          }
-
-          // If a group of references was promoted into shared memory, but it
-          // could be also promoted to registers while covering exactly the
-          // same statement instances accessing it, demote it from shared
-          // memory first.
-          auto outerScopePromotions = scop.activePromotions(points, tensorId);
-          if (outerScopePromotions.size() == 1 &&
-              outerScopePromotions[0]
-                  .first.subtract(pointsNoThreadMapping)
-                  .is_empty()) {
-            scop.demoteGroup(outerScopePromotions[0].second.groupId);
           }
 
           scop.promoteGroup(
