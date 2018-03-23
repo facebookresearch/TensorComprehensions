@@ -315,7 +315,7 @@ class MappingOptions {
   explicit MappingOptions(const MappingOptionsProto& proto)
       : ownedProto_(proto), view(ownedProto_) {}
   /// Performs an underlying copy of the proto viewed by ```view```
-  explicit MappingOptions(const MappingOptionsView& view)
+  /* implicit */ MappingOptions(const MappingOptionsView& view)
       : ownedProto_(view.proto), view(ownedProto_) {}
 
   std::string toProtobufSerializedString() const {

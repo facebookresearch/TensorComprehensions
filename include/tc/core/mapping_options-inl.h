@@ -243,34 +243,29 @@ MappingOptions MappingOptions::makeUnmappedMappingOptions() {
 }
 
 MappingOptions MappingOptions::makeNaiveMappingOptions() {
-  return MappingOptions(
-      makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(1));
+  return makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(1);
 }
 
 MappingOptions MappingOptions::makeSingleThreadMappingOptions() {
-  return MappingOptions(makeUnmappedMappingOptions().view.tile({1}).unroll(1));
+  return makeUnmappedMappingOptions().view.tile({1}).unroll(1);
 }
 
 MappingOptions MappingOptions::makePointwiseMappingOptions() {
-  return MappingOptions(
-      makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(128));
+  return makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(128);
 }
 
 MappingOptions MappingOptions::makeMlpMappingOptions() {
-  return MappingOptions(
-      makeUnmappedMappingOptions()
-          .view.outerScheduleFusionStrategy(FusionStrategy::Max)
-          .tile({1})
-          .unroll(1));
+  return makeUnmappedMappingOptions()
+      .view.outerScheduleFusionStrategy(FusionStrategy::Max)
+      .tile({1})
+      .unroll(1);
 }
 
 MappingOptions MappingOptions::makeConvolutionMappingOptions() {
-  return MappingOptions(
-      makeUnmappedMappingOptions().view.tile({4, 8, 8, 8}).unroll(1));
+  return makeUnmappedMappingOptions().view.tile({4, 8, 8, 8}).unroll(1);
 }
 
 MappingOptions MappingOptions::makeGroupConvolutionMappingOptions() {
-  return MappingOptions(
-      makeUnmappedMappingOptions().view.tile({1, 1}).unroll(1));
+  return makeUnmappedMappingOptions().view.tile({1, 1}).unroll(1);
 }
 } // namespace tc
