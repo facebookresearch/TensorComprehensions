@@ -30,6 +30,9 @@ DECLARE_bool(debug_cuda);
 DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
 
+DECLARE_bool(cuda_profile_verbose);
+DECLARE_bool(cuda_profile_verbose_events);
+
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);

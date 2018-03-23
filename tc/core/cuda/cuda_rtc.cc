@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <cuda_runtime.h>
+#include <cupti.h>
 #include <nvrtc.h>
 
 #include "tc/core/cuda/cuda.h"
@@ -126,17 +127,15 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, 3>& a) {
 
 } // namespace
 
-Duration CudaRTCFunction::Launch(
+KernelType CudaRTCFunction::MakeLaunch(
+    int dev,
     const std::array<size_t, 3>& grid,
     const std::array<size_t, 3>& block,
     unsigned int shared_mem,
     cudaStream_t stream,
-    std::vector<int> params,
-    std::vector<void*> outputs,
-    std::vector<const void*> inputs,
-    bool profile) const {
-  int dev;
-  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
+    std::vector<int>& params,
+    std::vector<void*>& outputs,
+    std::vector<const void*>& inputs) const {
   if (perGpuModule_.count(dev) == 0) {
     CUmodule module;
     CUfunction function;
@@ -169,7 +168,7 @@ Duration CudaRTCFunction::Launch(
   unsigned int bx = block[0];
   unsigned int by = block[1];
   unsigned int bz = block[2];
-  auto launch = [&]() {
+  auto launch = [=]() mutable {
     TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchKernel(
         perGpuKernel_.at(dev),
         gx,
@@ -184,6 +183,22 @@ Duration CudaRTCFunction::Launch(
         0));
   };
 
+  return launch;
+}
+
+Duration CudaRTCFunction::Launch(
+    const std::array<size_t, 3>& grid,
+    const std::array<size_t, 3>& block,
+    unsigned int shared_mem,
+    cudaStream_t stream,
+    std::vector<int> params,
+    std::vector<void*> outputs,
+    std::vector<const void*> inputs,
+    bool profile) const {
+  int dev;
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
+  auto launch =
+      MakeLaunch(dev, grid, block, shared_mem, stream, params, outputs, inputs);
   if (not profile) {
     launch();
     return Duration::max();
@@ -203,5 +218,21 @@ Duration CudaRTCFunction::Launch(
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaEventDestroy(start));
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaEventDestroy(stop));
   return std::chrono::microseconds(static_cast<int64_t>(milliseconds * 1000));
+}
+
+CudaProfilingInfo CudaRTCFunction::Profile(
+    const std::array<size_t, 3>& grid,
+    const std::array<size_t, 3>& block,
+    unsigned int shared_mem,
+    cudaStream_t stream,
+    std::vector<int> params,
+    std::vector<void*> outputs,
+    std::vector<const void*> inputs) const {
+  int dev;
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
+  auto launch =
+      MakeLaunch(dev, grid, block, shared_mem, stream, params, outputs, inputs);
+  CudaCuptiProfiler profiler(launch, dev);
+  return profiler.Profile();
 }
 } // namespace tc

@@ -25,6 +25,7 @@
 #include <cuda.h>
 #include <driver_types.h> // cuda driver types
 
+#include "tc/core/cuda/cuda_profile.h"
 #include "tc/core/utils/time.h"
 
 namespace tc {
@@ -59,9 +60,28 @@ class CudaRTCFunction {
       std::vector<const void*> inputs,
       bool profile = false) const;
 
+  CudaProfilingInfo Profile(
+      const std::array<size_t, 3>& grid,
+      const std::array<size_t, 3>& block,
+      unsigned int shared_mem,
+      cudaStream_t stream,
+      std::vector<int> params,
+      std::vector<void*> outputs,
+      std::vector<const void*> inputs) const;
+
   void clear();
 
  private:
+  KernelType MakeLaunch(
+      int dev,
+      const std::array<size_t, 3>& grid,
+      const std::array<size_t, 3>& block,
+      unsigned int shared_mem,
+      cudaStream_t stream,
+      std::vector<int>& params,
+      std::vector<void*>& outputs,
+      std::vector<const void*>& inputs) const;
+
   mutable std::unordered_map<size_t, CUmodule> perGpuModule_;
   mutable std::unordered_map<size_t, CUfunction> perGpuKernel_;
   std::string specializedName;
