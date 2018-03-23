@@ -43,9 +43,24 @@ message ManualCudaCacheEntryProto {
   repeated uint64 block_dims = 8;
 }
 
+message CudaProfilingProto{
+  required uint64 runtime = 1;
+  required double ipc = 2;
+  required uint64 flopSP = 3;
+  required double globalLoadEfficiency = 4;
+  required double globalStoreEfficiency = 5;
+  required double branchEfficiency = 6;
+  required double sharedMemoryEfficiency = 7;
+  required double streamingMultiprocessorEfficiency = 8;
+  required double localMemoryOverhead = 9;
+  required double achievedOccupancy = 10;
+  required double warpExecutionEfficiency = 11;
+}
+
 message OptionsCacheValuesProto{
   required CudaMappingOptionsProto kernel_options = 1;
   repeated uint64 recorded_runtimes = 2;
+  repeated CudaProfilingProto profiles = 3;
 }
 
 message OptionsCacheEntryProto {

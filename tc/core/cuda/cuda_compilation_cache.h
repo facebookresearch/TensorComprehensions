@@ -53,6 +53,22 @@ struct OptionsCachedEntry {
       const std::string& deviceStr,
       const CudaMappingOptions& options,
       Duration runtime);
+  OptionsCachedEntry(
+      const std::string& id,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& deviceStr,
+      const CudaMappingOptions& options,
+      const CudaProfilingInfo& pInfo);
+  OptionsCachedEntry(
+      const std::string& id,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& deviceStr,
+      const CudaMappingOptions& options,
+      Duration runtime,
+      const CudaProfilingInfo& pInfo);
+
   OptionsCachedEntry(const OptionsCacheEntryProto& buf);
   OptionsCacheEntryProto toProtobuf() const;
 
@@ -78,9 +94,19 @@ struct OptionsCachedEntry {
 
   struct Values {
     Values(const CudaMappingOptions& options, Duration runtime);
+    Values(const CudaMappingOptions& options, const CudaProfilingInfo& pInfo);
+    Values(
+        const CudaMappingOptions& options,
+        Duration runtime,
+        const CudaProfilingInfo& pInfo);
     Values(const CudaMappingOptions& options, std::vector<Duration>&& runtimes);
+    Values(
+        const CudaMappingOptions& options,
+        std::vector<Duration>&& runtimes,
+        std::vector<CudaProfilingInfo>&& pInfos);
     CudaMappingOptions mappingOptions;
     std::vector<Duration> recordedRuntimes;
+    std::vector<CudaProfilingInfo> profiles;
   };
   Key key;
   std::vector<Values> values;
@@ -89,6 +115,7 @@ struct OptionsCachedEntry {
 struct OptionsCacheRetrievalResult {
   CudaMappingOptions options;
   std::vector<Duration> recordedRuntimes;
+  std::vector<CudaProfilingInfo> profilingInfo;
 };
 
 class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
@@ -113,6 +140,18 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs,
       Duration runtime);
+
+  void recordProfilingInfo(
+      const std::string& id,
+      const CudaMappingOptions& options,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      CudaProfilingInfo pIfno);
+
+  std::vector<OptionsCacheRetrievalResult> retrieveOptionsAndProfilingInfo(
+      const std::string& id,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs) const;
 
   std::vector<OptionsCacheRetrievalResult> retrieveOptionsAndRuntimes(
       const std::string& id,
