@@ -41,12 +41,13 @@ set(CORE_TEST_FILES
   test_inference
   test_isl_functionality
   test_tc2halide
+  test_autodiff
 )
 
 foreach(i ${CORE_TEST_FILES})
   add_executable(${i} ${i}.cc)
   add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core)
+  target_link_libraries(${i} tc_core ${GOOGLE_LIBS})
 endforeach()
 
 ################################################################################
@@ -80,7 +81,7 @@ if (WITH_CUDA)
         ${i}
 
         ${GOOGLE_LIBS}
-        ${ATEN_LIBRARIES} 
+        ${ATEN_LIBRARIES}
         tc_autotuner)
   endforeach()
 endif()

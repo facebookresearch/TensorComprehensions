@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -25,6 +26,7 @@
 
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/autodiff.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -39,6 +41,7 @@ namespace py = pybind11;
 using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
 
 PYBIND11_MODULE(tc, m) {
+  m.def("_differentiate", differentiate);
   m.def("set_logtostderr", [](bool logtostderr) {
     FLAGS_logtostderr = logtostderr;
   });

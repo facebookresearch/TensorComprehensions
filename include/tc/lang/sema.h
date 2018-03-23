@@ -155,6 +155,8 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
 /// - replace TK_APPLY with TK_BUILT_IN for built in functions
 /// - checks that all variables are defined, and creates index/reduction
 /// variable objects.
+//  - replaces augumented assignments that have no reduction variables
+//  with regular assignents
 struct Sema {
   std::unordered_map<TreeRef, TreeRef> expr_to_type;
 

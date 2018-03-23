@@ -22,85 +22,14 @@
 #include <sstream>
 #include <string>
 
+#include "lang_utils.h"
+
 #include "tc/lang/canonicalize.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
 #include "tc/lang/tc_format.h"
 
 using namespace lang;
-
-const std::string expected_file_path = "src/lang/test_expected/";
-
-static inline void barf(const char* fmt, ...) {
-  char msg[2048];
-  va_list args;
-  va_start(args, fmt);
-  vsnprintf(msg, 2048, fmt, args);
-  va_end(args);
-  throw std::runtime_error(msg);
-}
-
-#define ASSERT(cond)                         \
-  if (__builtin_expect(!(cond), 0)) {        \
-    barf(                                    \
-        "%s:%u: %s: Assertion `%s` failed.", \
-        __FILE__,                            \
-        __LINE__,                            \
-        __func__,                            \
-        #cond);                              \
-  }
-
-// note: msg must be a string literal
-// node: In, ##__VA_ARGS '##' supresses the comma if __VA_ARGS__ is empty
-#define ASSERTM(cond, msg, ...)                   \
-  if (__builtin_expect(!(cond), 0)) {             \
-    barf(                                         \
-        "%s:%u: %s: Assertion `%s` failed: " msg, \
-        __FILE__,                                 \
-        __LINE__,                                 \
-        __func__,                                 \
-        #cond,                                    \
-        ##__VA_ARGS__);                           \
-  }
-
-void writeFile(const std::string& filename, const std::string& value) {
-  std::ofstream ofile(filename.c_str());
-  ASSERT(ofile.good());
-  ofile << value;
-}
-bool readFile(const std::string& filename, std::string& v) {
-  std::ifstream ifile(filename.c_str());
-  if (!ifile.good())
-    return false;
-  std::stringstream input;
-  input << ifile.rdbuf();
-  v = input.str();
-  return true;
-}
-
-bool acceptChanges = false;
-void assertEqual(
-    const std::string& expected_filename_,
-    const std::string& the_value) {
-  std::string expected_filename = expected_file_path + expected_filename_;
-  std::string expected_value;
-  if (acceptChanges) {
-    writeFile(expected_filename, the_value);
-    return;
-  }
-  if (!readFile(expected_filename, expected_value)) {
-    throw std::runtime_error("expect file not found: " + expected_filename);
-  }
-  if (the_value != expected_value) {
-    std::string output = expected_filename + "-actual";
-    writeFile(output, the_value);
-    std::stringstream ss;
-    ss << expected_filename << " did not match. Run:\n diff -u "
-       << expected_filename << " " << output
-       << "\n to compare. Re-run with --accept to accept changes.";
-    throw std::runtime_error(ss.str());
-  }
-}
 
 void assertParseEqual(
     const std::string& test_name,
@@ -149,7 +78,6 @@ std::string canonicalText(const std::string& text) {
 }
 
 void testTcFormat() {
-  static std::ios_base::Init initIostreams;
   auto source = R"(def fun2(float(B, N, M) X, float(B, M, K) Y) -> (Q) {
   Q(b, ii, j) += (((exp(X(b, ii, k)) * int(Y(b, k, j))) * 2.5) + 3)
 })";
@@ -160,15 +88,7 @@ void testTcFormat() {
 }
 
 int main(int argc, char** argv) {
-  std::vector<std::string> args;
-  for (int i = 1; i < argc; i++) {
-    args.push_back(argv[i]);
-  }
-  for (auto& a : args) {
-    if (a == "--accept") {
-      acceptChanges = true;
-    }
-  }
+  parseArgs(argc, argv);
 
   {
     std::string s = "min min+max 1.4 .3 3 3.\n3e-3 .5e-7 3E-5 foobar";

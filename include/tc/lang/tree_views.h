@@ -125,14 +125,19 @@ struct ListViewIterator {
   bool operator!=(const ListViewIterator& rhs) const {
     return it != rhs.it;
   }
+  bool operator==(const ListViewIterator& rhs) const {
+    return it == rhs.it;
+  }
   T operator*() const {
     return T(*it);
   }
-  void operator++() {
+  ListViewIterator& operator++() {
     ++it;
+    return *this;
   }
-  void operator--() {
+  ListViewIterator& operator--() {
     --it;
+    return *this;
   }
 
  private:
