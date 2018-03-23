@@ -57,6 +57,19 @@
     }                                                           \
   } while (0)
 
+#define TC_CUPTI_CHECK(condition)                                       \
+  do {                                                                  \
+    CUptiResult result = condition;                                     \
+    if (result != CUPTI_SUCCESS) {                                      \
+      const char* msg;                                                  \
+      cuptiGetResultString(result, &msg);                               \
+      std::stringstream ss;                                             \
+      ss << "Error at: " << __FILE__ << ":" << __LINE__ << ": " << msg; \
+      LOG(WARNING) << ss.str();                                         \
+      throw std::runtime_error(ss.str().c_str());                       \
+    }                                                                   \
+  } while (0)
+
 #define TC_CUDA_RUNTIMEAPI_ENFORCE(condition)                   \
   do {                                                          \
     cudaError_t result = condition;                             \
