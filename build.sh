@@ -1,5 +1,5 @@
 #! /bin/bash
-set -ex
+set -e
 
 export TC_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -103,6 +103,21 @@ then
     all="1"
 fi
 
+if [[ "${VERBOSE}" = "1" ]]; then
+  set -x
+fi
+
+orig_make=$(which make)
+
+function make() {
+    # Workaround for https://cmake.org/Bug/view.php?id=3378
+    if [[ "${VERBOSE}" = "1" ]]; then
+        VERBOSE=${VERBOSE} ${orig_make} $@
+    else
+        ${orig_make} $@
+    fi
+}
+
 function set_cache() {
     stat --format="%n %Y %Z %s" `find $1 -name CMakeLists.txt -o -name autogen.sh -o -name configure -o -name Makefile -exec realpath {} \;` > $2
 }
@@ -166,13 +181,13 @@ function install_gflags() {
               echo "Reconfiguring GFlags"
               VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DGFLAGS_BUILD_SHARED_LIBS=ON -DGFLAGS_BUILD_STATIC_LIBS=OFF -DGFLAGS_BUILD_TESTING=ON -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} ..  || exit 1
           fi
-          VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
+          make -j $CORES -s || exit 1
 
           set_cache .. .build_cache
           set_bcache ${TC_DIR}/third-party/gflags ${TC_DIR}/third-party/.gflags_build_cache
       fi
 
-      VERBOSE=${VERBOSE} make install -j $CORES -s || exit 1
+      make install -j $CORES -s || exit 1
       echo "Successfully installed GFlags"
 
   fi
@@ -191,13 +206,13 @@ function install_glog() {
               echo "Reconfiguring Glog"
               VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_BUILD_TYPE=RELWITHDEBINFO -DCMAKE_PREFIX_PATH=${INSTALL_PREFIX} -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DBUILD_SHARED_LIBS=ON -DBUILD_TESTING=ON -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_DEBUG_POSTFIX="" ..  || exit 1
           fi
-          VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
+          make -j $CORES -s || exit 1
 
           set_cache .. .build_cache
           set_bcache ${TC_DIR}/third-party/glog ${TC_DIR}/third-party/.glog_build_cache
       fi
 
-      CMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} VERBOSE=${VERBOSE} make install -j $CORES -s || exit 1
+      CMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} make install -j $CORES -s || exit 1
       echo "Successfully installed Glog"
 
   fi
@@ -226,13 +241,13 @@ function install_aten() {
         export PYTORCH_PYTHON=${PYTHON}
         ${CMAKE_VERSION} .. -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DHAS_C11_ATOMICS=OFF -DNO_CUDA=${ATEN_NO_CUDA}
       fi
-      VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
+      make -j $CORES -s || exit 1
 
       set_cache .. .build_cache
       set_bcache ${TC_DIR}/third-party/ATen ${TC_DIR}/third-party/.aten_build_cache
     fi
 
-    VERBOSE=${VERBOSE} make install -j $CORES -s || exit 1
+    make install -j $CORES -s || exit 1
     echo "Successfully installed ATen"
 
   fi
@@ -267,7 +282,7 @@ function install_caffe2() {
 
   fi
 
-  VERBOSE=${VERBOSE} make -j $CORES install -s || exit 1
+  make -j $CORES install -s || exit 1
 
   set_cache .. .build_cache
   set_bcache ${TC_DIR}/third-party/caffe2 ${CAFFE2_BUILD_CACHE}
@@ -292,7 +307,7 @@ function install_isl() {
     rm -rf * || exit 1
     VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DISL_INT=gmp -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} ..
   fi
-  VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
+  make -j $CORES -s || exit 1
 
   set_cache .. .build_cache
   set_bcache ${TC_DIR}/third-party/islpp ${TC_DIR}/third-party/.islpp_build_cache
@@ -318,7 +333,7 @@ function install_dlpack() {
     rm -rf * || exit 1
     VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} ..
   fi
-  VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
+  make -j $CORES -s || exit 1
 
   set_cache .. .build_cache
   set_bcache ${TC_DIR}/third-party/dlpack ${TC_DIR}/third-party/.dlpack_build_cache
@@ -332,7 +347,14 @@ function install_dlpack() {
 }
 
 function install_cub() {
-    cp -R ${TC_DIR}/third-party/cub/cub ${INSTALL_PREFIX}/include/
+  local tp_dir=${TC_DIR}/third-party/cub/cub
+  local include_dir=${INSTALL_PREFIX}/include/
+  if diff -rq ${tp_dir} ${include_dir}/cub >/dev/null 2>&1; then
+    echo "CUB is up to date"
+  else
+    echo "Installing CUB"
+    cp -R ${tp_dir} ${include_dir}
+  fi
 }
 
 function install_tc_python() {
@@ -393,8 +415,8 @@ function install_tc() {
   fi
 
   set_cache .. .build_cache
-  VERBOSE=${VERBOSE} make -j $CORES -s || exit 1
-  VERBOSE=${VERBOSE} make install -j $CORES -s || exit 1
+  make -j $CORES -s || exit 1
+  make install -j $CORES -s || exit 1
 
   install_tc_python
 
