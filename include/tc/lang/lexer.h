@@ -99,7 +99,11 @@ enum TokenKind {
 #undef DEFINE_TOKEN
 };
 
+// Returns a human-readable description of the token
 std::string kindToString(int kind);
+// Returns the string used by the lexer to match a given token, or throws
+// if it can't be produced by the lexer.
+std::string kindToToken(int kind);
 
 // nested hash tables that indicate char-by-char what is a valid token.
 struct TokenTrie;

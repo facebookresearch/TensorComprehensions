@@ -7,6 +7,7 @@ add_library(
 
   parser.cc
   lexer.cc
+  tc_format.cc
 )
 
 install(
