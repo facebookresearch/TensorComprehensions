@@ -19,7 +19,7 @@
 #include <string>
 #include <unordered_map>
 
-#include "tc/core/polyhedral/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/external/isl.h"
 

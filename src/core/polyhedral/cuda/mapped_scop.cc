@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 
 #include <algorithm>
 #include <array>
@@ -26,12 +26,12 @@
 #include "tc/core/flags.h"
 #include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
-#include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/polyhedral/cuda/cuda_tighten_launch_bounds.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
-#include "tc/core/polyhedral/memory_promotion_heuristic.h"
+#include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/polyhedral/scop.h"

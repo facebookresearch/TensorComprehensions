@@ -15,10 +15,8 @@ add_library(
   halide_utils.cc
 
   polyhedral/codegen.cc
-  polyhedral/mapped_scop.cc
   polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
-  polyhedral/memory_promotion_heuristic.cc
   polyhedral/reduction_matcher.cc
   polyhedral/schedule_isl_conversion.cc
   polyhedral/schedule_transforms.cc
@@ -32,9 +30,11 @@ add_library(
   # Builds and runs without the CUDA SDK and used in cross-compilation tests
   cuda/cuda_mapping_options.cc
   cuda/cuda_mapping_options_cpp_printer.cc
-  polyhedral/codegen_cuda.cc
+  polyhedral/cuda/codegen.cc
   polyhedral/cuda/cuda_mapping_types.cc
   polyhedral/cuda/cuda_tighten_launch_bounds.cc
+  polyhedral/cuda/mapped_scop.cc
+  polyhedral/cuda/memory_promotion_heuristic.cc
 )
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
 target_link_libraries(

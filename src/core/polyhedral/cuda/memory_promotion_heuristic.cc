@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/memory_promotion_heuristic.h"
+#include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 
 #include <glog/logging.h>
 
 #include "tc/core/polyhedral/exceptions.h"
-#include "tc/core/polyhedral/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"

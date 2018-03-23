@@ -25,7 +25,7 @@
 #include "tc/core/islpp_wrap.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen.h"
-#include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
