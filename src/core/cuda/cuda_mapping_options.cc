@@ -71,20 +71,8 @@ std::ostream& operator<<(
     std::ostream& os,
     const CudaMappingOptions& cudaOptions) {
   OstreamBoolalphaScope scope(os);
-  os << "CudaMappingOptions(" << cudaOptions.generic << std::endl
-     << "block: " << cudaOptions.block << "," << std::endl
-     << "grid: " << cudaOptions.grid << "," << std::endl
-     << "use_shared_memory: " << cudaOptions.proto().use_shared_memory() << ","
-     << std::endl
-     << "use_private_memory: " << cudaOptions.proto().use_private_memory()
-     << "," << std::endl
-     << "unroll_copy_shared: " << cudaOptions.proto().unroll_copy_shared()
-     << "," << std::endl
-     << "max_shared_memory: "
-     << (cudaOptions.proto().has_max_shared_memory()
-             ? std::to_string(cudaOptions.proto().max_shared_memory())
-             : "#none")
-     << ") @" << &cudaOptions.proto();
+  tc::CudaMappingOptionsAsCpp cpp(cudaOptions);
+  os << cpp;
   return os;
 }
 

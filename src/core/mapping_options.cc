@@ -62,30 +62,8 @@ std::ostream& operator<<(
 
 std::ostream& operator<<(std::ostream& os, const MappingOptions& options) {
   OstreamBoolalphaScope scope(os);
-  os << "MappingOptions("
-     << "outer_schedule_options: " << options.view.outerScheduleOptions << ","
-     << std::endl;
-  if (options.view.proto.has_intra_tile_schedule_options()) {
-    os << "intra_tile_schedule_options: "
-       << options.view.intraTileScheduleOptions;
-  } else {
-    os << "#none";
-  }
-  os << ","
-     << "fix_parameters_before_scheduling: "
-     << options.view.proto.fix_parameters_before_scheduling() << ","
-     << std::endl
-     << "tiling: " << options.view.tiling << "," << std::endl
-     << "unroll: "
-     << (options.view.proto.has_unroll()
-             ? std::to_string(options.view.proto.unroll())
-             : "#none")
-     << "," << std::endl
-     << "tile_imperfectly_nested: "
-     << options.view.proto.tile_imperfectly_nested() << "," << std::endl
-     << "," << std::endl
-     << "match_library_calls: " << options.view.proto.match_library_calls()
-     << ") @" << &options.view.proto;
+  tc::MappingOptionsAsCpp cpp(options);
+  os << cpp;
   return os;
 }
 
