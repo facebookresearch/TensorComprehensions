@@ -355,23 +355,17 @@ isl::schedule makeScheduleTreeHelper(
     IterationDomainMap* domains) {
   isl::schedule schedule;
   if (auto op = s.as<For>()) {
-    // Add one additional dimension to our set of loop variables
-    int thisLoopIdx = set.dim(isl::dim_type::set);
-    set = set.add_dims(isl::dim_type::set, 1);
-
-    // Make an id for this loop var. For set dimensions this is
-    // really just for pretty-printing.
+    // Make an id for this loop var.  It starts out as a parameter.
     isl::id id(set.get_ctx(), op->name);
-    set = set.set_dim_id(isl::dim_type::set, thisLoopIdx, id);
+    auto space = set.get_space().add_param(id);
 
-    // Construct a variable (affine function) that indexes the new dimension of
-    // this space.
-    isl::aff loopVar(
-        isl::local_space(set.get_space()), isl::dim_type::set, thisLoopIdx);
+    // Construct a variable (affine function) that references
+    // the new parameter.
+    auto loopVar = isl::aff::param_on_domain_space(space, id);
 
     // Then we add our new loop bound constraints.
-    auto lbs = halide2isl::makeIslAffBoundsFromExpr(
-        set.get_space(), op->min, false, true);
+    auto lbs =
+        halide2isl::makeIslAffBoundsFromExpr(space, op->min, false, true);
     CHECK_GT(lbs.size(), 0u)
         << "could not obtain polyhedral lower bounds from " << op->min;
     for (auto lb : lbs) {
@@ -379,8 +373,7 @@ isl::schedule makeScheduleTreeHelper(
     }
 
     Expr max = simplify(op->min + op->extent - 1);
-    auto ubs =
-        halide2isl::makeIslAffBoundsFromExpr(set.get_space(), max, true, false);
+    auto ubs = halide2isl::makeIslAffBoundsFromExpr(space, max, true, false);
     CHECK_GT(ubs.size(), 0u)
         << "could not obtain polyhedral upper bounds from " << max;
     for (auto ub : ubs) {
@@ -401,7 +394,7 @@ isl::schedule makeScheduleTreeHelper(
     isl::multi_union_pw_aff mupa;
     body.get_domain().foreach_set([&](isl::set s) {
       isl::aff newLoopVar(
-          isl::local_space(s.get_space()), isl::dim_type::set, thisLoopIdx);
+          isl::local_space(s.get_space()), isl::dim_type::set, outer.n());
       if (mupa) {
         mupa = mupa.union_add(isl::union_pw_aff(isl::pw_aff(newLoopVar)));
       } else {
@@ -436,7 +429,7 @@ isl::schedule makeScheduleTreeHelper(
     IterationDomain iterationDomain;
     iterationDomain.tuple = isl::multi_id(tupleSpace, outer);
     domains->emplace(id, iterationDomain);
-    isl::set domain = set.set_tuple_id(id);
+    auto domain = set.from_unbound_params(iterationDomain.tuple);
     schedule = isl::schedule::from_domain(domain);
 
     isl::union_map newReads, newWrites;
