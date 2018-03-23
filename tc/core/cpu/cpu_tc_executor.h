@@ -33,10 +33,12 @@ struct CpuRTCFunction {
   void clear() {}
 };
 
+struct CpuProfilingInfo {};
+
 class CpuTcExecutor : public ::tc::TcExecutor {
  public:
   using MappingOptionsType = CpuMappingOptions;
-
+  using ProfilingInfoType = CpuProfilingInfo;
   CpuTcExecutor(
       std::string id,
       const std::vector<const DLTensor*>& inputsInfo,

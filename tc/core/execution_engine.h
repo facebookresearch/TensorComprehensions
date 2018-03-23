@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -72,10 +73,20 @@ class ExecutionEngine {
       std::function<bool(const ExecutorType*)> pruningFunction =
           [](const ExecutorType*) { return false; });
 
-  /// "Low-latency" execution mode in which we just propagate raw pointers to
-  /// data in GPU address space.
-  /// No tensor-related information can be checked so it is the user's
-  /// responsibility to ensure that shapes and strides match.
+  /// Run a compiled TC kernel given its handle, on the given input tensors, and
+  /// profile it.  All tensors must be allocated and have appropriate
+  /// shapes (inputs same as for copmilation, outputs same as returned by
+  /// inferOutputTensorInfo).
+  /// \returns The kernel's profiling results.
+  typename ExecutorType::ProfilingInfoType profile(
+      size_t handle,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<DLTensor*>& outputs);
+
+  /// "Low-latency" execution mode in which we just propagate raw pointers
+  /// to data in GPU address space. No tensor-related information can be
+  /// checked so it is the user's responsibility to ensure that shapes and
+  /// strides match.
   void uncheckedRun(
       size_t handle,
       const std::vector<const void*>& inputs,
@@ -85,6 +96,14 @@ class ExecutionEngine {
   void clear(size_t handle);
 
  protected:
+  template <typename R>
+  R execute(
+      size_t handle,
+      std::unique_ptr<ExecutorType>& executor,
+      std::function<R(ExecutorType&)> func);
+
+  std::unique_ptr<ExecutorType> borrowExecutor(size_t handle);
+
   size_t emplaceExecutor(std::unique_ptr<ExecutorType> p);
 
   size_t getHandle(

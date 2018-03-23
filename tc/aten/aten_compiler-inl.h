@@ -112,6 +112,26 @@ Duration ATenCompilationUnit<ExecutorType>::run(
 }
 
 template <typename ExecutorType>
+typename ExecutorType::ProfilingInfoType
+ATenCompilationUnit<ExecutorType>::profile(
+    const std::string& name,
+    const std::vector<at::Tensor>& inputs,
+    std::vector<at::Tensor>& outputs,
+    size_t handle) {
+  at::Backend backend = inputs[0].type().backend();
+  auto inputDLTensorsPair = toConstDlpackTensors(inputs);
+  ScopeGuard g1([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
+  auto outTensorInfo =
+      executionEngine_->inferOutputTensorInfo(name, inputDLTensorsPair.first);
+  prepareOutputs(
+      executionEngine_->treeForFunction(name), outTensorInfo, backend, outputs);
+  auto outputDLTensorsPair = toDlpackTensors(outputs);
+  ScopeGuard g2([&]() { deleteDlmTensors(outputDLTensorsPair.second); });
+  return executionEngine_->profile(
+      handle, inputDLTensorsPair.first, outputDLTensorsPair.first);
+}
+
+template <typename ExecutorType>
 void ATenCompilationUnit<ExecutorType>::uncheckedRun(
     const std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs,

@@ -33,7 +33,7 @@ namespace tc {
 class CudaTcExecutor : public ::tc::TcExecutor {
  public:
   using MappingOptionsType = CudaMappingOptions;
-
+  using ProfilingInfoType = CudaProfilingInfo;
   CudaTcExecutor(
       std::string id,
       const std::vector<const DLTensor*>& inputsInfo,
@@ -73,7 +73,11 @@ class CudaTcExecutor : public ::tc::TcExecutor {
   Duration run(
       const std::vector<const DLTensor*>& inputs,
       const std::vector<DLTensor*>& outputs,
-      bool profile = false) const;
+      bool profile = false) const override;
+
+  CudaProfilingInfo profile(
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<DLTensor*>& outputs) const;
 
   // This is the "low-latency" mode in which we just propagate raw pointers to
   // data in GPU address space.
@@ -82,7 +86,7 @@ class CudaTcExecutor : public ::tc::TcExecutor {
   // doesn't then segfault will likely occur.
   void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const;
+      const std::vector<void*>& outputs) const override;
 
   bool hasRuntimeCompiledFunction() override {
     return rtcFun.get() != nullptr;
@@ -102,6 +106,12 @@ class CudaTcExecutor : public ::tc::TcExecutor {
   }
 
  private:
+  void preRunChecks(
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<DLTensor*>& outputs) const;
+  std::pair<std::vector<const void*>, std::vector<void*>> prepareCudaArgs(
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<DLTensor*>& outputs) const;
   void compileWithTcMapper();
 
  public:
