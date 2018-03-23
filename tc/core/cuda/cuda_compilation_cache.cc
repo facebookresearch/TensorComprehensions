@@ -302,6 +302,29 @@ OptionsCachedEntry::OptionsCachedEntry(
   values.emplace_back(options, runtime);
 }
 
+OptionsCachedEntry::OptionsCachedEntry(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs,
+    const std::string& deviceStr,
+    const CudaMappingOptions& options,
+    const CudaProfilingInfo& pInfo)
+    : key(id, inputs, outputs, deviceStr, git_version) {
+  values.emplace_back(options, pInfo);
+}
+
+OptionsCachedEntry::OptionsCachedEntry(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs,
+    const std::string& deviceStr,
+    const CudaMappingOptions& options,
+    Duration runtime,
+    const CudaProfilingInfo& pInfo)
+    : key(id, inputs, outputs, deviceStr, git_version) {
+  values.emplace_back(options, runtime, pInfo);
+}
+
 OptionsCachedEntry::Key::Key(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs_,
@@ -333,8 +356,41 @@ OptionsCachedEntry::Values::Values(
 
 OptionsCachedEntry::Values::Values(
     const CudaMappingOptions& options,
-    std::vector<Duration>&& runtimes)
-    : mappingOptions(options), recordedRuntimes(std::move(runtimes)) {}
+    const CudaProfilingInfo& pInfo)
+    : mappingOptions(options), profiles{pInfo} {}
+
+OptionsCachedEntry::Values::Values(
+    const CudaMappingOptions& options,
+    Duration runtime,
+    const CudaProfilingInfo& pInfo)
+    : mappingOptions(options), recordedRuntimes{runtime}, profiles{pInfo} {}
+
+OptionsCachedEntry::Values::Values(
+    const CudaMappingOptions& options,
+    std::vector<Duration>&& runtimes,
+    std::vector<CudaProfilingInfo>&& pInfos)
+    : mappingOptions(options),
+      recordedRuntimes(std::move(runtimes)),
+      profiles(std::move(pInfos)) {}
+
+namespace {
+tc::CudaProfilingInfo fromProto(const tc::CudaProfilingProto& buf) {
+  tc::CudaProfilingInfo pInfo;
+  pInfo.runtime = std::chrono::microseconds(buf.runtime());
+  pInfo.ipc = buf.ipc();
+  pInfo.flopSP = buf.flopsp();
+  pInfo.globalLoadEfficiency = buf.globalloadefficiency();
+  pInfo.globalStoreEfficiency = buf.globalstoreefficiency();
+  pInfo.branchEfficiency = buf.branchefficiency();
+  pInfo.sharedMemoryEfficiency = buf.sharedmemoryefficiency();
+  pInfo.streamingMultiprocessorEfficiency =
+      buf.streamingmultiprocessorefficiency();
+  pInfo.localMemoryOverhead = buf.localmemoryoverhead();
+  pInfo.achievedOccupancy = buf.achievedoccupancy();
+  pInfo.warpExecutionEfficiency = buf.warpexecutionefficiency();
+  return pInfo;
+}
+} // namespace
 
 OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
     : key(buf.id(),
@@ -348,7 +404,7 @@ OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
   }
 
   for (const auto& value : buf.values()) {
-    if (value.recorded_runtimes_size() == 0) {
+    if (value.recorded_runtimes_size() == 0 and value.profiles_size() == 0) {
       throw std::invalid_argument(
           "OptionsCachedEntry invalid protobuf: each entry value should have at least one recorded runtime.");
     }
@@ -359,10 +415,42 @@ OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
         value.recorded_runtimes().end(),
         std::back_inserter(runtimes),
         [](int64_t us) { return std::chrono::microseconds(us); });
+    std::vector<CudaProfilingInfo> profiles;
+    profiles.reserve(value.profiles_size());
+    std::transform(
+        value.profiles().begin(),
+        value.profiles().end(),
+        std::back_inserter(profiles),
+        [](const CudaProfilingProto& buf) { return fromProto(buf); });
+
     values.emplace_back(
-        CudaMappingOptions(value.kernel_options()), std::move(runtimes));
+        CudaMappingOptions(value.kernel_options()),
+        std::move(runtimes),
+        std::move(profiles));
   }
 }
+
+namespace {
+tc::CudaProfilingProto toProto(const tc::CudaProfilingInfo& pInfo) {
+  tc::CudaProfilingProto buf;
+  buf.set_runtime(
+      std::chrono::duration_cast<std::chrono::microseconds>(pInfo.runtime)
+          .count());
+  buf.set_ipc(pInfo.ipc);
+  buf.set_flopsp(pInfo.flopSP);
+  buf.set_globalloadefficiency(pInfo.globalLoadEfficiency);
+  buf.set_globalstoreefficiency(pInfo.globalStoreEfficiency);
+  buf.set_branchefficiency(pInfo.branchEfficiency);
+  buf.set_sharedmemoryefficiency(pInfo.sharedMemoryEfficiency);
+  buf.set_streamingmultiprocessorefficiency(
+      pInfo.streamingMultiprocessorEfficiency);
+  buf.set_localmemoryoverhead(pInfo.localMemoryOverhead);
+  buf.set_achievedoccupancy(pInfo.achievedOccupancy);
+  buf.set_warpexecutionefficiency(pInfo.warpExecutionEfficiency);
+
+  return buf;
+}
+} // namespace
 
 OptionsCacheEntryProto OptionsCachedEntry::toProtobuf() const {
   OptionsCacheEntryProto buf;
@@ -391,6 +479,9 @@ OptionsCacheEntryProto OptionsCachedEntry::toProtobuf() const {
         for (const auto& r : v.recordedRuntimes) {
           buf.add_recorded_runtimes(
               std::chrono::duration_cast<std::chrono::microseconds>(r).count());
+        }
+        for (const auto& p : v.profiles) {
+          *buf.add_profiles() = toProto(p);
         }
         return buf;
       });
@@ -458,6 +549,69 @@ void OptionsCache::recordRuntime(
   }
 
   v->recordedRuntimes.push_back(runtime);
+}
+
+void OptionsCache::recordProfilingInfo(
+    const std::string& id,
+    const CudaMappingOptions& options,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs,
+    const CudaProfilingInfo pInfo) {
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberCacheAttemps;
+  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+
+  auto kernel = searchKernel(entries_, id, inputs, outputs);
+  if (not kernel) {
+    entries_.emplace_back(
+        id, inputs, outputs, gpuStr, options, pInfo.runtime, pInfo);
+    return;
+  }
+  auto v = std::find_if(
+      kernel->values.begin(),
+      kernel->values.end(),
+      [&options](const CachedEntry::Values& v) {
+        return v.mappingOptions == options;
+      });
+  if (v == kernel->values.end()) {
+    kernel->values.emplace_back(options, pInfo);
+    return;
+  }
+
+  v->recordedRuntimes.push_back(pInfo.runtime);
+  v->profiles.push_back(pInfo);
+}
+
+std::vector<OptionsCacheRetrievalResult>
+OptionsCache::retrieveOptionsAndProfilingInfo(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs) const {
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberAttemptedRetrievals;
+  auto ret = searchKernel(entries_, id, inputs, outputs);
+  if (not ret) {
+    return {};
+  }
+  ++numberSuccessfulRetrievals;
+  std::vector<OptionsCacheRetrievalResult> res;
+  res.reserve(ret->values.size());
+  std::transform(
+      ret->values.begin(),
+      ret->values.end(),
+      std::back_inserter(res),
+      [](const CachedEntry::Values& v) -> OptionsCacheRetrievalResult {
+        return {v.mappingOptions, v.recordedRuntimes, v.profiles};
+      });
+  res.erase(
+      std::remove_if(
+          res.begin(),
+          res.end(),
+          [](const OptionsCacheRetrievalResult& rr) {
+            return rr.profilingInfo.empty();
+          }),
+      res.end());
+  return res;
 }
 
 std::vector<OptionsCacheRetrievalResult>

@@ -36,6 +36,10 @@ struct CudaProfilingInfo {
   double localMemoryOverhead;
   double achievedOccupancy;
   double warpExecutionEfficiency;
+
+  friend bool operator==(
+      const CudaProfilingInfo& a,
+      const CudaProfilingInfo& b);
 };
 
 struct CudaMetric {

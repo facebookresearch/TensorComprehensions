@@ -24,6 +24,33 @@
 
 namespace tc {
 
+bool operator==(const CudaProfilingInfo& a, const CudaProfilingInfo& b) {
+  return std::tie(
+             a.runtime,
+             a.ipc,
+             a.flopSP,
+             a.globalLoadEfficiency,
+             a.globalStoreEfficiency,
+             a.branchEfficiency,
+             a.sharedMemoryEfficiency,
+             a.streamingMultiprocessorEfficiency,
+             a.localMemoryOverhead,
+             a.achievedOccupancy,
+             a.warpExecutionEfficiency) ==
+      std::tie(
+             b.runtime,
+             b.ipc,
+             b.flopSP,
+             b.globalLoadEfficiency,
+             b.globalStoreEfficiency,
+             b.branchEfficiency,
+             b.sharedMemoryEfficiency,
+             b.streamingMultiprocessorEfficiency,
+             b.localMemoryOverhead,
+             b.achievedOccupancy,
+             b.warpExecutionEfficiency);
+}
+
 CudaCuptiProfiler::CudaCuptiProfiler(KernelType kernel, CUdevice device)
     : kernel_{std::move(kernel)},
       device_{device},

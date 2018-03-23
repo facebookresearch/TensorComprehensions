@@ -775,6 +775,21 @@ TEST_F(OptionsCacheTest, Serialization) {
       inputPtrs,
       outputPtrs,
       std::chrono::microseconds(11));
+  tc::CudaProfilingInfo pInfoOrig;
+  pInfoOrig.runtime = std::chrono::microseconds(444);
+  pInfoOrig.ipc = 1.23;
+  pInfoOrig.flopSP = 4;
+  pInfoOrig.globalLoadEfficiency = 6.546;
+  pInfoOrig.globalStoreEfficiency = 7.123;
+  pInfoOrig.branchEfficiency = 8.1231;
+  pInfoOrig.sharedMemoryEfficiency = 7.111111;
+  pInfoOrig.streamingMultiprocessorEfficiency = 2.333123;
+  pInfoOrig.localMemoryOverhead = 888.222;
+  pInfoOrig.achievedOccupancy = 11231231.14;
+  pInfoOrig.warpExecutionEfficiency = 910293123918239.1029381;
+
+  tc::OptionsCache::getCache()->recordProfilingInfo(
+      "kernel0", options0, inputPtrs, outputPtrs, pInfoOrig);
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel1", options0, inputPtrs, outputPtrs, std::chrono::microseconds(1));
 
@@ -791,8 +806,9 @@ TEST_F(OptionsCacheTest, Serialization) {
       "kernel0", inputPtrs, outputPtrs);
   ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
+  ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(444));
 
   ASSERT_EQ(ret[1].options, options1);
   ASSERT_EQ(ret[1].recordedRuntimes.size(), 1u);
@@ -809,10 +825,17 @@ TEST_F(OptionsCacheTest, Serialization) {
       "kernel2", inputPtrs, outputPtrs);
   ASSERT_EQ(ret.size(), 0u);
 
+  auto ret2 = tc::OptionsCache::getCache()->retrieveOptionsAndProfilingInfo(
+      "kernel0", inputPtrs, outputPtrs);
+  ASSERT_EQ(ret2.size(), 1u);
+  ASSERT_EQ(ret2.front().options, options0);
+  ASSERT_EQ(ret2.front().profilingInfo.size(), 1u);
+  ASSERT_EQ(ret2.front().profilingInfo.front(), pInfoOrig);
+
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 4);
+  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 3);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 }
 
