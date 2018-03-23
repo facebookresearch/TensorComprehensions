@@ -62,6 +62,12 @@ class ATenCompilationUnit {
       size_t handle,
       bool profile = false);
 
+  typename ExecutorType::ProfilingInfoType profile(
+      const std::string& name,
+      const std::vector<at::Tensor>& inputs,
+      std::vector<at::Tensor>& outputs,
+      size_t handle);
+
   /// This is the "low-latency" mode in which we just propagate ATen tensors
   /// Sizes are not checked and it is the user's responsibility to ensure that
   /// they match. If the user doesn't then segfault will likely occur.
