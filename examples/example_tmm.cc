@@ -111,7 +111,7 @@ TEST_F(TransposedMatMul, TransposedMatMul) {
   auto K = FLAGS_K;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
-                     .tile({32, 32, 32})
+                     .tile(32, 32, 32)
                      .mapToThreads({32, 32})
                      .mapToBlocks({M / 32, N / 32})
                      .useSharedMemory(true)

@@ -474,7 +474,7 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 
 TEST_F(MatMulBias, RegisterPromotion) {
   auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
-                            .tile({32, 32, 32})
+                            .tile(32, 32, 32)
                             .useSharedMemory(false)
                             .usePrivateMemory(true);
 
@@ -505,7 +505,7 @@ TEST_F(MatMulBias, RegisterPromotion) {
 
 TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
   auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
-                            .tile({32, 32, 32})
+                            .tile(32, 32, 32)
                             .maxSharedMemory(32768)
                             .useSharedMemory(true)
                             .usePrivateMemory(true);

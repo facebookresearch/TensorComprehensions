@@ -159,7 +159,6 @@ class Tiling {
   Tiling(const Tiling& t) : ownedProto_(t.ownedProto_), view(ownedProto_) {}
   Tiling(const TilingProto& proto) : ownedProto_(proto), view(ownedProto_) {}
   Tiling(const TilingView& view) : ownedProto_(view.proto), view(ownedProto_) {}
-  inline Tiling(std::initializer_list<uint64_t> il);
   inline Tiling(const std::vector<uint64_t>& sizes);
 
  private:
@@ -255,7 +254,6 @@ class MappingOptionsView {
    * @{
    */
   inline MappingOptionsView& tile(const std::vector<uint64_t>& sizes);
-  inline MappingOptionsView& tile(std::initializer_list<uint64_t> sizes);
   MappingOptionsView& tile(const std::string& commaSeparatedSizes);
   inline MappingOptionsView& tile(const char* commaSeparatedSizes);
   template <typename... Args>
@@ -321,6 +319,28 @@ class MappingOptions {
   std::string toProtobufSerializedString() const {
     return ownedProto_.SerializeAsString();
   }
+
+#define FORWARD_FUN(FUN_NAME)                     \
+  template <typename... Args>                     \
+  inline MappingOptions& FUN_NAME(Args... args) { \
+    view.FUN_NAME(args...);                       \
+    return *this;                                 \
+  }
+
+  FORWARD_FUN(tile);
+  FORWARD_FUN(unroll);
+  FORWARD_FUN(fixParametersBeforeScheduling);
+  FORWARD_FUN(tileImperfectlyNested);
+  FORWARD_FUN(matchLibraryCalls);
+  FORWARD_FUN(scheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleAllowSkewing);
+  FORWARD_FUN(outerSchedulePositiveOrthant);
+  FORWARD_FUN(intraTileScheduleFusionStrategy);
+  FORWARD_FUN(intraTileScheduleAllowSkewing);
+  FORWARD_FUN(intraTileSchedulePositiveOrthant);
+
+#undef FORWARD_FUN
 
   /// Static constructors for predefined strategies.
   ///@{

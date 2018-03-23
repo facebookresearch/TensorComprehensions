@@ -437,7 +437,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
  * if the second innermost loop has not been unrolled.
  */
 TEST_F(PolyhedralMapperTest, Unroll1D) {
-  auto mappingOptions = DefaultOptions().tile({64, 64}).unroll(15);
+  auto mappingOptions = DefaultOptions().tile(64, 64).unroll(15);
   auto scop = PrepareAndJoinBands(kTcAdd);
   scop->fixParameters<int>({{"N", 1024}, {"M", 1024}});
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
@@ -456,7 +456,7 @@ TEST_F(PolyhedralMapperTest, Unroll1D) {
  * the innermost loop iterator ("c3") is replaced by t0 + 32.
  */
 TEST_F(PolyhedralMapperTest, Unroll2D) {
-  auto mappingOptions = DefaultOptions().tile({64, 64}).unroll(16);
+  auto mappingOptions = DefaultOptions().tile(64, 64).unroll(16);
   auto scop = PrepareAndJoinBands(kTcAdd);
   scop->fixParameters<int>({{"N", 1024}, {"M", 1024}});
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(

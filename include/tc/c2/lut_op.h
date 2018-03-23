@@ -42,7 +42,7 @@ class TcLUTOp : public TcOp<T, Context, Engine> {
 
  protected:
   void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_.tile({1})
+    this->cudaMappingOptions_.tile(1)
         .mapToThreads(64)
         .mapToBlocks(256)
         .unroll(1)

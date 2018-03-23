@@ -158,50 +158,6 @@ class CudaMappingOptions {
     return ownedProto_.SerializeAsString();
   }
 
-  /// The following only call the operation on CudaMappingOptions and return
-  /// reference to self for the purpose of chaining
-  /**
-   * @name Chainable Modifiers
-   * See protobuf for documentation on each option.
-   * @{
-   */
-  inline CudaMappingOptions& tile(const std::vector<uint64_t>& sizes);
-  inline CudaMappingOptions& tile(std::initializer_list<uint64_t> sizes);
-  inline CudaMappingOptions& tile(const std::string& commaSeparatedSizes);
-  inline CudaMappingOptions& tile(const char* commaSeparatedSizes);
-  template <typename... Args>
-  CudaMappingOptions& tile(Args...);
-
-  inline CudaMappingOptions& unroll(uint64_t size);
-  inline CudaMappingOptions& fixParametersBeforeScheduling(bool b);
-  inline CudaMappingOptions& tileImperfectlyNested(bool b);
-  inline CudaMappingOptions& matchLibraryCalls(bool b);
-  ///@}
-
-  /// Set single fusion strategy.
-  ///@{
-  inline CudaMappingOptions& scheduleFusionStrategy(FusionStrategy fs);
-  inline CudaMappingOptions& scheduleFusionStrategy(const std::string& str);
-  ///@}
-
-  /// Set fusion strategy for outer scheduling.
-  ///@{
-  inline CudaMappingOptions& outerScheduleFusionStrategy(FusionStrategy fs);
-  inline CudaMappingOptions& outerScheduleFusionStrategy(
-      const std::string& str);
-  inline CudaMappingOptions& outerScheduleAllowSkewing(bool b);
-  inline CudaMappingOptions& outerSchedulePositiveOrthant(bool b);
-  ///@}
-
-  /// Set fusion strategy for intra-tile scheduling.
-  ///@{
-  inline CudaMappingOptions& intraTileScheduleFusionStrategy(FusionStrategy fs);
-  inline CudaMappingOptions& intraTileScheduleFusionStrategy(
-      const std::string& str);
-  inline CudaMappingOptions& intraTileScheduleAllowSkewing(bool b);
-  inline CudaMappingOptions& intraTileSchedulePositiveOrthant(bool b);
-  ///@}
-
   /**
    * @name Chainable Modifiers specific to CudaMappingOptions
    * See protobuf for documentation on each option.
@@ -250,6 +206,28 @@ class CudaMappingOptions {
   const CudaMappingOptionsProto& proto() const {
     return ownedProto_;
   }
+
+#define FORWARD_FUN(FUN_NAME)                         \
+  template <typename... Args>                         \
+  inline CudaMappingOptions& FUN_NAME(Args... args) { \
+    generic.FUN_NAME(args...);                        \
+    return *this;                                     \
+  }
+
+  FORWARD_FUN(tile);
+  FORWARD_FUN(unroll);
+  FORWARD_FUN(fixParametersBeforeScheduling);
+  FORWARD_FUN(tileImperfectlyNested);
+  FORWARD_FUN(matchLibraryCalls);
+  FORWARD_FUN(scheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleAllowSkewing);
+  FORWARD_FUN(outerSchedulePositiveOrthant);
+  FORWARD_FUN(intraTileScheduleFusionStrategy);
+  FORWARD_FUN(intraTileScheduleAllowSkewing);
+  FORWARD_FUN(intraTileSchedulePositiveOrthant);
+
+#undef FORWARD_FUN
 
  private:
   CudaMappingOptionsProto ownedProto_;

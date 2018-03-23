@@ -31,9 +31,6 @@ Tiling::Tiling(const std::vector<uint64_t>& sizes)
       google::protobuf::RepeatedFieldBackInserter(ownedProto_.mutable_sizes()));
 }
 
-Tiling::Tiling(std::initializer_list<uint64_t> il)
-    : Tiling(std::vector<uint64_t>(il)) {}
-
 std::vector<uint64_t> TilingView::extractVector() const {
   std::vector<uint64_t> result(proto.sizes().begin(), proto.sizes().end());
   return result;
@@ -119,12 +116,6 @@ bool MappingOptionsView::operator!=(const MappingOptionsView& options) const {
 //
 MappingOptionsView& MappingOptionsView::tile(
     const std::vector<uint64_t>& sizes) {
-  tiling = Tiling(sizes).view; // tmp Tiling, copy, delete
-  return *this;
-}
-
-MappingOptionsView& MappingOptionsView::tile(
-    std::initializer_list<uint64_t> sizes) {
   tiling = Tiling(sizes).view; // tmp Tiling, copy, delete
   return *this;
 }
@@ -243,29 +234,29 @@ MappingOptions MappingOptions::makeUnmappedMappingOptions() {
 }
 
 MappingOptions MappingOptions::makeNaiveMappingOptions() {
-  return makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(1);
+  return makeUnmappedMappingOptions().tile(32, 32, 32).unroll(1);
 }
 
 MappingOptions MappingOptions::makeSingleThreadMappingOptions() {
-  return makeUnmappedMappingOptions().view.tile({1}).unroll(1);
+  return makeUnmappedMappingOptions().tile(1).unroll(1);
 }
 
 MappingOptions MappingOptions::makePointwiseMappingOptions() {
-  return makeUnmappedMappingOptions().view.tile({32, 32, 32}).unroll(128);
+  return makeUnmappedMappingOptions().tile(32, 32, 32).unroll(128);
 }
 
 MappingOptions MappingOptions::makeMlpMappingOptions() {
   return makeUnmappedMappingOptions()
       .view.outerScheduleFusionStrategy(FusionStrategy::Max)
-      .tile({1})
+      .tile(1)
       .unroll(1);
 }
 
 MappingOptions MappingOptions::makeConvolutionMappingOptions() {
-  return makeUnmappedMappingOptions().view.tile({4, 8, 8, 8}).unroll(1);
+  return makeUnmappedMappingOptions().tile(4, 8, 8, 8).unroll(1);
 }
 
 MappingOptions MappingOptions::makeGroupConvolutionMappingOptions() {
-  return makeUnmappedMappingOptions().view.tile({1, 1}).unroll(1);
+  return makeUnmappedMappingOptions().tile(1, 1).unroll(1);
 }
 } // namespace tc

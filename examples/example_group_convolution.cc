@@ -177,7 +177,7 @@ TEST_F(GroupConvolution, GroupConvolution) {
   auto threads = (W >= 10) ? std::vector<size_t>{W / 4, H / 2}
                            : std::vector<size_t>{4, 8, 4};
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
-                     .tile({1, 1, 1})
+                     .tile(1, 1, 1)
                      .mapToThreads(threads)
                      .mapToBlocks({32, 32})
                      .useSharedMemory(true)

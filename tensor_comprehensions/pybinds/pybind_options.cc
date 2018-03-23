@@ -71,18 +71,6 @@ PYBIND11_MODULE(mapping_options, m) {
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If unroll value is not provided, has no effect")
       .def(
-          "matchLibraryCalls",
-          &tc::CudaMappingOptions::matchLibraryCalls,
-          "Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS) when possible")
-      .def(
-          "fixParametersBeforeScheduling",
-          &tc::CudaMappingOptions::fixParametersBeforeScheduling,
-          "Perform automatic loop scheduling taking into account specific tensor sizes.\nMay produce faster kernels but significantly increases compilation time.\n Note that the mapping will be performed for specific tensor sizes anyway")
-      .def(
-          "unroll",
-          &tc::CudaMappingOptions::unroll,
-          "Perform loop unrolling on the generated code and produce at most the given number of statements")
-      .def(
           "scheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.scheduleFusionStrategy(type);
@@ -123,7 +111,25 @@ PYBIND11_MODULE(mapping_options, m) {
              std::vector<uint64_t>& blockSizes) {
             instance.mapToBlocks(blockSizes);
           },
-          "The configuration of CUDA grid, i.e. the number of CUDA blocks along three dimensions. Must be\nwithin the range allowed by CUDA (maximum 2^31-1 for the first value and 65535 for the second and third)");
+          "The configuration of CUDA grid, i.e. the number of CUDA blocks along three dimensions. Must be\nwithin the range allowed by CUDA (maximum 2^31-1 for the first value and 65535 for the second and third)")
+      .def(
+          "matchLibraryCalls",
+          [](tc::CudaMappingOptions& instance, bool match) {
+            instance.matchLibraryCalls(match);
+          },
+          "Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS) when possible")
+      .def(
+          "fixParametersBeforeScheduling",
+          [](tc::CudaMappingOptions& instance, bool fix) {
+            instance.fixParametersBeforeScheduling(fix);
+          },
+          "Perform automatic loop scheduling taking into account specific tensor sizes.\nMay produce faster kernels but significantly increases compilation time.\n Note that the mapping will be performed for specific tensor sizes anyway")
+      .def(
+          "unroll",
+          [](tc::CudaMappingOptions& instance, uint64_t factor) {
+            instance.unroll(factor);
+          },
+          "Perform loop unrolling on the generated code and produce at most the given number of statements");
 }
 
 } // namespace python

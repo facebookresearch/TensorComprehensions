@@ -117,7 +117,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul) {
   auto M = FLAGS_M;
   auto K = FLAGS_K;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
-                     .tile({1})
+                     .tile(1)
                      .mapToThreads({128})
                      .mapToBlocks({B})
                      .useSharedMemory(true)

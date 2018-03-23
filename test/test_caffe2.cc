@@ -51,7 +51,7 @@ struct Caffe2CopyTest : public Caffe2Test {
   Argument strategyArg;
   Caffe2CopyTest() {
     CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                     .tile({32, 32})
+                                     .tile(32, 32)
                                      .mapToThreads({32, 32})
                                      .mapToBlocks({32, 32, 32});
     strategyArg = MakeArgument<string>(
@@ -184,7 +184,7 @@ TEST_F(Caffe2Test, TcMatMulOp) {
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32, 32})
+                                   .tile(32, 32, 32)
                                    .mapToThreads({4, 32})
                                    .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
@@ -205,7 +205,7 @@ TEST_F(Caffe2Test, DISABLED_TcMatMulOp_Gradient) {
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32, 32})
+                                   .tile(32, 32, 32)
                                    .mapToThreads({4, 32})
                                    .mapToBlocks({32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
@@ -226,10 +226,9 @@ TEST_F(Caffe2Test, TcLUTOp) {
     TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL, "__lengths");
   };
 
-  CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32})
-                                   .mapToThreads({32, 32})
-                                   .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options =
+      tc::makeBaseCliStrategy().tile(32, 32).mapToThreads({32, 32}).mapToBlocks(
+          {32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options)
@@ -258,7 +257,7 @@ TEST_F(Caffe2Test, Tc2LUTOp) {
   };
 
   CudaMappingOptions options =
-      tc::makeBaseCliStrategy().tile({1, 32}).mapToThreads({1, 32}).mapToBlocks(
+      tc::makeBaseCliStrategy().tile(1, 32).mapToThreads({1, 32}).mapToBlocks(
           {100, 100});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
@@ -368,7 +367,7 @@ TEST_F(Caffe2Test, TcFCReluOp) {
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32, 32})
+                                   .tile(32, 32, 32)
                                    .mapToThreads({32, 4})
                                    .mapToBlocks({32, 32});
   Argument strategyArg = MakeArgument<string>(
@@ -392,7 +391,7 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .scheduleFusionStrategy("Max")
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({128})
                                    .useSharedMemory(false)
@@ -422,7 +421,7 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .scheduleFusionStrategy("Max")
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({200})
                                    .mapToBlocks({32});
   Argument strategyArg = MakeArgument<string>(
@@ -452,7 +451,7 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .scheduleFusionStrategy("Max")
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({128});
   Argument strategyArg = MakeArgument<string>(
@@ -476,7 +475,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .scheduleFusionStrategy("Max")
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({128});
   Argument strategyArg = MakeArgument<string>(
@@ -538,10 +537,9 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
     AddInput(w, {F}, "bias");
   };
 
-  CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32})
-                                   .mapToThreads({32, 32})
-                                   .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options =
+      tc::makeBaseCliStrategy().tile(32, 32).mapToThreads({32, 32}).mapToBlocks(
+          {32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -577,10 +575,9 @@ TEST_F(Caffe2Test, DISABLED_TcConvolutionOp_Gradient) {
     AddInput(w, {NN, F, H - KH + 1, W - KW + 1}, "H_grad");
   };
 
-  CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({32, 32})
-                                   .mapToThreads({32, 32})
-                                   .mapToBlocks({32, 32, 32});
+  CudaMappingOptions options =
+      tc::makeBaseCliStrategy().tile(32, 32).mapToThreads({32, 32}).mapToBlocks(
+          {32, 32, 32});
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
@@ -630,7 +627,7 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);
@@ -679,7 +676,7 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);
@@ -719,7 +716,7 @@ def fun(float(B, N, M) X) -> (Z) {
   Argument tcArg = MakeArgument<string>("tcDef", tc);
   Argument tcNameArg = MakeArgument<string>("tcName", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
-                                   .tile({1})
+                                   .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);

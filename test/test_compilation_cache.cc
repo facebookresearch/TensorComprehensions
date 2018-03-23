@@ -709,10 +709,8 @@ TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
 }
 
 TEST_F(OptionsCacheTest, Serialization) {
-  auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile({0});
-  auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile({1});
+  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(0);
+  auto options1 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(1);
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -1243,7 +1241,7 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
 
   MatMulTester test1{8, 32, 16};
   auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
-                     .tile({1, 1, 1})
+                     .tile(1, 1, 1)
                      .mapToThreads(2, 2, 2)
                      .mapToBlocks(1, 1, 1)
                      .unroll(1);
@@ -1251,7 +1249,7 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
 
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
   options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
-                .tile({2, 2, 2})
+                .tile(2, 2, 2)
                 .mapToThreads(1, 1, 1)
                 .mapToBlocks(1, 1)
                 .unroll(1);
@@ -1280,7 +1278,7 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
   auto fut1 = std::async(std::launch::async, []() {
     MatMulTester test1{8, 32, 16};
     auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
-                       .tile({1, 1, 1})
+                       .tile(1, 1, 1)
                        .mapToThreads(2, 2, 2)
                        .mapToBlocks(1, 1, 1)
                        .unroll(1);
@@ -1290,7 +1288,7 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
   auto fut2 = std::async(std::launch::async, []() {
     ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
     auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
-                       .tile({2, 2, 2})
+                       .tile(2, 2, 2)
                        .mapToThreads(1, 1, 1)
                        .mapToBlocks(1, 1)
                        .unroll(1);

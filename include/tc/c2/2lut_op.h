@@ -44,7 +44,7 @@ class Tc2LUTOp : public TcOp<T, Context, Engine> {
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_.mapToBlocks(256)
         .mapToThreads(64)
-        .tile({1})
+        .tile(1)
         .unroll(1)
         .useSharedMemory(false)
         .usePrivateMemory(false);

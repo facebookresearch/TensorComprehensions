@@ -84,7 +84,7 @@ tc::CudaMappingOptions makeBaseCliStrategy() {
           .useSharedMemory(DEFAULT_USE_SHARED_MEMORY)
           .usePrivateMemory(DEFAULT_USE_PRIVATE_MEMORY)
           .unrollCopyShared(DEFAULT_UNROLL_COPY_SHARED);
-  options.generic.scheduleFusionStrategy(fs)
+  options.scheduleFusionStrategy(fs)
       .fixParametersBeforeScheduling(DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING)
       .tile(DEFAULT_TILE)
       .tileImperfectlyNested(DEFAULT_TILE_IMPERFECTLY_NESTED)
@@ -100,7 +100,7 @@ tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
   if (FLAGS_fusion_strategy != std::string(DEFAULT_FUSION_STRATEGY)) {
     tc::FusionStrategy fs;
     if (tc::FusionStrategy_Parse(FLAGS_fusion_strategy, &fs)) {
-      options.generic.scheduleFusionStrategy(fs);
+      options.scheduleFusionStrategy(fs);
     } else {
       CHECK(false) << "Unknown fusion_strategy: " << FLAGS_fusion_strategy;
     }
@@ -112,14 +112,14 @@ tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
 
   if (FLAGS_fix_parameters_before_scheduling !=
       DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING) {
-    options.generic.fixParametersBeforeScheduling(
+    options.fixParametersBeforeScheduling(
         FLAGS_fix_parameters_before_scheduling);
   }
   if (FLAGS_tile != DEFAULT_TILE) {
-    options.generic.tile(FLAGS_tile);
+    options.tile(FLAGS_tile);
   }
   if (FLAGS_tile_imperfectly_nested != DEFAULT_TILE_IMPERFECTLY_NESTED) {
-    options.generic.tileImperfectlyNested(FLAGS_tile_imperfectly_nested);
+    options.tileImperfectlyNested(FLAGS_tile_imperfectly_nested);
   }
   if (FLAGS_block != DEFAULT_BLOCK) {
     options.mapToThreads(FLAGS_block);
@@ -137,7 +137,7 @@ tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
     options.unrollCopyShared(FLAGS_unroll_copy_shared);
   }
   if (FLAGS_unroll != DEFAULT_UNROLL_FACTOR) {
-    options.generic.unroll(FLAGS_unroll);
+    options.unroll(FLAGS_unroll);
   }
   return options;
 }

@@ -40,7 +40,7 @@ class TcDperLutConcatOp : public TcOp<T, Context, Engine> {
 
  protected:
   void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_.tile({1})
+    this->cudaMappingOptions_.tile(1)
         .mapToThreads(128)
         .mapToBlocks(32)
         .unroll(1)

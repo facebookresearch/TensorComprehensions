@@ -521,7 +521,7 @@ TEST_F(ProductionModel, 1LUT) {
   auto L1 = FLAGS_L1;
   auto E1 = FLAGS_E1;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
-                     .tile({1, 32})
+                     .tile(1, 32)
                      .mapToThreads({1, 32})
                      .mapToBlocks({128, 128})
                      .unroll(256);
@@ -598,7 +598,7 @@ TEST_F(ProductionModel, 2LUT) {
   auto E1 = FLAGS_E1;
   auto E2 = FLAGS_E2;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
-                     .tile({1, 32})
+                     .tile(1, 32)
                      .mapToThreads({1, 32})
                      .mapToBlocks({128, 128})
                      .unroll(256);
@@ -688,7 +688,7 @@ TEST_F(ProductionModel, C3) {
   auto WY = FLAGS_WY;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
-                     .tile({32, 32, 32})
+                     .tile(32, 32, 32)
                      .mapToThreads({4, 32})
                      .mapToBlocks({128, 128})
                      .useSharedMemory(true)
@@ -783,7 +783,7 @@ TEST_F(ProductionModel, MLP1) {
   auto M = FLAGS_M;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
-                     .tile({16, 16, 128})
+                     .tile(16, 16, 128)
                      .mapToThreads({16, 16})
                      .mapToBlocks({32, 32})
                      .useSharedMemory(true)
@@ -882,7 +882,7 @@ TEST_F(ProductionModel, MLP3) {
   auto Q = FLAGS_Q;
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .fixParametersBeforeScheduling(true)
-                     .tile({16, 16, 128})
+                     .tile(16, 16, 128)
                      .mapToThreads({16, 16})
                      .mapToBlocks({32, 32})
                      .useSharedMemory(true)

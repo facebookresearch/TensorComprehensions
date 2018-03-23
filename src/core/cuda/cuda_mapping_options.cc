@@ -102,9 +102,8 @@ CudaMappingOptions& CudaMappingOptions::mapToBlocks(
 // Predefined strategies
 //
 CudaMappingOptions CudaMappingOptions::makeUnmappedCudaMappingOptions() {
-  auto options = MappingOptions::makeUnmappedMappingOptions();
   CudaMappingOptions mo;
-  mo.genericMappingOptions(options)
+  mo.genericMappingOptions(MappingOptions::makeUnmappedMappingOptions())
       .useSharedMemory(false)
       .usePrivateMemory(false)
       .unrollCopyShared(false);
@@ -112,15 +111,16 @@ CudaMappingOptions CudaMappingOptions::makeUnmappedCudaMappingOptions() {
 }
 
 CudaMappingOptions CudaMappingOptions::makeNaiveCudaMappingOptions() {
-  auto mo = makeUnmappedCudaMappingOptions();
-  mo =
-      mo.tile({32, 32, 32}).mapToThreads(32, 8).mapToBlocks(256, 256).unroll(1);
-  return mo;
+  return makeUnmappedCudaMappingOptions()
+      .tile(32, 32, 32)
+      .mapToThreads(32, 8)
+      .mapToBlocks(256, 256)
+      .unroll(1);
 }
 
 CudaMappingOptions CudaMappingOptions::makeSingleThreadCudaMappingOptions() {
   return makeUnmappedCudaMappingOptions()
-      .tile({1})
+      .tile(1)
       .mapToThreads(1)
       .mapToBlocks(1)
       .unroll(1);
@@ -128,7 +128,7 @@ CudaMappingOptions CudaMappingOptions::makeSingleThreadCudaMappingOptions() {
 
 CudaMappingOptions CudaMappingOptions::makePointwiseCudaMappingOptions() {
   return makeUnmappedCudaMappingOptions()
-      .tile({32, 32, 32})
+      .tile(32, 32, 32)
       .mapToThreads(32, 4, 4)
       .mapToBlocks(100, 100, 100)
       .unroll(128);
@@ -137,7 +137,7 @@ CudaMappingOptions CudaMappingOptions::makePointwiseCudaMappingOptions() {
 CudaMappingOptions CudaMappingOptions::makeMlpCudaMappingOptions() {
   return makeUnmappedCudaMappingOptions()
       .outerScheduleFusionStrategy(FusionStrategy::Max)
-      .tile({1})
+      .tile(1)
       .mapToThreads(128)
       .mapToBlocks(128)
       .unroll(1);
@@ -145,7 +145,7 @@ CudaMappingOptions CudaMappingOptions::makeMlpCudaMappingOptions() {
 
 CudaMappingOptions CudaMappingOptions::makeConvolutionCudaMappingOptions() {
   return makeUnmappedCudaMappingOptions()
-      .tile({4, 8, 8, 8})
+      .tile(4, 8, 8, 8)
       .mapToThreads(4, 16, 4)
       .mapToBlocks(256, 256, 256)
       .unroll(1);
@@ -154,7 +154,7 @@ CudaMappingOptions CudaMappingOptions::makeConvolutionCudaMappingOptions() {
 CudaMappingOptions
 CudaMappingOptions::makeGroupConvolutionCudaMappingOptions() {
   return makeUnmappedCudaMappingOptions()
-      .tile({1, 1})
+      .tile(1, 1)
       .mapToThreads(4, 16, 4)
       .mapToBlocks(256, 256)
       .unroll(1);

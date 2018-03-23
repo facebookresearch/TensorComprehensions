@@ -45,7 +45,7 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_ =
         tc::CudaMappingOptions::makePointwiseCudaMappingOptions()
-            .tile({4, 8, 8})
+            .tile(4, 8, 8)
             .mapToThreads({32, 4, 4})
             .mapToBlocks({100, 100, 100})
             .unroll(128);
