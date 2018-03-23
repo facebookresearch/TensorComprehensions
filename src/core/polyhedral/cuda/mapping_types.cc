@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 
 #include "tc/core/cuda/cuda_mapping_options.h"
 

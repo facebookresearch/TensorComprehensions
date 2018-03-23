@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/utils/memory.h"
 
 #include "tc/lang/parser.h"

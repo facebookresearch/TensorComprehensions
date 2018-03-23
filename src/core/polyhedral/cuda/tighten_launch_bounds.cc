@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include "tc/core/polyhedral/cuda/cuda_tighten_launch_bounds.h"
+#include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
 
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/schedule_transforms.h"

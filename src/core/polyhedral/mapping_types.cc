@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 #include "tc/core/polyhedral/mapping_types.h"
-#include "tc/core/polyhedral/cuda/cuda_mapping_types.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 
 namespace tc {
 namespace polyhedral {

@@ -31,10 +31,10 @@ add_library(
   cuda/cuda_mapping_options.cc
   cuda/cuda_mapping_options_cpp_printer.cc
   polyhedral/cuda/codegen.cc
-  polyhedral/cuda/cuda_mapping_types.cc
-  polyhedral/cuda/cuda_tighten_launch_bounds.cc
   polyhedral/cuda/mapped_scop.cc
+  polyhedral/cuda/mapping_types.cc
   polyhedral/cuda/memory_promotion_heuristic.cc
+  polyhedral/cuda/tighten_launch_bounds.cc
 )
 target_include_directories(tc_core PUBLIC ${PROJECT_SOURCE_DIR}/include ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
