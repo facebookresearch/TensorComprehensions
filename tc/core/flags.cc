@@ -100,6 +100,10 @@ DEFINE_bool(
     tuner_gen_log_generations,
     false,
     "Log each generation's runtimes.");
+DEFINE_bool(
+    tuner_gen_profiled_run,
+    false,
+    "Collect performance metrics during tuning.");
 DEFINE_uint64(
     tuner_min_launch_total_threads,
     64,
