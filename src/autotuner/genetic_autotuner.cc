@@ -83,6 +83,11 @@ std::vector<MappingOptions> GeneticAutotuner::load(
   return tc::autotune::restoreCandidates(tcName, inputs, outputs);
 }
 
+namespace {
+volatile std::sig_atomic_t sigint_ = 0;
+volatile std::sig_atomic_t sigterm_ = 0;
+} // namespace
+
 llvm::Optional<MappingOptions> GeneticAutotuner::tune(
     const std::string& cacheFileName,
     const std::string& tcName,
@@ -122,13 +127,13 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
       startingPoints,
       fixedParams);
 
-  std::signal(SIGTERM, [](int sig) {
-    signal_ = sig;
-    killRequested_ = 1;
-  });
-  std::signal(SIGINT, [](int sig) {
-    signal_ = sig;
-    killRequested_ = 1;
+  sigterm_ = 0;
+  sigint_ = 0;
+  auto sigtermOrigHandler = std::signal(SIGTERM, [](int) { sigterm_ = 1; });
+  auto sigintOrigHandler = std::signal(SIGINT, [](int) { sigint_ = 1; });
+  ScopeGuard handlersGuard([&]() {
+    std::signal(SIGTERM, sigtermOrigHandler);
+    std::signal(SIGINT, sigintOrigHandler);
   });
 
   std::atomic_bool tunerFinished(false);
@@ -148,15 +153,23 @@ llvm::Optional<MappingOptions> GeneticAutotuner::tune(
   });
   while (not tunerFinished) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if (killRequested_) {
+    if (sigint_) {
+      std::cerr
+          << "Autotuning will stop after the current generation has finished."
+          << std::endl;
+      tuner.stopAfterCurrentGeneration();
+      tunerThread.join();
+      storeCaches(cacheFileName);
+    }
+    if (sigterm_) {
       std::cerr << "Autotuning aborted." << std::endl;
       storeCaches(cacheFileName);
-      tunerThread.join();
-      killRequested_ = 0;
-      throw std::runtime_error("Abort requested");
+      std::abort();
     }
   }
+
   tunerThread.join();
+
   if (tunerThreadEx) {
     std::rethrow_exception(tunerThreadEx);
   }
