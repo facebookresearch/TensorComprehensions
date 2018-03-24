@@ -15,8 +15,8 @@ target_link_libraries(
   ${PROTOBUF_LIBRARIES}
   ${CAFFE2_CPU_LIBRARIES}
   ${CAFFE2_GPU_LIBRARIES}
-  tc_core
-  tc_lang
+
+  tc_cuda
 )
 
 install(

@@ -14,7 +14,6 @@ target_link_libraries(
   tc
 
   tc_autotuner
-  tc_core
 
   ${PYTHON_LIBRARIES}
   ${GFLAGS_LIBRARIES}
@@ -24,7 +23,7 @@ add_library(mapping_options MODULE pybind_options.cc)
 target_link_libraries(
   mapping_options
 
-  tc_core
+  tc_core_cuda_no_sdk
 
   ${PYTHON_LIBRARIES}
   ${GFLAGS_LIBRARIES}
@@ -47,7 +46,6 @@ if (WITH_CUDA)
   target_link_libraries(
     autotuner
 
-    tc_core
     tc_autotuner
 
     ${PYTHON_LIBRARIES}
