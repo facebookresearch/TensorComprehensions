@@ -16,13 +16,45 @@
 #include "tc/core/cuda/cuda_profile.h"
 
 #include <algorithm>
+#include <mutex>
 #include <numeric>
+#include <sstream>
 
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 
 namespace tc {
+
+class CudaDeviceLockableRuntimes {
+ public:
+  CudaDeviceLockableRuntimes()
+      : runtimes_(CudaGPUInfo::GPUInfo().NumberGPUs()),
+        mutexes_(CudaGPUInfo::GPUInfo().NumberGPUs()) {}
+
+  std::mutex& getDeviceMutex(uint32_t deviceID) {
+    return mutexes_.at(deviceID);
+  }
+
+  Duration getRuntime(uint32_t deviceID) {
+    return runtimes_.at(deviceID);
+  }
+
+  void setRuntime(const Duration& d, uint32_t deviceID) {
+    runtimes_.at(deviceID) = d;
+  }
+
+ private:
+  std::vector<Duration> runtimes_;
+  std::vector<std::mutex> mutexes_;
+};
+
+namespace {
+CudaDeviceLockableRuntimes& runtimes() {
+  static CudaDeviceLockableRuntimes runtimes;
+  return runtimes;
+}
+} // namespace
 
 bool operator==(const CudaProfilingInfo& a, const CudaProfilingInfo& b) {
   return std::tie(
@@ -74,9 +106,6 @@ bufferRequested(uint8_t** buffer, size_t* size, size_t* maxNumRecords) {
   CHECK(*buffer != nullptr) << "Could not allocate memory.";
 }
 
-// TODO:find a better threadsafe solution
-Duration runtime;
-
 void CUPTIAPI bufferCompleted(
     CUcontext ctx,
     uint32_t streamId,
@@ -94,12 +123,12 @@ void CUPTIAPI bufferCompleted(
 #endif
 
   auto kernel = reinterpret_cast<ActivityKernelType*>(record);
-
   CHECK_EQ(kernel->kind, CUPTI_ACTIVITY_KIND_KERNEL)
       << "Expected kernel activity record, got " << kernel->kind;
 
   auto kernelDuration = kernel->end - kernel->start;
-  runtime = std::chrono::nanoseconds(kernelDuration);
+  auto device = kernel->deviceId;
+  runtimes().setRuntime(std::chrono::nanoseconds(kernelDuration), device);
   free(buffer);
 }
 
@@ -361,7 +390,8 @@ CudaMetric::CudaMetric(const char* name_, CUdevice device) : name{name_} {
 }
 
 CudaProfilingInfo CudaCuptiProfiler::Profile() {
-  TC_CUDA_DRIVERAPI_ENFORCE(cuInit(0));
+  std::lock_guard<std::mutex> lock(runtimes().getDeviceMutex(device_));
+
   TC_CUPTI_CHECK(cuptiActivityEnable(CUPTI_ACTIVITY_KIND_KERNEL));
   ScopeGuard activityGuard{[]() {
     TC_CUPTI_CHECK(cuptiActivityDisable(CUPTI_ACTIVITY_KIND_KERNEL));
@@ -373,7 +403,8 @@ CudaProfilingInfo CudaCuptiProfiler::Profile() {
   TC_CUPTI_CHECK(cuptiActivityFlushAll(0));
 
   CudaProfilingInfo pi;
-  pi.runtime = runtime;
+  pi.runtime = runtimes().getRuntime(device_);
+  CHECK_GT(pi.runtime.count(), 0);
 
   CUpti_SubscriberHandle subscriber;
   MetricData metricData;
