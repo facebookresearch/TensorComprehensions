@@ -343,13 +343,11 @@ bool isPromotableToRegisterBelowThreads(
   // TODO: support arrays in registers if they are only accessed with constant
   // subscripts, e.g. if the inner loops are fully unrolled.
   auto sizes = group.approximationSizes();
-#if 0
   auto nElements =
       std::accumulate(sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
-  if (nElements != 1) {
+  if (nElements > 32) {
     return false;
   }
-#endif
 
   auto scheduledAccesses = originalAccesses.apply_domain(schedule);
   for (auto dom : isl::UnionAsVector<isl::union_set>(originalAccesses.domain().intersect(activePoints))) {
@@ -674,9 +672,12 @@ void promoteToRegistersBelowThreads(
           break;
         }
       }
+
       auto copyScopeTree = firstTreeInBranchIdx == ancestors.size() ? band : ancestors[firstTreeInBranchIdx];
-      // FIXME: hardcode
-      copyScopeTree = copyScopeTree->child({0,0});
+      // TODO: what if we moved to the same depth as shared copy?  We will
+      // uselessly put something in shared memory and immediate after that in registers...
+      
+      copyScopeTree = band->ancestor(scop.scheduleRoot(), 1);
 
       auto partialSched = partialSchedule(root, copyScopeTree);
       auto copyDepth = copyScopeTree->scheduleDepth(scop.scheduleRoot());

@@ -304,6 +304,11 @@ void Scop::promoteGroup(
         // overlaps with it, can only promote if all accesses are reads (no
         // consistency problem).  Warn and return otherwise.
         if (allReadOnly) {
+          // TODO: This would break the codegen invariant that only one
+          // promotion is active in a statement instance for a tensor.
+          // We need to "prioritize" promotions and select "faster" ones
+          // in case when multiple read-only promotions are present.
+#if 0
           promoteWithCopyFromGlobal(
               activePoints,
               kind,
@@ -312,6 +317,7 @@ void Scop::promoteGroup(
               tree,
               schedule,
               forceLastExtentOdd);
+#endif
           return;
         }
         LOG(WARNING)

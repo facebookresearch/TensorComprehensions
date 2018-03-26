@@ -653,19 +653,25 @@ ScheduleTree* insertCopiesUnder_(
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
 
-  // FIXME: this unrolls unconditionally
+  // FIXME: exactReads is not necessarily an equivalent to registers,
+  // which require unrolling.
+  if (exactReads) {
   readBandNode->elemAs<detail::ScheduleTreeElemBand>()->unroll_ = 
     std::vector<bool>(readBandNode->elemAs<detail::ScheduleTreeElemBand>()->nMember(), true);
   writeBandNode->elemAs<detail::ScheduleTreeElemBand>()->unroll_ = 
     std::vector<bool>(writeBandNode->elemAs<detail::ScheduleTreeElemBand>()->nMember(), true);
+  }
 
   promotion = promotion
-    //.intersect_domain(isl::map(isl::set::universe(promotionSpace.curry().domain()), originalElements).wrap())
-    .intersect_domain(group.scopedAccesses().wrap());
+    .intersect_domain(isl::map(isl::set::universe(promotionSpace.curry().domain()), originalElements).wrap());
+    //.intersect_domain(group.scopedAccesses().wrap());
 
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();
-  auto depth = tree->child({0})->scheduleDepth(scop.scheduleRoot());
+  auto depth = tree->scheduleDepth(scop.scheduleRoot());
+  if (auto bandElem = tree->elemAs<detail::ScheduleTreeElemBand>()) {
+    depth += bandElem->nMember();
+  }
   extension = extension.project_out(isl::dim_type::in, depth, extension.dim(isl::dim_type::in) - depth);
 
   // It's safe to read the overapproximated footprint, and it gives simpler
@@ -773,7 +779,7 @@ ScheduleTree* insertIntraCopiesUnder(
       outerScopePromotion.get_space().curry().dim(isl::dim_type::in);
   auto innerScopeInDims =
       innerScopePromotion.get_space().curry().dim(isl::dim_type::in);
-  CHECK_GT(innerScopeInDims, outerScopeInDims);
+  CHECK_GE(innerScopeInDims, outerScopeInDims);
   outerScopePromotion =
       outerScopePromotion.curry()
           .add_dims(isl::dim_type::in, innerScopeInDims - outerScopeInDims)
@@ -812,21 +818,6 @@ ScheduleTree* insertCopiesUnder(
   }
   auto promotion =
       isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
-
-  std::unordered_set<mapping::MappingId, mapping::MappingId::Hash> mappedIds;
-  auto threadMapping = scop.domain().universe();
-  for (auto node :
-      ScheduleTree::collect(tree, detail::ScheduleTreeType::MappingFilter)) {
-    auto mappingFilter = node->elemAs<detail::ScheduleTreeElemMappingFilter>();
-    for (auto id : mappingFilter->mappingIds) {
-      if (!id.isThreadId()) {
-        continue;
-      }
-      CHECK(mappedIds.count(id) == 0);
-      mappedIds.insert(id);
-      threadMapping = threadMapping.intersect(mappingFilter->filter_);
-    }
-  }
 
   return insertCopiesUnder_(
       scop,
