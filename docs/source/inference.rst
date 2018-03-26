@@ -18,8 +18,8 @@ over :code:`k` in a matrix multiply:
 
 .. code::
 
-    def matmul(float(I, K) B, float(K, J) C) -> A {
-      A(i, j) +=! B(i, k) * C(k, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
 
 

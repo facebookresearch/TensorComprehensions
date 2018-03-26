@@ -27,11 +27,11 @@ Examples
      from torch.nn.parameter import Parameter
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
+        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -66,11 +66,11 @@ them, the example for that would be:
      from torch.nn.parameter import Parameter
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
+        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -100,11 +100,11 @@ Let's see how to cache options to file when we tune a training layer.
      import torch
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
+        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -133,14 +133,14 @@ the example below for how to use it:
      import torch
      LANG = """
      def convolution(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B) -> (tmp, O) {
-       tmp(n, m, h, w) +=! I(n, c, h + kh, w + kw) * W1(m, c, kh, kw)
+       tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
        O(n, m, h, w) = tmp(n, m, h, w) + B(m)
      }
-     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) O_grad)
-     -> (I_grad, W1_grad, B_grad) {
-       I_grad(n, c, h, w) +=! O_grad(n, m, h - kh, w - kw) * W1(m, c, kh, kw)
-       W1_grad(m, c, kh, kw) +=! O_grad(n, m,  h - kh, w - kw) * I(n, c, h, w)
-       B_grad(m) +=! O_grad(n, m, h, w)
+     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) g_O)
+     -> (g_I, g_W1, g_B) {
+        g_I(n, c,  h,  w) +=! g_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+       g_B(m) +=! g_O(n, m, h, w)
      }
      """
 

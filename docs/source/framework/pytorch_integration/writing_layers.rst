@@ -22,8 +22,8 @@ An example demonstrating each step above is:
     import tensor_comprehensions as tc
     import torch
     MATMUL_LANG = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     # the `name` should match the definition name in the `lang`
@@ -72,8 +72,8 @@ An example for how to pass options:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -107,8 +107,8 @@ of input sizes, you need to define TC once. An example:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -138,11 +138,11 @@ definition and get the TC layer for it. Below is an example for how to do this:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     def abs(float(M, N) A) -> (O1) {
-      O1(m, n) = fabs(A(m, n))
+        O1(m, n) = fabs(A(m, n))
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -182,7 +182,8 @@ adopt whatever feels more convenient.
     import torch
     lang = """
     def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) +=! input(b, c, h * {sH} + kh, w * {sW} + kw) / ({kH} * {kW}) where kh in 0:{kH}, kw in 0:{kW}
+        output(b, c, h, w) +=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
+            where r_kh in 0:{kH}, r_kw in 0:{kW}
     }}
     """
     avgpool = tc.define(lang, name="avgpool", constants={"sH":1, "sW":1, "kH":2, "kW":2})
@@ -205,7 +206,8 @@ adopt whatever feels more convenient.
     import re
     LANG="""
     def avgpool(float(B, C, H, W) input) -> (output) {
-        output(b, c, h, w) +=! input(b, c, h * <sh> + kh, w * <sw> + kw) / (<kH> * <kW>) where kh in 0:<kH>, kw in 0:<kW>
+        output(b, c, h, w) +=! input(b, c, h * <sH> + r_kh, w * <sW> + r_kw) / (<kH> * <kW>)
+            where r_kh in 0:<kH>, r_kw in 0:<kW>
     }
     """
     sH, sW, kH, kW = 1, 1, 2, 2
@@ -233,7 +235,7 @@ call. For example:
     import torch
     lang = """
     def add(float(N) A, float(N) B) -> (output) {
-        output(i) = A(i) + B(i) + 1
+        output(n) = A(n) + B(n)
     }
     """
 
