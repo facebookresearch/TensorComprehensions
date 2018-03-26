@@ -631,7 +631,8 @@ ScheduleTree* insertCopiesUnder_(
     isl::map promotion,
     isl::set originalElements,
     isl::set readElements,
-    isl::map exactWrites) {
+    isl::map exactWrites,
+    isl::map exactReads = isl::map()) {
   auto groupId = promotion.get_tuple_id(isl::dim_type::out);
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
@@ -639,6 +640,8 @@ ScheduleTree* insertCopiesUnder_(
   isl::id writeId = isl::id(ctx, std::string(kWriteIdName));
 
   auto promotionSpace = promotion.get_space();
+
+  std::cout << "READ: " << readElements << std::endl;
 
   auto identityCopySchedule =
       isl::multi_aff::identity(promotionSpace.range().map_from_set());
@@ -681,7 +684,15 @@ ScheduleTree* insertCopiesUnder_(
           scheduleUniverse,
           readElements.set_tuple_id(arrayId).intersect(originalElements))
           .wrap();
+  std::cout << "ORIG: " << originalElements << std::endl;
   approximattedRead = isl::map(approximattedRead, promotedFootprint).wrap();
+  if (exactReads) {
+    std::cout << "REPLACING " << approximattedRead;
+    approximattedRead = 
+      isl::map(exactReads.intersect_range(originalElements).wrap(),
+          promotedFootprint).wrap();
+    std::cout << "\nWITH " << approximattedRead << std::endl;
+  }
   auto readExtension = extension.intersect_range(approximattedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
 
@@ -757,6 +768,7 @@ ScheduleTree* insertIntraCopiesUnder(
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
     const TensorReferenceGroup& outerScopeGroup,
+    bool useExactReads,
     isl::id tensorId,
     isl::id groupId,
     isl::id outerScopeGroupId) {
@@ -788,13 +800,17 @@ ScheduleTree* insertIntraCopiesUnder(
       innerScopePromotion,
       outerScopeGroup.promotedFootprint().set_tuple_id(outerScopeGroupId),
       outerScopeGroup.promotedFootprint().set_tuple_id(outerScopeGroupId),
-      group.scopedWrites().wrap().apply(outerScopePromotion).unwrap());
+      group.scopedWrites().wrap().apply(outerScopePromotion).unwrap(),
+      useExactReads ? 
+        group.scopedReads().wrap().apply(outerScopePromotion).unwrap() :
+        isl::map());
 }
 
 ScheduleTree* insertCopiesUnder(
     Scop& scop,
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
+    bool useExactReads,
     isl::id tensorId,
     isl::id groupId) {
   // Take the set of all tensor elements.
@@ -806,6 +822,21 @@ ScheduleTree* insertCopiesUnder(
   auto promotion =
       isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
 
+  std::unordered_set<mapping::MappingId, mapping::MappingId::Hash> mappedIds;
+  auto threadMapping = scop.domain().universe();
+  for (auto node :
+      ScheduleTree::collect(tree, detail::ScheduleTreeType::MappingFilter)) {
+    auto mappingFilter = node->elemAs<detail::ScheduleTreeElemMappingFilter>();
+    for (auto id : mappingFilter->mappingIds) {
+      if (!id.isThreadId()) {
+        continue;
+      }
+      CHECK(mappedIds.count(id) == 0);
+      mappedIds.insert(id);
+      threadMapping = threadMapping.intersect(mappingFilter->filter_);
+    }
+  }
+
   return insertCopiesUnder_(
       scop,
       tree,
@@ -813,7 +844,8 @@ ScheduleTree* insertCopiesUnder(
       promotion,
       tensorElements,
       group.approximateFootprint(),
-      group.scopedWrites());
+      group.scopedWrites(),
+      useExactReads ? group.scopedReads() : isl::map());
 }
 } // namespace polyhedral
 } // namespace tc

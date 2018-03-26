@@ -230,7 +230,8 @@ void Scop::promoteWithCopyFromGlobal(
     isl::union_map schedule,
     bool forceLastExtentOdd) {
   auto groupId = nextGroupIdForTensor(tensorId);
-  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+  insertCopiesUnder(*this, tree, *gr, kind == PromotedDecl::Kind::Register,
+      tensorId, groupId);
   auto sizes = gr->approximationSizes();
   if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
     sizes.back() += 1;
@@ -338,6 +339,7 @@ void Scop::promoteGroup(
         tree,
         *gr,
         *activePromotions_[parentPromIdx].second.group,
+        kind == PromotedDecl::Kind::SharedMem,
         tensorId,
         groupId,
         activePromotions_[parentPromIdx].second.groupId);

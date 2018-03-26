@@ -228,6 +228,7 @@ detail::ScheduleTree* insertCopiesUnder(
     Scop& scop,
     detail::ScheduleTree* tree,
     const TensorReferenceGroup& group,
+    bool useExactReads,
     isl::id tensorId,
     isl::id groupId = isl::id());
 
@@ -236,6 +237,7 @@ detail::ScheduleTree* insertIntraCopiesUnder(
     detail::ScheduleTree* tree,
     const TensorReferenceGroup& group,
     const TensorReferenceGroup& outerScopeGroup,
+    bool useExactReads,
     isl::id tensorId,
     isl::id groupId,
     isl::id outerScopeGroupId);

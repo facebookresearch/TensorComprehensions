@@ -676,7 +676,7 @@ void promoteToRegistersBelowThreads(
       }
       auto copyScopeTree = firstTreeInBranchIdx == ancestors.size() ? band : ancestors[firstTreeInBranchIdx];
       // FIXME: hardcode
-      copyScopeTree = copyScopeTree->child({0,0,0});
+      copyScopeTree = copyScopeTree->child({0,0});
 
       auto partialSched = partialSchedule(root, copyScopeTree);
       auto copyDepth = copyScopeTree->scheduleDepth(scop.scheduleRoot());
