@@ -173,13 +173,14 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
 }
 
 /*
- * Insert map constraints that equate first "nDims" input dimensions to newly
- * introduced parameters.
+ * Insert map constraints that equate "nDims" input dimensions starting from
+ * "pos" to newly introduced parameters.  Parameter names are generated using
+ * the index of the dimension being fixed to allow for repeated calls.
  */
-isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
-  if (nDims < 0 || nDims > map.dim(isl::dim_type::in)) {
+isl::map fixInputDimsAsParameters(isl::map map, int pos, int nDims) {
+  if (nDims < 0 || pos + nDims > map.dim(isl::dim_type::in)) {
     std::stringstream ss;
-    ss << nDims << "  is out of [0, " << map.dim(isl::dim_type::in)
+    ss << "[" << pos << "," << pos + nDims << ") is out of [0, " << map.dim(isl::dim_type::in)
        << ") range";
     throw promotion::OutOfRangeException(ss.str());
   }
@@ -192,15 +193,23 @@ isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
     localSpace = localSpace.set_dim_name(
         isl::dim_type::param,
         nParams + i,
-        "__tcFixerParam" + std::to_string(i));
+        "__tcFixerParam" + std::to_string(pos + i));
   }
   for (int i = 0; i < nDims; ++i) {
     auto left = isl::aff(localSpace, isl::dim_type::param, nParams + i);
-    auto right = isl::aff(localSpace, isl::dim_type::set, i);
+    auto right = isl::aff(localSpace, isl::dim_type::set, pos + i);
     auto dom = isl::aff_set(left) == right;
     fixedMap = fixedMap.intersect_domain(dom);
   }
   return fixedMap;
+}
+
+/*
+ * Insert map constraints that equate first "nDims" input dimensions to newly
+ * introduced parameters.
+ */
+inline isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
+  return fixInputDimsAsParameters(map, 0, nDims);
 }
 
 /*
@@ -325,6 +334,7 @@ bool isPromotableToRegisterBelowThreads(
     const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
     const TensorReferenceGroup& group,
     isl::union_map schedule,
+    size_t promotionDepth,
     size_t nThreads,
     isl::union_set activePoints) {
   auto originalAccesses = group.originalAccesses();
@@ -333,21 +343,43 @@ bool isPromotableToRegisterBelowThreads(
   // TODO: support arrays in registers if they are only accessed with constant
   // subscripts, e.g. if the inner loops are fully unrolled.
   auto sizes = group.approximationSizes();
+#if 0
   auto nElements =
       std::accumulate(sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
   if (nElements != 1) {
     return false;
   }
-
-  // Since this function is only supposed to be called on groups seen _below_
-  // thread mapping, all refs in the group must all have the same thread-x
-  // depth.
-  auto depth = 1 +
-      computeThreadIdxxScheduleDepth(
-                   threadIdxxScheduleDepthState,
-                   originalAccesses.domain().intersect(activePoints));
+#endif
 
   auto scheduledAccesses = originalAccesses.apply_domain(schedule);
+  for (auto dom : isl::UnionAsVector<isl::union_set>(originalAccesses.domain().intersect(activePoints))) {
+    auto xDepth = 1 + computeThreadIdxxScheduleDepth(
+        threadIdxxScheduleDepthState, isl::union_set(dom));
+    for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses.intersect_domain(isl::union_set(dom)))) {
+      if (promotionDepth < (xDepth - nThreads)) {
+        sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
+        sa = sa.project_out(isl::dim_type::in, promotionDepth, xDepth - nThreads - promotionDepth);
+        sa = fixOuterInputDimsAsParameters(sa, promotionDepth);
+      } else if (promotionDepth < xDepth) {
+        // promoting in-between dims mapped to threads, how to?
+        // injectivity must be checked for all threads anyway, so only fix to parameters dimensnions above threads
+        // and only drop below threads
+        // can we insert a copy in a loop mapped to thread y?
+        // it would have to be mapped to x the same way as the loop below and also unrolled
+        sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
+        sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
+      } else {
+        sa = sa.project_out(isl::dim_type::in, promotionDepth, sa.dim(isl::dim_type::in) - promotionDepth);
+        sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
+        sa = fixInputDimsAsParameters(sa, xDepth, promotionDepth - xDepth);
+      }
+      if (!sa.is_bijective()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 
   // Scheduled accesses contain maps from schedule dimensions to tensor
   // subscripts.  Compute the relation that between the schedule dimensions
@@ -359,16 +391,6 @@ bool isPromotableToRegisterBelowThreads(
   // more than one thread.  Note that our current check is overly conservative
   // because different values of schedule dimension may get mapped to the same
   // thread, in which case the could access the same tensor element.
-  for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
-    sa = sa.project_out(
-        isl::dim_type::in, depth, sa.dim(isl::dim_type::in) - depth);
-    sa = fixOuterInputDimsAsParameters(sa, depth - nThreads);
-    if (!sa.is_injective()) {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 /*
@@ -608,7 +630,6 @@ void promoteToRegistersBelowThreads(
       // do not correspond to band members that should be fixed to obtain
       // per-thread-group access relations.
       auto points = activeDomainPoints(root, band);
-      auto partialSched = partialSchedule(root, band);
 
       size_t nMappedThreads = 0;
       for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
@@ -626,7 +647,41 @@ void promoteToRegistersBelowThreads(
         }
       }
 
-      auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
+      auto isBlockMapping = [](const ScheduleTree* tree) {
+        auto mappingNode = tree->elemAs<ScheduleTreeElemMappingFilter>();
+        if (!mappingNode) {
+          return false;
+        }
+        for (auto id : mappingNode->mappingIds) {
+          if (id.isBlockId()) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      auto ancestors = band->ancestors(scop.scheduleRoot());
+      // TODO: do not go at the same depth as shared, if any..
+      // or above mapping to blocks
+      size_t firstTreeInBranchIdx = 1;
+      for (size_t i = ancestors.size(); i > 0; --i) {
+        if (ancestors[i - 1]->elemAs<ScheduleTreeElemSequence>() ||
+            ancestors[i - 1]->elemAs<ScheduleTreeElemSet>()) {
+          firstTreeInBranchIdx = i;
+          break;
+        } else if (isBlockMapping(ancestors[i - 1])) {
+          firstTreeInBranchIdx = i - 1;
+          break;
+        }
+      }
+      auto copyScopeTree = firstTreeInBranchIdx == ancestors.size() ? band : ancestors[firstTreeInBranchIdx];
+      // FIXME: hardcode
+      copyScopeTree = copyScopeTree->child({0,0,0});
+
+      auto partialSched = partialSchedule(root, copyScopeTree);
+      auto copyDepth = copyScopeTree->scheduleDepth(scop.scheduleRoot());
+
+      auto groupMap = TensorReferenceGroup::accessedByThreadsInSubtree(copyScopeTree, band, scop);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
 
@@ -642,11 +697,13 @@ void promoteToRegistersBelowThreads(
                   threadIdxxScheduleDepthState,
                   *group,
                   fullSched,
+                  copyDepth,
                   nMappedThreads,
                   points)) {
             continue;
           }
-          if (!hasReuse(*group, fullSched, depth)) {
+          // TODO: need reuse inside one thread instead...
+          if (!hasReuse(*group, fullSched, copyDepth)) {
             continue;
           }
 
@@ -654,7 +711,7 @@ void promoteToRegistersBelowThreads(
               Scop::PromotedDecl::Kind::Register,
               tensorId,
               std::move(group),
-              band,
+              copyScopeTree,
               partialSched);
         }
       }

@@ -476,9 +476,11 @@ TEST_F(MatMulBias, RegisterPromotion) {
   auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
                             .tile({32, 32, 32})
                             .useSharedMemory(false)
+                            //.unroll(1024)
                             .usePrivateMemory(true);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  std::cout << code << std::endl;
   auto declPos = code.find("float32 _O_0");
   auto copyToPos =
       code.find("_O_0[0][0] = O[32*b0 + c3][t0 + 32*b1]", declPos + 1);

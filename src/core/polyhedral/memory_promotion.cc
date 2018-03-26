@@ -55,13 +55,90 @@ std::pair<isl::val, isl::aff> outputRange(
   return emptyRange;
 }
 
-std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
+isl::aff copyCoefficientsFromConstraint(isl::aff aff, isl::constraint cstr,
+    isl::dim_type type, int sign) {
+  for (int i = 0, e = cstr.get_space().dim(type); i < e; ++i) {
+    auto val = cstr.get_coefficient_val(type, i);
+    if (val == 0) {
+      continue;
+    }
+    aff = aff.add_coefficient(type, i, 
+        sign < 0 ? val.neg() : val);
+  }
+  return aff;
+}
+
+isl::aff extractStrideShift(isl::constraint cstr) {
+  auto sign = cstr.get_coefficient_val(isl::dim_type::out, 0).sgn();
+  auto affSpace = cstr.get_space().domain();
+  auto constant = cstr.get_constant_val();
+  auto aff = isl::aff(isl::local_space(affSpace), 
+      sign < 0 ? constant.neg() : constant);
+  aff = copyCoefficientsFromConstraint(aff, cstr, isl::dim_type::param, sign);
+  return copyCoefficientsFromConstraint(aff, cstr, isl::dim_type::in, sign);
+}
+
+// return stride + shift such that (shift + i = 0 mod stride)
+std::pair<isl::val, isl::aff> outputStride(isl::map access) {
+  auto ctx = access.get_ctx();
+  auto constraints = access.affine_hull().get_constraint_list();
+  auto stride = isl::val::zero(ctx);
+  auto constraint = isl::constraint();
+  for (auto cstr : constraints) {
+    auto nDiv = cstr.dim(isl::dim_type::div);
+    auto outputVal = cstr.get_coefficient_val(isl::dim_type::out, 0);
+    if (nDiv == 0 || (outputVal != 1 && outputVal != -1)) {
+      continue;
+    }
+
+    auto cstrStride = isl::val::zero(ctx);
+    for (auto i = 0; i < nDiv; ++i) {
+      auto val = cstr.get_coefficient_val(isl::dim_type::div, i);
+      cstrStride = (cstrStride == 0) ? val : cstrStride.gcd(val);
+    }
+
+    if (cstrStride > stride) {
+      stride = cstrStride;
+      constraint = cstr;
+    }
+  }
+
+  return std::make_pair(stride, 
+      stride != 0 ? extractStrideShift(constraint) : isl::aff());
+}
+
+std::tuple<isl::map, isl::val, isl::aff> extractStrides(isl::map access) {
+  auto strides = outputStride(access);
+  if (std::get<0>(strides) == 0) {
+    return std::make_tuple(access, std::get<0>(strides), isl::aff());
+  }
+
+  auto shift = isl::map(std::get<1>(strides));
+  auto universeAccess = isl::map::universe(access.get_space());
+  shift = universeAccess.domain_map().apply_range(shift);
+  shift = universeAccess.range_map().sum(shift);
+  shift = universeAccess.domain_map().range_product(shift);
+
+  // zero aff
+  auto scaleDownAff =
+    isl::aff(isl::local_space(access.get_space().range()), isl::dim_type::set, 0) /
+    std::get<0>(strides);
+  auto scaleDown = isl::map::identity(access.get_space().domain().map_from_set()).product(
+    isl::map(scaleDownAff));
+
+  auto transform = shift.apply_range(scaleDown);
+  auto unstrided = access.wrap().apply(transform).unwrap();
+  return std::make_tuple(unstrided, std::get<0>(strides), std::get<1>(strides));
+}
+
+ScopedFootprintDim outputRangeSingle(isl::map access) {
   CHECK_EQ(access.dim(isl::dim_type::out), 1)
       << "expected 1-dim output, call outputRanges instead";
   access = access.detect_equalities();
-  auto wrappedAccess = access.wrap().flatten().compute_divs().simple_hull();
+  auto strides = extractStrides(access);
+  access = std::get<0>(strides);
 
-  // TODO: also compute strides
+  auto wrappedAccess = access.wrap().flatten().compute_divs().simple_hull();
 
   isl::val minRange;
   isl::aff lowerBoundWithMinRange;
@@ -76,11 +153,10 @@ std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
     }
   }
   if (minRange.is_null()) {
-    return std::make_pair(
-        isl::val::nan(access.get_ctx()), lowerBoundWithMinRange);
+    return ScopedFootprintDim(lowerBoundWithMinRange, isl::val::nan(access.get_ctx()));
   }
 
-  return std::make_pair(minRange, lowerBoundWithMinRange);
+  return ScopedFootprintDim(lowerBoundWithMinRange, minRange, std::get<1>(strides), std::get<2>(strides));
 }
 
 ScopedFootprint outputRanges(isl::map access) {
@@ -91,10 +167,10 @@ ScopedFootprint outputRanges(isl::map access) {
         access.project_out(isl::dim_type::out, 0, i)
             .project_out(isl::dim_type::out, 1, nSubscripts - i - 1);
     auto range = outputRangeSingle(singleDim);
-    if (range.first.is_nan()) {
+    if (range.size.is_nan()) {
       return {};
     }
-    footprint.emplace_back(range.second, range.first);
+    footprint.emplace_back(range);
   }
   return footprint;
 }
@@ -114,8 +190,8 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   ref->type = type;
   ref->refId = refId;
   auto group = std::unique_ptr<TensorReferenceGroup>(new TensorReferenceGroup);
+  group->approximation = outputRanges(ref->scopedAccess);
   group->references.push_back(std::move(ref));
-  group->approximation = outputRanges(scopedAccess);
 
   if (group->approximation.size() != scopedAccess.dim(isl::dim_type::out)) {
     std::stringstream ss;
@@ -156,6 +232,44 @@ isl::multi_aff ScopedFootprint::lowerBounds() const {
     ma = ma.set_aff(i++, a.lowerBound);
   }
   return ma;
+}
+
+isl::multi_aff ScopedFootprint::shifts() const {
+  if (size() == 0) {
+    throw promotion::PromotionNYI("promotion for scalars");
+  }
+  auto space = at(0).lowerBound.get_space();
+  space = space.add_dims(isl::dim_type::out, size() - 1);
+  auto ma = isl::multi_aff::zero(space);
+
+  int i = 0;
+  for (const auto& a : *this) {
+    if (a.shift) {
+      ma = ma.set_aff(i++, a.shift);
+    } else {
+      ma = ma.set_aff(i++, isl::aff(isl::local_space(space.domain())));
+    }
+  }
+  return ma;
+}
+
+isl::multi_val ScopedFootprint::strides() const {
+  if (size() == 0) {
+    throw promotion::PromotionNYI("promotion for scalars");
+  }
+  auto space = at(0).lowerBound.get_space();
+  space = space.add_dims(isl::dim_type::out, size() - 1);
+  auto mv = isl::multi_val::zero(space);
+
+  int i = 0;
+  for (const auto& a : *this) {
+    if (a.stride != 0) {
+      mv = mv.set_val(i++, a.stride);
+    } else {
+      mv = mv.set_val(i++, isl::val::one(mv.get_ctx()));
+    }
+  }
+  return mv;
 }
 
 bool TensorReferenceGroup::isReadOnly() const {
@@ -360,6 +474,55 @@ TensorGroups TensorReferenceGroup::accessedBySubtree(
   return tensorGroups;
 }
 
+// assumes linear tree structure from "tree" to therad mapping
+TensorGroups TensorReferenceGroup::accessedByThreadsInSubtree(
+    const ScheduleTree* tree,
+    const ScheduleTree* threadMappedTree,
+    const Scop& scop) {
+  using namespace polyhedral::detail;
+
+  TensorGroups tensorGroups;
+  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
+
+  auto threadMappingFilters = domain.universe();
+  for (auto tr : threadMappedTree->ancestors(scop.scheduleRoot())) {
+    if (auto mappingFilter = tr->elemAs<ScheduleTreeElemMappingFilter>()) {
+      bool isThreadMapping = false;
+      bool isBlockMapping = false;
+      for (auto id : mappingFilter->mappingIds) {
+        isThreadMapping |= id.isThreadId();
+        isBlockMapping |= id.isBlockId();
+      }
+      CHECK(!(isThreadMapping && isBlockMapping))
+        << "unexpected mapping to both blocks and threads\n"
+        << *tr;
+      if (isThreadMapping) {
+        threadMappingFilters = threadMappingFilters.intersect(mappingFilter->filter_);
+      }
+    }
+  }
+
+  auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+  schedule = schedule.intersect_domain(threadMappingFilters);
+  domain = domain.intersect(threadMappingFilters);
+  // cannot intersect domain because it could remove the domain points that are
+  // not below any thread mapping filter;
+  // but... this would be illegal; do we need to check that all statements are
+  // mapped to threads?
+
+  addSingletonReferenceGroups(
+      tensorGroups, scop.writes, domain, schedule, AccessType::Write);
+  addSingletonReferenceGroups(
+      tensorGroups, scop.reads, domain, schedule, AccessType::Read);
+
+  // For each tensor, join groups whose footprints overlap and at least one
+  // access is a write.  Do not join between tensors because no aliasing.
+  for (auto& p : tensorGroups) {
+    joinOverlappingWrites(p.second);
+  }
+  return tensorGroups;
+}
+
 // Compute the relation between schedule dimensions, orignal and promoted array
 // subscripts, in the space
 //   [S -> O] -> P
@@ -371,13 +534,22 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   // access space is S -> O
   isl::map map = scopedAccesses();
   auto accessSpace = map.get_space();
+  auto insertArray = isl::multi_aff::domain_map(accessSpace);
 
-  // lower bounsd space is S -> O; which we transform into [S -> O] -> P
+  // TODO: this is in O -> O space, plug it into normal lower bounds in S -> O
+  // no, not yet... shifts are in S -> O space
+  auto removeStrides = isl::multi_aff::range_map(map.get_space())
+    .reset_tuple_id(isl::dim_type::out)
+    .add(approximation.shifts().pullback(insertArray))
+    .scale_down(approximation.strides());
+
+  // lower bounds space is S -> O; which we transform into [S -> O] -> P
   auto lowerBounds = approximation.lowerBounds().pullback(
       isl::multi_aff::domain_map(accessSpace));
-  auto promotion = isl::multi_aff::range_map(accessSpace)
+  auto promotion = removeStrides
                        .reset_tuple_id(isl::dim_type::out) -
       lowerBounds;
+
   return promotion;
 }
 
@@ -480,8 +652,20 @@ ScheduleTree* insertCopiesUnder_(
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
 
+  // FIXME: this unrolls unconditionally
+  readBandNode->elemAs<detail::ScheduleTreeElemBand>()->unroll_ = 
+    std::vector<bool>(readBandNode->elemAs<detail::ScheduleTreeElemBand>()->nMember(), true);
+  writeBandNode->elemAs<detail::ScheduleTreeElemBand>()->unroll_ = 
+    std::vector<bool>(writeBandNode->elemAs<detail::ScheduleTreeElemBand>()->nMember(), true);
+
+  promotion = promotion
+    //.intersect_domain(isl::map(isl::set::universe(promotionSpace.curry().domain()), originalElements).wrap())
+    .intersect_domain(group.scopedAccesses().wrap());
+
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();
+  auto depth = tree->child({0})->scheduleDepth(scop.scheduleRoot());
+  extension = extension.project_out(isl::dim_type::in, depth, extension.dim(isl::dim_type::in) - depth);
 
   // It's safe to read the overapproximated footprint, and it gives simpler
   // control flow, but we should only write back elements that are actually
@@ -501,6 +685,8 @@ ScheduleTree* insertCopiesUnder_(
   auto readExtension = extension.intersect_range(approximattedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
 
+  std::cout << readExtension.range_factor_range().range() << std::endl;
+
   auto writtenElements =
       isl::map(
           exactWrites.intersect_range(originalElements).wrap(),
@@ -508,6 +694,8 @@ ScheduleTree* insertCopiesUnder_(
           .wrap();
   auto writeExtension = extension.intersect_range(writtenElements)
                             .set_tuple_id(isl::dim_type::out, writeId);
+
+  std::cout << writeExtension.range_factor_range().range() << std::endl;
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),

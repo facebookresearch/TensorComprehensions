@@ -44,6 +44,10 @@ inline isl::aff operator/(isl::aff A, int i) {
   return A.div(T);
 }
 
+inline isl::aff operator/(isl::aff A, isl::val v) {
+  return A.scale_down(v);
+}
+
 inline isl::aff operator+(int i, isl::aff A) {
   isl::ctx ctx = A.get_ctx();
   return A + isl::val(ctx, i);
