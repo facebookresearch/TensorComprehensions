@@ -20,11 +20,29 @@
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 
 #include "Halide.h"
 
 namespace tc {
+
+static inline std::string toString(llvm::Value* llvmObject) {
+  std::string output;
+  llvm::raw_string_ostream rso(output);
+  llvmObject->print(rso);
+  rso.str();
+  return output;
+}
+
+static inline std::string toString(llvm::Module* llvmObject) {
+  std::string output;
+  llvm::raw_string_ostream rso(output);
+  llvmObject->print(rso, nullptr, false, true);
+  rso.str();
+  return output;
+}
+
 namespace polyhedral {
 struct Scop;
 

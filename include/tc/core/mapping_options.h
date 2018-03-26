@@ -192,6 +192,7 @@ class SchedulerOptionsView {
   /// Construct a view that refers to a protocol buffers message.
   SchedulerOptionsView(const SchedulerOptionsView&) = default;
   SchedulerOptionsView(SchedulerOptionsProto& buf) : proto(buf) {}
+  SchedulerOptionsView(SchedulerOptionsProto&& buf) : proto(buf) {}
 
   /// Assign the values from another view.
   inline SchedulerOptionsView& operator=(const SchedulerOptionsView&);
