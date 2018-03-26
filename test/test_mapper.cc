@@ -186,7 +186,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   float32 (*B)[M] = reinterpret_cast<float32 (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t1 + c1 + 1) {
-      C[t0 + 16*b0][t1 + c1] = (A[t0 + 16*b0][t1 + c1] + B[t0 + 16*b0][t1 + c1]);
+      C[t0 + 16 * b0][t1 + c1] = (A[t0 + 16 * b0][t1 + c1] + B[t0 + 16 * b0][t1 + c1]);
     }
   }
 }
@@ -442,7 +442,7 @@ TEST_F(PolyhedralMapperTest, Unroll1D) {
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
       std::move(scop), mappingOptions);
   auto code = std::get<0>(mscop->codegen(specializedName));
-  std::string expected("C[64*b0 + c2][t0 + 64*b1]");
+  std::string expected("C[64 * b0 + c2][t0 + 64 * b1]");
   ASSERT_TRUE(code.find(expected) != std::string::npos) << code;
 }
 
@@ -461,7 +461,7 @@ TEST_F(PolyhedralMapperTest, Unroll2D) {
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
       std::move(scop), mappingOptions);
   auto code = std::get<0>(mscop->codegen(specializedName));
-  std::string expected("C[32 + t1 + 64*b0][32 + t0 + 64*b1]");
+  std::string expected("C[t1 + 64 * b0 + 32][t0 + 64 * b1 + 32]");
   ASSERT_TRUE(code.find(expected) != std::string::npos);
 }
 

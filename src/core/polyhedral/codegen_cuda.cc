@@ -471,13 +471,11 @@ std::string toString(isl::aff subscript) {
 }
 
 std::string toString(isl::pw_aff subscript) {
-  isl::aff subscriptAff = isl::null<isl::aff>();
-  subscript.foreach_piece([&](isl::set domain, isl::aff aff) {
-    CHECK(!subscriptAff.get()) << "expected one piece";
-    subscriptAff = aff;
-  });
-
-  return toString(subscriptAff);
+  // Use a temporary isl::ast_build to print the expression.
+  // Ideally, this should use the build at the point
+  // where the user statement was created.
+  auto astBuild = isl::ast_build::from_context(subscript.domain());
+  return astBuild.expr_from(subscript).to_C_str();
 }
 
 isl::pw_aff makeAffFromMappedExpr(

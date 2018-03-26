@@ -697,6 +697,47 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   atCompl.compile("layernorm", inputs, options);
 }
 
+// This case was observed when running the autotuner on example_MLP_model
+// (#200).  It calls code generation on a schedule tree containing a
+// disjunctive filter, which results in expression with more than one disjunct
+// that was not handed properly.
+// TODO: the disjunctive filter in the schedule is unexpected and its origin
+// should be identified and explained.
+TEST(TMM_128_1024_1000, DisjunctiveFilter) {
+  at::Tensor I = at::CUDA(at::kFloat).rand({128, 1024});
+  at::Tensor W = at::CUDA(at::kFloat).rand({1000, 1024});
+  std::vector<at::Tensor> inputs = {I, W};
+  std::vector<at::Tensor> outputs;
+
+  auto TC = std::string(R"TC(
+def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
+  O(b, y) +=! I(b, rx) * W(y, rx)
+}
+)TC");
+  auto options =
+      tc::MappingOptions::makeNaiveMappingOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .tile(1, 32, 63)
+          .mapToThreads(2, 32)
+          .mapToBlocks(64, 128, 1024)
+          .unroll(128)
+          .tileImperfectlyNested(false)
+          .useSharedMemory(false)
+          .usePrivateMemory(false)
+          .unrollCopyShared(false)
+          .matchLibraryCalls(true);
+
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
+  atCompl.define(TC);
+  // Expecting this to compile without dying.
+  atCompl.compile("tmm_naive", inputs, options);
+}
+
 TEST(Halide2Isl, MinInUpperBound) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({1, 100, 184, 184});
   at::Tensor mat1_pad = at::CUDA(at::kFloat).rand({1, 100, 186, 186});

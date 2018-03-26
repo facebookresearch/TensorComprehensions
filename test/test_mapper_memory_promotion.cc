@@ -118,13 +118,13 @@ TEST_F(Sum4D, CodeOuterBand) {
                        "__shared__ float32 _C_0[16][16][16][16];"};
 
   auto copyA =
-      "_A_0[c4][c5][c6][c7] = A[16*b0 + c4][16*b1 + c5][c2 + c6][c3 + c7];";
+      "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7];";
   auto copyB =
-      "_B_0[c4][c5][c6][c7] = B[16*b0 + c4][16*b1 + c5][c2 + c6][c3 + c7];";
+      "_B_0[c4][c5][c6][c7] = B[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7];";
   auto compute =
       "_C_0[c4][c5][c6][t0] = (_A_0[c4][c5][c6][t0] + _B_0[c4][c5][c6][t0]);";
   auto copyC =
-      "C[16*b0 + c4][16*b1 + c5][c2 + c6][c3 + c7] = _C_0[c4][c5][c6][c7];";
+      "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7] = _C_0[c4][c5][c6][c7];";
   auto sync = "__syncthreads()";
 
   auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0});
@@ -160,13 +160,13 @@ TEST_F(Sum4D, CodeBeforeThreadMapping) {
                        "__shared__ float32 _B_0[16][16][16][1];",
                        "__shared__ float32 _C_0[16][16][16][1];"};
   auto copyA =
-      "_A_0[c4][c5][c6][0] = A[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3];";
+      "_A_0[c4][c5][c6][0] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto copyB =
-      "_B_0[c4][c5][c6][0] = B[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3];";
+      "_B_0[c4][c5][c6][0] = B[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto compute =
       "_C_0[c4][c5][c6][0] = (_A_0[c4][c5][c6][0] + _B_0[c4][c5][c6][0]);";
   auto copyC =
-      "C[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3] = _C_0[c4][c5][c6][0];";
+      "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3] = _C_0[c4][c5][c6][0];";
   auto sync = "__syncthreads()";
 
   auto code =
@@ -204,12 +204,12 @@ TEST_F(Sum4D, CodeInnerBand) {
                        "__shared__ float32 _A_0[1][1][1][1];",
                        "__shared__ float32 _B_0[1][1][1][1];"};
   auto copyA =
-      "_A_0[0][0][0][0] = A[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3];";
+      "_A_0[0][0][0][0] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto copyB =
-      "_B_0[0][0][0][0] = B[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3];";
+      "_B_0[0][0][0][0] = B[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto compute = "_C_0[0][0][0][0] = (_A_0[0][0][0][0] + _B_0[0][0][0][0]);";
   auto copyC =
-      "C[16*b0 + c4][16*b1 + c5][c2 + c6][t0 + c3] = _C_0[0][0][0][0];";
+      "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3] = _C_0[0][0][0][0];";
   auto sync = "__syncthreads()";
 
   auto code =
