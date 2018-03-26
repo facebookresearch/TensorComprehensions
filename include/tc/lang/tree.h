@@ -17,6 +17,7 @@
 
 #include <functional>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 #include "tc/lang/lexer.h"
