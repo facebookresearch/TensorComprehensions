@@ -641,8 +641,6 @@ ScheduleTree* insertCopiesUnder_(
 
   auto promotionSpace = promotion.get_space();
 
-  std::cout << "READ: " << readElements << std::endl;
-
   auto identityCopySchedule =
       isl::multi_aff::identity(promotionSpace.range().map_from_set());
   identityCopySchedule =
@@ -684,19 +682,14 @@ ScheduleTree* insertCopiesUnder_(
           scheduleUniverse,
           readElements.set_tuple_id(arrayId).intersect(originalElements))
           .wrap();
-  std::cout << "ORIG: " << originalElements << std::endl;
   approximattedRead = isl::map(approximattedRead, promotedFootprint).wrap();
   if (exactReads) {
-    std::cout << "REPLACING " << approximattedRead;
     approximattedRead = 
       isl::map(exactReads.intersect_range(originalElements).wrap(),
           promotedFootprint).wrap();
-    std::cout << "\nWITH " << approximattedRead << std::endl;
   }
   auto readExtension = extension.intersect_range(approximattedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
-
-  std::cout << readExtension.range_factor_range().range() << std::endl;
 
   auto writtenElements =
       isl::map(
@@ -705,8 +698,6 @@ ScheduleTree* insertCopiesUnder_(
           .wrap();
   auto writeExtension = extension.intersect_range(writtenElements)
                             .set_tuple_id(isl::dim_type::out, writeId);
-
-  std::cout << writeExtension.range_factor_range().range() << std::endl;
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),
