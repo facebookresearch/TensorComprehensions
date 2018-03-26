@@ -64,9 +64,9 @@ TEST(RestoreCandidates, NoCache) {
 }
 
 static constexpr auto tc_ = R"(
-      def matmul(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) +=! A(m, nn) * B(nn, k)
-      })";
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+    output(m, k) +=! A(m, r_n) * B(r_n, k)
+})";
 
 void EnableCaches() {
   tc::CudaCache::enableCache();

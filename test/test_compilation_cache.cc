@@ -996,7 +996,7 @@ TEST(
  *  std::vector<at::Tensor> inputs_;
  *  int M;
  *  static constexpr auto tc_ = R"(
- *    def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
+ *  def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
  *      O1(b, n) += I(b, m) * W1(n, m)
  *      O1(b, n) = O1(b, n) + B1(n)
  *      O1(b, n) = fmax(O1(b, n), 0)
@@ -1026,9 +1026,9 @@ class MatMulTester {
   std::vector<at::Tensor> inputs_;
   int M;
   static constexpr auto tc_ = R"(
-      def matmul(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) +=! A(m, nn) * B(nn, k)
-      })";
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+    output(m, k) +=! A(m, r_n) * B(r_n, k)
+})";
 };
 
 class ConvolutionTester {
@@ -1061,11 +1061,12 @@ class ConvolutionTester {
   int KH;
   int KW;
   static constexpr auto tc_ = R"(
-      def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
-      -> (tmp, O1) {
-        tmp(n, o, h, w) +=! I(n, c, h + kh, w + kw) * W1(o, c, kh, kw)
-        O1(n, o, h, w) = tmp(n, o, h, w) + B(o)
-      })";
+def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
+-> (tmp, O1)
+{
+    tmp(n, o, h, w) +=!  I(n, r_c, h + r_kh, w + r_kw) * W1(o, r_c, r_kh, r_kw)
+     O1(n, o, h, w)  = tmp(n, o, h, w) + B(o)
+})";
 };
 
 class CompilationCacheTest : public ::testing::Test {
@@ -1357,9 +1358,9 @@ TEST_F(CompilationCacheTest, Serialization) {
 
 TEST(CompilationCache, ManualInjection) {
   static constexpr auto tc = R"(
-      def add(float(N) A, float(N) B) -> (output) {
-        output(i) = A(i) + B(i)
-      })";
+def add(float(N) A, float(N) B) -> (output) {
+    output(n) = A(n) + B(n)
+})";
 
   tc::ManualCudaCache::enableCache();
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;

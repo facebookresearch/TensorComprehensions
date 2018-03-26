@@ -91,7 +91,7 @@ class Sum4D : public TestMapper {
       std::vector<size_t> childPos) {
     string tc = R"TC(
 def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
-  C(i,j,k,l) = A(i,j,k,l) + B(i,j,k,l)
+    C(n,m,k,l) = A(n,m,k,l) + B(n,m,k,l)
 }
 )TC";
 
@@ -245,7 +245,7 @@ class MapperMemoryPromotionSum2D : public MapperMemoryPromotion2DHelper {
  public:
   const string tc = R"TC(
 def fun(float(N, M) A, float(N, M) B) -> (C) {
-  C(i, j) = A(i, j) + B(i, j)
+    C(n, m) = A(n, m) + B(n, m)
 }
 )TC";
 
@@ -326,8 +326,8 @@ class MapperMemoryPromotionRAW : public MapperMemoryPromotion2DHelper {
  public:
   const string tc = R"TC(
 def fun(float(N, M) A) -> (B, C) {
-  B(j, i) = A(j, i)
-  C(j, i) = B(i, j)
+    B(n, m) = A(n, m)
+    C(m, n) = B(n, m)
 }
 )TC";
 

@@ -51,15 +51,15 @@ TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxA) {
   std::vector<at::Tensor> inputs = {a};
   std::vector<at::Tensor> outputs;
 
-  // Tensor dependencies should strictly be DAG
+  // Tensor dependencies should form a DAG
   Check(
       R"(
-      def softmax(float(N, D) I) -> (O, tmp) {
-        tmp(n) max= I(n, d)
-        O(n, d) = exp(I(n, d) - tmp(n))
-        tmp(n) +=! O(n, d)
-        O(n, d) = O(n, d) / tmp(n)
-      }
+def softmax(float(N, D) I) -> (O, tmp) {
+    tmp(n) max=     I(n, d)
+      O(n, d) = exp(I(n, d) - tmp(n))
+    tmp(n)   +=!    O(n, d)
+      O(n, d) =     O(n, d) / tmp(n)
+}
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -72,15 +72,15 @@ TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxB) {
   std::vector<at::Tensor> inputs = {a};
   std::vector<at::Tensor> outputs;
 
-  // Tensor dependencies should strictly be DAG
+  // Tensor dependencies should form a DAG
   Check(
       R"(
-      def softmax(float(N, D) I) -> (O, tmp, tmp1) {
-        tmp(n) max=! I(n, d)
-        O(n, d) = exp(I(n, d) - tmp(n))
-        tmp1(n) +=! O(n, d)
-        O(n, d) = O(n, d) / tmp1(n)
-      }
+def softmax(float(N, D) I) -> (O, tmp) {
+    tmp(n) max=     I(n, d)
+      O(n, d) = exp(I(n, d) - tmp(n))
+    tmp(n)   +=!    O(n, d)
+      O(n, d) =     O(n, d) / tmp(n)
+}
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -95,11 +95,11 @@ TEST_F(ATenCompilationUnitTest, SoftmaxC) {
 
   Check(
       R"(
-      def softmax(float(N, D) I) -> (O, expsum, maxVal) {
-        maxVal(n) max=! I(n, d)
-        expsum(n) +=! exp(I(n, d) - maxVal(n))
-        O(n, d) = exp(I(n, d) - maxVal(n)) / expsum(n)
-      }
+def softmax(float(N, D) I) -> (O, expsum, maxVal) {
+    maxVal(n) max=!     I(n, d)
+    expsum(n)   +=! exp(I(n, d) - maxVal(n))
+         O(n, d) =  exp(I(n, d) - maxVal(n)) / expsum(n)
+}
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -114,12 +114,12 @@ TEST_F(ATenCompilationUnitTest, SoftmaxD) {
 
   Check(
       R"(
-      def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
-        maxVal(n) max=! I(n, d)
-        expDistance(n, d) = exp(I(n, d) - maxVal(n))
-        expSum(n) +=! expDistance(n, d)
-        O(n, d) = expDistance(n, d) / expSum(n)
-      }
+def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
+         maxVal(n) max=!     I(n, d)
+    expDistance(n, d) =  exp(I(n, d) - maxVal(n))
+         expSum(n)   +=! expDistance(n, d)
+              O(n, d) =  expDistance(n, d) / expSum(n)
+}
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -135,9 +135,9 @@ TEST_F(ATenCompilationUnitTest, Concat) {
 
   Check(
       R"(
-      def concat(float(M, N) A, float(M, N) B) -> (O1) {
-        O1(n, i, m) = i == 0 ? A(m, n) : B(m, n) where i in 0:2
-      }
+def concat(float(M, N) A, float(M, N) B) -> (O1) {
+    O1(n, i, m) = i == 0 ? A(m, n) : B(m, n) where i in 0:2
+}
     )",
       "concat",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -153,9 +153,9 @@ TEST_F(ATenCompilationUnitTest, Indexing) {
 
   Check(
       R"(
-      def indexing(float(H, W) input, int32(L) index) -> (output) {
-          output(l, w) = input(index(l), w) where l in 0:2
-      }
+def indexing(float(H, W) input, int32(L) index) -> (output) {
+    output(l, w) = input(index(l), w) where l in 0:2
+}
     )",
       "indexing",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
@@ -171,9 +171,9 @@ TEST_F(ATenCompilationUnitTest, MatMul) {
 
   Check(
       R"(
-      def matmul(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) +=! A(m, nn) * B(nn, k)
-      }
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+    output(m, k) +=! A(m, r_n) * B(r_n, k)
+}
     )",
       "matmul",
       tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
@@ -194,9 +194,9 @@ TEST_F(ATenCompilationUnitTest, MatMulInplace) {
 
   Check(
       R"(
-      def matmul(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) += A(m, nn) * B(nn, k)
-      }
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+    output(m, k) += A(m, r_n) * B(r_n, k)
+}
     )",
       "matmul",
       tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
@@ -216,14 +216,14 @@ TEST_F(ATenCompilationUnitTest, Convolution2d) {
 
   Check(
       R"(
-      def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
-      -> (tmp, O1) {
-        tmp(n, o, h, w) +=! I(n, c, h + kh, w + kw) * W1(o, c, kh, kw)
-        # this can be equivalently written with =,
-        # but this line tests that we correctly handle
-        # degenerate +=! that have no reduction dimensions
-        O1(n, o, h, w) +=! tmp(n, o, h, w) + B(o)
-      }
+def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
+-> (tmp, O1) {
+    tmp(n, o, h, w) +=!   I(n, r_c, h + r_kh, w + r_kw) * W1(o, r_c, r_kh, r_kw)
+    # this can be equivalently written with =,
+    # but this line tests that we correctly handle
+    # degenerate +=! that have no reduction dimensions
+     O1(n, o, h, w) +=! tmp(n, o, h, w) + B(o)
+}
     )",
       "convolution",
       tc::CudaMappingOptions::makeConvolutionCudaMappingOptions(),
@@ -243,11 +243,11 @@ TEST_F(ATenCompilationUnitTest, Convolution2dStrided) {
   std::vector<at::Tensor> outputs;
 
   constexpr static auto convolutionStrided = R"TC(
-      def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
-      -> (O1) {
-        O1(n, o, h, w) +=! I(n, c, <sh> * h + kh, <sw> * w + kw) * W1(o, c, kh, kw)
-        O1(n, o, h, w) = O1(n, o, h, w) + B(o)
-      }
+def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
+-> (O1) {
+    O1(n, o, h, w) +=! I(n, r_c, <sh> * h + r_kh, <sw> * w + r_kw) * W1(o, r_c, r_kh, r_kw)
+    O1(n, o, h, w)  = O1(n, o, h, w) + B(o)
+}
     )TC";
 
   std::string tcStr;
@@ -278,9 +278,9 @@ TEST_F(ATenCompilationUnitTest, Casts) {
 
   Check(
       R"(
-      def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
-        output(i,j) = int32(A(i,j) + four)
-      }
+def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
+    output(m,n) = int32(A(m,n) + four)
+}
     )",
       "cast",
       tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),

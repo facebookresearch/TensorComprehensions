@@ -33,9 +33,9 @@
 TEST(ATenCompilationCacheTest, Matmul) {
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   auto tc = R"(
-    def matmul(float(M,K) A, float(K,N) B) -> (output) {
-      output(m, n) +=! A(m, kk) * B(kk, n)
-    }
+def matmul(float(M,K) A, float(K,N) B) -> (output) {
+    output(m, n) +=! A(m, r_k) * B(r_k, n)
+}
   )";
 
   atCompl.define(tc);
