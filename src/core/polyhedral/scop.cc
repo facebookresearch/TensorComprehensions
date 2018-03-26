@@ -274,7 +274,7 @@ void Scop::promoteGroup(
   auto footprintsOverlap =
       !footprints.intersect(gr->approximateFootprint()).is_empty();
 
-  if (!footprintsOverlap || allReadOnly) {
+  if (!footprintsOverlap) {
     promoteWithCopyFromGlobal(
         activePoints,
         kind,
