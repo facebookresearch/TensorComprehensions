@@ -874,6 +874,23 @@ TEST_F(ProductionModel, C2MLP1Reference) {
       [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
 }
 
+TEST_F(ProductionModel, MLP3) {
+  auto B = FLAGS_B;
+  auto N = FLAGS_N;
+  auto O = FLAGS_O;
+  auto P = FLAGS_P;
+  auto Q = FLAGS_Q;
+  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+                     .fixParametersBeforeScheduling(true)
+                     .tile({16, 16, 128})
+                     .mapToThreads({16, 16})
+                     .mapToBlocks({32, 32})
+                     .useSharedMemory(true)
+                     .usePrivateMemory(true)
+                     .unroll(1);
+  runMLP3(B, N, O, P, Q, options, true);
+}
+
 TEST_F(ProductionModel, MLP3_P100_autotuned_B_128_N_128_O_64_P_32_Q_2) {
   auto B = 128;
   auto N = 128;
