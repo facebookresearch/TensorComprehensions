@@ -353,8 +353,10 @@ void Scop::promoteGroup(
         PromotedDecl{tensorId, gr->approximationSizes(), kind};
 
     for (auto i : possibleParents) {
-      activePromotions_[i].first = activePromotions_[i].first.subtract(
-          projectOutNamedParam(activePoints, mapping::ThreadId::makeId(0)));
+      auto pts = projectOutNamedParam(activePoints, mapping::ThreadId::makeId(0));
+      pts = projectOutNamedParam(pts, mapping::ThreadId::makeId(1));
+      pts = projectOutNamedParam(pts, mapping::ThreadId::makeId(2));
+      activePromotions_[i].first = activePromotions_[i].first.subtract(pts);
     }
 
     auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
