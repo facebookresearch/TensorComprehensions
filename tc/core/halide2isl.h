@@ -53,7 +53,10 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 
 // Make an affine function over a space from a Halide Expr. Returns a
 // null isl::aff if the expression is not affine. Fails if Variable
-// does not correspond to a parameter or set dimension of the space.
+// does not correspond to a parameter of the space.
+// Note that the input space can be either a parameter space or
+// a set space, but the expression can only reference
+// the parameters in the space.
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
 // Iteration domain information associated to a statement identifier.

@@ -174,16 +174,9 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
   const Max* maxOp = e.as<Max>();
 
   if (const Variable* op = e.as<Variable>()) {
-    isl::local_space ls = isl::local_space(space);
-    int pos = space.find_dim_by_name(isl::dim_type::param, op->name);
-    if (pos >= 0) {
-      return {isl::aff(ls, isl::dim_type::param, pos)};
-    } else {
-      // FIXME: thou shalt not rely upon set dimension names
-      pos = space.find_dim_by_name(isl::dim_type::set, op->name);
-      if (pos >= 0) {
-        return {isl::aff(ls, isl::dim_type::set, pos)};
-      }
+    isl::id id(space.get_ctx(), op->name);
+    if (space.has_param(id)) {
+      return {isl::aff::param_on_domain_space(space, id)};
     }
     LOG(FATAL) << "Variable not found in isl::space: " << space << ": " << op
                << ": " << op->name << '\n';
