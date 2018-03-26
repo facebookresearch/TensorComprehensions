@@ -73,9 +73,9 @@ void TransposedMatMul::runTransposedMatMul(
 
   std::vector<at::Tensor> inputs = {A, B};
   std::string tc = R"TC(
-  def tmm(float(M,K) A, float(N,K) B) -> (C) {
-    C(m, n) +=! A(m, kk) * B(n, kk)
-  }
+def tmm(float(M,K) A, float(N,K) B) -> (C) {
+    C(m, n) +=! A(m, r_k) * B(n, r_k)
+}
 )TC";
 
   std::string suffix = std::string("_M_") + std::to_string(FLAGS_M) +

@@ -122,13 +122,13 @@ void GroupConvolution::runGroupConvolution(
                       .resize_({G, F});
   std::vector<at::Tensor> inputs = {tI, tW, tB};
   std::string tc = R"(
-  def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
-  -> (O)
-  {
+def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
+-> (O)
+{
     O(n, g, f, h, w) +=!
-      I(n, g, c, h + kh, w + kw) * W1(g, f, c, kh, kw)
-    O(n, g, f, h, w) = O(n, g, f, h, w) + B(g, f)
-  }
+        I(n, g, r_c, h + r_kh, w + r_kw) * W1(g, f, r_c, r_kh, r_kw)
+    O(n, g, f, h, w)  = O(n, g, f, h, w) + B(g, f)
+}
 )";
 
   std::string suffix = std::string("_N_") + std::to_string(FLAGS_N) +
