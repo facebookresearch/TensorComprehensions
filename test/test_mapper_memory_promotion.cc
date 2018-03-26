@@ -481,11 +481,12 @@ TEST_F(MatMulBias, RegisterPromotion) {
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
   auto declPos = code.find("float32 _O_0");
   auto copyToPos =
-      code.find("_O_0[0][0] = O[32*b0 + c3][t0 + 32*b1]", declPos + 1);
+      code.find("_O_0[0][0] = O[32 * b0 + c3][t0 + 32 * b1]", declPos + 1);
   auto copyFromPos =
-      code.find("O[32*b0 + c3][t0 + 32*b1] = _O_0[0][0]", copyToPos + 1);
+      code.find("O[32 * b0 + c3][t0 + 32 * b1] = _O_0[0][0]", copyToPos + 1);
 
-  auto originalAccPos = code.find("O[32*b0 + c3][t0 + 32*b1]", copyToPos + 1);
+  auto originalAccPos =
+      code.find("O[32 * b0 + c3][t0 + 32 * b1]", copyToPos + 1);
   auto cDeclPos = code.find("float32 _C_0");
   auto aDeclPos = code.find("float32 _A_0");
 
