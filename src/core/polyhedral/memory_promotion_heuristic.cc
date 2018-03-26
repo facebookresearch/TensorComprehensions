@@ -321,6 +321,64 @@ bool isCoalesced(
   return true;
 }
 
+std::vector<detail::ScheduleTree*> bandsContainingScheduleDepth(
+    detail::ScheduleTree* root,
+    size_t depth);
+
+void requestUnroll(detail::ScheduleTree* root, isl::set domain, size_t depth) {
+  auto bands = bandsContainingScheduleDepth(root, depth);
+  if (bands.size() == 0) {
+    return;
+  }
+
+  std::function<bool(detail::ScheduleTree*)> keepWhereDomainActive = 
+    [root,domain](detail::ScheduleTree* tree) {
+      return !activeDomainPoints(root, tree).intersect(domain).is_empty();
+    };
+  bands = functional::Filter(keepWhereDomainActive, bands);
+
+  CHECK_NE(bands.size(), 0);
+
+  for (auto band : bands) {
+    auto idx = depth - band->scheduleDepth(root) - 1;
+    auto bandElem = band->elemAs<detail::ScheduleTreeElemBand>();
+    CHECK_GE(idx, 0);
+    CHECK_LT(idx, bandElem->nMember());
+    bandElem->unroll_[idx] = true;
+  }
+}
+
+bool bijectivityTest(isl::map sa, size_t promotionDepth, size_t xDepth, size_t nThreads,
+    const TensorReferenceGroup& group) {
+  if (promotionDepth < (xDepth - nThreads)) {
+    sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
+    sa = sa.project_out(isl::dim_type::in, promotionDepth, xDepth - nThreads - promotionDepth);
+    sa = fixOuterInputDimsAsParameters(sa, promotionDepth);
+  } else if (promotionDepth < xDepth) {
+    // promoting in-between dims mapped to threads, how to?
+    // injectivity must be checked for all threads anyway, so only fix to parameters dimensnions above threads
+    // and only drop below threads
+    // can we insert a copy in a loop mapped to thread y?
+    // it would have to be mapped to x the same way as the loop below and also unrolled
+    sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
+    sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
+  } else {
+    sa = sa.project_out(isl::dim_type::in, promotionDepth, sa.dim(isl::dim_type::in) - promotionDepth);
+    sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
+    sa = fixInputDimsAsParameters(sa, xDepth, promotionDepth - xDepth);
+  }
+  return group.isReadOnly() || sa.is_injective();
+}
+
+long promotedFootprintSize(isl::map access) {
+  auto footprint = outputRanges(access);
+  auto nElems = isl::val::one(access.get_ctx());
+  for (auto dim : footprint) {
+    nElems = nElems * dim.size;
+  }
+  return nElems.get_num_si();
+}
+
 /*
  * Check if the given "group" can be promoted to registers for the given active
  * domain points under full "schedule" where "nThreads" consecutive dimensions
@@ -336,7 +394,8 @@ bool isPromotableToRegisterBelowThreads(
     isl::union_map schedule,
     size_t promotionDepth,
     size_t nThreads,
-    isl::union_set activePoints) {
+    isl::union_set activePoints,
+    detail::ScheduleTree* root) {
   auto originalAccesses = group.originalAccesses();
 
   // Return early if more than one element needs to be stored in registers.
@@ -349,32 +408,40 @@ bool isPromotableToRegisterBelowThreads(
     return false;
   }
 
-  auto scheduledAccesses = originalAccesses.apply_domain(schedule);
-  for (auto dom : isl::UnionAsVector<isl::union_set>(originalAccesses.domain().intersect(activePoints))) {
+//  auto scheduledAccesses = originalAccesses.apply_domain(schedule);
+//  for (auto dom : isl::UnionAsVector<isl::union_set>(originalAccesses.domain().intersect(activePoints))) {
+
+  std::vector<std::pair<isl::set, size_t>> unrollLoops;
+  for (auto oa : isl::UnionAsVector<isl::union_map>(originalAccesses.intersect_domain(activePoints))) {
     auto xDepth = 1 + computeThreadIdxxScheduleDepth(
-        threadIdxxScheduleDepthState, isl::union_set(dom));
-    for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses.intersect_domain(isl::union_set(dom)))) {
-      if (promotionDepth < (xDepth - nThreads)) {
-        sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
-        sa = sa.project_out(isl::dim_type::in, promotionDepth, xDepth - nThreads - promotionDepth);
-        sa = fixOuterInputDimsAsParameters(sa, promotionDepth);
-      } else if (promotionDepth < xDepth) {
-        // promoting in-between dims mapped to threads, how to?
-        // injectivity must be checked for all threads anyway, so only fix to parameters dimensnions above threads
-        // and only drop below threads
-        // can we insert a copy in a loop mapped to thread y?
-        // it would have to be mapped to x the same way as the loop below and also unrolled
-        sa = sa.project_out(isl::dim_type::in, xDepth, sa.dim(isl::dim_type::in) - xDepth);
-        sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
-      } else {
-        sa = sa.project_out(isl::dim_type::in, promotionDepth, sa.dim(isl::dim_type::in) - promotionDepth);
-        sa = fixOuterInputDimsAsParameters(sa, xDepth - nThreads);
-        sa = fixInputDimsAsParameters(sa, xDepth, promotionDepth - xDepth);
-      }
-      if (!sa.is_bijective()) {
+        threadIdxxScheduleDepthState, isl::union_set(oa.domain()));
+    auto scheduledAccesses = isl::union_map(oa).apply_domain(schedule);
+    for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
+      if (!bijectivityTest(sa, promotionDepth, xDepth, nThreads, group)) {
         return false;
       }
+
+      // If a dimension is involved in the scheduled access relation, it must be unrolled.
+      long prevElements = nElements;
+      for (auto d = promotionDepth + 1; d < sa.dim(isl::dim_type::in); ++d) {
+        auto scoped = sa.project_out(isl::dim_type::in, d, sa.dim(isl::dim_type::in) - d);
+        auto nElements = promotedFootprintSize(scoped);
+        if (nElements == 1) {
+          break;
+        }
+        if (nElements != prevElements) {
+          unrollLoops.emplace_back(oa.domain(), d - 1);
+          prevElements = nElements;
+        }
+      }
+      if (prevElements != 1) {
+        unrollLoops.emplace_back(oa.domain(), sa.dim(isl::dim_type::in) - 1);
+      }
     }
+  }
+
+  for (auto kvp : unrollLoops) {
+    requestUnroll(root, kvp.first, kvp.second + 1);
   }
 
   return true;
@@ -700,7 +767,8 @@ void promoteToRegistersBelowThreads(
                   fullSched,
                   copyDepth,
                   nMappedThreads,
-                  points)) {
+                  points,
+                  scop.scheduleRoot())) {
             continue;
           }
           // TODO: need reuse inside one thread instead...

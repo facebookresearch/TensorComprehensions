@@ -67,6 +67,8 @@ struct ScopedFootprint : std::vector<ScopedFootprintDim> {
   isl::multi_val strides() const;
 };
 
+ScopedFootprint outputRanges(isl::map access);
+
 // Descriptor of tensor reference in a Scop.
 // May be scoped to a specific position in a schedule tree, the user is
 // responsible for maintaining the correspondance between schedule tree

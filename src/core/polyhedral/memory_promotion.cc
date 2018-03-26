@@ -158,6 +158,7 @@ ScopedFootprintDim outputRangeSingle(isl::map access) {
 
   return ScopedFootprintDim(lowerBoundWithMinRange, minRange, std::get<1>(strides), std::get<2>(strides));
 }
+} // namespace
 
 ScopedFootprint outputRanges(isl::map access) {
   int nSubscripts = access.dim(isl::dim_type::out);
@@ -174,7 +175,6 @@ ScopedFootprint outputRanges(isl::map access) {
   }
   return footprint;
 }
-} // namespace
 
 // Access has the shape :: [D -> ref] -> O
 // Extract the reference ID, store it separatly and simplify the access.
