@@ -39,7 +39,7 @@ enum class AccessType : short { Read, Write };
 // constant size.
 struct ScopedFootprintDim {
  public:
-  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s), stride(isl::val::zero(lb.get_ctx())), shift(isl::aff()) {}
+  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s), stride(isl::val::zero(s.get_ctx())), shift(isl::aff()) {}
   ScopedFootprintDim(isl::aff lowerBound_, isl::val size_, isl::val stride_, isl::aff shift_)
     : lowerBound(lowerBound_), size(size_), stride(stride_), shift(shift_) {}
 
