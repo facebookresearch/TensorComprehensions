@@ -29,6 +29,7 @@ Machine Learning.
 
    ml_with_tc
    integrating_any_ml_framework
+   coding_conventions
 
 .. toctree::
    :maxdepth: 1
