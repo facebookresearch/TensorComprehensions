@@ -29,7 +29,8 @@
 using namespace lang;
 
 #ifdef ROOT_PATH
-  const std::string expected_file_path = std::string(ROOT_PATH) + "src/lang/test_expected/";
+  const std::string expected_file_path =
+      std::string(ROOT_PATH) + "src/lang/test_expected/";
 #else
   const std::string expected_file_path = "src/lang/test_expected/";
 #endif
