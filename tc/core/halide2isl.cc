@@ -251,31 +251,25 @@ isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params) {
 namespace {
 
 isl::map extractAccess(
-    isl::set domain,
+    const IterationDomain& domain,
     const IRNode* op,
     const std::string& tensor,
     const std::vector<Expr>& args,
     AccessMap* accesses) {
   // Make an isl::map representing this access. It maps from the iteration space
   // to the tensor's storage space, using the coordinates accessed.
+  // First construct a set describing the accessed element
+  // in terms of the parameters (including those corresponding
+  // to the outer loop iterators) and then convert this set
+  // into a map in terms of the iteration domain.
 
-  isl::space domainSpace = domain.get_space();
-  isl::space paramSpace = domainSpace.params();
+  isl::space paramSpace = domain.paramSpace;
   isl::id tensorID(paramSpace.get_ctx(), tensor);
-  auto rangeSpace = paramSpace.named_set_from_params_id(tensorID, args.size());
+  auto tensorSpace = paramSpace.named_set_from_params_id(tensorID, args.size());
 
-  // Add a tag to the domain space so that we can maintain a mapping
-  // between each access in the IR and the reads/writes maps.
-  std::string tag = "__tc_ref_" + std::to_string(accesses->size());
-  isl::id tagID(domain.get_ctx(), tag);
-  accesses->emplace(op, tagID);
-  isl::space tagSpace = paramSpace.named_set_from_params_id(tagID, 0);
-  domainSpace = domainSpace.product(tagSpace);
-
-  // Start with a totally unconstrained relation - every point in
-  // the iteration domain could write to every point in the allocation.
-  isl::map map =
-      isl::map::universe(domainSpace.map_from_domain_and_range(rangeSpace));
+  // Start with a totally unconstrained set - every point in
+  // the allocation could be accessed.
+  isl::set access = isl::set::universe(tensorSpace);
 
   for (size_t i = 0; i < args.size(); i++) {
     // Then add one equality constraint per dimension to encode the
@@ -285,19 +279,34 @@ isl::map extractAccess(
 
     // The coordinate written to in the range ...
     auto rangePoint =
-        isl::pw_aff(isl::local_space(rangeSpace), isl::dim_type::set, i);
-    // ... equals the coordinate accessed as a function of the domain.
-    auto domainPoint = halide2isl::makeIslAffFromExpr(domainSpace, args[i]);
+        isl::pw_aff(isl::local_space(tensorSpace), isl::dim_type::set, i);
+    // ... equals the coordinate accessed as a function of the parameters.
+    auto domainPoint = halide2isl::makeIslAffFromExpr(tensorSpace, args[i]);
     if (!domainPoint.is_null()) {
-      map = map.intersect(isl::pw_aff(domainPoint).eq_map(rangePoint));
+      access = access.intersect(isl::pw_aff(domainPoint).eq_set(rangePoint));
     }
   }
+
+  // Now convert the set into a relation with respect to the iteration domain.
+  auto map = access.unbind_params_insert_domain(domain.tuple);
+
+  // Add a tag to the domain space so that we can maintain a mapping
+  // between each access in the IR and the reads/writes maps.
+  std::string tag = "__tc_ref_" + std::to_string(accesses->size());
+  isl::id tagID(domain.paramSpace.get_ctx(), tag);
+  accesses->emplace(op, tagID);
+  isl::space domainSpace = map.get_space().domain();
+  isl::space tagSpace = domainSpace.params().named_set_from_params_id(tagID, 0);
+  domainSpace = domainSpace.product(tagSpace).unwrap();
+  map = map.preimage_domain(isl::multi_aff::domain_map(domainSpace));
 
   return map;
 }
 
-std::pair<isl::union_map, isl::union_map>
-extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
+std::pair<isl::union_map, isl::union_map> extractAccesses(
+    const IterationDomain& domain,
+    const Stmt& s,
+    AccessMap* accesses) {
   class FindAccesses : public IRGraphVisitor {
     using IRGraphVisitor::visit;
 
@@ -315,17 +324,17 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
           writes.unite(extractAccess(domain, op, op->name, op->args, accesses));
     }
 
-    const isl::set& domain;
+    const IterationDomain& domain;
     AccessMap* accesses;
 
    public:
     isl::union_map reads, writes;
 
-    FindAccesses(const isl::set& domain, AccessMap* accesses)
+    FindAccesses(const IterationDomain& domain, AccessMap* accesses)
         : domain(domain),
           accesses(accesses),
-          reads(isl::union_map::empty(domain.get_space())),
-          writes(isl::union_map::empty(domain.get_space())) {}
+          reads(isl::union_map::empty(domain.tuple.get_space())),
+          writes(isl::union_map::empty(domain.tuple.get_space())) {}
   } finder(domain, accesses);
   s.accept(&finder);
   return {finder.reads, finder.writes};
@@ -440,7 +449,8 @@ isl::schedule makeScheduleTreeHelper(
     schedule = isl::schedule::from_domain(domain);
 
     isl::union_map newReads, newWrites;
-    std::tie(newReads, newWrites) = extractAccesses(domain, op, accesses);
+    std::tie(newReads, newWrites) =
+        extractAccesses(iterationDomain, op, accesses);
 
     *reads = reads->unite(newReads);
     *writes = writes->unite(newWrites);
