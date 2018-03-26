@@ -135,17 +135,6 @@ isl::union_set activeDomainPoints(
   return domain;
 }
 
-std::unordered_set<isl::id, isl::IslIdIslHash> activeStatements(
-    const ScheduleTree* root,
-    const ScheduleTree* tree) {
-  std::unordered_set<isl::id, isl::IslIdIslHash> ids;
-  auto domain = activeDomainPoints(root, tree).universe();
-  for (auto d : isl::UnionAsVector<isl::union_set>(domain)) {
-    ids.insert(d.get_tuple_id());
-  }
-  return ids;
-}
-
 vector<ScheduleTree*> collectScheduleTreesPath(
     std::function<ScheduleTree*(ScheduleTree*)> next,
     ScheduleTree* start) {

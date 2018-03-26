@@ -96,13 +96,18 @@ struct CodegenStatementContext : CodegenContext {
   isl::id statementId() const {
     return this->iteratorMaps.at(astNodeId).get_tuple_id(isl::dim_type::out);
   }
+  isl::set domain() const {
+    return isl::map::from(this->iteratorMaps.at(astNodeId)).range();
+  }
   std::vector<Scop::PromotionInfo> activePromotions() const {
-    auto stmtId = statementId();
-    const auto& promotions = this->scop().activePromotions();
-    if (promotions.count(stmtId) == 0) {
-      return {};
+    std::vector<Scop::PromotionInfo> result;
+    auto dom = isl::union_set(this->domain());
+    for (const auto& kvp : this->scop().activePromotions()) {
+      if (!kvp.first.intersect(dom).is_empty()) {
+        result.emplace_back(kvp.second);
+      }
     }
-    return promotions.at(stmtId);
+    return result;
   }
 
   isl::id astNodeId;

@@ -179,9 +179,9 @@ inline std::ostream& operator<<(std::ostream& os, const TensorReference& tr) {
 inline std::ostream& operator<<(
     std::ostream& os,
     const TensorReferenceGroup& tg) {
-  os << " with footprint BB: " << tg.approximation << " ";
+  os << "Reference with footprint: " << tg.approximation << "\n";
   for (const auto& tr : tg.references) {
-    os << *tr << " ";
+    os << *tr << "\n";
   }
   return os;
 }

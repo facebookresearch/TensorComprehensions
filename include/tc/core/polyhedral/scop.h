@@ -306,8 +306,11 @@ struct Scop {
   void promoteEverythingAt(std::vector<size_t> pos);
 
   struct PromotedDecl {
+    enum class Kind { SharedMem, Register };
+
     isl::id tensorId;
     std::vector<size_t> sizes;
+    Kind kind;
   };
 
   struct PromotionInfo {
@@ -321,9 +324,8 @@ struct Scop {
     return promotedDecls_;
   }
 
-  const std::
-      unordered_map<isl::id, std::vector<PromotionInfo>, isl::IslIdIslHash>&
-      activePromotions() const {
+  const std::vector<std::pair<isl::union_set, PromotionInfo>>&
+  activePromotions() const {
     return activePromotions_;
   }
 
@@ -356,7 +358,8 @@ struct Scop {
   // Assumes such argument exists.
   const Halide::OutputImageParam& findArgument(isl::id id) const;
 
-  // Promote a tensor reference group to shared memory, inserting the copy
+  // Promote a tensor reference group to a storage of a given "kind",
+  // inserting the copy
   // statements below the given node.  Inserts an Extension node below the give
   // node, unless there is already another Extension node which introduces
   // copies.  The Extension node has a unique Sequence child, whose children
@@ -368,11 +371,11 @@ struct Scop {
   // If "forceLastExtentOdd" is set, the last extent in the declaration is
   // incremented if it is even.  This serves as a simple heuristic to reduce
   // shared memory bank conflicts.
-  void promoteGroupToShared(
+  void promoteGroup(
+      PromotedDecl::Kind kind,
       isl::id tensorId,
       std::unique_ptr<TensorReferenceGroup>&& gr,
       detail::ScheduleTree* tree,
-      const std::unordered_set<isl::id, isl::IslIdIslHash>& activeStmts,
       isl::union_map schedule,
       bool forceLastExtentOdd = false);
 
@@ -463,9 +466,10 @@ struct Scop {
   std::unordered_map<isl::id, size_t, isl::IslIdIslHash> groupCounts_;
   // groupId -> (tensorId, groupSizes)
   std::unordered_map<isl::id, PromotedDecl, isl::IslIdIslHash> promotedDecls_;
-  // stmtId -> (group, partial schedule, groupId)
-  std::unordered_map<isl::id, std::vector<PromotionInfo>, isl::IslIdIslHash>
-      activePromotions_;
+  // (domain, group, partial schedule, groupId)
+  // Note that domain is a non-unique key, i.e. multiple groups can be listed
+  // for the same domain, or for partially intersecting domains.
+  std::vector<std::pair<isl::union_set, PromotionInfo>> activePromotions_;
 };
 
 std::ostream& operator<<(std::ostream& os, const Scop&);

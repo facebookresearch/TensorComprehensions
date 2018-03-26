@@ -26,6 +26,7 @@ using ThreadIdxxScheduleDepthState =
     std::vector<std::pair<isl::union_set, size_t>>;
 
 class MappedScop;
+class Scop;
 
 // In the given mapped scop "mscop",
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
@@ -40,5 +41,10 @@ void promoteGreedilyAtDepth(
     std::size_t depth,
     std::size_t sharedMemorySize,
     bool unrollCopies);
+
+void promoteToRegistersBelowThreads(
+    Scop& scop,
+    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    std::size_t nRegisters);
 } // namespace polyhedral
 } // namespace tc

@@ -179,25 +179,43 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
 }
 } // namespace
 
-void Scop::promoteGroupToShared(
+void Scop::promoteGroup(
+    PromotedDecl::Kind kind,
     isl::id tensorId,
     std::unique_ptr<TensorReferenceGroup>&& gr,
     ScheduleTree* tree,
-    const std::unordered_set<isl::id, isl::IslIdIslHash>& activeStmts,
     isl::union_map schedule,
     bool forceLastExtentOdd) {
+  auto activePoints = activeDomainPoints(scheduleRoot(), tree);
+
+  for (const auto& kvp : activePromotions_) {
+    if (kvp.first.intersect(activePoints).is_empty()) {
+      continue;
+    }
+
+    auto groupId = kvp.second.groupId;
+    if (promotedDecls_.count(groupId) != 0 &&
+        promotedDecls_[groupId].tensorId == tensorId) {
+      // FIXME: allow double promotion if copies are inserted properly,
+      // in particular if the new promotion is strictly smaller in scope
+      // and size than the existing ones (otherwise we would need to find
+      // the all the existing ones and change their copy relations).
+      return;
+    }
+  }
+
   auto groupId = nextGroupIdForTensor(tensorId);
   insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
   auto sizes = gr->approximationSizes();
   if (sizes.size() > 0 && forceLastExtentOdd && (sizes.back() % 2) == 0) {
     sizes.back() += 1;
   }
-  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes};
+  promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
 
+  // FIXME: we can now store a unique pointer...
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
-  for (const auto& id : activeStmts) {
-    activePromotions_[id].push_back(PromotionInfo{group, schedule, groupId});
-  }
+  activePromotions_.emplace_back(
+      std::make_pair(activePoints, PromotionInfo{group, schedule, groupId}));
 }
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
@@ -242,13 +260,17 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   auto tree = scheduleRoot()->child(pos);
 
   checkFiltersDisjointStatements(scheduleRoot());
-  auto activeStmts = activeStatements(root, tree);
   auto schedule = partialSchedule(root, tree);
 
   auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
-      promoteGroupToShared(p.first, std::move(gr), tree, activeStmts, schedule);
+      promoteGroup(
+          PromotedDecl::Kind::SharedMem,
+          p.first,
+          std::move(gr),
+          tree,
+          schedule);
     }
   }
   insertSyncsAroundCopies(tree);
