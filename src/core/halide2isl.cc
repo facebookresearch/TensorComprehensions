@@ -252,10 +252,6 @@ isl::map extractAccess(
   isl::space tagSpace = paramSpace.set_tuple_name(isl::dim_type::set, tag);
   domainSpace = domainSpace.product(tagSpace);
 
-  // The tensor's storage space is really a set, rather than a
-  // space, but for now we'll ignore the fact that it is bounded.
-  isl::set range = isl::set::universe(rangeSpace);
-
   // Start with a totally unconstrained relation - every point in
   // the iteration domain could write to every point in the allocation.
   isl::map map =
