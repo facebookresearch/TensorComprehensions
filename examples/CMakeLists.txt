@@ -20,6 +20,24 @@ include_directories(${PROJECT_SOURCE_DIR}/third-party/googletest/googletest/incl
 set(GTEST_LIBS gtest gtest_main)
 
 ################################################################################
+# Simple Example
+################################################################################
+add_executable(example_simple example_simple.cc)
+add_test(example_simple example_simple)
+target_link_libraries(
+   example_simple
+
+   tc_autotuner
+   tc_core
+
+   ${GTEST_LIBS}
+   ${GFLAGS_LIBRARIES}
+   ${GLOG_LIBRARIES}
+
+   ${ATEN_LIBRARIES}
+)
+
+################################################################################
 # Examples
 ################################################################################
 set(EXAMPLES_FILES
