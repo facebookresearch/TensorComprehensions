@@ -1,14 +1,15 @@
 #!/bin/sh
 
 #SBATCH -J TensorComprehensions # A single job name for the array
-#SBATCH -n 10 # Number of cores
+#SBATCH -n 20 # Number of cores
 #SBATCH -N 1 # All cores on one machine
 #SBATCH --mem 40000 # Memory request (4Gb)
-#SBATCH -t 0-2:00 # Maximum execution time (D-HH:MM)
-#SBATCH --gres=gpu:1
+#SBATCH -t 0-3:00 # Maximum execution time (D-HH:MM)
+#SBATCH --gres=gpu:2
+#SBATCH --partition=learnfair-2g
 
-export TUNER_THREADS=${TUNER_THREADS:=10}
-export TUNER_GPUS=${TUNER_GPUS:="0"}
+export TUNER_THREADS=${TUNER_THREADS:=20}
+export TUNER_GPUS=${TUNER_GPUS:="0,1"}
 export GPU_NAME=$(nvidia-smi -L | head -n 1 | cut -d'(' -f 1 | cut -d':' -f 2 | sed "s/ //g")
 
 export TC_PREFIX=$(git rev-parse --show-toplevel)
