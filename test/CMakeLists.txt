@@ -100,7 +100,6 @@ foreach(i ${CORE_TEST_FILES})
   target_link_libraries(${i} ${GOOGLE_LIBS} tc_core_cuda_no_sdk)
 endforeach()
 
-
 add_executable(test_mapper_llvm test_mapper_llvm.cc)
 add_test(test_mapper_llvm test_mapper_llvm)
 target_link_libraries(
@@ -111,6 +110,19 @@ target_link_libraries(
   -lLLVM
 
   tc_core_cpu tc_lang)
+
+if (WITH_TAPIR)
+  add_executable(test_mapper_tapir test_mapper_tapir.cc)
+  add_test(test_mapper_tapir test_mapper_tapir)
+  target_link_libraries(
+    test_mapper_tapir
+
+    ${GOOGLE_LIBS}
+    ${ATEN_LIBRARIES}
+    -lLLVM
+
+    tc_core_cpu tc_lang)
+endif()
 
 ################################################################################
 # TensorComprehensions tests
