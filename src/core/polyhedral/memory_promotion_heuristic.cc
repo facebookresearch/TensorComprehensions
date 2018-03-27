@@ -404,7 +404,7 @@ bool isPromotableToRegisterBelowThreads(
   auto sizes = group.approximationSizes();
   auto nElements =
       std::accumulate(sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
-  if (nElements > 32) {
+  if (nElements > 128) {
     return false;
   }
 
