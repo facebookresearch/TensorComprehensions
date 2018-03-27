@@ -39,11 +39,20 @@ enum class AccessType : short { Read, Write };
 // constant size.
 struct ScopedFootprintDim {
  public:
-  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s) {}
+  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s), stride(isl::val::zero(s.get_ctx())), shift(isl::aff()) {}
+  ScopedFootprintDim(isl::aff lowerBound_, isl::val size_, isl::val stride_, isl::aff shift_)
+    : lowerBound(lowerBound_), size(size_), stride(stride_), shift(shift_) {}
+
+  bool hasStride() const {
+    return stride != 0;
+  }
 
  public:
   isl::aff lowerBound;
   isl::val size;
+
+  isl::val stride;
+  isl::aff shift;
 };
 
 // Rectangular overapproximation of a tensor elements accessed through a single
@@ -54,7 +63,11 @@ struct ScopedFootprintDim {
 struct ScopedFootprint : std::vector<ScopedFootprintDim> {
   isl::set footprint(isl::set domain) const;
   isl::multi_aff lowerBounds() const;
+  isl::multi_aff shifts() const;
+  isl::multi_val strides() const;
 };
+
+ScopedFootprint outputRanges(isl::map access);
 
 // Descriptor of tensor reference in a Scop.
 // May be scoped to a specific position in a schedule tree, the user is
@@ -77,6 +90,11 @@ class TensorReference {
   // Access relation in terms of partial schedule at the point where the
   // reference group is introduced in the tree.
   isl::map scopedAccess;
+
+  // Access relation in terms of full schedule.
+  // FIXME: scopedAccess can always be obtained by projecting out from tis if
+  // we know the scoping depth.
+  isl::map scheduledAccess;
 
   // Access direction (read or write).
   AccessType type;
@@ -106,6 +124,10 @@ class TensorReferenceGroup {
   static TensorGroups accessedBySubtree(
       const detail::ScheduleTree* tree,
       const Scop& scop);
+  static TensorGroups accessedByThreadsInSubtree(
+    const detail::ScheduleTree* tree,
+    const detail::ScheduleTree* threadMappedTree,
+    const Scop& scop);
 
   bool isReadOnly() const;
 
@@ -208,7 +230,19 @@ detail::ScheduleTree* insertCopiesUnder(
     Scop& scop,
     detail::ScheduleTree* tree,
     const TensorReferenceGroup& group,
+    bool useExactReads,
     isl::id tensorId,
     isl::id groupId = isl::id());
+
+detail::ScheduleTree* insertIntraCopiesUnder(
+    Scop& scop,
+    detail::ScheduleTree* tree,
+    const TensorReferenceGroup& group,
+    const TensorReferenceGroup& outerScopeGroup,
+    bool useExactReads,
+    isl::id tensorId,
+    isl::id groupId,
+    isl::id outerScopeGroupId);
+
 } // namespace polyhedral
 } // namespace tc
