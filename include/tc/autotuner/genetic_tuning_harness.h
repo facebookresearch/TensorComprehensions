@@ -32,9 +32,6 @@ namespace tc {
 namespace autotune {
 namespace detail {
 
-extern volatile std::sig_atomic_t signal_;
-extern volatile std::sig_atomic_t killRequested_;
-
 class GeneticTunerHarness {
  public:
   GeneticTunerHarness(
@@ -50,6 +47,7 @@ class GeneticTunerHarness {
       std::vector<MappingOptions> startingPoints,
       const TuningParameterFixer& fixedParams);
   void run(size_t numGenerations);
+  void stopAfterCurrentGeneration();
 
  private:
   void setupTuningParameters();
@@ -110,6 +108,8 @@ class GeneticTunerHarness {
   std::unordered_map<size_t, std::vector<DLTensor*>> outputs_;
   const MappingOptions kBaseMapping_;
   const std::vector<MappingOptions> kStartingPoints_;
+
+  std::atomic_bool stopRequested_{false};
 };
 
 std::vector<size_t> parseGpus();

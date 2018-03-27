@@ -18,7 +18,6 @@
 
 #include <atomic>
 #include <chrono>
-#include <csignal>
 #include <numeric>
 #include <thread>
 
@@ -40,9 +39,6 @@
 namespace tc {
 namespace autotune {
 namespace detail {
-
-volatile std::sig_atomic_t signal_ = 0;
-volatile std::sig_atomic_t killRequested_ = 0;
 
 GeneticTunerHarness::GeneticTunerHarness(
     size_t n,
@@ -102,10 +98,14 @@ GeneticTunerHarness::GeneticTunerHarness(
 
 void GeneticTunerHarness::run(size_t numGenerations) {
   for (size_t i = 0; i < numGenerations; ++i) {
-    if (not killRequested_) {
+    if (not stopRequested_) {
       runOneGeneration(i);
     }
   }
+}
+
+void GeneticTunerHarness::stopAfterCurrentGeneration() {
+  stopRequested_ = true;
 }
 
 namespace {
