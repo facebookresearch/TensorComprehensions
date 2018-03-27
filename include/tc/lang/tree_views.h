@@ -161,6 +161,9 @@ struct ListView : public TreeView {
   size_t size() const {
     return tree_->trees().size();
   }
+  bool empty() const {
+    return size() == 0;
+  }
   static TreeRef create(const SourceRange& range, TreeList elements) {
     return Compound::create(TK_LIST, range, std::move(elements));
   }

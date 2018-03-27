@@ -25,6 +25,7 @@
 #include "tc/lang/canonicalize.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
+#include "tc/lang/tc_format.h"
 
 using namespace lang;
 
@@ -145,6 +146,17 @@ std::string canonicalText(const std::string& text) {
   std::stringstream ss;
   ss << canonicalize(loadText(text));
   return ss.str();
+}
+
+void testTcFormat() {
+  static std::ios_base::Init initIostreams;
+  auto source = R"(def fun2(float(B, N, M) X, float(B, M, K) Y) -> (Q) {
+  Q(b, ii, j) += (((exp(X(b, ii, k)) * int(Y(b, k, j))) * 2.5) + 3)
+})";
+  auto def_tree = Parser(source).parseFunction();
+  std::ostringstream s;
+  tcFormat(s, def_tree);
+  ASSERT(s.str() == source);
 }
 
 int main(int argc, char** argv) {
@@ -318,6 +330,8 @@ int main(int argc, char** argv) {
     }
   )";
   ASSERT(canonicalText(option_one) == canonicalText(option_two));
+
+  testTcFormat();
 
   // assertSemaEqual(
   //     "comments.expected",

@@ -32,6 +32,22 @@ std::string kindToString(int kind) {
   }
 }
 
+std::string kindToToken(int kind) {
+  if (kind < 256)
+    return std::string(1, kind);
+  switch (kind) {
+#define DEFINE_CASE(tok, _, str)                                       \
+  case tok:                                                            \
+    if (str == "")                                                     \
+      throw std::runtime_error("No token for: " + kindToString(kind)); \
+    return str;
+    TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
+#undef DEFINE_CASE
+    default:
+      throw std::runtime_error("unknown kind: " + std::to_string(kind));
+  }
+}
+
 SharedParserData& sharedParserData() {
   static SharedParserData data; // safely handles multi-threaded init
   return data;
