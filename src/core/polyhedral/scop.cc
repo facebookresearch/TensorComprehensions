@@ -463,17 +463,6 @@ std::unique_ptr<Scop> Scop::makeScheduled(
   return s;
 }
 
-std::unique_ptr<Scop> Scop::makeScheduled(
-    const Scop& scop,
-    const SchedulerOptionsView&& schedulerOptions) {
-  auto s = makeScop(scop);
-  auto constraints = makeScheduleConstraints(*s, schedulerOptions);
-  s->scheduleTreeUPtr = computeSchedule(constraints, schedulerOptions);
-  LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After scheduling:" << std::endl
-                                      << *s->scheduleTreeUPtr;
-  return s;
-}
-
 namespace {
 
 /*

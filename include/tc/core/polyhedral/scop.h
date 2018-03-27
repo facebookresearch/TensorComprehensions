@@ -340,11 +340,6 @@ struct Scop {
   // Create a Scop scheduled with a given scheduling strategy.
   static std::unique_ptr<Scop> makeScheduled(
       const Scop& scop,
-      const SchedulerOptionsView&& schedulerOptions);
-
-  // Create a Scop scheduled with a given scheduling strategy.
-  static std::unique_ptr<Scop> makeScheduled(
-      const Scop& scop,
       const SchedulerOptionsView& schedulerOptions);
   // Tile the outermost band.
   // Splits the band into tile loop band and point loop band where point loops

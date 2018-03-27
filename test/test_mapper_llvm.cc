@@ -68,7 +68,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 TEST(LLVMCodegen, BasicParallel) {
   string tc = R"TC(
 def fun(float(N, M) A, float(N, M) B) -> (C) {
-  C(i, j) = A(i, j) + B(i, j)
+  C(n, m) = A(n, m) + B(n, m)
 }
 )TC";
   auto N = 40;
@@ -79,8 +79,9 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   auto context = scop->makeContext(
       std::unordered_map<std::string, int>{{"N", N}, {"M", M}});
   scop = Scop::makeSpecializedScop(*scop, context);
-  scop =
-      Scop::makeScheduled(*scop, SchedulerOptionsView(SchedulerOptionsProto()));
+  SchedulerOptionsProto sop;
+  SchedulerOptionsView sov(sop);
+  scop = Scop::makeScheduled(*scop, sov);
   Jit jit;
   auto mod = jit.codegenScop("kernel_anon", *scop);
   auto correct_llvm = R"LLVM(
