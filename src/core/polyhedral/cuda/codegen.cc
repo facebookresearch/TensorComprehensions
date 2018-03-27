@@ -495,6 +495,16 @@ isl::multi_aff makeMultiAffAccess(
   return ma;
 }
 
+namespace {
+bool is_identifier_or_nonnegative_integer(isl::ast_expr expr) {
+  if (isl_ast_expr_get_type(expr.get()) == isl_ast_expr_id)
+    return true;
+  if (isl_ast_expr_get_type(expr.get()) != isl_ast_expr_int)
+    return false;
+  return isl::manage(isl_ast_expr_get_val(expr.get())).is_nonneg();
+}
+} // namespace
+
 void emitHalideExpr(
     const Halide::Expr& e,
     const CodegenStatementContext& context,
@@ -502,15 +512,17 @@ void emitHalideExpr(
   class EmitHalide : public Halide::Internal::IRPrinter {
     using Halide::Internal::IRPrinter::visit;
     void visit(const Halide::Internal::Variable* op) {
-      // This is probably needlessly indirect, given that we just have
-      // a name to look up somewhere.
       auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
           Halide::Expr(op), context);
       // Use a temporary isl::ast_build to print the expression.
       // Ideally, this should use the build at the point
       // where the user statement was created.
       auto astBuild = isl::ast_build::from_context(pwAff.domain());
-      auto s = astBuild.expr_from(pwAff).to_C_str();
+      auto expr = astBuild.expr_from(pwAff);
+      auto s = expr.to_C_str();
+      if (!is_identifier_or_nonnegative_integer(expr)) {
+        s = "(" + s + ")";
+      }
       context.ss << s;
     }
     void visit(const Halide::Internal::Call* op) {
