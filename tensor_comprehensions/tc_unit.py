@@ -30,12 +30,14 @@ logger = logging.getLogger(__name__)
 
 
 # these are quick options for finishing autotuning
-autotuner_settings = {"threads": 32}
+autotuner_settings = {
+    "threads": 32, "generations": 2, "pop_size": 5,
+}
 
 # TC prunes autotuning for kernels which require < 256 threads. So to tune small
 # size kernels, we set the min kernel threads to 1
 small_sizes_autotuner_settings = {
-    "threads": 32, "generations": 5, "tuner_min_launch_total_threads": 1,
+    "threads": 32, "generations": 2, "pop_size": 5, "tuner_min_launch_total_threads": 1,
 }
 
 ###############################################################################
@@ -189,7 +191,7 @@ class TcAutotuner(object):
         self.set_autotuner_parameters(**kwargs)
 
     def set_autotuner_parameters(
-        self, pop_size=10, crossover_rate=80, mutation_rate=7, generations=2,
+        self, pop_size=20, crossover_rate=80, mutation_rate=7, generations=10,
         number_elites=1, threads=8, gpus="0", proto="/tmp/tuner.txt",
         restore_from_proto=False, restore_number=10, log_generations=False,
         tuner_min_launch_total_threads=64, **kwargs
