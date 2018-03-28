@@ -31,8 +31,6 @@ struct CodegenStatementContext;
 
 namespace detail {
 
-std::string toString(isl::pw_aff subscript);
-
 isl::pw_aff makeAffFromMappedExpr(
     const Halide::Expr& expr,
     const CodegenStatementContext& context);

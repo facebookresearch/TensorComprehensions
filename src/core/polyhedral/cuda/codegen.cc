@@ -452,14 +452,6 @@ void AstPrinter::emitAst(isl::ast_node node) {
 
 namespace detail {
 
-std::string toString(isl::pw_aff subscript) {
-  // Use a temporary isl::ast_build to print the expression.
-  // Ideally, this should use the build at the point
-  // where the user statement was created.
-  auto astBuild = isl::ast_build::from_context(subscript.domain());
-  return astBuild.expr_from(subscript).to_C_str();
-}
-
 isl::pw_aff makeAffFromMappedExpr(
     const Halide::Expr& expr,
     const CodegenStatementContext& context) {
@@ -514,7 +506,12 @@ void emitHalideExpr(
       // a name to look up somewhere.
       auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
           Halide::Expr(op), context);
-      context.ss << tc::polyhedral::detail::toString(pwAff);
+      // Use a temporary isl::ast_build to print the expression.
+      // Ideally, this should use the build at the point
+      // where the user statement was created.
+      auto astBuild = isl::ast_build::from_context(pwAff.domain());
+      auto s = astBuild.expr_from(pwAff).to_C_str();
+      context.ss << s;
     }
     void visit(const Halide::Internal::Call* op) {
       if (substitutions.count(op->name)) {
