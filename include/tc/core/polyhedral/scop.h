@@ -329,6 +329,12 @@ struct Scop {
     return activePromotions_;
   }
 
+  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>> activePromotions(
+      isl::union_set activePoints,
+      isl::id tensorId) const {
+    return promotionsAtIndexes(activePromotionsIndexes(activePoints, tensorId));
+  }
+
   detail::ScheduleTree* scheduleRoot() {
     return scheduleTreeUPtr.get();
   }
@@ -390,6 +396,8 @@ struct Scop {
       isl::union_map schedule,
       bool forceLastExtentOdd = false);
 
+  void demoteGroup(isl::id groupId);
+
   // Given a tree node under which the promotion copy statements were
   // introduced, insert syncthread statements before and after the copies.
   // The tree should match the structure:
@@ -418,6 +426,22 @@ struct Scop {
   static std::unique_ptr<detail::ScheduleTree> computeSchedule(
       isl::schedule_constraints constraints,
       const SchedulerOptionsView& schedulerOptions);
+
+  // Get the indexes of active promotions in the activePromotions_.
+  std::vector<size_t> activePromotionsIndexes(
+      isl::union_set domain,
+      isl::id tensorId) const;
+  std::vector<std::pair<isl::union_set, Scop::PromotionInfo>>
+  promotionsAtIndexes(const std::vector<size_t>& indexes) const;
+
+  void promoteWithCopyFromGlobal(
+      isl::union_set activePoints,
+      PromotedDecl::Kind kind,
+      isl::id tensorId,
+      std::unique_ptr<TensorReferenceGroup>&& gr,
+      detail::ScheduleTree* tree,
+      isl::union_map schedule,
+      bool forceLastExtentOdd = false);
 
  public:
   // Halide stuff

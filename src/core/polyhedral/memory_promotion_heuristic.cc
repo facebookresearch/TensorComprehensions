@@ -558,6 +558,15 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
+namespace {
+template <typename T>
+T projectOutNamedParam(T t, isl::id paramId) {
+  auto space = t.get_space();
+  int pos = space.find_dim_by_id(isl::dim_type::param, paramId);
+  return (pos == -1) ? t : t.project_out(isl::dim_type::param, pos, 1);
+}
+} // namespace
+
 // Assuming the mapping to threads happens in inverse order, i.e. the innermost
 // loop is mapped to thread x, promote below that depth.
 void promoteToRegistersBelowThreads(
@@ -640,9 +649,7 @@ void promoteToRegistersBelowThreads(
           if (!hasReuse(*group, fullSched, depth)) {
             continue;
           }
-          // TODO: if something is already in shared, but reuse it within one
-          // thread only, there is no point in keeping it in shared _if_ it
-          // gets promoted into a register.
+
           scop.promoteGroup(
               Scop::PromotedDecl::Kind::Register,
               tensorId,

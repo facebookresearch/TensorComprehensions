@@ -452,25 +452,20 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
 }
 } // namespace
 
-ScheduleTree* insertCopiesUnder(
+ScheduleTree* insertCopiesUnder_(
     Scop& scop,
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
-    isl::id tensorId,
-    isl::id groupId) {
+    isl::map promotion,
+    isl::set originalElements,
+    isl::set readElements,
+    isl::map exactWrites) {
+  auto groupId = promotion.get_tuple_id(isl::dim_type::out);
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
   isl::id readId = isl::id(ctx, std::string(kReadIdName));
   isl::id writeId = isl::id(ctx, std::string(kWriteIdName));
 
-  // Take the set of all tensor elements.
-  auto tensorElements = tensorElementsSet(scop, tensorId);
-
-  if (groupId.is_null()) {
-    throw promotion::GroupingError("expected group id");
-  }
-  auto promotion =
-      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
   auto promotionSpace = promotion.get_space();
 
   auto identityCopySchedule =
@@ -500,15 +495,15 @@ ScheduleTree* insertCopiesUnder(
   auto approximattedRead =
       isl::map(
           scheduleUniverse,
-          group.approximateFootprint().set_tuple_id(arrayId).intersect(
-              tensorElements))
+          readElements.set_tuple_id(arrayId).intersect(originalElements))
           .wrap();
   approximattedRead = isl::map(approximattedRead, promotedFootprint).wrap();
   auto readExtension = extension.intersect_range(approximattedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
+
   auto writtenElements =
       isl::map(
-          group.scopedWrites().intersect_range(tensorElements).wrap(),
+          exactWrites.intersect_range(originalElements).wrap(),
           promotedFootprint)
           .wrap();
   auto writeExtension = extension.intersect_range(writtenElements)
@@ -567,6 +562,70 @@ ScheduleTree* insertCopiesUnder(
       ScheduleTree::makeExtension(extensionUmap, std::move(sequenceNode));
   tree->appendChild(std::move(extensionNode));
   return tree;
+}
+
+ScheduleTree* insertIntraCopiesUnder(
+    Scop& scop,
+    ScheduleTree* tree,
+    const TensorReferenceGroup& group,
+    const TensorReferenceGroup& outerScopeGroup,
+    isl::id tensorId,
+    isl::id groupId,
+    isl::id outerScopeGroupId) {
+  auto innerScopePromotion =
+      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
+  auto outerScopePromotion =
+      isl::map(outerScopeGroup.promotion())
+          .set_tuple_id(isl::dim_type::out, outerScopeGroupId);
+
+  auto outerScopeInDims =
+      outerScopePromotion.get_space().curry().dim(isl::dim_type::in);
+  auto innerScopeInDims =
+      innerScopePromotion.get_space().curry().dim(isl::dim_type::in);
+  CHECK_GT(innerScopeInDims, outerScopeInDims);
+  outerScopePromotion =
+      outerScopePromotion.curry()
+          .add_dims(isl::dim_type::in, innerScopeInDims - outerScopeInDims)
+          .uncurry();
+  auto domainAccessToDomainMap = isl::map(isl::multi_aff::domain_map(
+      innerScopePromotion.get_space().domain().unwrap()));
+  outerScopePromotion =
+      domainAccessToDomainMap.range_product(outerScopePromotion);
+  innerScopePromotion = innerScopePromotion.apply_domain(outerScopePromotion);
+
+  return insertCopiesUnder_(
+      scop,
+      tree,
+      group,
+      innerScopePromotion,
+      outerScopeGroup.promotedFootprint().set_tuple_id(outerScopeGroupId),
+      outerScopeGroup.promotedFootprint().set_tuple_id(outerScopeGroupId),
+      group.scopedWrites().wrap().apply(outerScopePromotion).unwrap());
+}
+
+ScheduleTree* insertCopiesUnder(
+    Scop& scop,
+    ScheduleTree* tree,
+    const TensorReferenceGroup& group,
+    isl::id tensorId,
+    isl::id groupId) {
+  // Take the set of all tensor elements.
+  auto tensorElements = tensorElementsSet(scop, tensorId);
+
+  if (groupId.is_null()) {
+    throw promotion::GroupingError("expected group id");
+  }
+  auto promotion =
+      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
+
+  return insertCopiesUnder_(
+      scop,
+      tree,
+      group,
+      promotion,
+      tensorElements,
+      group.approximateFootprint(),
+      group.scopedWrites());
 }
 } // namespace polyhedral
 } // namespace tc
