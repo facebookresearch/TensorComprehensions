@@ -359,6 +359,17 @@ void emitReductionInit(
   context.ss << ";" << endl;
 }
 
+namespace {
+template <typename AFF>
+void emitAccess(AFF access, const CodegenStatementContext& context) {
+  // Use a temporary isl::ast_build to print the expression.
+  // Ideally, this should use the build at the point
+  // where the user statement was created.
+  auto astBuild = isl::ast_build::from_context(access.domain());
+  context.ss << astBuild.access_from(access).to_C_str();
+}
+} // namespace
+
 void emitCopyStmt(const CodegenStatementContext& context) {
   using detail::emitDirectSubscripts;
 
@@ -613,8 +624,7 @@ void emitMappedTensorAccess(
   auto astToPromoted =
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
-  auto astBuild = isl::ast_build::from_context(astToPromoted.domain());
-  context.ss << astBuild.access_from(astToPromoted).to_C_str();
+  emitAccess(astToPromoted, context);
 }
 
 void emitDirectSubscripts(
