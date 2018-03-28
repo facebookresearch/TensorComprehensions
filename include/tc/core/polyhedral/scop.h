@@ -358,6 +358,17 @@ struct Scop {
   // Assumes such argument exists.
   const Halide::OutputImageParam& findArgument(isl::id id) const;
 
+  // Make an affine function from a Halide Expr that is defined
+  // over the instance set of the statement with identifier "stmtId" and
+  // with parameters specified by "paramSpace".  Return a
+  // null isl::aff if the expression is not affine.  Fail if any
+  // of the variables does not correspond to a parameter or
+  // an instance identifier of the statement.
+  isl::aff makeIslAffFromStmtExpr(
+      isl::id stmtId,
+      isl::space paramSpace,
+      const Halide::Expr& e) const;
+
   // Promote a tensor reference group to a storage of a given "kind",
   // inserting the copy
   // statements below the given node.  Inserts an Extension node below the give
@@ -419,9 +430,10 @@ struct Scop {
     std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
         statements;
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
+    halide2isl::IteratorMap iterators;
   } halide;
 
-  // Poyhedral IR
+  // Polyhedral IR
   //
   // The domain is collected from the root of the ScheduleTree; no redundant
   // state is kept.

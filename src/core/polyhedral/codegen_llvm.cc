@@ -72,8 +72,9 @@ isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
 namespace polyhedral {
 
+using IteratorMapType = std::unordered_map<std::string, isl::ast_expr>;
 using IteratorMapsType =
-    std::unordered_map<isl::id, isl::pw_multi_aff, isl::IslIdIslHash>;
+    std::unordered_map<isl::id, IteratorMapType, isl::IslIdIslHash>;
 
 using IteratorLLVMValueMapType =
     std::unordered_map<isl::id, llvm::Value*, isl::IslIdIslHash>;
@@ -94,14 +95,6 @@ int64_t toSInt(isl::val v) {
 
 llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
   return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), v, true);
-}
-
-isl::aff extractAff(isl::pw_multi_aff pma) {
-  isl::PMA pma_(pma);
-  CHECK_EQ(pma_.size(), 1);
-  isl::MA ma(pma_[0].second);
-  CHECK_EQ(ma.size(), 1);
-  return ma[0];
 }
 
 int64_t IslExprToSInt(isl::ast_expr e) {
@@ -214,7 +207,7 @@ static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
-  const isl::pw_multi_aff* iteratorMap_;
+  const IteratorMapType* iteratorMap_;
   CodeGen_TC(Target t) : CodeGen_X86(t) {}
 
   using CodeGen_X86::codegen;
@@ -249,6 +242,11 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     return std::move(module);
   }
 
+  // Convert an isl AST expression into an llvm::Value.
+  // Only expressions that consist of a pure identifier or
+  // a pure integer constant are currently supported.
+  llvm::Value* getValue(isl::ast_expr expr);
+
  protected:
   using CodeGen_X86::visit;
   void visit(const Halide::Internal::Call* call) override {
@@ -272,44 +270,7 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     }
   }
   void visit(const Halide::Internal::Variable* op) override {
-    auto aff = halide2isl::makeIslAffFromExpr(
-        iteratorMap_->get_space().range(), Halide::Expr(op));
-
-    auto subscriptPma = isl::pw_aff(aff).pullback(*iteratorMap_);
-    auto subscriptAff = extractAff(subscriptPma);
-
-    // sanity checks
-    CHECK_EQ(subscriptAff.dim(isl::dim_type::div), 0);
-    CHECK_EQ(subscriptAff.dim(isl::dim_type::out), 1);
-    for (int d = 0; d < subscriptAff.dim(isl::dim_type::param); ++d) {
-      auto v = subscriptAff.get_coefficient_val(isl::dim_type::param, d);
-      CHECK(v.is_zero());
-    }
-
-    llvm::Optional<int> posOne;
-    int sum = 0;
-    for (int d = 0; d < subscriptAff.dim(isl::dim_type::in); ++d) {
-      auto v = subscriptAff.get_coefficient_val(isl::dim_type::in, d);
-      CHECK(v.is_zero() or v.is_one());
-      if (v.is_zero()) {
-        continue;
-      }
-      ++sum;
-      posOne = d;
-    }
-    CHECK_LE(sum, 1);
-
-    if (sum == 0) {
-      value =
-          getLLVMConstantSignedInt64(toSInt(subscriptAff.get_constant_val()));
-      return;
-    }
-    CHECK(posOne);
-
-    std::string name(
-        isl_aff_get_dim_name(subscriptAff.get(), isl_dim_in, *posOne));
-
-    value = sym_get(name);
+    value = getValue(iteratorMap_->at(op->name));
   }
 
  public:
@@ -360,6 +321,21 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     }
   }
 };
+
+llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
+  switch (isl_ast_expr_get_type(expr.get())) {
+    case isl_ast_expr_type::isl_ast_expr_id:
+      return sym_get(expr.get_id().get_name());
+    case isl_ast_expr_type::isl_ast_expr_int: {
+      auto val = isl::manage(isl_ast_expr_get_val(expr.get()));
+      CHECK(val.is_int());
+      return getLLVMConstantSignedInt64(val.get_num_si());
+    }
+    default:
+      LOG(FATAL) << "NYI";
+      return nullptr;
+  }
+}
 
 class LLVMCodegen {
   void collectTensor(const Halide::OutputImageParam& t) {
@@ -638,22 +614,7 @@ class LLVMCodegen {
     llvm::SmallVector<llvm::Value*, 5> subscriptValues;
 
     for (const auto& subscript : subscripts) {
-      switch (isl_ast_expr_get_type(subscript.get())) {
-        case isl_ast_expr_type::isl_ast_expr_id: {
-          subscriptValues.push_back(
-              halide_cg.sym_get(subscript.get_id().get_name()));
-          break;
-        }
-        case isl_ast_expr_type::isl_ast_expr_int: {
-          auto val = isl::manage(isl_ast_expr_get_val(subscript.get()));
-          CHECK_EQ(val.get_den_si(), 1);
-          subscriptValues.push_back(
-              getLLVMConstantSignedInt64(val.get_num_si()));
-          break;
-        }
-        default:
-          LOG(FATAL) << "NYI";
-      }
+      subscriptValues.push_back(halide_cg.getValue(subscript));
     }
 
     auto destAddr = halide_cg.get_builder().CreateInBoundsGEP(
@@ -703,9 +664,7 @@ IslCodegenRes codegenISL(const Scop& scop) {
            const Scop& scop,
            StmtSubscriptExprMapType& stmtSubscripts) -> isl::ast_node {
       auto expr = node.user_get_expr();
-      // We rename loop-related dimensions manually.
       auto schedule = build.get_schedule();
-      auto scheduleSpace = build.get_schedule_space();
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto stmtId = expr.get_op_arg(0).get_id();
@@ -713,24 +672,20 @@ IslCodegenRes codegenISL(const Scop& scop) {
       // node.get_ctx(),
       // std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
       CHECK_EQ(0, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
-      CHECK_EQ(
-          scheduleMap.dim(isl::dim_type::out),
-          scheduleSpace.dim(isl::dim_type::set));
-      for (int i = 0; i < scheduleSpace.dim(isl::dim_type::set); ++i) {
-        scheduleMap = scheduleMap.set_dim_id(
-            isl::dim_type::out,
-            i,
-            scheduleSpace.get_dim_id(isl::dim_type::set, i));
-      }
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-      iteratorMaps.emplace(stmtId, iteratorMap);
+      auto iterators = scop.halide.iterators.at(stmtId);
+      auto& stmtIteratorMap = iteratorMaps[stmtId];
+      for (int i = 0; i < iterators.size(); ++i) {
+        auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
+        stmtIteratorMap.emplace(iterators[i], expr);
+      }
       auto& subscripts = stmtSubscripts[stmtId];
       auto provide =
           scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
       for (auto e : provide->args) {
         const auto& map = iteratorMap;
-        auto space = map.get_space().range();
-        auto aff = halide2isl::makeIslAffFromExpr(space, e);
+        auto space = map.get_space().params();
+        auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
         auto pulled = isl::pw_aff(aff).pullback(map);
         CHECK_EQ(pulled.n_piece(), 1);
         subscripts.push_back(build.expr_from(pulled));

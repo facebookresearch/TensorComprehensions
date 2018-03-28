@@ -70,6 +70,7 @@ ScopUPtr Scop::makeScop(
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
+  scop->halide.iterators = std::move(tree.iterators);
 
   // Set partial schedule tuples for proper comparison with ISL
   // schedules (needs DFSPreorder numbering). Just for testing.
@@ -555,6 +556,24 @@ const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
 
   CHECK(false) << "name \"" << name << "\" not found";
   return *halide.inputs.begin();
+}
+
+isl::aff Scop::makeIslAffFromStmtExpr(
+    isl::id stmtId,
+    isl::space paramSpace,
+    const Halide::Expr& e) const {
+  auto ctx = stmtId.get_ctx();
+  auto iterators = halide.iterators.at(stmtId);
+  auto space = paramSpace.set_from_params();
+  space = space.add_dims(isl::dim_type::set, iterators.size());
+  // Set the names of the set dimensions of "space" for use
+  // by halide2isl::makeIslAffFromExpr.
+  for (int i = 0; i < iterators.size(); ++i) {
+    isl::id id(ctx, iterators[i]);
+    space = space.set_dim_id(isl::dim_type::set, i, id);
+  }
+  space = space.set_tuple_id(isl::dim_type::set, stmtId);
+  return halide2isl::makeIslAffFromExpr(space, e);
 }
 
 } // namespace polyhedral
