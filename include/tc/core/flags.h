@@ -54,6 +54,9 @@ DECLARE_uint32(tuner_gen_restore_number);
 DECLARE_bool(tuner_gen_log_generations);
 DECLARE_uint64(tuner_min_launch_total_threads);
 
+
+DECLARE_string(cache_custom_hw_key);
+
 // Misc
 DECLARE_int64(random_seed);
 DECLARE_bool(schedule_tree_verbose_validation);

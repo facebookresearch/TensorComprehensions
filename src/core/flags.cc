@@ -111,6 +111,11 @@ DEFINE_int64(
     -1,
     "The number of best candidates to restore from the proto cache");
 
+DEFINE_string(
+    cache_custom_hw_key,
+    "",
+    "Replace the \"hardware description\" with a custom string when querying the cache.");
+
 uint64_t initRandomSeed() {
   static std::mutex mut;
   static bool inited = false;
