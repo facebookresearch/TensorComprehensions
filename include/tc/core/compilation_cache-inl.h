@@ -95,6 +95,15 @@ void Cache<CC>::clear() {
   static_cast<CC*>(this)->entries_.clear();
 }
 
+namespace {
+std::string gpuKey() {
+  if (not FLAGS_cache_custom_hw_key.empty()) {
+    return FLAGS_cache_custom_hw_key;
+  }
+  return CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+}
+} // namespace
+
 template <typename C, typename InputTy> // deduces whether C is const or
 // non-const
 auto CudaCache::searchKernelImpl(
@@ -104,7 +113,7 @@ auto CudaCache::searchKernelImpl(
     const std::vector<InputTy>& inputs,
     const std::vector<InputTy>& outputs)
     -> decltype(c.searchKernel(id, options, inputs, outputs)) {
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+  auto gpuStr = gpuKey();
   auto it = std::find_if(
       c.entries_.begin(), c.entries_.end(), [&](const CachedEntry& c) {
         using tc::operator==;
@@ -134,7 +143,7 @@ auto OptionsCache::searchKernelImpl(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs)
     -> decltype(c.searchKernel(id, inputs, outputs)) {
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+  auto gpuStr = gpuKey();
   auto it = std::find_if(
       c.entries_.begin(), c.entries_.end(), [&](const CachedEntry& c) {
         using tc::operator==;
