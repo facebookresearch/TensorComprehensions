@@ -191,38 +191,11 @@ class TestTC(unittest.TestCase):
 ###########################################################################
 class TestAutotuner(unittest.TestCase):
 
-    # For such small sizes, autotuner will probably not help.
-    # NOTE: Use "--tuner_min_launch_total_threads=1" for running small sizes
-    # tc.small_sizes_autotuner_settings has this option set already
-    def test_autotuner_no_cache_small_size(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-        options = matmul.autotune(mat1, mat2, **tc.small_sizes_autotuner_settings)
-
     def test_autotuner_no_cache_medium_size(self):
         lang = MATMUL_LANG
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(72, 26).cuda(), torch.randn(26, 72).cuda()
         options = matmul.autotune(mat1, mat2, **tc.autotuner_settings)
-
-    def test_autotuner_no_cache(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        options = matmul.autotune(mat1, mat2, **tc.autotuner_settings)
-
-    def test_autotuner_no_cache_explicit_set(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        options = matmul.autotune(mat1, mat2, cache=False, **tc.autotuner_settings)
-
-    def test_autotuner_cache_to_default(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        matmul.autotune(mat1, mat2, cache=True, **tc.autotuner_settings)
 
     def test_autotuner_cachefile_first(self):
         cache_file = "{}/matmul_100_400_500".format(PATH_PREFIX)    # use argparse if input from command line
@@ -230,15 +203,6 @@ class TestAutotuner(unittest.TestCase):
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
         matmul.autotune(mat1, mat2, cache=cache_file, **tc.autotuner_settings)
-
-    def test_autotuner_cachefile_load(self):
-        lang = MATMUL_LANG
-        cache_file = "{}/matmul_100_400_500".format(PATH_PREFIX)    # use argparse if input from command line
-        assert os.path.isfile("{}.cuda".format(cache_file)), "looks like the cache_file doesn't exist"
-
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        out = matmul(mat1, mat2, cache=cache_file)
 
     def test_autotuner_cachefile_load_automatic(self):
         lang = MATMUL_LANG
@@ -252,27 +216,12 @@ class TestAutotuner(unittest.TestCase):
         # already compiled earlier
         out2 = matmul(mat1, mat2)
 
-    def test_autotuner_no_cache_and_run_kernel(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        options = matmul.autotune(mat1, mat2, **tc.autotuner_settings)
-        out = matmul(mat1, mat2, options=options)
-
     def test_autotuner_no_cache_and_run_kernel_automatic(self):
         lang = MATMUL_LANG
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
         matmul.autotune(mat1, mat2, **tc.autotuner_settings)
         out = matmul(mat1, mat2)
-
-    def test_autotuner_start_options_and_run_kernel(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        options = Options("mlp")
-        best_options = matmul.autotune(mat1, mat2, cache=True, options=options, **tc.autotuner_settings)
-        out = matmul(mat1, mat2, options=best_options)
 
     def test_autotuner_multiple_tc(self):
         lang = MATMUL_ABS_LANG
@@ -285,35 +234,6 @@ class TestAutotuner(unittest.TestCase):
         A = torch.randn(100, 400).cuda()
         absolute.autotune(A, cache=True, **tc.autotuner_settings)
         out = absolute(A)
-
-    ###########################################################################
-    # Pass tuple inputs for autotuning
-    ###########################################################################
-    def test_autotuner_tuple_size_no_cache(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        matmul.autotune((3, 4), (4, 5), **tc.small_sizes_autotuner_settings)
-        matmul.autotune((100, 400), (400, 500), **tc.autotuner_settings)
-
-    def test_autotuner_tuple_size_cache_to_default(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        matmul.autotune((3, 4), (4, 5), cache=True, **tc.small_sizes_autotuner_settings)
-        matmul.autotune((100, 400), (400, 500), cache=True, **tc.autotuner_settings)
-
-    def test_autotuner_tuple_size_cache_to_file_run_kernel(self):
-        lang = MATMUL_LANG
-        matmul = tc.define(lang, name="matmul")
-        cache1 = "{}/matmul_3_4_5".format(PATH_PREFIX)
-        cache2 = "{}/matmul_100_400_500".format(PATH_PREFIX)
-        matmul.autotune((3, 4), (4, 5), cache=cache1, **tc.small_sizes_autotuner_settings)
-        matmul.autotune((100, 400), (400, 500), cache=cache2, **tc.autotuner_settings)
-
-        mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-        out = matmul(mat1, mat2, cache=cache1)
-
-        mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        out = matmul(mat1, mat2, cache=cache2)
 
     ##########################################################################
     # Training layer autotuning
@@ -331,8 +251,9 @@ class TestAutotuner(unittest.TestCase):
         convolution = tc.define(lang, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
         I, W = torch.randn(N, C, H, W).cuda(), torch.randn(O, C, kH, kW).cuda()
         convolution.autotune(I, W, **tc.autotuner_settings)
-        # on the second call, autotuning will be seeded from previous best options
-        convolution.autotune(I, W, **tc.autotuner_settings, generations=5, pop_size=20)
+        # on the second call, autotuning will be seeded from previous best options,
+        # verify the seeding and new tuning settings being picked up
+        convolution.autotune(I, W, generations=3, pop_size=5)
 
     def test_conv_train_autotune_cache_no_options_seed(self):
         lang = CONV_TRAIN
