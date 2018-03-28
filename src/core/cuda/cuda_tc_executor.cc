@@ -174,9 +174,7 @@ void CudaTcExecutor::compileWithTcMapper() {
   // that.
   std::tie(cudaSource, grid, block) =
       mappedScop->codegen(kernelSpecializedName);
-  if (FLAGS_dump_cuda) {
-    std::cout << "generatedCuda: " << cudaSource << std::endl;
-  }
+  LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << cudaSource;
 }
 
 Duration CudaTcExecutor::run(
