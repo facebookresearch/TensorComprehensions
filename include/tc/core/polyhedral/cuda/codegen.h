@@ -31,10 +31,6 @@ struct CodegenStatementContext;
 
 namespace detail {
 
-void emitDirectSubscripts(
-    isl::pw_multi_aff subscripts,
-    const CodegenStatementContext& context);
-
 std::string toString(isl::pw_aff subscript);
 
 isl::pw_aff makeAffFromMappedExpr(

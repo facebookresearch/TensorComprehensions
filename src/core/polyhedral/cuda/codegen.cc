@@ -371,27 +371,21 @@ void emitAccess(AFF access, const CodegenStatementContext& context) {
 } // namespace
 
 void emitCopyStmt(const CodegenStatementContext& context) {
-  using detail::emitDirectSubscripts;
-
   auto stmtId = context.statementId();
 
   auto iteratorMap = context.iteratorMap();
   auto promoted = iteratorMap.range_factor_range();
   auto original = iteratorMap.range_factor_domain().range_factor_range();
   auto isRead = stmtId.get_name() == kReadIdName;
-  auto originalName = original.get_tuple_id(isl::dim_type::out).get_name();
-  auto promotedName = promoted.get_tuple_id(isl::dim_type::out).get_name();
 
   if (isRead) {
-    context.ss << promotedName;
-    emitDirectSubscripts(promoted, context);
-    context.ss << " = " << originalName;
-    emitDirectSubscripts(original, context);
+    emitAccess(isl::multi_pw_aff(promoted), context);
+    context.ss << " = ";
+    emitAccess(isl::multi_pw_aff(original), context);
   } else {
-    context.ss << originalName;
-    emitDirectSubscripts(original, context);
-    context.ss << " = " << promotedName;
-    emitDirectSubscripts(promoted, context);
+    emitAccess(isl::multi_pw_aff(original), context);
+    context.ss << " = ";
+    emitAccess(isl::multi_pw_aff(promoted), context);
   }
   context.ss << ";" << std::endl;
 }
@@ -625,17 +619,6 @@ void emitMappedTensorAccess(
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
   emitAccess(astToPromoted, context);
-}
-
-void emitDirectSubscripts(
-    isl::pw_multi_aff subscripts,
-    const CodegenStatementContext& context) {
-  auto mpa = isl::multi_pw_aff(subscripts); // this conversion is safe
-  for (auto pa : isl::MPA(mpa)) {
-    context.ss << "[";
-    context.ss << toString(pa.pa);
-    context.ss << "]";
-  }
 }
 
 } // namespace detail
