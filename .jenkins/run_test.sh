@@ -12,8 +12,8 @@ source /etc/lsb-release
 
 if [[ "$DISTRIB_RELEASE" == 14.04 ]]; then
   echo "Running TC backend tests"
-  FILTER_OUT=example_MLP_model ./test.sh
-  ./build/examples/example_MLP_model --gtest_filter=-*2LUT*
+  FILTER_OUT=MLP_model ./test.sh
+  ./build/benchmarks/MLP_model --gtest_filter=-*2LUT*
   if [[ $(conda --version | wc -c) -ne 0 ]]; then
     source activate tc-env
     echo "Running TC PyTorch tests"
@@ -28,7 +28,7 @@ if [[ "$DISTRIB_RELEASE" == 16.04 ]]; then
     ./test_python/run_test.sh
   else
     echo "Running TC backend tests"
-    FILTER_OUT=example_MLP_model ./test.sh
-    ./build/examples/example_MLP_model --gtest_filter=-*2LUT*
+    FILTER_OUT=MLP_model ./test.sh
+    ./build/benchmarks/MLP_model --gtest_filter=-*2LUT*
   fi
 fi
