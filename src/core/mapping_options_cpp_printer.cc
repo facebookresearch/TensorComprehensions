@@ -43,31 +43,22 @@ MappingOptionsCppPrinter& operator<<(
     MappingOptionsCppPrinter& prn,
     const MappingOptions& options) {
   prn.printString("tc::MappingOptions::makeNaiveMappingOptions()")
-      .printSchedulerOptions(options.outerScheduleOptions, "outerSchedule");
-  if (options.proto.has_intra_tile_schedule_options()) {
+      .printSchedulerOptions(
+          options.view.outerScheduleOptions, "outerSchedule");
+  if (options.view.proto.has_intra_tile_schedule_options()) {
     prn.printSchedulerOptions(
-        options.intraTileScheduleOptions, "intraTileSchedule");
+        options.view.intraTileScheduleOptions, "intraTileSchedule");
   }
-  if (options.proto.has_tiling()) {
-    prn.printListOption("tile", options.tiling.extractVector());
+  if (options.view.proto.has_tiling()) {
+    prn.printListOption("tile", options.view.tiling.extractVector());
   }
-  prn.printListOption("mapToThreads", options.block.extractVector());
-  prn.printListOption("mapToBlocks", options.grid.extractVector());
-  if (options.proto.has_unroll()) {
-    prn.printValueOption("unroll", options.proto.unroll());
+  if (options.view.proto.has_unroll()) {
+    prn.printValueOption("unroll", options.view.proto.unroll());
   }
   prn.printBooleanOption(
-      "tileImperfectlyNested", options.proto.tile_imperfectly_nested());
-  prn.printBooleanOption("useSharedMemory", options.proto.use_shared_memory());
+      "tileImperfectlyNested", options.view.proto.tile_imperfectly_nested());
   prn.printBooleanOption(
-      "usePrivateMemory", options.proto.use_private_memory());
-  prn.printBooleanOption(
-      "unrollCopyShared", options.proto.unroll_copy_shared());
-  if (options.proto.has_max_shared_memory()) {
-    prn.printValueOption("maxSharedMemory", options.proto.max_shared_memory());
-  }
-  prn.printBooleanOption(
-      "matchLibraryCalls", options.proto.match_library_calls());
+      "matchLibraryCalls", options.view.proto.match_library_calls());
   prn.endStmt();
   return prn;
 }

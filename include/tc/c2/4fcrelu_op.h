@@ -37,8 +37,9 @@ class Tc4FCReluOp : public TcOp<T, Context, Engine> {
   ~Tc4FCReluOp() override {}
 
  protected:
-  void setupNaiveMappingOptions() override {
-    this->mappingOptions_ = tc::MappingOptions::makeMlpMappingOptions();
+  void setupNaiveCudaMappingOptions() override {
+    this->cudaMappingOptions_ =
+        tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   }
 };
 } // namespace caffe2

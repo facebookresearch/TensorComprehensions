@@ -25,9 +25,9 @@
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_autotuner_aten.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 
 #include "test_harness_aten_cuda.h"
 
@@ -58,7 +58,7 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   void Check(
       const std::string& tc,
       const std::string& name,
-      const tc::MappingOptions& mappingOptions,
+      const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor> inputs,
       std::vector<at::Tensor>& outputs) {
     tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
@@ -67,13 +67,13 @@ struct ATenCompilationUnitTest : public ::testing::Test {
     atCompl.run(name, inputs, outputs, handle);
   }
 
-  tc::MappingOptions autotune(
+  tc::CudaMappingOptions autotune(
       const std::string& cacheFilename,
       const std::string& tc,
       const std::string& name,
       const std::vector<at::Tensor> inputs,
-      tc::MappingOptions baseMapping,
-      std::vector<tc::MappingOptions> startingPoints) {
+      tc::CudaMappingOptions baseMapping,
+      std::vector<tc::CudaMappingOptions> startingPoints) {
     tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
     tc::autotune::TuningParameterFixer fix;
     if (FLAGS_no_memory_promotion) {
@@ -104,7 +104,7 @@ TEST_F(ATenCompilationUnitTest, LayerNorm) {
        O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
     }
   )TC";
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "layernorm";
 
   std::string cacheFilename = "";
@@ -123,7 +123,7 @@ TEST_F(ATenCompilationUnitTest, MatmulA) {
       output(i, j) +=! A(i, kk) * B(kk, j)
     }
   )TC";
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -142,7 +142,7 @@ TEST_F(ATenCompilationUnitTest, MatmulB) {
       output(i, j) +=! A(i, kk) * B(kk, j)
     }
   )TC";
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -161,7 +161,7 @@ TEST_F(ATenCompilationUnitTest, MatmulC) {
       output(i, j) +=! A(i, kk) * B(kk, j)
     }
   )TC";
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -180,7 +180,7 @@ TEST_F(ATenCompilationUnitTest, TensorDot) {
       O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
     }
   )TC";
-  auto options = tc::MappingOptions::makeConvolutionMappingOptions();
+  auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
   auto name = "tensordot";
   Check(TC, name, options, inputs, outputs);
   benchmarkKernelOptions(TC, name, inputs, options);

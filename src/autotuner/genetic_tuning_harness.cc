@@ -28,11 +28,11 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/execution_engine.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options_cpp_printer.h"
-#include "tc/core/polyhedral/mapping_types.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/utils/math.h"
 
@@ -49,14 +49,14 @@ GeneticTunerHarness::GeneticTunerHarness(
     std::string kernelName,
     const std::unordered_map<size_t, std::vector<const DLTensor*>>& inputs,
     std::unordered_map<size_t, std::vector<DLTensor*>>& outputs,
-    MappingOptions baseMapping,
-    std::vector<MappingOptions> startingPoints,
+    CudaMappingOptions baseMapping,
+    std::vector<CudaMappingOptions> startingPoints,
     const TuningParameterFixer& fixedParams)
     : kMaxPopulationSize(n),
       kCrossOverRate(crossoverRate),
       kMutationRate(mutationRate),
       kNumberElites(numberElites),
-      bestMappingOptions_(baseMapping),
+      bestCudaMappingOptions_(baseMapping),
       kTc_(std::move(tc)),
       kKernelName_(std::move(kernelName)),
       currentCompilationJob_(0),
@@ -75,7 +75,7 @@ GeneticTunerHarness::GeneticTunerHarness(
         kStartingPoints_.begin(),
         kStartingPoints_.end(),
         std::back_inserter(configs),
-        [this, &fixedParams](const MappingOptions& options) {
+        [this, &fixedParams](const CudaMappingOptions& options) {
           auto config = makeTuningConfiguration(options);
           config.fixParameters(fixedParams);
           return config;
@@ -176,17 +176,17 @@ void GeneticTunerHarness::setupTuningParameters() {
       RangeParameter({1, 2, 4, 8, 16, 32, 64, 128, 256}, "unroll");
 }
 
-MappingOptions GeneticTunerHarness::makeOptions(
+CudaMappingOptions GeneticTunerHarness::makeOptions(
     const CandidateConfiguration& c) {
   auto options = kBaseMapping_;
-  c.configuration.applyToMappingOptions(options);
+  c.configuration.applyToCudaMappingOptions(options);
   return options;
 }
 
 TuningConfiguration GeneticTunerHarness::makeTuningConfiguration(
-    const MappingOptions& options) {
+    const CudaMappingOptions& options) {
   TuningConfiguration conf = configuration;
-  conf.fromMappingOptions(options);
+  conf.fromCudaMappingOptions(options);
   return conf;
 }
 
@@ -249,7 +249,8 @@ bool GeneticTunerHarness::warmupOrPrune(
             std::stringstream ssInfo;
             ssInfo << "Skip configuration with too few threads: " << block
                    << "\n"
-                   << MappingOptionsAsCpp(MappingOptions(exec->options));
+                   << CudaMappingOptionsAsCpp(
+                          CudaMappingOptions(exec->options));
             LOG_LINE_BY_LINE(INFO, ssInfo);
           }
           return true;
@@ -312,7 +313,7 @@ void GeneticTunerHarness::doCompile(ExecutorType& engine) {
     try {
       if (FLAGS_debug_tuner) {
         std::stringstream ssInfo;
-        MappingOptionsCppPrinter infoPrinter(ssInfo);
+        CudaMappingOptionsCppPrinter infoPrinter(ssInfo);
         infoPrinter << options;
         LOG(INFO) << "[COMPILE] Start compilation @:" << current;
         LOG_LINE_BY_LINE(INFO, ssInfo);
@@ -328,7 +329,7 @@ void GeneticTunerHarness::doCompile(ExecutorType& engine) {
     } catch (const std::exception& e) {
       LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
       std::stringstream ssWarning;
-      MappingOptionsCppPrinter warningPrinter(ssWarning);
+      CudaMappingOptionsCppPrinter warningPrinter(ssWarning);
       warningPrinter << options;
       LOG_LINE_BY_LINE(WARNING, ssWarning);
       pConf->invalid = true;
@@ -387,7 +388,7 @@ void GeneticTunerHarness::doGpuWork(
       std::stringstream ssInfo;
       ssInfo << "Launch GPU kernel on gpu: " << std::to_string(gpu)
              << " handle: " << std::to_string(handle) << " options:\n"
-             << MappingOptionsAsCpp(options);
+             << CudaMappingOptionsAsCpp(options);
       LOG_LINE_BY_LINE(INFO, ssInfo);
     }
 
@@ -413,7 +414,7 @@ void GeneticTunerHarness::doGpuWork(
     } catch (std::exception& e) {
       LOG(WARNING) << "Runtime error gpu " << gpu << ": " << e.what();
       std::stringstream ssWarning;
-      MappingOptionsCppPrinter warningPrinter(ssWarning);
+      CudaMappingOptionsCppPrinter warningPrinter(ssWarning);
       warningPrinter << options;
       LOG(WARNING) << "Aborted execution on gpu " << gpu;
       LOG_LINE_BY_LINE(WARNING, ssWarning);
@@ -432,7 +433,7 @@ void GeneticTunerHarness::doGpuWork(
       } catch (const std::exception& e) {
         LOG(FATAL) << "[CUDA][FATAL] cuda error on gpu " << gpu << ": "
                    << e.what() << "\n"
-                   << MappingOptionsAsCpp(options);
+                   << CudaMappingOptionsAsCpp(options);
       }
       pConf->invalid = true;
       continue;
@@ -452,7 +453,7 @@ void GeneticTunerHarness::doGpuWork(
       std::lock_guard<std::mutex> lock(bestTimeMtx_);
       if (prof_us < bestTime_) {
         bestTime_ = prof_us;
-        bestMappingOptions_ = options;
+        bestCudaMappingOptions_ = options;
       }
     }
 
@@ -467,7 +468,7 @@ void GeneticTunerHarness::doGpuWork(
       }
       LOG(FATAL) << "The measured runtime is 0, marking as invalid: "
                  << ss.str() << "\n"
-                 << MappingOptionsAsCpp(options);
+                 << CudaMappingOptionsAsCpp(options);
     }
   } // end while
 }
@@ -533,7 +534,7 @@ void GeneticTunerHarness::runOneGeneration(size_t generation) {
   if (FLAGS_debug_tuner) {
     LOG(INFO) << "[TUNER][GENERATION LOG] best option so far:";
     std::stringstream ssInfo;
-    MappingOptionsCppPrinter infoPrinter(ssInfo);
+    CudaMappingOptionsCppPrinter infoPrinter(ssInfo);
     infoPrinter << bestMappingOption();
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }

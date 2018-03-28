@@ -69,7 +69,7 @@ class CudaCacheTest : public ::testing::Test {
 };
 
 TEST_F(CudaCacheTest, DifferentIDs) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -129,7 +129,7 @@ TEST_F(CudaCacheTest, DifferentIDs) {
 }
 
 TEST_F(CudaCacheTest, DifferentOptions) {
-  auto options0 = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -144,7 +144,7 @@ TEST_F(CudaCacheTest, DifferentOptions) {
       {1, 1, 1},
       {1, 1, 1});
 
-  auto options1 = tc::MappingOptions::makeMlpMappingOptions();
+  auto options1 = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   tc::CudaCache::getCache()->cacheKernel(
       "kernel",
       options1,
@@ -170,7 +170,7 @@ TEST_F(CudaCacheTest, DifferentOptions) {
   ASSERT_EQ(ret->grid, tc::Grid({2, 1, 1}));
   ASSERT_EQ(ret->block, tc::Block({1, 2, 1}));
 
-  auto options2 = tc::MappingOptions::makeConvolutionMappingOptions();
+  auto options2 = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
   ret = tc::CudaCache::getCache()->retrieveKernel(
       "kernel", options2, inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
@@ -182,7 +182,7 @@ TEST_F(CudaCacheTest, DifferentOptions) {
 }
 
 TEST_F(CudaCacheTest, DifferentInputs) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -238,7 +238,7 @@ TEST_F(CudaCacheTest, DifferentInputs) {
 }
 
 TEST_F(CudaCacheTest, DoubleInsertion) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -299,7 +299,7 @@ TEST_F(CudaCacheTest, DoubleInsertion) {
 }
 
 TEST_F(CudaCacheTest, Serialization) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -399,7 +399,7 @@ class OptionsCacheTest : public ::testing::Test {
 };
 
 TEST_F(OptionsCacheTest, DifferentIDs) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -437,8 +437,8 @@ TEST_F(OptionsCacheTest, DifferentIDs) {
 }
 
 TEST_F(OptionsCacheTest, DifferentOptions) {
-  auto options0 = tc::MappingOptions::makeNaiveMappingOptions();
-  auto options1 = tc::MappingOptions::makeMlpMappingOptions();
+  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options1 = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -466,7 +466,7 @@ TEST_F(OptionsCacheTest, DifferentOptions) {
 }
 
 TEST_F(OptionsCacheTest, DifferentInputs) {
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -478,7 +478,8 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
   auto s = inputs[0].shape[0];
   inputs[0].shape[0] = 42;
 
-  auto options_ = tc::MappingOptions::makeGroupConvolutionMappingOptions();
+  auto options_ =
+      tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel", options_, inputPtrs, outputPtrs, std::chrono::microseconds(3));
 
@@ -515,11 +516,11 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
 
 TEST_F(OptionsCacheTest, RetrieveBest) {
   auto options0 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
 
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
@@ -549,15 +550,15 @@ TEST_F(OptionsCacheTest, RetrieveBest) {
 
 TEST_F(OptionsCacheTest, RetrieveTopK) {
   auto options0 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
   auto options3 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({4});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
   auto options4 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({5});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
 
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
@@ -602,15 +603,15 @@ TEST_F(OptionsCacheTest, RetrieveTopK) {
 
 TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
   auto options0 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
   auto options3 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({4});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
   auto options4 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({5});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
 
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
@@ -674,9 +675,9 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
 
 TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
   auto options0 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
 
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
@@ -708,8 +709,8 @@ TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
 }
 
 TEST_F(OptionsCacheTest, Serialization) {
-  auto options0 = tc::MappingOptions::makeNaiveMappingOptions().tile({0});
-  auto options1 = tc::MappingOptions::makeNaiveMappingOptions().tile({1});
+  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(0);
+  auto options1 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(1);
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
@@ -775,15 +776,15 @@ TEST(
   tc::CudaCache::getCache()->clear();
 
   auto options0 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
   auto options3 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({4});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
   auto options4 =
-      tc::MappingOptions::makeNaiveMappingOptions().mapToBlocks({5});
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
 
   std::vector<DLTensor> inputs;
   inputs.resize(3);
@@ -985,7 +986,7 @@ TEST(
  *        "fcrelu",
  *        inputs_,
  *        outputs_,
- *        tc::MappingOptions::makeMlpMappingOptions(), true);
+ *        tc::CudaMappingOptions::makeMlpCudaMappingOptions(), true);
  *    at::Tensor diff =
  *        outputs_[0].sub(inputs_[0].mm(inputs_[1]).add(inputs_[2]).clamp(0));
  *    checkRtol(diff, inputs_, M);
@@ -1010,8 +1011,8 @@ class MatMulTester {
                 at::CUDA(at::kFloat).rand({M, B})},
         M{M} {}
   void Run(
-      tc::MappingOptions options =
-          tc::MappingOptions::makeMlpMappingOptions()) {
+      tc::CudaMappingOptions options =
+          tc::CudaMappingOptions::makeMlpCudaMappingOptions()) {
     tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc_);
     std::vector<at::Tensor> outputs_;
@@ -1040,8 +1041,8 @@ class ConvolutionTester {
         KH{KH},
         KW{KW} {}
   void Run(
-      tc::MappingOptions options =
-          tc::MappingOptions::makeConvolutionMappingOptions()) {
+      tc::CudaMappingOptions options =
+          tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()) {
     tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
     atCompl.define(tc_);
     std::vector<at::Tensor> outputs_;
@@ -1239,16 +1240,16 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
   // test0.Run();
 
   MatMulTester test1{8, 32, 16};
-  auto options = tc::MappingOptions::makeMlpMappingOptions()
-                     .tile({1, 1, 1})
+  auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+                     .tile(1, 1, 1)
                      .mapToThreads(2, 2, 2)
                      .mapToBlocks(1, 1, 1)
                      .unroll(1);
   test1.Run(options);
 
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
-  options = tc::MappingOptions::makeConvolutionMappingOptions()
-                .tile({2, 2, 2})
+  options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
+                .tile(2, 2, 2)
                 .mapToThreads(1, 1, 1)
                 .mapToBlocks(1, 1)
                 .unroll(1);
@@ -1276,8 +1277,8 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
 
   auto fut1 = std::async(std::launch::async, []() {
     MatMulTester test1{8, 32, 16};
-    auto options = tc::MappingOptions::makeMlpMappingOptions()
-                       .tile({1, 1, 1})
+    auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+                       .tile(1, 1, 1)
                        .mapToThreads(2, 2, 2)
                        .mapToBlocks(1, 1, 1)
                        .unroll(1);
@@ -1286,8 +1287,8 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
 
   auto fut2 = std::async(std::launch::async, []() {
     ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
-    auto options = tc::MappingOptions::makeConvolutionMappingOptions()
-                       .tile({2, 2, 2})
+    auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
+                       .tile(2, 2, 2)
                        .mapToThreads(1, 1, 1)
                        .mapToBlocks(1, 1)
                        .unroll(1);
@@ -1367,7 +1368,8 @@ TEST(CompilationCache, ManualInjection) {
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({100}),
                                  at::CUDA(at::kFloat).rand({100})};
 
-  tc::MappingOptions options = tc::MappingOptions::makeNaiveMappingOptions();
+  tc::CudaMappingOptions options =
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
 
   auto tensorsPair = tc::toConstDlpackTensors(inputs);
   tc::ScopeGuard g([&]() { tc::deleteDlmTensors(tensorsPair.second); });

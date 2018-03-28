@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/memory.h"
 
 #include <llvm/ADT/Optional.h>
@@ -148,6 +148,10 @@ class CudaDimParameters : public MultiRangeParams {
 class TuningParameterFixer;
 
 class TuningConfiguration {
+ private:
+  void fromMappingOptions(const MappingOptionsView& options);
+  void applyToMappingOptions(MappingOptionsView& options) const;
+
  public:
   void applyToParameters(const std::function<void(ParameterView&)>& f);
   std::vector<ParameterView> collectParameters();
@@ -157,8 +161,8 @@ class TuningConfiguration {
   TuningConfiguration(const TuningConfiguration&) = default;
   TuningConfiguration& operator=(const TuningConfiguration&) = default;
 
-  void fromMappingOptions(const MappingOptions& options);
-  void applyToMappingOptions(MappingOptions& options) const;
+  void fromCudaMappingOptions(const CudaMappingOptions& options);
+  void applyToCudaMappingOptions(CudaMappingOptions& options) const;
 
   void addValidator(std::function<bool(const TuningConfiguration&)> v);
   bool isValid() const;

@@ -17,11 +17,11 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/codegen.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/exceptions.h"
-#include "tc/core/polyhedral/mapped_scop.h"
 #include "tc/core/polyhedral/memory_promotion.h"
-#include "tc/core/polyhedral/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/scop.h"
 
 using namespace std;
@@ -53,7 +53,7 @@ class TestMapper : public ::testing::Test {
  protected:
   std::unique_ptr<MappedScop> makeMappedScop(
       std::string tc,
-      const MappingOptions& mappingOptions,
+      const CudaMappingOptions& mappingOptions,
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     auto scop = Scop::makeScop(ctx, tc);
@@ -75,7 +75,7 @@ class MapperMemoryPromotion2DHelper : public TestMapper {
       std::unordered_map<std::string, size_t> problemSizes,
       std::vector<size_t> tileSizes) {
     auto mappingOptions =
-        MappingOptions::makeNaiveMappingOptions()
+        CudaMappingOptions::makeNaiveCudaMappingOptions()
             .tile(tileSizes) // passing more tiling values triggers a check...
             .useSharedMemory(false) // do not auto-promote
             .usePrivateMemory(true);
@@ -95,7 +95,7 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
 }
 )TC";
 
-    auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
+    auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
                               .tile(tileSizes)
                               .useSharedMemory(false) // do not autopromote
                               .usePrivateMemory(true);
@@ -459,7 +459,7 @@ class MatMulBias : public TestMapper {
  public:
   std::string emitCode(
       const std::unordered_map<std::string, size_t>& parameters,
-      const MappingOptions& mappingOptions) {
+      const CudaMappingOptions& mappingOptions) {
     std::string tc = R"TC(
 def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
   O(i,j) +=! A(i,k) * B(k,j)
@@ -473,8 +473,8 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
-  auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
-                            .tile({32, 32, 32})
+  auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
+                            .tile(32, 32, 32)
                             .useSharedMemory(false)
                             .usePrivateMemory(true);
 
@@ -504,8 +504,8 @@ TEST_F(MatMulBias, RegisterPromotion) {
 }
 
 TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
-  auto mappingOptions = MappingOptions::makeNaiveMappingOptions()
-                            .tile({32, 32, 32})
+  auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
+                            .tile(32, 32, 32)
                             .maxSharedMemory(32768)
                             .useSharedMemory(true)
                             .usePrivateMemory(true);

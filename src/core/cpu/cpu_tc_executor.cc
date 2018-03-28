@@ -15,9 +15,9 @@
  */
 #include "tc/core/cpu/cpu_tc_executor.h"
 
+#include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/halide_utils.h"
-#include "tc/core/mapping_options_cpp_printer.h"
-#include "tc/core/polyhedral/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/tc2halide.h"
 #include "tc/core/utils/dlpack.h"
 
@@ -31,7 +31,7 @@ namespace tc {
 
 using namespace dlutils;
 
-void CpuTcExecutor::compile(const tc::MappingOptions& options) {}
+void CpuTcExecutor::compile(const tc::CpuMappingOptions& options) {}
 
 void CpuTcExecutor::compileWithTcMapper() {}
 

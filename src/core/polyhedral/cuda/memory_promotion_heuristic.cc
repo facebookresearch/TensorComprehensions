@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/polyhedral/memory_promotion_heuristic.h"
+#include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 
 #include <glog/logging.h>
 
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/exceptions.h"
-#include "tc/core/polyhedral/mapped_scop.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -87,7 +87,8 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     auto filter = node->elemAs<ScheduleTreeElemFilter>()->filter_;
     auto filterSets = isl::UnionAsVector<isl::union_set>(filter);
     int t = 0;
-    for (int i = band->nMember() - 1; i >= 0 && t < mscop.numThreads.size();
+    for (int i = band->nMember() - 1;
+         i >= 0 && t < mscop.numThreads.view.size();
          --i) {
       auto skip = std::all_of(
           filterSets.begin(), filterSets.end(), [&mscop, i](isl::set s) {
@@ -106,10 +107,15 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       }
 
       mapToParameterWithExtent(
-          root, bandNode, i, mapping::ThreadId::makeId(t), mscop.numThreads[t]);
+          root,
+          bandNode,
+          i,
+          mapping::ThreadId::makeId(t),
+          mscop.numThreads.view[t]);
       ++t;
     }
-    mscop.mapRemaining<mapping::ThreadId>(bandNode, t, mscop.numThreads.size());
+    mscop.mapRemaining<mapping::ThreadId>(
+        bandNode, t, mscop.numThreads.view.size());
 
     // Unroll if requested.
     if (unroll) {

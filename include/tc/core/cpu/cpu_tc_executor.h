@@ -20,8 +20,8 @@
 
 #include <dlpack/dlpack.h>
 
+#include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/halide_utils.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/utils/dlpack.h"
@@ -35,6 +35,8 @@ struct CpuRTCFunction {
 
 class CpuTcExecutor : public ::tc::TcExecutor {
  public:
+  using MappingOptionsType = CpuMappingOptions;
+
   CpuTcExecutor(
       std::string id,
       const std::vector<const DLTensor*>& inputsInfo,
@@ -58,9 +60,9 @@ class CpuTcExecutor : public ::tc::TcExecutor {
   // strides at runtime.
   // @{
   void compile(const std::string& options) override {
-    compile(MappingOptions(options));
+    compile(MappingOptionsType(options));
   }
-  void compile(const tc::MappingOptions& options);
+  void compile(const tc::CpuMappingOptions& options);
   // @}
 
   // Run can be called multiple times given a compilation, inputs are allowed

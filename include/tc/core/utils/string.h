@@ -15,14 +15,34 @@
  */
 #pragma once
 
-#include "tc/core/mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
+#include <iostream>
+#include <string>
+#include <vector>
 
 namespace tc {
-namespace polyhedral {
-std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
-    const tc::Grid& grid,
-    const tc::Block& block);
-} // namespace polyhedral
+
+// Sets the std::boolalpha flags of the given std::ostream and resets it to
+// the previous value on scope exit.
+class OstreamBoolalphaScope {
+ public:
+  OstreamBoolalphaScope(std::ostream& os)
+      : os_(os), hasBoolalpha_(os.flags() & std::ios_base::boolalpha) {
+    os << std::boolalpha;
+  }
+  ~OstreamBoolalphaScope() {
+    if (!hasBoolalpha_) {
+      os_ << std::noboolalpha;
+    }
+  }
+
+ private:
+  std::ostream& os_;
+  bool hasBoolalpha_;
+};
+
+template <typename T>
+inline std::vector<T> parseCommaSeparatedIntegers(const std::string& sizes);
+
 } // namespace tc
+
+#include "tc/core/utils/string-inl.h"

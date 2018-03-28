@@ -23,12 +23,13 @@ target_link_libraries(tc_test INTERFACE ${GOOGLE_LIBS})
 ################################################################################
 # Basic tests of external functionalities we rely upon
 ################################################################################
-if (WITH_CUDA)
-  add_executable(test_basic test_basic.cc)
-  add_test(test_basic test_basic)
-  target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
+add_executable(test_basic test_basic.cc)
+add_test(test_basic test_basic)
+target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
 
+if (WITH_CUDA)
   add_executable(test_basic_gpu test_basic_gpu.cc)
+  set_target_properties(test_basic_gpu PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_CUDA_SDK}" )
   add_test(test_basic_gpu test_basic_gpu)
   target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBS} )
 endif()
@@ -55,7 +56,7 @@ endforeach()
 if (WITH_CUDA)
   add_executable(test_autotuner_utility test_autotuner_utility.cc)
   add_test(test_autotuner_utility test_autotuner_utility)
-  target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc_autotuner tc_core)
+  target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc_cuda tc_autotuner)
 endif()
 
 
@@ -80,7 +81,7 @@ if (WITH_CUDA)
         ${i}
 
         ${GOOGLE_LIBS}
-        ${ATEN_LIBRARIES} 
+        ${ATEN_LIBRARIES}
         tc_autotuner)
   endforeach()
 endif()
@@ -91,17 +92,25 @@ endif()
 set(CORE_TEST_FILES
   test_mapper_memory_promotion
   test_mapper
-  test_mapper_llvm
 )
 
 foreach(i ${CORE_TEST_FILES})
   add_executable(${i} ${i}.cc)
   add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core tc_core_cpu tc_lang)
-#  target_compile_options(${i}  PUBLIC -fsanitize=address)
-#  set(CMAKE_EXE_LINKER_FLAGS  -fsanitize=address)
+  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core_cuda_no_sdk)
 endforeach()
-target_link_libraries(test_mapper_llvm ${ATEN_LIBRARIES} -lLLVM)
+
+
+add_executable(test_mapper_llvm test_mapper_llvm.cc)
+add_test(test_mapper_llvm test_mapper_llvm)
+target_link_libraries(
+  test_mapper_llvm
+
+  ${GOOGLE_LIBS}
+  ${ATEN_LIBRARIES}
+  -lLLVM
+
+  tc_core_cpu tc_lang)
 
 ################################################################################
 # TensorComprehensions tests

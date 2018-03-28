@@ -32,18 +32,18 @@ class GeneticAutotunerATen {
  public:
   GeneticAutotunerATen(const std::string tc);
 
-  std::vector<MappingOptions> load(
+  std::vector<CudaMappingOptions> load(
       const std::string& cacheFileName,
       const std::string& tcName,
       const std::vector<at::Tensor> inputs,
       const size_t numCandidates);
 
-  llvm::Optional<MappingOptions> tune(
+  llvm::Optional<CudaMappingOptions> tune(
       const std::string& cacheFileName,
       const std::string& tcName,
       const std::vector<at::Tensor>& inputs,
-      MappingOptions baseMapping,
-      std::vector<MappingOptions> startingPoints,
+      CudaMappingOptions baseMapping,
+      std::vector<CudaMappingOptions> startingPoints,
       const TuningParameterFixer& fixedParams = {});
 
  private:

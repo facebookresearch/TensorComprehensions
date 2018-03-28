@@ -24,12 +24,12 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/constants.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/libraries.h"
-#include "tc/core/mapping_options.h"
-#include "tc/core/polyhedral/codegen_cuda.h"
+#include "tc/core/polyhedral/cuda/codegen.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/functional.h"
-#include "tc/core/polyhedral/mapped_scop.h"
-#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -68,15 +68,15 @@ struct PolyhedralMapperTest : public ::testing::Test {
     return MappedScop::makeOneBlockOneThread(Prepare(tc));
   }
 
-  static MappingOptions DefaultOptions() {
-    return MappingOptions::makeNaiveMappingOptions();
+  static CudaMappingOptions DefaultOptions() {
+    return CudaMappingOptions::makeNaiveCudaMappingOptions();
   }
 
   std::unique_ptr<MappedScop> TileAndMapThreads(
       std::unique_ptr<Scop>&& scop,
       const vector<size_t>& tileSizes,
       const array<size_t, 2>& blockSizes = {32ul, 8ul}) {
-    // Keep non-const schedue tree pointer for testing purposes.
+    // Keep non-const schedule tree pointer for testing purposes.
     auto root = scop->scheduleRoot();
     bandTile(root->child({0}), tileSizes, TileOptions::ShiftPointLoops);
 
@@ -149,7 +149,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
 
   std::string codegenMapped(
       std::string tc,
-      const MappingOptions& mappingOptions) {
+      const CudaMappingOptions& mappingOptions) {
     auto scop = Prepare(tc);
     auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
         std::move(scop), mappingOptions);
@@ -194,7 +194,8 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   ASSERT_NE(std::string::npos, std::get<0>(res).find(expected))
       << std::get<0>(res);
-  ASSERT_EQ(32, std::get<1>(res)[0]) << "Improper dim in: " << std::get<1>(res);
+  ASSERT_EQ(32, std::get<1>(res).view[0])
+      << "Improper dim in: " << std::get<1>(res).view;
 }
 
 TEST_F(PolyhedralMapperTest, MultiStmt) {
@@ -436,7 +437,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
  * if the second innermost loop has not been unrolled.
  */
 TEST_F(PolyhedralMapperTest, Unroll1D) {
-  auto mappingOptions = DefaultOptions().tile({64, 64}).unroll(15);
+  auto mappingOptions = DefaultOptions().tile(64, 64).unroll(15);
   auto scop = PrepareAndJoinBands(kTcAdd);
   scop->fixParameters<int>({{"N", 1024}, {"M", 1024}});
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
@@ -455,7 +456,7 @@ TEST_F(PolyhedralMapperTest, Unroll1D) {
  * the innermost loop iterator ("c3") is replaced by t0 + 32.
  */
 TEST_F(PolyhedralMapperTest, Unroll2D) {
-  auto mappingOptions = DefaultOptions().tile({64, 64}).unroll(16);
+  auto mappingOptions = DefaultOptions().tile(64, 64).unroll(16);
   auto scop = PrepareAndJoinBands(kTcAdd);
   scop->fixParameters<int>({{"N", 1024}, {"M", 1024}});
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
@@ -466,7 +467,7 @@ TEST_F(PolyhedralMapperTest, Unroll2D) {
 }
 
 /*
- * Map 1D code to 2D grid (set up by makeNaiveMappingOptions()) and
+ * Map 1D code to 2D grid (set up by makeNaiveCudaMappingOptions()) and
  * check that the code is pinned to one particular value of
  * block identifier b1 and thread identifier t1.
  */
@@ -481,8 +482,8 @@ def fun(float(N) I) -> (O) {
       std::move(scop), DefaultOptions());
   auto codeAndLaunchBounds = mscop->codegen(specializedName);
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  EXPECT_EQ(1, BY.mappingSize(std::get<1>(codeAndLaunchBounds)));
-  EXPECT_EQ(1, TY.mappingSize(std::get<1>(codeAndLaunchBounds)));
+  EXPECT_EQ(1, BY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
+  EXPECT_EQ(1, TY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
 }
 
 /*
@@ -565,29 +566,31 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiling = Tiling({32, 32});
 
   auto minFusionSchedulerOptions = SchedulerOptions();
-  minFusionSchedulerOptions.proto.set_fusion_strategy(FusionStrategy::Min);
+  minFusionSchedulerOptions.view.proto.set_fusion_strategy(FusionStrategy::Min);
 
   auto maxFusionSchedulerOptions = SchedulerOptions();
-  maxFusionSchedulerOptions.proto.set_fusion_strategy(FusionStrategy::Max);
+  maxFusionSchedulerOptions.view.proto.set_fusion_strategy(FusionStrategy::Max);
 
   // Schedule with maximal fusion, then tile and reschedule point loops for
   // minimal fusion.
-  auto scop = Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions);
-  auto outerBand = scop->tileOuterBand(tiling);
-  scop->reschedule(outerBand->child({0}), minFusionSchedulerOptions);
+  auto scop =
+      Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions.view);
+  auto outerBand = scop->tileOuterBand(tiling.view);
+  scop->reschedule(outerBand->child({0}), minFusionSchedulerOptions.view);
   auto maxMinOuterBand = ScheduleTree::makeScheduleTree(*outerBand);
 
   // Schedule with maximal fusion, then tile and reschedule point loops for
   // minimal fusion again.  Schedule is expected to be identical to
   // the one without rescheduling.
-  scop = Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions);
-  outerBand = scop->tileOuterBand(tiling);
-  scop->reschedule(outerBand->child({0}), maxFusionSchedulerOptions);
+  scop = Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions.view);
+  outerBand = scop->tileOuterBand(tiling.view);
+  scop->reschedule(outerBand->child({0}), maxFusionSchedulerOptions.view);
   auto maxMaxOuterBand = ScheduleTree::makeScheduleTree(*outerBand);
 
   // Schedule with maximal fusion and tile.
-  scop = Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions);
-  auto tiledBand = ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling));
+  scop = Scop::makeScheduled(*originalScop, maxFusionSchedulerOptions.view);
+  auto tiledBand =
+      ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling.view));
 
   using detail::ScheduleTreeElemBand;
   ASSERT_TRUE(maxMinOuterBand->elemAs<ScheduleTreeElemBand>());

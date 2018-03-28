@@ -37,19 +37,19 @@ class GeneticAutotuner {
 
   void storeCaches(const std::string& filename);
 
-  std::vector<MappingOptions> load(
+  std::vector<CudaMappingOptions> load(
       const std::string& cacheFileName,
       const std::string& tcName,
       const std::vector<const DLTensor*>& inputs,
       const size_t numCandidates);
 
-  llvm::Optional<MappingOptions> tune(
+  llvm::Optional<CudaMappingOptions> tune(
       const std::string& cacheFileName,
       const std::string& tcName,
       const std::unordered_map<size_t, std::vector<const DLTensor*>>& inputs,
       std::unordered_map<size_t, std::vector<DLTensor*>>& outputs,
-      MappingOptions baseMapping,
-      std::vector<MappingOptions> startingPoints,
+      CudaMappingOptions baseMapping,
+      std::vector<CudaMappingOptions> startingPoints,
       const TuningParameterFixer& fixedParams);
 
  private:

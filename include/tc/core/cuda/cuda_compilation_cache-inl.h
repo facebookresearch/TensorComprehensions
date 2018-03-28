@@ -100,7 +100,7 @@ template <typename C, typename InputTy> // deduces whether C is const or
 auto CudaCache::searchKernelImpl(
     C& c,
     const std::string& id,
-    const MappingOptions& options,
+    const CudaMappingOptions& options,
     const std::vector<InputTy>& inputs,
     const std::vector<InputTy>& outputs)
     -> decltype(c.searchKernel(id, options, inputs, outputs)) {

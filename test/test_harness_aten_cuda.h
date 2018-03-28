@@ -56,7 +56,7 @@ void benchmarkKernelOptions(
     const std::string& tc,
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
-    const tc::MappingOptions mappingOptions) {
+    const tc::CudaMappingOptions mappingOptions) {
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   auto handle = atCompl.compile(name, inputs, mappingOptions);

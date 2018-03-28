@@ -18,27 +18,6 @@
 namespace tc {
 namespace polyhedral {
 namespace mapping {
-bool MappingId::isBlockId() {
-  return *this == BlockId::x() or *this == BlockId::y() or
-      *this == BlockId::z();
-}
-BlockId* MappingId::asBlockId() {
-  if (!isBlockId()) {
-    return nullptr;
-  }
-  return static_cast<BlockId*>(this);
-}
-bool MappingId::isThreadId() {
-  return *this == ThreadId::x() or *this == ThreadId::y() or
-      *this == ThreadId::z();
-}
-ThreadId* MappingId::asThreadId() {
-  if (!isThreadId()) {
-    return nullptr;
-  }
-  return static_cast<ThreadId*>(this);
-}
-
 ThreadId ThreadId::makeId(size_t dim) {
   CHECK(dim < 3);
   if (dim == 0) {

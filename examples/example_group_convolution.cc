@@ -24,7 +24,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/core/mapping_options.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
@@ -56,7 +56,7 @@ class GroupConvolution : public Benchmark {
       uint32_t W,
       uint32_t KH,
       uint32_t KW,
-      const tc::MappingOptions& options,
+      const tc::CudaMappingOptions& options,
       bool useFlags = false);
 };
 
@@ -69,7 +69,7 @@ void GroupConvolution::runGroupConvolution(
     uint32_t W,
     uint32_t KH,
     uint32_t KW,
-    const tc::MappingOptions& options,
+    const tc::CudaMappingOptions& options,
     bool useFlags) {
   Workspace w;
   auto AddInput =
@@ -176,8 +176,8 @@ TEST_F(GroupConvolution, GroupConvolution) {
   // If num threads is too small just get some better default
   auto threads = (W >= 10) ? std::vector<size_t>{W / 4, H / 2}
                            : std::vector<size_t>{4, 8, 4};
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
-                     .tile({1, 1, 1})
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+                     .tile(1, 1, 1)
                      .mapToThreads(threads)
                      .mapToBlocks({32, 32})
                      .useSharedMemory(true)
@@ -199,7 +199,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .useSharedMemory(true)
           .usePrivateMemory(true)
           .unrollCopyShared(true)
@@ -225,7 +225,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -257,7 +257,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::MappingOptions::makeNaiveMappingOptions()
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -288,7 +288,7 @@ TEST_F(
   uint32_t H = 28;
   uint32_t KW = 3;
   uint32_t KH = 3;
-  auto options = tc::MappingOptions::makeNaiveMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)

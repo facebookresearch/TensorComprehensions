@@ -24,8 +24,8 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
-#include "tc/core/mapping_options.h"
 #include "tc/library/common.h"
 
 #include "test_harness_aten_cuda.h"
@@ -36,7 +36,7 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   void Check(
       const std::string& tc,
       const std::string& name,
-      const tc::MappingOptions& mappingOptions,
+      const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor> inputs,
       std::vector<at::Tensor>& outputs) {
     tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
@@ -62,7 +62,7 @@ TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxA) {
       }
     )",
       "softmax",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -83,7 +83,7 @@ TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxB) {
       }
     )",
       "softmax",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -102,7 +102,7 @@ TEST_F(ATenCompilationUnitTest, SoftmaxC) {
       }
     )",
       "softmax",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -122,7 +122,7 @@ TEST_F(ATenCompilationUnitTest, SoftmaxD) {
       }
     )",
       "softmax",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -140,7 +140,7 @@ TEST_F(ATenCompilationUnitTest, Concat) {
       }
     )",
       "concat",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -158,7 +158,7 @@ TEST_F(ATenCompilationUnitTest, Indexing) {
       }
     )",
       "indexing",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       inputs,
       outputs);
 }
@@ -176,7 +176,7 @@ TEST_F(ATenCompilationUnitTest, MatMul) {
       }
     )",
       "matmul",
-      tc::MappingOptions::makeMlpMappingOptions(),
+      tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
       inputs,
       outputs);
 
@@ -199,7 +199,7 @@ TEST_F(ATenCompilationUnitTest, MatMulInplace) {
       }
     )",
       "matmul",
-      tc::MappingOptions::makeMlpMappingOptions(),
+      tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
       inputs,
       outputs);
 
@@ -226,7 +226,7 @@ TEST_F(ATenCompilationUnitTest, Convolution2d) {
       }
     )",
       "convolution",
-      tc::MappingOptions::makeConvolutionMappingOptions(),
+      tc::CudaMappingOptions::makeConvolutionCudaMappingOptions(),
       inputs,
       outputs);
 
@@ -258,7 +258,7 @@ TEST_F(ATenCompilationUnitTest, Convolution2dStrided) {
   Check(
       tcStr,
       "convolutionStrided",
-      tc::MappingOptions::makeConvolutionMappingOptions(),
+      tc::CudaMappingOptions::makeConvolutionCudaMappingOptions(),
       inputs,
       outputs);
 
@@ -283,7 +283,7 @@ TEST_F(ATenCompilationUnitTest, Casts) {
       }
     )",
       "cast",
-      tc::MappingOptions::makeNaiveMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
       {a, b},
       outputs);
   auto r = outputs[0].sub(at::CUDA(at::kInt).ones({2, 4}) + 4).max().toLong();

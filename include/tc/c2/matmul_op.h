@@ -39,8 +39,8 @@ class TcMatMulOp : public TcOp<T, Context, Engine> {
   ~TcMatMulOp() override {}
 
  protected:
-  void setupNaiveMappingOptions() override {
-    this->mappingOptions_.tile({16, 16, 32})
+  void setupNaiveCudaMappingOptions() override {
+    this->cudaMappingOptions_.tile(16, 16, 32)
         .mapToThreads(4, 32)
         .mapToBlocks(32, 32, 32)
         .unroll(1);

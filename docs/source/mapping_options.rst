@@ -24,7 +24,7 @@ C++
 
 .. code-block:: c++
 
-  #include <tc/core/mapping_options.h>
+  #include <tc/core/cuda/cuda_mapping_options.h>
 
   auto options = MappingOptions::makeNaiveMappingOptions()
       .mapToBlocks(100, 20)
