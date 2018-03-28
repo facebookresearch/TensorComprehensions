@@ -14,8 +14,9 @@ set(GTEST_LIBS gtest gtest_main)
 # Examples
 ################################################################################
 set(EXAMPLES_FILES
-  tensordot
   blockdiagperm
+  tensordot
+  wavenet
 )
 foreach(i ${EXAMPLES_FILES})
   add_executable(${i} ${i}.cc)
