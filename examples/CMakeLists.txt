@@ -22,20 +22,25 @@ set(GTEST_LIBS gtest gtest_main)
 ################################################################################
 # Simple Example
 ################################################################################
-add_executable(example_simple example_simple.cc)
-add_test(example_simple example_simple)
-target_link_libraries(
-   example_simple
-
-   tc_autotuner
-   tc_core
-
-   ${GTEST_LIBS}
-   ${GFLAGS_LIBRARIES}
-   ${GLOG_LIBRARIES}
-
-   ${ATEN_LIBRARIES}
+set(EXAMPLES_FILES
+  example_tensordot
 )
+foreach(i ${EXAMPLES_FILES})
+  add_executable(${i} ${i}.cc)
+  add_test(${i} ${i})
+  target_link_libraries(
+     ${i}
+
+     tc_autotuner
+     tc_core
+
+     ${GTEST_LIBS}
+     ${GFLAGS_LIBRARIES}
+     ${GLOG_LIBRARIES}
+
+     ${ATEN_LIBRARIES}
+  )
+endforeach()
 
 ################################################################################
 # Examples

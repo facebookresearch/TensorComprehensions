@@ -36,6 +36,9 @@ DEFINE_uint32(pop_size, 10, "Population size to tune for");
 DEFINE_uint32(threads, 16, "Number of threads to tune with");
 DEFINE_string(gpus, "0", "List of gpus to evaluate on");
 
+// TODO: This temporary flag will be disabled later
+DEFINE_bool(disable_version_checks, false, "TODO: remove me");
+
 TEST(TensorDot, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
   // management backed by ATen tensors.
