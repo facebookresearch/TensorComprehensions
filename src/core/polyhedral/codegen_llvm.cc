@@ -432,30 +432,30 @@ class LLVMCodegen {
   }
 
   llvm::BasicBlock* emitAst(isl::ast_node node) {
-    switch (node.get_type()) {
-      case isl::ast_node_type::_for:
-        return emitFor(node);
-      case isl::ast_node_type::user:
-        return emitStmt(node);
-      case isl::ast_node_type::block:
-        return emitBlock(node);
-      case isl::ast_node_type::_if:
+    if (auto forNode = node.as<isl::ast_node_for>()) {
+      return emitFor(forNode);
+    } else if (auto userNode = node.as<isl::ast_node_user>()) {
+      return emitStmt(userNode);
+    } else if (auto blockNode = node.as<isl::ast_node_block>()) {
+      return emitBlock(blockNode);
+    } else {
+      if (node.as<isl::ast_node_if>()) {
         LOG(FATAL) << "NYI if node: " << node << std::endl;
-      default:
+      } else {
         LOG(FATAL) << "NYI " << node << std::endl;
-        return static_cast<llvm::BasicBlock*>(nullptr); // avoid warning
+      }
+      return static_cast<llvm::BasicBlock*>(nullptr); // avoid warning
     }
   }
 
  private:
-  llvm::BasicBlock* emitBlock(isl::ast_node node) {
+  llvm::BasicBlock* emitBlock(isl::ast_node_block node) {
     auto* function = halide_cg.get_builder().GetInsertBlock()->getParent();
     auto* currBB = llvm::BasicBlock::Create(llvmCtx, "block_exit", function);
     halide_cg.get_builder().CreateBr(currBB);
     halide_cg.get_builder().SetInsertPoint(currBB);
 
-    CHECK(node.get_type() == isl::ast_node_type::block);
-    for (auto child : node.block_get_children()) {
+    for (auto child : node.get_children()) {
       currBB = emitAst(child);
       halide_cg.get_builder().SetInsertPoint(currBB);
     }
@@ -479,9 +479,7 @@ class LLVMCodegen {
     return arrTy->getPointerTo();
   }
 
-  llvm::BasicBlock* emitFor(isl::ast_node node) {
-    CHECK(node.get_type() == isl::ast_node_type::_for);
-
+  llvm::BasicBlock* emitFor(isl::ast_node_for node) {
     IteratorLLVMValueMapType iterPHIs;
 
     auto* incoming = halide_cg.get_builder().GetInsertBlock();
@@ -514,16 +512,16 @@ class LLVMCodegen {
 
     // Loop Header
     {
-      auto initVal = IslExprToSInt(node.for_get_init());
+      auto initVal = IslExprToSInt(node.get_init());
       halide_cg.get_builder().SetInsertPoint(headerBB);
       phi = halide_cg.get_builder().CreatePHI(
           llvm::Type::getInt64Ty(llvmCtx),
           2,
-          node.for_get_iterator().get_id().get_name());
-      halide_cg.sym_push(node.for_get_iterator().get_id().get_name(), phi);
+          node.get_iterator().get_id().get_name());
+      halide_cg.sym_push(node.get_iterator().get_id().get_name(), phi);
       phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
 
-      auto cond_expr = node.for_get_cond();
+      auto cond_expr = node.get_cond();
       CHECK(
           cond_expr.get_op_type() == isl::ast_op_type::lt or
           cond_expr.get_op_type() == isl::ast_op_type::le)
@@ -532,7 +530,7 @@ class LLVMCodegen {
       CHECK(
           isl_ast_expr_get_type(condLHS.get()) ==
           isl_ast_expr_type::isl_ast_expr_id);
-      CHECK_EQ(condLHS.get_id(), node.for_get_iterator().get_id());
+      CHECK_EQ(condLHS.get_id(), node.get_iterator().get_id());
 
       IslAstExprInterpeter i(scop_.globalParameterContext);
       auto condRHSVal = i.interpret(cond_expr.get_op_arg(1));
@@ -565,7 +563,7 @@ class LLVMCodegen {
         halide_cg.get_builder().SetInsertPoint(detachedBB);
       }
 #endif
-      auto* currentBB = emitAst(node.for_get_body());
+      auto* currentBB = emitAst(node.get_body());
       halide_cg.get_builder().SetInsertPoint(currentBB);
 
       if (parallel) {
@@ -580,7 +578,7 @@ class LLVMCodegen {
     // Create Latch
     {
       halide_cg.get_builder().SetInsertPoint(loopLatchBB);
-      auto incVal = IslExprToSInt(node.for_get_inc());
+      auto incVal = IslExprToSInt(node.get_inc());
       phi->addIncoming(
           halide_cg.get_builder().CreateAdd(
               phi, getLLVMConstantSignedInt64(incVal)),
@@ -589,7 +587,7 @@ class LLVMCodegen {
     }
 
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
-    halide_cg.sym_pop(node.for_get_iterator().get_id().get_name());
+    halide_cg.sym_pop(node.get_iterator().get_id().get_name());
 #ifdef TAPIR_VERSION_MAJOR
     if (parallel) {
       auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
@@ -600,9 +598,8 @@ class LLVMCodegen {
     return halide_cg.get_builder().GetInsertBlock();
   }
 
-  llvm::BasicBlock* emitStmt(isl::ast_node node) {
-    CHECK(node.get_type() == isl::ast_node_type::user);
-    isl::ast_expr usrExp = node.user_get_expr();
+  llvm::BasicBlock* emitStmt(isl::ast_node_user node) {
+    isl::ast_expr usrExp = node.get_expr();
     auto id = usrExp.get_op_arg(0).get_id();
     auto provide = scop_.halide.statements.at(id);
     auto op = provide.as<Halide::Internal::Provide>();
@@ -660,7 +657,9 @@ IslCodegenRes codegenISL(const Scop& scop) {
            IteratorMapsType& iteratorMaps,
            const Scop& scop,
            StmtSubscriptExprMapType& stmtSubscripts) -> isl::ast_node {
-      auto expr = node.user_get_expr();
+      auto user = node.as<isl::ast_node_user>();
+      CHECK(user);
+      auto expr = user.get_expr();
       auto schedule = build.get_schedule();
       auto scheduleMap = isl::map::from_union_map(schedule);
 
