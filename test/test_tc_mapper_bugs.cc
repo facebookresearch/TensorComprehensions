@@ -742,6 +742,41 @@ def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
   atCompl.compile("tmm_naive", inputs, options);
 }
 
+TEST(Test, NonParallel) {
+  at::Tensor B = at::CUDA(at::kFloat).rand({100, 100});
+  std::vector<at::Tensor> inputs = {B};
+  std::vector<at::Tensor> outputs;
+
+  auto TC = std::string(R"TC(
+def func(float(I, J) B) -> (A, C) {
+  A(i, j) = B(i, j)
+  C(k) +=! A(i, j) where k in 0:1
+}
+)TC");
+  auto options =
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .tile(1, 1, 1)
+          .mapToThreads(32)
+          .mapToBlocks(32)
+          .unroll(1)
+          .tileImperfectlyNested(false)
+          .useSharedMemory(false)
+          .usePrivateMemory(false)
+          .unrollCopyShared(false)
+          .matchLibraryCalls(false);
+
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
+  atCompl.define(TC);
+  // Expecting this to compile without dying.
+  atCompl.compile("func", inputs, options);
+}
+
 TEST(Halide2Isl, MinInUpperBound) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({1, 100, 184, 184});
   at::Tensor mat1_pad = at::CUDA(at::kFloat).rand({1, 100, 186, 186});
