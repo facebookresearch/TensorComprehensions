@@ -29,7 +29,12 @@
 
 using namespace lang;
 
-const std::string expected_file_path = "src/lang/test_expected/";
+#ifndef TC_DIR
+#error "TC_DIR must be defined"
+#endif
+
+const std::string expected_file_path =
+    std::string(TC_DIR) + "/src/lang/test_expected/";
 
 static inline void barf(const char* fmt, ...) {
   char msg[2048];
