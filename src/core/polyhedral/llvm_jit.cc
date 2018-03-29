@@ -82,18 +82,20 @@ Jit::Jit()
   }
 }
 
-void Jit::codegenScop(
+std::shared_ptr<Module> Jit::codegenScop(
     const std::string& specializedName,
     const polyhedral::Scop& scop) {
-  addModule(emitLLVMKernel(
-      specializedName, scop, getTargetMachine().createDataLayout()));
+  std::shared_ptr<Module> mod = emitLLVMKernel(
+      specializedName, scop, getTargetMachine().createDataLayout());
+  addModule(mod);
+  return mod;
 }
 
 TargetMachine& Jit::getTargetMachine() {
   return *TM_;
 }
 
-Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
+Jit::ModuleHandle Jit::addModule(std::shared_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto Resolver = orc::createLambdaResolver(
       [&](const std::string& Name) {
@@ -107,7 +109,7 @@ Jit::ModuleHandle Jit::addModule(std::unique_ptr<Module> M) {
         return JITSymbol(nullptr);
       });
 
-  auto res = compileLayer_.addModule(std::move(M), std::move(Resolver));
+  auto res = compileLayer_.addModule(M, std::move(Resolver));
   CHECK(res) << "Failed to jit compile.";
   return *res;
 }

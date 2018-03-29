@@ -341,7 +341,6 @@ struct Scop {
   static std::unique_ptr<Scop> makeScheduled(
       const Scop& scop,
       const SchedulerOptionsView& schedulerOptions);
-
   // Tile the outermost band.
   // Splits the band into tile loop band and point loop band where point loops
   // have fixed trip counts specified in "tiling", and returns a pointer to the

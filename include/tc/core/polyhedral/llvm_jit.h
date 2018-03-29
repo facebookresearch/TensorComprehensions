@@ -38,12 +38,11 @@ class Jit {
  public:
   Jit();
 
-  void codegenScop(
+  using ModuleHandle = decltype(compileLayer_)::ModuleHandleT;
+  std::shared_ptr<llvm::Module> codegenScop(
       const std::string& specializedName,
       const polyhedral::Scop& scop);
-
-  using ModuleHandle = decltype(compileLayer_)::ModuleHandleT;
-  ModuleHandle addModule(std::unique_ptr<llvm::Module> M);
+  ModuleHandle addModule(std::shared_ptr<llvm::Module> M);
   void removeModule(ModuleHandle H);
 
   llvm::JITSymbol findSymbol(const std::string name);

@@ -55,17 +55,6 @@ using namespace Halide;
 
 namespace tc {
 
-namespace {
-template <typename T>
-std::string toString(T* llvmObject) {
-  std::string output;
-  llvm::raw_string_ostream rso(output);
-  llvmObject->print(rso, nullptr, false, true);
-  rso.str();
-  return output;
-}
-} // namespace
-
 namespace halide2isl {
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 }
@@ -217,6 +206,9 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
   using CodeGen_X86::sym_push;
 
   void init_module() override {
+    const char* llvm_args[] = {"tc (LLVM argument parsing)", nullptr};
+    llvm::cl::ParseCommandLineOptions(
+        sizeof(llvm_args) / sizeof(*llvm_args) - 1, llvm_args);
     init_context();
     module =
         llvm::make_unique<llvm::Module>("TensorComprehensionsModule", *context);
@@ -311,14 +303,13 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     functionPassManager.doInitialization();
     for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
       functionPassManager.run(*i);
-
-      functionPassManager.doFinalization();
-      modulePassManager.run(*module);
-
-      LOG_IF(INFO, FLAGS_llvm_dump_after_opt)
-          << "[LLVM-IR] After optimization:\n"
-          << toString(module.get());
     }
+
+    functionPassManager.doFinalization();
+    modulePassManager.run(*module);
+
+    LOG_IF(INFO, FLAGS_llvm_dump_after_opt) << "[LLVM-IR] After optimization:\n"
+                                            << toString(module.get());
   }
 };
 
@@ -492,8 +483,7 @@ class LLVMCodegen {
 
     // TODO: integrate query ISL as to whether the relevant loop ought be
     // parallelized
-    bool parallel = false;
-
+    bool parallel = isl_ast_node_for_is_coincident(node.get());
     llvm::Value* SyncRegion = nullptr;
 
 #ifdef TAPIR_VERSION_MAJOR
