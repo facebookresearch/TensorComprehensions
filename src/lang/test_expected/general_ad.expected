@@ -1,0 +1,8 @@
+def grad_mm(double(M, K) A, double(K, N) B, double(M, N) O, double(M, N) W, double(M, N) seed_d_O, double(M, N) seed_d_W) -> (d_A, d_B) {
+  d_O(i, j) = seed_d_d_O(i, j)
+  d_O(i, j) += (seed_d_W(i, j) * 2)
+  d_A(i, k) = 0
+  d_A(i, k) += (d_O(i, j) * B(k, j))
+  d_B(k, j) = 0
+  d_B(k, j) += (d_O(i, j) * A(i, k))
+}
