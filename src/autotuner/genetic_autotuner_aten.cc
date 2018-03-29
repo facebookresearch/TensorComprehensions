@@ -107,6 +107,9 @@ llvm::Optional<CudaMappingOptions> GeneticAutotunerATen::tune(
   tc::ScopeGuard g1([&]() { deleteGpuDlmTensors(managedInputsPerGpu); });
   tc::ScopeGuard g2([&]() { deleteGpuDlmTensors(managedOutputsPerGpu); });
 
+  if (startingPoints.size() == 0) {
+    startingPoints.push_back(baseMapping);
+  }
   return geneticAutotuner_->tune(
       cacheFileName,
       tcName,

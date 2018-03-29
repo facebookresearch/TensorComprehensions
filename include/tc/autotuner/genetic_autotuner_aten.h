@@ -43,7 +43,7 @@ class GeneticAutotunerATen {
       const std::string& tcName,
       const std::vector<at::Tensor>& inputs,
       CudaMappingOptions baseMapping,
-      std::vector<CudaMappingOptions> startingPoints,
+      std::vector<CudaMappingOptions> startingPoints = {},
       const TuningParameterFixer& fixedParams = {});
 
  private:

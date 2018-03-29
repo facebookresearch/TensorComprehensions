@@ -28,7 +28,7 @@
 
 #include "../test/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
-#include "example_fixture.h"
+#include "benchmark_fixture.h"
 
 #include "tc/c2/context.h"
 #include "tc/core/cuda/cuda.h"
