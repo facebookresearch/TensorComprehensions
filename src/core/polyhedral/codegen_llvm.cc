@@ -317,8 +317,7 @@ llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
       return sym_get(expr.get_id().get_name());
     case isl_ast_expr_type::isl_ast_expr_int: {
       auto val = isl::manage(isl_ast_expr_get_val(expr.get()));
-      CHECK(val.is_int());
-      return getLLVMConstantSignedInt64(val.get_num_si());
+      return getLLVMConstantSignedInt64(toSInt(val));
     }
     default:
       LOG(FATAL) << "NYI";
