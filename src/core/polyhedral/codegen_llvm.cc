@@ -77,6 +77,7 @@ thread_local llvm::LLVMContext llvmCtx;
 
 int64_t toSInt(isl::val v) {
   CHECK(v.is_int());
+  static_assert(sizeof(long) <= 8, "long is assumed to fit into 64bits");
   return v.get_num_si();
 }
 
@@ -86,7 +87,6 @@ llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
 
 int64_t IslExprToSInt(isl::ast_expr e) {
   CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_int);
-  assert(sizeof(long) <= 8); // long is assumed to fit to 64bits
   return toSInt(isl::manage(isl_ast_expr_get_val(e.get())));
 }
 
