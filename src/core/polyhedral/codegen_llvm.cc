@@ -481,8 +481,6 @@ class LLVMCodegen {
         llvm::BasicBlock::Create(llvmCtx, "loop_latch", function);
     auto* loopExitBB = llvm::BasicBlock::Create(llvmCtx, "loop_exit", function);
 
-    // TODO: integrate query ISL as to whether the relevant loop ought be
-    // parallelized
     bool parallel = isl_ast_node_for_is_coincident(node.get());
     llvm::Value* SyncRegion = nullptr;
 
