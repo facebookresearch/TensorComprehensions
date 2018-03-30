@@ -76,10 +76,8 @@ namespace {
 thread_local llvm::LLVMContext llvmCtx;
 
 int64_t toSInt(isl::val v) {
-  auto n = v.get_num_si();
-  auto d = v.get_den_si();
-  CHECK_EQ(n % d, 0);
-  return n / d;
+  CHECK(v.is_int());
+  return v.get_num_si();
 }
 
 llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
