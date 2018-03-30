@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 #include "tc/lang/lexer.h"
+
+#include <cstring>
+
 #include "tc/lang/error_report.h"
 
 namespace lang {
@@ -38,7 +41,7 @@ std::string kindToToken(int kind) {
   switch (kind) {
 #define DEFINE_CASE(tok, _, str)                                       \
   case tok:                                                            \
-    if (str == "")                                                     \
+    if (!strcmp(str, ""))                                              \
       throw std::runtime_error("No token for: " + kindToString(kind)); \
     return str;
     TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
