@@ -311,20 +311,14 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
   return {finder.reads, finder.writes};
 }
 
-struct ScheduleTreeAndDomain {
-  ScheduleTreeUPtr tree;
-  isl::union_set domain;
-};
-
 /*
- * Helper function for extracting a schedule tree from a Halide Stmt,
+ * Helper function for extracting a schedule from a Halide Stmt,
  * recursively descending over the Stmt.
  * "s" is the current position in the recursive descent.
  * "set" describes the bounds on the outer loop iterators.
  * "outer" contains the names of the outer loop iterators
  * from outermost to innermost.
- * Return the schedule tree corresponding to the subtree at "s",
- * along with a separated out domain.
+ * Return the schedule corresponding to the subtree at "s".
  *
  * "reads" and "writes" collect the accesses found along the way.
  * "accesses" collects the mapping from Call (for the reads) and Provide nodes
@@ -334,7 +328,7 @@ struct ScheduleTreeAndDomain {
  * "iterators" collects the mapping from instance set tuple identifiers
  * to the corresponding outer loop iterator names, from outermost to innermost.
  */
-ScheduleTreeAndDomain makeScheduleTreeHelper(
+isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
     std::vector<std::string>& outer,
@@ -343,7 +337,7 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     AccessMap* accesses,
     StatementMap* statements,
     IteratorMap* iterators) {
-  ScheduleTreeAndDomain result;
+  isl::schedule schedule;
   if (auto op = s.as<For>()) {
     // Add one additional dimension to our set of loop variables
     int thisLoopIdx = set.dim(isl::dim_type::set);
@@ -397,7 +391,7 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     // dimension. The spaces may be different, but they'll all have
     // this loop var at the same index.
     isl::multi_union_pw_aff mupa;
-    body.domain.foreach_set([&](isl::set s) {
+    body.get_domain().foreach_set([&](isl::set s) {
       isl::aff loopVar(
           isl::local_space(s.get_space()), isl::dim_type::set, thisLoopIdx);
       if (mupa) {
@@ -407,58 +401,20 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
       }
     });
 
-    if (body.tree) {
-      result.tree = ScheduleTree::makeBand(mupa, std::move(body.tree));
-    } else {
-      result.tree = ScheduleTree::makeBand(mupa);
-    }
-    result.domain = body.domain;
+    schedule = body.insert_partial_schedule(mupa);
   } else if (auto op = s.as<Halide::Internal::Block>()) {
-    // Flatten a nested block. Halide Block statements always nest
-    // rightwards. Flattening it is not strictly necessary, but it
-    // keeps things uniform with the PET lowering path.
     std::vector<Stmt> stmts;
     stmts.push_back(op->first);
     stmts.push_back(op->rest);
-    while (const Halide::Internal::Block* b =
-               stmts.back().as<Halide::Internal::Block>()) {
-      Stmt f = b->first;
-      Stmt r = b->rest;
-      stmts.pop_back();
-      stmts.push_back(f);
-      stmts.push_back(r);
-    }
 
-    // Build a schedule tree for each member of the block, then set up
-    // appropriate filters that state which statements lie in which
-    // children.
-    std::vector<ScheduleTreeUPtr> trees;
+    // Build a schedule tree for both members of the block and
+    // combine them in a sequence.
+    std::vector<isl::schedule> schedules;
     for (Stmt s : stmts) {
-      auto mem = makeScheduleTreeHelper(
-          s, set, outer, reads, writes, accesses, statements, iterators);
-      ScheduleTreeUPtr filter;
-      if (mem.tree) {
-        // No statement instances are shared between the blocks, so we
-        // can drop the constraints on the spaces. This makes the
-        // schedule tree slightly simpler.
-        filter = ScheduleTree::makeFilter(
-            mem.domain.universe(), std::move(mem.tree));
-      } else {
-        filter = ScheduleTree::makeFilter(mem.domain.universe());
-      }
-      if (result.domain) {
-        result.domain = result.domain.unite(mem.domain);
-      } else {
-        result.domain = mem.domain;
-      }
-      trees.push_back(std::move(filter));
+      schedules.push_back(makeScheduleTreeHelper(
+          s, set, outer, reads, writes, accesses, statements, iterators));
     }
-    CHECK_GE(trees.size(), 1);
-
-    result.tree = ScheduleTree::makeSequence(std::move(trees[0]));
-    for (size_t i = 1; i < trees.size(); i++) {
-      result.tree->appendChild(std::move(trees[i]));
-    }
+    schedule = schedules[0].sequence(schedules[1]);
 
   } else if (auto op = s.as<Provide>()) {
     // Make an ID for this leaf statement. This *is* semantically
@@ -469,7 +425,7 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
     statements->emplace(id, op);
     iterators->emplace(id, outer);
     isl::set domain = set.set_tuple_id(id);
-    result.domain = domain;
+    schedule = isl::schedule::from_domain(domain);
 
     isl::union_map newReads, newWrites;
     std::tie(newReads, newWrites) =
@@ -481,7 +437,7 @@ ScheduleTreeAndDomain makeScheduleTreeHelper(
   } else {
     LOG(FATAL) << "Unhandled Halide stmt: " << s;
   }
-  return result;
+  return schedule;
 };
 
 ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
@@ -491,7 +447,7 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
 
   // Walk the IR building a schedule tree
   std::vector<std::string> outer;
-  auto treeAndDomain = makeScheduleTreeHelper(
+  auto schedule = makeScheduleTreeHelper(
       s,
       isl::set::universe(paramSpace),
       outer,
@@ -501,16 +457,7 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
       &result.statements,
       &result.iterators);
 
-  // TODO: This fails if the stmt is just a Provide node, I'm not sure
-  // what the schedule tree should look like in that case.
-  CHECK(treeAndDomain.tree);
-
-  // Add the outermost domain node
-  result.tree = ScheduleTree::makeDomain(
-      treeAndDomain.domain, std::move(treeAndDomain.tree));
-
-  // Check we have obeyed the ISL invariants
-  checkValidIslSchedule(result.tree.get());
+  result.tree = fromIslSchedule(schedule);
 
   return result;
 }
