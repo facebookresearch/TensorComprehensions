@@ -92,19 +92,11 @@ int64_t IslExprToSInt(isl::ast_expr e) {
 
 int64_t islIdToInt(isl::ast_expr e, isl::set context) {
   CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_id);
-  CHECK_NE(-1, context.find_dim_by_id(isl::dim_type::param, e.get_id()));
-  while (context.dim(isl::dim_type::param) > 1) {
-    for (unsigned int d = 0; d < context.dim(isl::dim_type::param); ++d) {
-      if (d == context.find_dim_by_id(isl::dim_type::param, e.get_id())) {
-        continue;
-      }
-      context = context.remove_dims(isl::dim_type::param, d, 1);
-    }
-  }
+  auto space = context.get_space();
+  isl::aff param(isl::aff::param_on_domain_space(space, e.get_id()));
   auto p = context.sample_point();
-
-  auto val = toSInt(p.get_coordinate_val(isl::dim_type::param, 0));
-  return val;
+  CHECK(context.is_equal(p));
+  return toSInt(param.eval(p));
 }
 
 int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
