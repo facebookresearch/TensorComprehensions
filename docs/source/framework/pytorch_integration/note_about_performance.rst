@@ -5,8 +5,8 @@ Reuse outputs
 -------------
 
 TC depends on a tensor library to do the allocations for temporary variables or output tensors.
-So everytime TC is run on given input sizes, the output tensor shapes inferred by
-TC backend is passed back to the tensor library and the output variables are allocated
+So every time TC is run on given input sizes, the output tensor shapes inferred by
+TC backend are passed back to the tensor library and the output variables are allocated
 by making a :code:`malloc` call. However, this can be expensive and effect performance
 significantly. Rather, if your input tensor sizes do not change every time TC is run,
 you can keep reusing the output tensor already allocated in previous call. This helps

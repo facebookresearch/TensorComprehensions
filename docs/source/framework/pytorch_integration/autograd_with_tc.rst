@@ -1,7 +1,7 @@
 Autograd with TC
 ================
 
-We provide the TC intergation with PyTorch `autograd` so that it is easy to write
+We provide the TC integration with PyTorch `autograd` so that it is easy to write
 a training layer with TC and be able to run backwards as well if the layer is part
 of a network. We do not support double backwards right now. In order to write a
 training layer with TC, you need to follow the steps below:
