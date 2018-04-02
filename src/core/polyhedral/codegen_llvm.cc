@@ -36,7 +36,6 @@
 #include "isl/ast.h"
 
 #include "tc/core/constants.h"
-//#include "tc/core/polyhedral/isl_mu_wrappers.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
@@ -642,9 +641,6 @@ IslCodegenRes codegenISL(const Scop& scop) {
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto stmtId = expr.get_op_arg(0).get_id();
-      // auto nodeId = isl::id(
-      // node.get_ctx(),
-      // std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
       CHECK_EQ(0, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
       auto iterators = scop.halide.iterators.at(stmtId);
