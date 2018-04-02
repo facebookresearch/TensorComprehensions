@@ -42,6 +42,7 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+#include "tc/external/isl.h"
 
 #ifndef LLVM_VERSION_MAJOR
 #error LLVM_VERSION_MAJOR not set
