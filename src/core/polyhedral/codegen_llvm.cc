@@ -486,16 +486,15 @@ class LLVMCodegen {
     halide_cg.get_builder().CreateBr(headerBB);
 
     llvm::PHINode* phi = nullptr;
+    auto iterator = node.get_iterator().get_id();
 
     // Loop Header
     {
       auto initVal = IslExprToSInt(node.get_init());
       halide_cg.get_builder().SetInsertPoint(headerBB);
       phi = halide_cg.get_builder().CreatePHI(
-          llvm::Type::getInt64Ty(llvmCtx),
-          2,
-          node.get_iterator().get_id().get_name());
-      halide_cg.sym_push(node.get_iterator().get_id().get_name(), phi);
+          llvm::Type::getInt64Ty(llvmCtx), 2, iterator.get_name());
+      halide_cg.sym_push(iterator.get_name(), phi);
       phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
 
       auto cond_expr = node.get_cond();
@@ -507,7 +506,7 @@ class LLVMCodegen {
       CHECK(
           isl_ast_expr_get_type(condLHS.get()) ==
           isl_ast_expr_type::isl_ast_expr_id);
-      CHECK_EQ(condLHS.get_id(), node.get_iterator().get_id());
+      CHECK_EQ(condLHS.get_id(), iterator);
 
       IslAstExprInterpeter i(scop_.globalParameterContext);
       auto condRHSVal = i.interpret(cond_expr.get_op_arg(1));
@@ -564,7 +563,7 @@ class LLVMCodegen {
     }
 
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
-    halide_cg.sym_pop(node.get_iterator().get_id().get_name());
+    halide_cg.sym_pop(iterator.get_name());
 #ifdef TAPIR_VERSION_MAJOR
     if (parallel) {
       auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
