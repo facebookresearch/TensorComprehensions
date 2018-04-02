@@ -72,6 +72,7 @@ if [[ "$DISTRIB_RELEASE" == 14.04 ]]; then
     source activate tc-env
     conda install -y -c pytorch pytorch
     conda install -y pyyaml
+    conda install -yc conda-forge pytest
     WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
   else
     echo "Building TC in non-conda env"
@@ -86,6 +87,7 @@ if [[ "$DISTRIB_RELEASE" == 16.04 ]]; then
     source activate tc-env
     conda install -y pytorch cuda90 -c pytorch
     conda install -y pyyaml
+    conda install -yc conda-forge pytest
     WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
   else
     echo "Building TC in non-conda env"

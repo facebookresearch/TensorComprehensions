@@ -20,7 +20,7 @@ class TestTrainMatMul(unittest.TestCase):
         }
         """
 
-        matmul = tc.define(MATMUL_LANG, name="matmul", training=True, backward="matmul_grad")
+        matmul = tc.define(LANG, name="matmul", training=True, backward="matmul_grad")
         mat1 = Parameter(torch.randn(3, 4).cuda())
         mat2 = Variable(torch.randn(4, 5).cuda(), requires_grad=True)
         out = matmul(mat1, mat2, options=[tc.Options("mlp"), tc.Options("mlp")])

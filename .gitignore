@@ -8,6 +8,7 @@ third-party/llvm_sources*
 third-party-install/*
 buck-out
 .buckd
+.pytest_cache
 conda
 .nfs*
 */.nfs*
