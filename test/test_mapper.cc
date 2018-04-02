@@ -182,8 +182,8 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*C)[M] = reinterpret_cast<float32 (*)[M]>(pC);
-  float32 (*A)[M] = reinterpret_cast<float32 (*)[M]>(pA);
-  float32 (*B)[M] = reinterpret_cast<float32 (*)[M]>(pB);
+  const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
+  const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t1 + c1 + 1) {
       C[t0 + 16 * b0][t1 + c1] = (A[t0 + 16 * b0][t1 + c1] + B[t0 + 16 * b0][t1 + c1]);
@@ -219,10 +219,10 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
   float32 (*O1)[N] = reinterpret_cast<float32 (*)[N]>(pO1);
   float32 (*O2)[N] = reinterpret_cast<float32 (*)[N]>(pO2);
   float32 (*O3)[N] = reinterpret_cast<float32 (*)[N]>(pO3);
-  float32 (*A)[N][N][N] = reinterpret_cast<float32 (*)[N][N][N]>(pA);
-  float32 (*B)[N] = reinterpret_cast<float32 (*)[N]>(pB);
-  float32 (*C)[N] = reinterpret_cast<float32 (*)[N]>(pC);
-  float32 (*D)[N] = reinterpret_cast<float32 (*)[N]>(pD);
+  const float32 (*A)[N][N][N] = reinterpret_cast<const float32 (*)[N][N][N]>(pA);
+  const float32 (*B)[N] = reinterpret_cast<const float32 (*)[N]>(pB);
+  const float32 (*C)[N] = reinterpret_cast<const float32 (*)[N]>(pC);
+  const float32 (*D)[N] = reinterpret_cast<const float32 (*)[N]>(pD);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
       O1[c0][c1] = 0.000000f;
@@ -261,11 +261,11 @@ def fun(float(N, N) A) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected(
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, float32* pA) {
+      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
-  float32 (*A)[N] = reinterpret_cast<float32 (*)[N]>(pA);
+  const float32 (*A)[N] = reinterpret_cast<const float32 (*)[N]>(pA);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
       O[c0][c1] = (((A[c0][c1] + float32(c0)) + float32(c1)) + float32(N));
@@ -290,13 +290,13 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected =
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, float32* pA, float32* pB, float32* pC) {
+      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
-  float32 (*A)[512] = reinterpret_cast<float32 (*)[512]>(pA);
-  float32 (*B)[512] = reinterpret_cast<float32 (*)[512]>(pB);
-  float32 (*C) = reinterpret_cast<float32 (*)>(pC);
+  const float32 (*A)[512] = reinterpret_cast<const float32 (*)[512]>(pA);
+  const float32 (*B)[512] = reinterpret_cast<const float32 (*)[512]>(pB);
+  const float32 (*C) = reinterpret_cast<const float32 (*)>(pC);
   for (int c0 = 0; c0 <= 511; c0 += 1) {
     for (int c1 = 0; c1 <= 511; c1 += 1) {
       O[c0][c1] = (nextafter(C[c0], exp(A[c0][c1])) + log(B[c1][c0]));
@@ -312,8 +312,8 @@ constexpr auto kExpectedMatmul_64_64_64 =
     R"CUDA(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*O)[64] = reinterpret_cast<float32 (*)[64]>(pO);
-  float32 (*A)[64] = reinterpret_cast<float32 (*)[64]>(pA);
-  float32 (*B)[64] = reinterpret_cast<float32 (*)[64]>(pB);
+  const float32 (*A)[64] = reinterpret_cast<const float32 (*)[64]>(pA);
+  const float32 (*B)[64] = reinterpret_cast<const float32 (*)[64]>(pB);
   for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
