@@ -72,43 +72,25 @@ bool isReductionUpdateId(
   return false;
 }
 
-bool affInvolvesOnlyDim(isl::aff aff, int redDimIdx) {
-  auto space = aff.get_space();
+/*
+ * Does "aff" only involve the specified input dimension (and not
+ * any other input dimensions).
+ */
+bool pwAffInvolvesOnlyInputDim(isl::pw_aff pa, int redDimIdx) {
+  auto space = pa.get_space();
 
-  bool hasPureDim = aff.involves_dims(isl::dim_type::in, redDimIdx, 1);
-
-  bool divsInvolveOtherDims = false;
-  bool divsInvolveDim = false;
-  for (int i = 0, ei = aff.dim(isl::dim_type::div); i < ei; ++i) {
-    // Ignore divs with coefficient 0 that may be referred to by the aff.
-    // This is particularly the case when we are already processing the div.
-    if (aff.get_coefficient_val(isl::dim_type::div, i).is_zero()) {
-      continue;
-    }
-    bool divR = affInvolvesOnlyDim(aff.get_div(i), redDimIdx);
-    divsInvolveDim |=
-        divR; // becomes true if at least one involves the given dim
-    divsInvolveOtherDims |=
-        !divR; // becomes true if at least one involves other dims
+  if (!pa.involves_dims(isl::dim_type::in, redDimIdx, 1)) {
+    return false;
   }
 
-  bool involvesOtherDims = aff.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
-      aff.involves_dims(
+  if (pa.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
+      pa.involves_dims(
           isl::dim_type::in,
           redDimIdx + 1,
-          space.dim(isl::dim_type::in) - redDimIdx - 1) ||
-      aff.involves_dims(
-          isl::dim_type::param, 0, space.dim(isl::dim_type::param));
+          space.dim(isl::dim_type::in) - redDimIdx - 1)) {
+    return false;
+  }
 
-  if (involvesOtherDims) {
-    return false;
-  }
-  if (!hasPureDim && !divsInvolveDim) {
-    return false;
-  }
-  if (divsInvolveDim && divsInvolveOtherDims) {
-    return false;
-  }
   return true;
 }
 
@@ -129,14 +111,8 @@ bool isAlmostIdentityReduction(isl::pw_aff pa, const Scop& scop) {
     return false;
   }
 
-  auto paWrapper = isl::PA(pa);
-  if (paWrapper.size() != 1) {
-    return false;
-  }
-
-  auto aff = paWrapper[0].second;
   for (auto redDimIdx : reductionDims) {
-    if (affInvolvesOnlyDim(aff, redDimIdx)) {
+    if (pwAffInvolvesOnlyInputDim(pa, redDimIdx)) {
       return true;
     }
   }
