@@ -447,19 +447,6 @@ void AstPrinter::emitAst(isl::ast_node node) {
 
 namespace detail {
 
-std::string toString(isl::aff subscript) {
-  stringstream ss;
-  // TODO: isl printer is not exported
-  isl_printer* prn = isl_printer_to_str(subscript.get_ctx().get());
-  prn = isl_printer_set_output_format(prn, ISL_FORMAT_C);
-  prn = isl_printer_print_aff(prn, subscript.get());
-  char* str = isl_printer_get_str(prn);
-  ss << str;
-  free(str);
-  isl_printer_free(prn);
-  return ss.str();
-}
-
 std::string toString(isl::pw_aff subscript) {
   // Use a temporary isl::ast_build to print the expression.
   // Ideally, this should use the build at the point
