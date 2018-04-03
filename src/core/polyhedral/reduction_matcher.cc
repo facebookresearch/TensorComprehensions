@@ -72,7 +72,11 @@ bool isReductionUpdateId(
   return false;
 }
 
-bool affInvolvesOnlyDim(isl::aff aff, int redDimIdx) {
+/*
+ * Does "aff" only involve the specified input dimension (and not
+ * any other input dimensions).
+ */
+bool affInvolvesOnlyInputDim(isl::aff aff, int redDimIdx) {
   auto space = aff.get_space();
 
   bool hasPureDim = aff.involves_dims(isl::dim_type::in, redDimIdx, 1);
@@ -85,7 +89,7 @@ bool affInvolvesOnlyDim(isl::aff aff, int redDimIdx) {
     if (aff.get_coefficient_val(isl::dim_type::div, i).is_zero()) {
       continue;
     }
-    bool divR = affInvolvesOnlyDim(aff.get_div(i), redDimIdx);
+    bool divR = affInvolvesOnlyInputDim(aff.get_div(i), redDimIdx);
     divsInvolveDim |=
         divR; // becomes true if at least one involves the given dim
     divsInvolveOtherDims |=
@@ -96,9 +100,7 @@ bool affInvolvesOnlyDim(isl::aff aff, int redDimIdx) {
       aff.involves_dims(
           isl::dim_type::in,
           redDimIdx + 1,
-          space.dim(isl::dim_type::in) - redDimIdx - 1) ||
-      aff.involves_dims(
-          isl::dim_type::param, 0, space.dim(isl::dim_type::param));
+          space.dim(isl::dim_type::in) - redDimIdx - 1);
 
   if (involvesOtherDims) {
     return false;
@@ -136,7 +138,7 @@ bool isAlmostIdentityReduction(isl::pw_aff pa, const Scop& scop) {
 
   auto aff = paWrapper[0].second;
   for (auto redDimIdx : reductionDims) {
-    if (affInvolvesOnlyDim(aff, redDimIdx)) {
+    if (affInvolvesOnlyInputDim(aff, redDimIdx)) {
       return true;
     }
   }
