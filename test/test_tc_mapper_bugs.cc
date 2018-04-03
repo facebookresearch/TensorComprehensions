@@ -761,6 +761,36 @@ TEST(Halide2Isl, MinInUpperBound) {
   atCompl.compile("graph2", inputs, options);
 }
 
+// Check that nested expressions are properly formatted.
+// In particular, as soon as the tensor size X is larger than the tile size,
+// the expression for "xp" is a sum of multiple loop iterators
+// in the generated code.  Parentheses need to be placed around
+// these expressions to ensure the end result is, say, "-(c1 + c3)"
+// rather than "-c1 + c3".
+// The actual convolution is one where the output is equal to the input.
+TEST(Convolution, NestedExpressions) {
+  auto convolution = "convolution";
+  auto TC = std::string(R"TC(
+  def convolution(float(X) A, float(Xp) K) -> (B) {
+      B(x) +=! A(xp) * K(X - 1 + x - xp) where xp in 0:X
+  }
+  )TC");
+  int X = 33;
+  at::Tensor A = at::CUDA(at::kFloat).zeros({X});
+  at::Tensor K = at::CUDA(at::kFloat).zeros({2 * X - 1});
+  A[10] = 1;
+  K[X - 1] = 1;
+  std::vector<at::Tensor> inputs = {A, K};
+  std::vector<at::Tensor> outputs;
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
+  cu.define(TC);
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto handle = cu.compile(convolution, inputs, options);
+  cu.run(convolution, inputs, outputs, handle);
+  auto B = outputs[0];
+  CHECK_EQ(at::Scalar(B[10]).toFloat(), 1);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

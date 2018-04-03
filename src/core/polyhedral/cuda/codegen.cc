@@ -359,28 +359,33 @@ void emitReductionInit(
   context.ss << ";" << endl;
 }
 
-void emitCopyStmt(const CodegenStatementContext& context) {
-  using detail::emitDirectSubscripts;
+namespace {
+template <typename AFF>
+void emitAccess(AFF access, const CodegenStatementContext& context) {
+  // Use a temporary isl::ast_build to print the expression.
+  // Ideally, this should use the build at the point
+  // where the user statement was created.
+  auto astBuild = isl::ast_build::from_context(access.domain());
+  context.ss << astBuild.access_from(access).to_C_str();
+}
+} // namespace
 
+void emitCopyStmt(const CodegenStatementContext& context) {
   auto stmtId = context.statementId();
 
   auto iteratorMap = context.iteratorMap();
   auto promoted = iteratorMap.range_factor_range();
   auto original = iteratorMap.range_factor_domain().range_factor_range();
   auto isRead = stmtId.get_name() == kReadIdName;
-  auto originalName = original.get_tuple_id(isl::dim_type::out).get_name();
-  auto promotedName = promoted.get_tuple_id(isl::dim_type::out).get_name();
 
   if (isRead) {
-    context.ss << promotedName;
-    emitDirectSubscripts(promoted, context);
-    context.ss << " = " << originalName;
-    emitDirectSubscripts(original, context);
+    emitAccess(isl::multi_pw_aff(promoted), context);
+    context.ss << " = ";
+    emitAccess(isl::multi_pw_aff(original), context);
   } else {
-    context.ss << originalName;
-    emitDirectSubscripts(original, context);
-    context.ss << " = " << promotedName;
-    emitDirectSubscripts(promoted, context);
+    emitAccess(isl::multi_pw_aff(original), context);
+    context.ss << " = ";
+    emitAccess(isl::multi_pw_aff(promoted), context);
   }
   context.ss << ";" << std::endl;
 }
@@ -447,14 +452,6 @@ void AstPrinter::emitAst(isl::ast_node node) {
 
 namespace detail {
 
-std::string toString(isl::pw_aff subscript) {
-  // Use a temporary isl::ast_build to print the expression.
-  // Ideally, this should use the build at the point
-  // where the user statement was created.
-  auto astBuild = isl::ast_build::from_context(subscript.domain());
-  return astBuild.expr_from(subscript).to_C_str();
-}
-
 isl::pw_aff makeAffFromMappedExpr(
     const Halide::Expr& expr,
     const CodegenStatementContext& context) {
@@ -498,6 +495,16 @@ isl::multi_aff makeMultiAffAccess(
   return ma;
 }
 
+namespace {
+bool is_identifier_or_nonnegative_integer(isl::ast_expr expr) {
+  if (isl_ast_expr_get_type(expr.get()) == isl_ast_expr_id)
+    return true;
+  if (isl_ast_expr_get_type(expr.get()) != isl_ast_expr_int)
+    return false;
+  return isl::manage(isl_ast_expr_get_val(expr.get())).is_nonneg();
+}
+} // namespace
+
 void emitHalideExpr(
     const Halide::Expr& e,
     const CodegenStatementContext& context,
@@ -505,11 +512,18 @@ void emitHalideExpr(
   class EmitHalide : public Halide::Internal::IRPrinter {
     using Halide::Internal::IRPrinter::visit;
     void visit(const Halide::Internal::Variable* op) {
-      // This is probably needlessly indirect, given that we just have
-      // a name to look up somewhere.
       auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
           Halide::Expr(op), context);
-      context.ss << tc::polyhedral::detail::toString(pwAff);
+      // Use a temporary isl::ast_build to print the expression.
+      // Ideally, this should use the build at the point
+      // where the user statement was created.
+      auto astBuild = isl::ast_build::from_context(pwAff.domain());
+      auto expr = astBuild.expr_from(pwAff);
+      auto s = expr.to_C_str();
+      if (!is_identifier_or_nonnegative_integer(expr)) {
+        s = "(" + s + ")";
+      }
+      context.ss << s;
     }
     void visit(const Halide::Internal::Call* op) {
       if (substitutions.count(op->name)) {
@@ -613,19 +627,7 @@ void emitMappedTensorAccess(
   auto astToPromoted =
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
-  auto astBuild = isl::ast_build::from_context(astToPromoted.domain());
-  context.ss << astBuild.access_from(astToPromoted).to_C_str();
-}
-
-void emitDirectSubscripts(
-    isl::pw_multi_aff subscripts,
-    const CodegenStatementContext& context) {
-  auto mpa = isl::multi_pw_aff(subscripts); // this conversion is safe
-  for (auto pa : isl::MPA(mpa)) {
-    context.ss << "[";
-    context.ss << toString(pa.pa);
-    context.ss << "]";
-  }
+  emitAccess(astToPromoted, context);
 }
 
 } // namespace detail

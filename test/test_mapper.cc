@@ -186,7 +186,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   float32 (*B)[M] = reinterpret_cast<float32 (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t1 + c1 + 1) {
-      C[t0 + 16 * b0][t1 + c1] = (A[t0 + 16 * b0][t1 + c1] + B[t0 + 16 * b0][t1 + c1]);
+      C[(t0 + 16 * b0)][(t1 + c1)] = (A[(t0 + 16 * b0)][(t1 + c1)] + B[(t0 + 16 * b0)][(t1 + c1)]);
     }
   }
 }
@@ -318,9 +318,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
         for (int c3 = 0; c3 <= 15; c3 += 1) {
-          O[c0 + c2][c1 + c3] = 0.000000f;
+          O[(c0 + c2)][(c1 + c3)] = 0.000000f;
           for (int c4 = t0; c4 <= 63; c4 += 32) {
-            O[c0 + c2][c1 + c3] = (O[c0 + c2][c1 + c3] + (A[c0 + c2][c4]*B[c4][c1 + c3]));
+            O[(c0 + c2)][(c1 + c3)] = (O[(c0 + c2)][(c1 + c3)] + (A[(c0 + c2)][c4]*B[c4][(c1 + c3)]));
           }
         }
       }
@@ -443,7 +443,7 @@ TEST_F(PolyhedralMapperTest, Unroll1D) {
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
       std::move(scop), mappingOptions);
   auto code = std::get<0>(mscop->codegen(specializedName));
-  std::string expected("C[64 * b0 + c2][t0 + 64 * b1]");
+  std::string expected("C[(64 * b0 + c2)][(t0 + 64 * b1)]");
   ASSERT_TRUE(code.find(expected) != std::string::npos) << code;
 }
 
@@ -462,7 +462,7 @@ TEST_F(PolyhedralMapperTest, Unroll2D) {
   auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
       std::move(scop), mappingOptions);
   auto code = std::get<0>(mscop->codegen(specializedName));
-  std::string expected("C[t1 + 64 * b0 + 32][t0 + 64 * b1 + 32]");
+  std::string expected("C[(t1 + 64 * b0 + 32)][(t0 + 64 * b1 + 32)]");
   ASSERT_TRUE(code.find(expected) != std::string::npos);
 }
 
@@ -712,7 +712,7 @@ TEST_F(PolyhedralMapperTest, ReductionMM1D) {
   auto code = codegenMapped(kTcMM, mappingOptions);
   using tc::code::cuda::kCUBReductionName;
   EXPECT_TRUE(code.find(kCUBReductionName) != std::string::npos);
-  EXPECT_TRUE(code.find("C[c0 + c3][t0 + c1] = (C") != std::string::npos);
+  EXPECT_TRUE(code.find("C[(c0 + c3)][(t0 + c1)] = (C") != std::string::npos);
 }
 
 /*
@@ -730,7 +730,7 @@ TEST_F(PolyhedralMapperTest, ReductionMM2D) {
   auto code = codegenMapped(kTcMM, mappingOptions);
   using tc::code::cuda::kCUBReductionName;
   EXPECT_TRUE(code.find(kCUBReductionName) != std::string::npos);
-  EXPECT_TRUE(code.find("C[t1 + c0][t0 + c1] = (C") != std::string::npos);
+  EXPECT_TRUE(code.find("C[(t1 + c0)][(t0 + c1)] = (C") != std::string::npos);
 }
 
 int main(int argc, char** argv) {
