@@ -40,7 +40,6 @@ endif()
 set(CORE_TEST_FILES
   test_core
   test_inference
-  test_isl_functionality
   test_tc2halide
 )
 
