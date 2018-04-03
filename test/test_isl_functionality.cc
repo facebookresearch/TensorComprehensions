@@ -70,7 +70,6 @@ TEST_F(Isl, DropDimsViaSchedule) {
 TEST_F(Isl, Mupa) {
   isl::space space = isl::set(ctx, "{[a,b,c]:}").get_space();
   isl::space schedule_space = space.map_from_set();
-  // schedule_space = schedule_space.set_tuple_name(isl::dim_type::out, "");
   isl::pw_multi_aff identity_fun = isl::pw_multi_aff(schedule_space);
   isl::multi_union_pw_aff mupa =
       isl::multi_union_pw_aff(isl::multi_pw_aff(identity_fun));
