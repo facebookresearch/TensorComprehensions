@@ -3,7 +3,7 @@ Coding Conventions
 
 In order to increase readability across Tensor Comprehensions written by
 multiple authors and to reduce the amount of surprising behavior, the
-following conventions should be adopted when writing TC. Generally in TC one
+following conventions should be adopted when writing TC. Generally in TC, one
 should increment nesting by 4 whitespaces at each level and align tensor names
 and indices where appropriate to make memory access patterns emerge. Since
 these two goals can easily be conflicting, use your best judgement to tradeoff
@@ -12,7 +12,7 @@ between the two goals. Such examples are provided below.
 Use indices named after parameters
 ----------------------------------
 
-Use upper-case names for parameters and input/output tensors.
+Use upper-case names for parameters and capital-case names for input/output tensors.
 Use lower-case names for indices to match the name of the parameter
 corresponding to the dimension upon which they iterate.
 In other words, prefer:
@@ -55,12 +55,12 @@ to:
         C(m, n) +=! A(m, k) * B(k, n)
     }
 
-Filter non-rectangular regions with deta-dependencies
+Filter non-rectangular regions with data-dependencies
 -----------------------------------------------------
 
-TC semantics only support (hyper-)rectangular iteration spaces. This is a hard
-requirement to make range inference non-ambiguous. To simulate non-rectangular
-iteration spaces, one can use the following:
+TC semantics are restricted to (hyper-)rectangular iteration spaces.
+This is a hard requirement to ensure range inference is non-ambiguous (see inference_).
+To simulate non-rectangular iteration spaces, one can use the following:
 
 .. code::
 
@@ -68,8 +68,9 @@ iteration spaces, one can use the following:
         LU(m1, m2) +=! (r_k >= m1 and r_k =< m2) ? L(m1, r_k) * U(r_k, m2) : 0
     }
 
-However, the following is incompatible with range inference and will fail
-the semantic checks in the TC compiler:
+However, non-(hyper)-rectangular iteration spaces (e.g. triangular) are
+incompatible with range inference and will fail the semantic checks in the TC
+compiler:
 
 .. code::
 
@@ -77,16 +78,16 @@ the semantic checks in the TC compiler:
         LU(m1, m2) +=! L(m1, r_k) * U(r_k, m2) where r_k in m1:M, r_k in 0:m2+1
     }
 
-The reader may remark that this is an inefficient way of performing
+The reader may remark that this is an inefficient way of writing
 matrix-multiplication of triangular matrices.
-Lowering such operations efficient from TC is the subject of future work.
+Lowering such operations efficiently from TC is the subject of future work.
 
-Prefix gradient tensors names with :code:`g_`
+Prefix gradient tensors names with :code:`d_`
 ---------------------------------------------
 
 When implementing backward operations, pass the inputs to the backwards pass
-in the same order as the outputs to the forward passs and use the same tensor
-name prefixed by :code:`g_`. For instance:
+in the same order as the outputs of the forward pass and use the same tensor
+name prefixed by :code:`d_`. For instance:
 
 .. code::
 
@@ -94,7 +95,7 @@ name prefixed by :code:`g_`. For instance:
          ...
      }
 
-     def conv_bw(float(N,C,H,W) I, float(M,C,KH,KW) Wt, float(N,M,HO,WO) g_O) -> (g_I) {
+     def conv_bw(float(N,C,H,W) I, float(M,C,KH,KW) Wt, float(N,M,HO,WO) d_O) -> (d_I) {
          ...
      }
 
@@ -110,9 +111,9 @@ and the emergence of an antidiagonal pattern in the reduction accesses:
     def matmul(float(M,K) A, float(K,N) B) -> (C) {
         C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
-    def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) g_C) -> (g_A, g_B){
-        g_A(m, k) +=! g_C(  m, r_n) * B(  k, r_n)
-        g_B(k, n) +=! g_C(r_m,   n) * A(r_m,   k)
+    def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) d_C) -> (d_A, d_B){
+        d_A(m, k) +=! d_C(  m, r_n) * B(  k, r_n)
+        d_B(k, n) +=! d_C(r_m,   n) * A(r_m,   k)
     }
 
 Reasoning on such reduction patterns at the level of TC has already proven

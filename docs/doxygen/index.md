@@ -28,7 +28,7 @@ Let's start with a simple example is a matrix vector product:
 `A` and `x` are input tensors. `o` is an output tensor.
 The statement `o(r) +=! A(r,r_c) * x(r_c)` introduces two index variables `r` and `r_c`.
 Their range is inferred by their use indexing `A` and `x`. `r = [0,R)`, `r_c = [0,C)`.
-Because `r_c` only appears on the right side,
+Because `r_c` only appears on the righthand side,
 stores into `o` will reduce over `r_c` with the reduction specified for the loop.
 Reductions can occur across multiple variables, but they all share the same kind of associative reduction (e.g. +=)
 to maintain invariant (3). `mv` computes the same thing as this C++ loop:

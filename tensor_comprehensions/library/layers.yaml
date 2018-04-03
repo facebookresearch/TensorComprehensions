@@ -25,8 +25,8 @@
 
 - name: indexing
   lang: |
-    def indexing(float(H, W) input, int32(L) index) -> (output) {{
-        output(l, w) = input(index(l), w) where l in 0:{L}
+    def indexing(float(H, W) Input, int32(L) Index) -> (Output) {{
+        Output(l, w) = Input(Index(l), w) where l in 0:{L}
     }}
 
 - name: lookup_table
@@ -41,9 +41,9 @@
         C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
   grad: |
-    def matmul_grad(float(M,K) A, float(K,N) B, float(M,N) g_C) -> (g_A, g_B){
-        g_A(m, k) +=! g_C(  m, r_n) * B(  k, r_n)
-        g_B(k, n) +=! g_C(r_m,   n) * A(r_m,   k)
+    def matmul_grad(float(M,K) A, float(K,N) B, float(M,N) d_C) -> (d_A, d_B){
+        d_A(m, k) +=! d_C(  m, r_n) * B(  k, r_n)
+        d_B(k, n) +=! d_C(r_m,   n) * A(r_m,   k)
     }
 
 - name: batch_matmul
@@ -60,15 +60,15 @@
 
 - name: avgpool
   lang: |
-    def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) +=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
+    def avgpool(float(B, C, H, W) Input) -> (Output) {{
+        Output(b, c, h, w) +=! Input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
             where r_kh in 0:{kH}, r_kw in 0:{kW}
     }}
 
 - name: maxpool
   lang: |
-    def maxpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) max=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw)
+    def maxpool(float(B, C, H, W) Input) -> (Output) {{
+        Output(b, c, h, w) max=! Input(b, c, h * {sH} + r_kh, w * {sW} + r_kw)
             where r_kh in 0:{kH}, r_kw in 0:{kW}
     }}
 
@@ -86,10 +86,10 @@
 
 - name: softmax
   lang: |
-    def softmax(float(N, D) I) -> (O, expsum, maxVal) {
-        maxVal(n) max=      I(n, d)
-          expsum(n) +=! exp(I(n, d) - maxVal(n))
-             O(n, d) =  exp(I(n, d)) / expsum(n)
+    def softmax(float(N, D) I) -> (O, ExpSum, MaxVal) {
+        MaxVal(n) max=      I(n, d)
+          ExpSum(n) +=! exp(I(n, d) - MaxVal(n))
+             O(n, d) =  exp(I(n, d)) / ExpSum(n)
     }
 
 - name: Tanh
@@ -119,7 +119,7 @@
 
 - name: fcrelu
   lang: |
-    def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1){
+    def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
         O1(b, n) +=! I(b, r_m) * W1(n, r_m)
         O1(b, n)  = O1(b,   n) + B1(n)
         O1(b, n)  = fmax(O1(b, n), 0)
@@ -151,9 +151,9 @@
         O(n, m, h, w)  = O(n, m, h, w) + B(m)
     }}
   grad: |
-    def convolution_strided_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(N, M, H, W) g_O) -> (g_I, g_W1) {{
-         g_I(n, c, h, w)   +=! g_O(n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-        g_W1(m, c, kh, kw) +=! g_O(n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+    def convolution_strided_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(N, M, H, W) d_O) -> (d_I, d_W1) {{
+         d_I(n, c, h, w)   +=! d_O(n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+        d_W1(m, c, kh, kw) +=! d_O(n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
     }}
 
 - name: group_convolution
@@ -198,8 +198,8 @@
 
 - name: add
   lang: |
-    def add(float(N) A, float(N) B) -> (output) {
-        output(n) = A(n) + B(n)
+    def add(float(N) A, float(N) B) -> (Output) {
+        Output(n) = A(n) + B(n)
     }
 
 - name: abs

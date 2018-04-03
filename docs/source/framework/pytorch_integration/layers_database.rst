@@ -32,8 +32,8 @@ Average pooling
 
 .. code::
 
-    def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) +=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
+    def avgpool(float(B, C, H, W) Input) -> (Output) {{
+        Output(b, c, h, w) +=! Input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
             where r_kh in 0:{kH}, r_kw in 0:{kW}
     }}
 
@@ -43,8 +43,8 @@ Max pooling
 
 .. code::
 
-    def maxpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) max=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw)
+    def maxpool(float(B, C, H, W) Input) -> (Output) {{
+        Output(b, c, h, w) max=! Input(b, c, h * {sH} + r_kh, w * {sW} + r_kw)
             where r_kh in 0:{kH}, r_kw in 0:{kW}
     }}
 
@@ -76,9 +76,9 @@ Strided Convolution Gradient
 
 .. code::
 
-    def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(N, M, H, W) g_O) -> (g_I, g_W1) {{
-         g_I(n, c, h, w)   +=! g_O(n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-        g_W1(m, c, kh, kw) +=! g_O(n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+    def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(N, M, H, W) d_O) -> (d_I, d_W1) {{
+         d_I(n, c, h, w)   +=! d_O(n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+        d_W1(m, c, kh, kw) +=! d_O(n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
     }}
 
 Simple Group Convolution
@@ -140,11 +140,11 @@ Softmax
 
 .. code::
 
-    def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
-        maxVal(n) max=! I(n, d)
-        expDistance(n, d) = exp(I(n, d) - maxVal(n))
-        expSum(n) +=! expDistance(n, d)
-        O(n, d) = expDistance(n, d) / expSum(n)
+    def softmax(float(N, D) I) -> (O, MaxVal, ExpDistance, ExpSum) {
+        MaxVal(n) max=! I(n, d)
+        ExpDistance(n, d) = exp(I(n, d) - MaxVal(n))
+        ExpSum(n) +=! ExpDistance(n, d)
+        O(n, d) = ExpDistance(n, d) / ExpSum(n)
     }
 
 Tanh
@@ -191,9 +191,9 @@ Matmul Gradient
 
 .. code::
 
-    def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) g_C) -> (g_A, g_B){
-        g_A(m, k) +=! g_C(  m, r_n) * B(  k, r_n)
-        g_B(k, n) +=! g_C(r_m,   n) * A(r_m,   k)
+    def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) d_C) -> (d_A, d_B){
+        d_A(m, k) +=! d_C(  m, r_n) * B(  k, r_n)
+        d_B(k, n) +=! d_C(r_m,   n) * A(r_m,   k)
     }
 
 Batch Matmul
@@ -219,8 +219,8 @@ Add
 
 .. code::
 
-    def add(float(N) A, float(N) B) -> (output) {
-        output(n) = A(n) + B(n)
+    def add(float(N) A, float(N) B) -> (Output) {
+        Output(n) = A(n) + B(n)
     }
 
 Tensor Operations
@@ -231,8 +231,8 @@ Indexing
 
 .. code::
 
-    def indexing(float(H, W) input, int32(L) index) -> (output) {{
-        output(l, w) = input(index(l), w)
+    def indexing(float(H, W) Input, int32(L) Index) -> (Output) {{
+        Output(l, w) = Input(Index(l), w)
     }}
 
 Lookup Table
@@ -327,17 +327,17 @@ Batch Normalization
 
 .. code::
 
-    def batchnorm(float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn)
-    -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut)
+    def batchnorm(float(N,C,H,W) I, float(C) RMeanIn, float(C) RVarIn)
+    -> (O, RMeanOut, RVarOut, Mean, Centered, Variance, ExpectedVariance, normalizedOut)
     {{
-        mean(c) +=! I(nn, c, hh, ww)
-        mean(c)  = mean(c) / (N * H * W)
-        rMeanOut(c) = (1 - {momentum}) * rMeanIn(c) + {momentum} * mean(c)
-        centered(n, c, h, w) =        I(n, c, h, w) - rMeanOut(c)
-        variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
-        expectedVariance(c) +=! (variance(n, c, h, w) + {eps}) / (N * H * W)
-        rVarOut(c) = rsqrt((1 - {momentum}) * rVarIn(c) + {momentum} * expectedVariance(c))
-        O(n, c, h, w) = centered(n, c, h, w) * rVarOut(c)
+        Mean(c) +=! I(nn, c, hh, ww)
+        Mean(c)  = Mean(c) / (N * H * W)
+        RMeanOut(c) = (1 - {momentum}) * RMeanIn(c) + {momentum} * Mean(c)
+        Centered(n, c, h, w) =        I(n, c, h, w) - RMeanOut(c)
+        Variance(n, c, h, w) = Centered(n, c, h, w) * Centered(n, c, h, w)
+        ExpectedVariance(c) +=! (Variance(n, c, h, w) + {eps}) / (N * H * W)
+        RVarOut(c) = rsqrt((1 - {momentum}) * RVarIn(c) + {momentum} * ExpectedVariance(c))
+        O(n, c, h, w) = Centered(n, c, h, w) * RVarOut(c)
         normalizedOut(n, c, h, w) = O(n, c, h, w)
     }}
 
@@ -346,12 +346,12 @@ Layer Normalization
 
 .. code::
 
-    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {{
-              mean(t, b) +=! I(t, b, c) / C
-        centered(t, b, c) =  I(t, b, c) - mean(t, b)
-        var(t, b) +=! centered(t, b, c) * centered(t, b, c)
-        var(t, b)  =  (var(t, b) + {eps}) / C
-        O(t, b, c) =  centered(t, b, c) / rsqrt(var(t, b))
+    def layernorm(float(T, B, C) I) -> (O, Mean, Centered, Var) {{
+              Mean(t, b) +=! I(t, b, c) / C
+        Centered(t, b, c) =  I(t, b, c) - Mean(t, b)
+        Var(t, b) +=! Centered(t, b, c) * Centered(t, b, c)
+        Var(t, b)  =  (Var(t, b) + {eps}) / C
+        O(t, b, c) =  Centered(t, b, c) / rsqrt(Var(t, b))
     }}
 
 Distance Functions
@@ -362,10 +362,10 @@ Cosine Similarity
 
 .. code::
 
-    def cosine_similarity(float(M, N) I1, float(M, N) I2) -> (O, sumI1, sumI2) {{
-        sumI1(m) +=!  I1(m, n) * I1(m, n)
-        sumI2(m) +=!  I2(m, n) * I2(m, n)
-            O(m) +=! (I1(m, n) * I2(m, n)) / fmax(rsqrt(sumI1(m)) * sqrt(sumI2(m)), {eps})
+    def cosine_similarity(float(M, N) I1, float(M, N) I2) -> (O, SumI1, SumI2) {{
+        SumI1(m) +=!  I1(m, n) * I1(m, n)
+        SumI2(m) +=!  I2(m, n) * I2(m, n)
+            O(m) +=! (I1(m, n) * I2(m, n)) / fmax(rsqrt(SumI1(m)) * sqrt(SumI2(m)), {eps})
     }}
 
 What operations can not be expressed

@@ -29,9 +29,9 @@ Examples
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
        O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
-        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -68,9 +68,9 @@ them, the example for that would be:
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
        O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
-        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -102,9 +102,9 @@ Let's see how to cache options to file when we tune a training layer.
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
        O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) g_O) -> (g_I, g_W1) {{
-        g_I(n, c,  h,  w) +=! g_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -136,11 +136,11 @@ the example below for how to use it:
        tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
        O(n, m, h, w) = tmp(n, m, h, w) + B(m)
      }
-     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) g_O)
-     -> (g_I, g_W1, g_B) {
-        g_I(n, c,  h,  w) +=! g_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       g_W1(m, c, kh, kw) +=! g_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)
-       g_B(m) +=! g_O(n, m, h, w)
+     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) d_O)
+     -> (d_I, d_W1, d_B) {
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+       d_B(m) +=! d_O(n, m, h, w)
      }
      """
 

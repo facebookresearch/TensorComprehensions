@@ -594,4 +594,4 @@ Coding Conventions for writing Tensor Comprehensions
 
 Please see the following documentation
 [entry](https://facebookresearch.github.io/TensorComprehensions/coding_conventions.html)
-on how to write Tensor Comprehensions in a standard, legible, fashion.
+on how to write Tensor Comprehensions in a standard legible fashion.
