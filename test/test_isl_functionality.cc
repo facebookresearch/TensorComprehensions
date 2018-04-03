@@ -70,28 +70,9 @@ TEST_F(Isl, DropDimsViaSchedule) {
 TEST_F(Isl, Mupa) {
   isl::space space = isl::set(ctx, "{[a,b,c]:}").get_space();
   isl::space schedule_space = space.map_from_set();
-  // schedule_space = schedule_space.set_tuple_name(isl::dim_type::out, "");
   isl::pw_multi_aff identity_fun = isl::pw_multi_aff(schedule_space);
   isl::multi_union_pw_aff mupa =
       isl::multi_union_pw_aff(isl::multi_pw_aff(identity_fun));
-}
-
-bool HasFilterChild(isl::schedule_node node, int depth = 1) {
-  if (isl_schedule_node_get_type(node.get()) == isl_schedule_node_filter) {
-    return true;
-  }
-
-  if (depth == 0) {
-    return false;
-  }
-
-  for (int i = 0, n = node.n_children(); i < n; ++i) {
-    if (HasFilterChild(node.child(0), depth - 1)) {
-      return true;
-    }
-  }
-
-  return false;
 }
 
 int main(int argc, char** argv) {
