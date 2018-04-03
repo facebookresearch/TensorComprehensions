@@ -155,6 +155,7 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
 /// - replace TK_APPLY with TK_BUILT_IN for built in functions
 /// - checks that all variables are defined, and creates index/reduction
 /// variable objects.
+/// - checks that input variables are readonly.
 struct Sema {
   std::unordered_map<TreeRef, TreeRef> expr_to_type;
 
@@ -349,10 +350,13 @@ struct Sema {
       }
     }
 
-    for (auto p : func.params())
+    for (auto p : func.params()) {
       nonTemporaries.insert(p.ident().name());
-    for (auto r : func.returns())
+      inputParameters.insert(p.ident().name());
+    }
+    for (auto r : func.returns()) {
       nonTemporaries.insert(r.ident().name());
+    }
 
     auto statements_ =
         checkList(func.statements(), [&](TreeRef r) { return checkStmt(r); });
@@ -445,6 +449,9 @@ struct Sema {
 
     // make dimension variables for each dimension of the output tensor
     std::string name = stmt.ident().name();
+    if (inputParameters.count(name) > 0) {
+      throw ErrorReport(stmt_) << "TC inputs are immutable";
+    }
     TreeList output_indices;
     int n = stmt.indices().size();
     for (int i = 0; i < n; ++i) {
@@ -614,6 +621,7 @@ struct Sema {
   // allowed
   std::unordered_set<std::string> live_input_names;
 
+  std::unordered_set<std::string> inputParameters;
   std::unordered_set<std::string> nonTemporaries;
 };
 } // namespace lang
