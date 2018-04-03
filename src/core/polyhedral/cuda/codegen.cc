@@ -108,9 +108,12 @@ vector<string> emitParams(const Scop& scop) {
 }
 
 // Returns number of names printed, i.e. tensors.size().
-string emitTypedTensorName(Halide::OutputImageParam t) {
+string emitTypedTensorName(
+    Halide::OutputImageParam t,
+    bool constInput = false) {
   stringstream ss;
-  ss << t.type() << "* " << makePointerName(t.name());
+  ss << (constInput ? "const " : "") << t.type() << "* "
+     << makePointerName(t.name());
   return ss.str();
 }
 
@@ -128,7 +131,7 @@ vector<string> emitTypedTensorNames(const vector<Halide::ImageParam>& tensors) {
   vector<string> res;
   res.reserve(tensors.size());
   for (auto t : tensors) {
-    res.push_back(emitTypedTensorName(t));
+    res.push_back(emitTypedTensorName(t, true));
   }
   return res;
 }
@@ -179,7 +182,8 @@ void emitKernelSignature(
 void emitTensorView(
     stringstream& ss,
     Halide::OutputImageParam p,
-    const map<string, Halide::Expr>& paramValues) {
+    const map<string, Halide::Expr>& paramValues,
+    bool constInput = false) {
   WS ws;
   stringstream ssViewType;
   for (int i = 1; i < p.dimensions(); ++i) { // Skip the outermost dimension
@@ -190,9 +194,11 @@ void emitTensorView(
     ssViewType << "[" << extent << "]";
   }
   ss << ws.tab();
-  ss << p.type() << " (*" << p.name() << ")" << ssViewType.str();
+  ss << (constInput ? "const " : "") << p.type() << " (*" << p.name() << ")"
+     << ssViewType.str();
   ss << " = ";
-  ss << "reinterpret_cast<" << p.type() << " (*)" << ssViewType.str() << ">";
+  ss << "reinterpret_cast<" << (constInput ? "const " : "") << p.type()
+     << " (*)" << ssViewType.str() << ">";
   ss << "(" << makePointerName(p.name()) << ")";
   ss << ";";
   ss << endl;
@@ -212,7 +218,7 @@ void emitTensorViews(
     const vector<Halide::ImageParam>& params,
     const map<string, Halide::Expr>& paramValues) {
   for (auto p : params) {
-    emitTensorView(ss, p, paramValues);
+    emitTensorView(ss, p, paramValues, true);
   }
 }
 

@@ -197,6 +197,15 @@ def fun(float(M, N) I) -> (O1, O2, O3) {
   Check(tc, {123, 13});
 }
 
+TEST_F(TC2Isl, MutableInput) {
+  string tc = R"TC(
+def foo(float(N) A) -> (B) {
+    A(i) = A(i) + 42
+    B(k) +=! A(i) where k in 0:1
+}
+)TC";
+  EXPECT_THROW(Check(tc, {123}), ::lang::ErrorReport);
+}
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
