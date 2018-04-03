@@ -76,15 +76,15 @@ bool isReductionUpdateId(
  * Does "aff" only involve the specified input dimension (and not
  * any other input dimensions).
  */
-bool affInvolvesOnlyInputDim(isl::aff aff, int redDimIdx) {
-  auto space = aff.get_space();
+bool pwAffInvolvesOnlyInputDim(isl::pw_aff pa, int redDimIdx) {
+  auto space = pa.get_space();
 
-  if (!aff.involves_dims(isl::dim_type::in, redDimIdx, 1)) {
+  if (!pa.involves_dims(isl::dim_type::in, redDimIdx, 1)) {
     return false;
   }
 
-  if (aff.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
-      aff.involves_dims(
+  if (pa.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
+      pa.involves_dims(
           isl::dim_type::in,
           redDimIdx + 1,
           space.dim(isl::dim_type::in) - redDimIdx - 1)) {
@@ -111,14 +111,8 @@ bool isAlmostIdentityReduction(isl::pw_aff pa, const Scop& scop) {
     return false;
   }
 
-  auto paWrapper = isl::PA(pa);
-  if (paWrapper.size() != 1) {
-    return false;
-  }
-
-  auto aff = paWrapper[0].second;
   for (auto redDimIdx : reductionDims) {
-    if (affInvolvesOnlyInputDim(aff, redDimIdx)) {
+    if (pwAffInvolvesOnlyInputDim(pa, redDimIdx)) {
       return true;
     }
   }
