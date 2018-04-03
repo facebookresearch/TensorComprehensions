@@ -79,20 +79,18 @@ bool isReductionUpdateId(
 bool affInvolvesOnlyInputDim(isl::aff aff, int redDimIdx) {
   auto space = aff.get_space();
 
-  bool hasPureDim = aff.involves_dims(isl::dim_type::in, redDimIdx, 1);
+  if (!aff.involves_dims(isl::dim_type::in, redDimIdx, 1)) {
+    return false;
+  }
 
-  bool involvesOtherDims = aff.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
+  if (aff.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
       aff.involves_dims(
           isl::dim_type::in,
           redDimIdx + 1,
-          space.dim(isl::dim_type::in) - redDimIdx - 1);
+          space.dim(isl::dim_type::in) - redDimIdx - 1)) {
+    return false;
+  }
 
-  if (involvesOtherDims) {
-    return false;
-  }
-  if (!hasPureDim) {
-    return false;
-  }
   return true;
 }
 
