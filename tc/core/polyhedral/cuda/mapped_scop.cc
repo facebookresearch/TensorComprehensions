@@ -211,9 +211,13 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   auto initsUpdates = reductionInitsUpdates(band->mupa_.domain(), scop());
   auto inits = initsUpdates.first;
   auto updates = initsUpdates.second;
-  if (updates.size() != 1) {
+  if (updates.n_set() != 1) {
     return false;
   }
+  std::vector<isl::id> updateIds;
+  updates.foreach_set([&updateIds](isl::set set) {
+    updateIds.emplace_back(set.get_tuple_id());
+  });
   // The reduction member needs to appear right underneath
   // the coincident members.
   auto reductionDim = findFirstReductionDim(band->mupa_, scop());
@@ -229,7 +233,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
     orderBefore(scop_->scheduleRoot(), tree, inits);
   }
   reductionFromParent_.emplace(tree, reductionTree);
-  reductionBandUpdates_.emplace(reductionTree, updates);
+  reductionBandUpdates_.emplace(reductionTree, updateIds);
   return true;
 }
 

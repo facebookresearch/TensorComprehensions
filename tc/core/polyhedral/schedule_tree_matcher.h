@@ -26,12 +26,12 @@ namespace tc {
 namespace polyhedral {
 
 // Return the union of the reduction init statements as well as
-// the identifiers of all reduction update statements
+// the union of the reduction update statements
 // that appear in "domain", assuming "domain" only contains
 // reduction init and update statements.
-// If "domain" contains any other statements, then return an empty vector
-// of identifiers.
-std::pair<isl::union_set, std::vector<isl::id>> reductionInitsUpdates(
+// If "domain" contains any other statements, then return an empty set
+// of reduction update statements.
+std::pair<isl::union_set, isl::union_set> reductionInitsUpdates(
     isl::union_set domain,
     const Scop& scop);
 
