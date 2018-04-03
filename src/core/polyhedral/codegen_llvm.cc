@@ -36,12 +36,12 @@
 #include "isl/ast.h"
 
 #include "tc/core/constants.h"
-//#include "tc/core/polyhedral/isl_mu_wrappers.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+#include "tc/external/isl.h"
 
 #ifndef LLVM_VERSION_MAJOR
 #error LLVM_VERSION_MAJOR not set
@@ -76,10 +76,9 @@ namespace {
 thread_local llvm::LLVMContext llvmCtx;
 
 int64_t toSInt(isl::val v) {
-  auto n = v.get_num_si();
-  auto d = v.get_den_si();
-  CHECK_EQ(n % d, 0);
-  return n / d;
+  CHECK(v.is_int());
+  static_assert(sizeof(long) <= 8, "long is assumed to fit into 64bits");
+  return v.get_num_si();
 }
 
 llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
@@ -88,25 +87,16 @@ llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
 
 int64_t IslExprToSInt(isl::ast_expr e) {
   CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_int);
-  assert(sizeof(long) <= 8); // long is assumed to fit to 64bits
   return toSInt(isl::manage(isl_ast_expr_get_val(e.get())));
 }
 
 int64_t islIdToInt(isl::ast_expr e, isl::set context) {
   CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_id);
-  CHECK_NE(-1, context.find_dim_by_id(isl::dim_type::param, e.get_id()));
-  while (context.dim(isl::dim_type::param) > 1) {
-    for (unsigned int d = 0; d < context.dim(isl::dim_type::param); ++d) {
-      if (d == context.find_dim_by_id(isl::dim_type::param, e.get_id())) {
-        continue;
-      }
-      context = context.remove_dims(isl::dim_type::param, d, 1);
-    }
-  }
+  auto space = context.get_space();
+  isl::aff param(isl::aff::param_on_domain_space(space, e.get_id()));
   auto p = context.sample_point();
-
-  auto val = toSInt(p.get_coordinate_val(isl::dim_type::param, 0));
-  return val;
+  CHECK(context.is_equal(p));
+  return toSInt(param.eval(p));
 }
 
 int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
@@ -319,8 +309,7 @@ llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
       return sym_get(expr.get_id().get_name());
     case isl_ast_expr_type::isl_ast_expr_int: {
       auto val = isl::manage(isl_ast_expr_get_val(expr.get()));
-      CHECK(val.is_int());
-      return getLLVMConstantSignedInt64(val.get_num_si());
+      return getLLVMConstantSignedInt64(toSInt(val));
     }
     default:
       LOG(FATAL) << "NYI";
@@ -497,16 +486,15 @@ class LLVMCodegen {
     halide_cg.get_builder().CreateBr(headerBB);
 
     llvm::PHINode* phi = nullptr;
+    auto iterator = node.get_iterator().get_id();
 
     // Loop Header
     {
       auto initVal = IslExprToSInt(node.get_init());
       halide_cg.get_builder().SetInsertPoint(headerBB);
       phi = halide_cg.get_builder().CreatePHI(
-          llvm::Type::getInt64Ty(llvmCtx),
-          2,
-          node.get_iterator().get_id().get_name());
-      halide_cg.sym_push(node.get_iterator().get_id().get_name(), phi);
+          llvm::Type::getInt64Ty(llvmCtx), 2, iterator.get_name());
+      halide_cg.sym_push(iterator.get_name(), phi);
       phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
 
       auto cond_expr = node.get_cond();
@@ -518,7 +506,7 @@ class LLVMCodegen {
       CHECK(
           isl_ast_expr_get_type(condLHS.get()) ==
           isl_ast_expr_type::isl_ast_expr_id);
-      CHECK_EQ(condLHS.get_id(), node.get_iterator().get_id());
+      CHECK_EQ(condLHS.get_id(), iterator);
 
       IslAstExprInterpeter i(scop_.globalParameterContext);
       auto condRHSVal = i.interpret(cond_expr.get_op_arg(1));
@@ -575,7 +563,7 @@ class LLVMCodegen {
     }
 
     halide_cg.get_builder().SetInsertPoint(loopExitBB);
-    halide_cg.sym_pop(node.get_iterator().get_id().get_name());
+    halide_cg.sym_pop(iterator.get_name());
 #ifdef TAPIR_VERSION_MAJOR
     if (parallel) {
       auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
@@ -652,9 +640,6 @@ IslCodegenRes codegenISL(const Scop& scop) {
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto stmtId = expr.get_op_arg(0).get_id();
-      // auto nodeId = isl::id(
-      // node.get_ctx(),
-      // std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
       CHECK_EQ(0, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
       auto iterators = scop.halide.iterators.at(stmtId);
