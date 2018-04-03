@@ -81,21 +81,6 @@ bool affInvolvesOnlyInputDim(isl::aff aff, int redDimIdx) {
 
   bool hasPureDim = aff.involves_dims(isl::dim_type::in, redDimIdx, 1);
 
-  bool divsInvolveOtherDims = false;
-  bool divsInvolveDim = false;
-  for (int i = 0, ei = aff.dim(isl::dim_type::div); i < ei; ++i) {
-    // Ignore divs with coefficient 0 that may be referred to by the aff.
-    // This is particularly the case when we are already processing the div.
-    if (aff.get_coefficient_val(isl::dim_type::div, i).is_zero()) {
-      continue;
-    }
-    bool divR = affInvolvesOnlyInputDim(aff.get_div(i), redDimIdx);
-    divsInvolveDim |=
-        divR; // becomes true if at least one involves the given dim
-    divsInvolveOtherDims |=
-        !divR; // becomes true if at least one involves other dims
-  }
-
   bool involvesOtherDims = aff.involves_dims(isl::dim_type::in, 0, redDimIdx) ||
       aff.involves_dims(
           isl::dim_type::in,
@@ -105,10 +90,7 @@ bool affInvolvesOnlyInputDim(isl::aff aff, int redDimIdx) {
   if (involvesOtherDims) {
     return false;
   }
-  if (!hasPureDim && !divsInvolveDim) {
-    return false;
-  }
-  if (divsInvolveDim && divsInvolveOtherDims) {
+  if (!hasPureDim) {
     return false;
   }
   return true;
