@@ -65,12 +65,10 @@ struct TensorDot_32_512_8_2_28_28 : public ::testing::Test {
     // Build naive options baseline to check correctness
     // Make naive compile first to better see debug spew
     auto TC = std::string(R"TC(
-    def tensordot_naive(float(N, C1, C2, H, W) I0,
-                            float(N, C2, C3, H, W) I1)
-    -> (O)
-    {
-      O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
-    }
+def tensordot_naive(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O)
+{
+    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
   )TC");
 
     // If running cuda-gdb only run on test code, not reference: things are
@@ -92,10 +90,10 @@ struct TensorDot_32_512_8_2_28_28 : public ::testing::Test {
     auto TC = std::string("def ") + name +
         std::string(R"TC((float(N, C1, C2, H, W) I0,
                             float(N, C2, C3, H, W) I1)
-    -> (O)
-    {
-      O(n, c1, c3, h, w) +=! I0(n, c1, c2_red, h, w) * I1(n, c2_red, c3, h, w)
-    }
+-> (O)
+{
+    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
   )TC");
 
     std::vector<at::Tensor> outputs;
@@ -342,13 +340,13 @@ struct GroupConvolution_32_32_4_4_56_56_3_3 : public ::testing::Test {
     // Build naive options baseline to check correctness
     // Make naive compile first to better see debug spew
     auto TC = std::string(R"TC(
-  def group_convolution_naive(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W_, float(G,F) B)
-  -> (O)
-  {
+def group_convolution_naive(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W_, float(G,F) B)
+-> (O)
+{
     O(n, g, f, h, w) +=!
-      I(n, g, c, h + kh, w + kw) * W_(g, f, c, kh, kw)
-    O(n, g, f, h, w) = O(n, g, f, h, w) + B(g, f)
-  }
+        I(n, g, r_c, h + r_kh, w + r_kw) * W_(g, f, r_c, r_kh, r_kw)
+    O(n, g, f, h, w)  = O(n, g, f, h, w) + B(g, f)
+}
 )TC");
 
     // If running cuda-gdb only run on test code, not reference: things are
@@ -371,12 +369,12 @@ struct GroupConvolution_32_32_4_4_56_56_3_3 : public ::testing::Test {
     auto TC = std::string("def ") + name +
         std::string(
                   R"TC((float(N,G,C,H,W) I, float(G,F,C,KH,KW) W_, float(G,F) B)
-  -> (O)
-  {
+-> (O)
+{
     O(n, g, f, h, w) +=!
-      I(n, g, c, h + kh, w + kw) * W_(g, f, c, kh, kw)
+        I(n, g, r_c, h + r_kh, w + r_kw) * W_(g, f, r_c, r_kh, r_kw)
     O(n, g, f, h, w) = O(n, g, f, h, w) + B(g, f)
-  }
+}
 )TC");
 
     std::vector<at::Tensor> outputs;
@@ -461,9 +459,9 @@ struct C3_128_1000_1024 : public ::testing::Test {
     // Build naive options baseline to check correctness
     // Make naive compile first to better see debug spew
     auto TC = std::string(R"TC(
-  def _C3_naive(float(B,WX) I, float(WY, WX) W) -> (C3) {
-    C3(b, wy) +=! I(b, wxx) * W(wy, wxx)
-  }
+def _C3_naive(float(B,WX) I, float(WY, WX) W) -> (C3) {
+    C3(b, wy) +=! I(b, r_wx) * W(wy, r_wx)
+}
 )TC");
 
     // If running cuda-gdb only run on test code, not reference: things are
@@ -485,8 +483,8 @@ struct C3_128_1000_1024 : public ::testing::Test {
     auto TC = std::string("def ") + name +
         std::string(
                   R"TC((float(B,WX) I, float(WY, WX) W) -> (C3) {
-    C3(b, wy) +=! I(b, wxx) * W(wy, wxx)
-  }
+    C3(b, wy) +=! I(b, r_wx) * W(wy, r_wx)
+}
 )TC");
 
     std::vector<at::Tensor> outputs;
@@ -577,9 +575,9 @@ struct TMM_128_1024_1024 : public ::testing::Test {
     // Build naive options baseline to check correctness
     // Make naive compile first to better see debug spew
     auto TC = std::string(R"TC(
-  def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
-    O(b, y) +=! I(b, rx) * W(y, rx)
-  }
+def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
+    O(b, y) +=! I(b, r_x) * W(y, r_x)
+}
 )TC");
 
     // If running cuda-gdb only run on test code, not reference: things are
@@ -601,8 +599,8 @@ struct TMM_128_1024_1024 : public ::testing::Test {
     auto TC = std::string("def ") + name +
         std::string(
                   R"TC((float(B, X) I, float(Y, X) W) -> (O) {
-    O(b, y) +=! I(b, rx) * W(y, rx)
-  }
+    O(b, y) +=! I(b, r_x) * W(y, r_x)
+}
 )TC");
 
     std::vector<at::Tensor> outputs;
@@ -669,13 +667,14 @@ TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
-       mean(t, b) +=! I(t, b, c) / C
-       centered(t, b, c) = I(t, b, c) - mean(t, b)
-       var(t, b) +=! centered(t, b, c) * centered(t, b, c)
-       var(t, b) = (var(t, b)) / C
-       O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
-    }
+def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
+        mean(t, b)    +=! I(t, b, r_c) / C
+    centered(t, b, c)  =  I(t, b,   c) - mean(t, b)
+
+    var(t, b) +=! centered(t, b, r_c) * centered(t, b, r_c)
+    var(t, b)  =       var(t, b) / C
+    O(t, b, c) =  centered(t, b, c) / rsqrt(var(t, b))
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
@@ -715,7 +714,7 @@ TEST(TMM_128_1024_1000, DisjunctiveFilter) {
 
   auto TC = std::string(R"TC(
 def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
-  O(b, y) +=! I(b, rx) * W(y, rx)
+    O(b, y) +=! I(b, r_x) * W(y, r_x)
 }
 )TC");
   auto options =
@@ -749,10 +748,10 @@ TEST(Halide2Isl, MinInUpperBound) {
   std::vector<at::Tensor> inputs = {mat1, mat1_pad, mat2};
 
   static constexpr auto TC = R"TC(
-    def graph2(float(N, C, H, W) I, float(N, C, R, T) J, float(KH, KW) W1) -> (O, Out) {
-        O(n, c, h, w) +=! J(n, c, h + kh, w + kw) * W1(kh, kw)
-        Out(i, j) +=! I(n, i, h, w) * O(n, j, h, w)
-    }
+def graph2(float(N, C, H, W) I, float(N, C, R, T) J, float(KH, KW) W1) -> (O, Out) {
+      O(n, c, h, w) +=! J(n,  c, h + r_kh, w + r_kw) * W1(r_kh, r_kw)
+    Out(c0, c1)     +=! I(n, c0,        h,        w) *  O(   n,   c1, h, w)
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
 

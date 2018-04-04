@@ -50,8 +50,8 @@ For demonstration purpose, we will pick a simple example for :code:`matmul` laye
     dyndep.InitOpsLibrary(os.path.join(os.environ.get("CONDA_PREFIX"), "lib/libtc_c2.so"))
 
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     mat1, mat2 = np.random.rand(100, 400), np.random.rand(400, 500)
@@ -68,4 +68,4 @@ Future
 ------
 
 The integration with Caffe2 is very basic at the moment. We do not provide autotuner
-support for Caffe2 and welcome contributions from community.
+support for Caffe2 at the moment and welcome contributions from the community.

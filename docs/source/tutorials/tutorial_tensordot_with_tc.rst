@@ -39,18 +39,18 @@ A simple 2D matrix multiply operation in TC is expressed as:
 .. code::
 
      def matmul(float(M, N) X, float(N, K) W) -> (output) {
-         output(m, k) +=! X(m, nn) * W(nn, k)
+         output(m, k) +=! X(m, r_n) * W(r_n, k)
      }
 
 
-The variable :code:`nn` is being reduced in above expression. Now, let's write a
+The variable :code:`r_n` is being reduced in above expression. Now, let's write a
 **batched matrix-multiply** operation using above expression. For that, we need to
 add a batch dimension to it and the expression becomes:
 
 .. code::
 
      def batch_matmul(float(B, M, N) X, float(B, N, K) W) -> (output) {
-         output(b, m, k) +=! X(b, m, nn) * W(b, nn, k)
+         output(b, m, k) +=! X(b, m, r_n) * W(b, r_n, k)
      }
 
 Now, for the tensordot operation, we need to add spatial dimensions :code:`H` and :code:`W`
@@ -59,7 +59,7 @@ to the batched matrix multiply, and the expression for TensorDot becomes:
 .. code::
 
      def tensordot(float(B, C1, C2, H, W) I0, float(B, C2, C3, H, W) I1) -> (O) {
-         O(b, c1, c3, h, w) +=! I0(b, c1, c2, h, w) * I1(b, c2, c3, h, w)
+         O(b, c1, c3, h, w) +=! I0(b, c1, r_c2, h, w) * I1(b, r_c2, c3, h, w)
      }
 
 Now, we have our :code:`TensorDot` expression, we are ready to use this and write
@@ -73,7 +73,7 @@ Now, we have our :code:`TensorDot` expression, we are ready to use this and writ
     # define the operation as TC language
     lang = """
     def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
-        O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
+        O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
     }
     """
 

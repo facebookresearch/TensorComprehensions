@@ -76,22 +76,22 @@ struct TcMapperTest : public ::testing::Test {
 constexpr auto reduction1DTCs = {
     R"TC(
 def sum1D(float(M) A) -> (C) {
-  C(0) +=! A(j) where i in 0:2
+    C(0) +=! A(r_m) where i in 0:1
 }
 )TC",
     R"TC(
 def sum1D(float(M) A) -> (C) {
-  C() +=! A(j)
+    C() +=! A(r_m)
 }
 )TC",
     R"TC(
 def sum1D(float(M) A) -> (C) {
-  C +=! A(j)
+    C +=! A(r_m)
 }
 )TC",
     R"TC(
 def sum1D(float(M) A) -> (C) {
-  C(i) +=! A(j) where i in 0:1
+    C(i) +=! A(r_m) where i in 0:1
 }
 )TC"};
 
@@ -176,7 +176,7 @@ struct TcMapper2DReductionTest : public TcMapperTest {
       bool skipCheck = false) {
     string tc = R"TC(
 def sum2D(float(M, N) A) -> (C) {
-  C(i) +=! A(i, j)
+    C(m) +=! A(m, r_n)
 }
 )TC";
     auto refOutput = A.sum(1);
@@ -300,7 +300,7 @@ struct TcMapperMatmulTest : public TcMapperTest {
       const tc::CudaMappingOptions& mappingOptions) {
     string tc = R"TC(
 def matmul(float(M, K) A, float(K, N) B) -> (C) {
-  C(i, j) +=! A(i, k) * B(k, j)
+    C(m, n) +=! A(m, r_k) * B(r_k, n)
 }
 )TC";
     auto refOutput = A.mm(B);
@@ -387,9 +387,9 @@ struct TcMapperBatchMatmulTest : public TcMapperTest {
       at::Tensor B,
       const tc::CudaMappingOptions& mappingOptions) {
     string tc = R"TC(
-  def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
-    Z(b, n, k) +=! X(b, n, mm) * Y(b, mm, k)
-  }
+def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
+    Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
+}
 )TC";
     auto refOutput = A.bmm(B);
     auto checkFun = [&, refOutput](
@@ -430,13 +430,9 @@ TEST_F(TcMapperTest, BatchTripleHadamard) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def batch_triple_hadamard(float(B, D) U,
-                              float(B, D) V,
-                              float(B, D) W)
-    -> (Z)
-    {
-       Z(b, d) = U(b, d) * V(b, d) * W(b, d)
-    }
+def batch_triple_hadamard(float(B, D) U, float(B, D) V, float(B, D) W) -> (Z) {
+    Z(b, d) = U(b, d) * V(b, d) * W(b, d)
+}
   )TC";
 
   auto checkFun = [=](const std::vector<at::Tensor>& inputs,
@@ -460,12 +456,9 @@ TEST_F(TcMapperTest, TensorDot) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def tensordot(float(N, C1, C2, H, W) I0,
-                            float(N, C2, C3, H, W) I1)
-    -> (O)
-    {
-      O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
-    }
+def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
+    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
   )TC";
   // No defaults for this case
   auto checkFun = [](const std::vector<at::Tensor>& inputs,
@@ -486,7 +479,7 @@ TEST_F(TcMapperTest, LUT) {
 
   static constexpr auto TC = R"TC(
 def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
-  O(b, n) +=! LUT(I(b, n), r)
+  O(b, n) +=! LUT(I(b, n), r_r)
 }
 )TC";
 
@@ -533,22 +526,26 @@ TEST_F(TcMapperTest, DISABLED_SpatialBatchNormalization) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-  def spatial_batch_norm(
+def spatial_batch_norm(
     float momentum, float eps,
     float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn)
-         -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut)
-  {
-     mean(c) +=! I(nn, c, hh, ww)
-     mean(c)  = mean(c) / (N * H * W)
-     rMeanOut(c) = (1 - momentum) * rMeanIn(c) + momentum * mean(c)
-     centered(n, c, h, w) = I(n, c, h, w) - rMeanOut(c)
-     variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
-     expectedVariance(c) +=! (variance(n, c, h, w) + eps) / (N * H * W)
-     rVarOut(c) = rsqrt(
-       (1 - momentum) * rVarIn(c) + momentum * expectedVariance(c))
-     O(n, c, h, w) = centered(n, c, h, w) * rVarOut(c)
-     normalizedOut(n, c, h, w) = O(n, c, h, w)
-  })TC";
+-> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut)
+{
+    mean(c)    +=!    I(r_n, c, r_h, r_w)
+    mean(c)     =  mean(c) / (N * H * W)
+    rMeanOut(c) = (1 - momentum) * rMeanIn(c) + momentum * mean(c)
+
+    centered(n, c, h, w) =          I(  n, c,   h,   w) - rMeanOut(c)
+    variance(n, c, h, w) =   centered(  n, c,   h,   w) * centered(n, c, h, w)
+    expectedVariance(c) +=! (variance(r_n, c, r_h, r_w) + eps) / (N * H * W)
+
+    rVarOut(c) = rsqrt(
+        (1 - momentum) * rVarIn(c) +
+             momentum  * expectedVariance(c))
+
+    O(n, c, h, w)             = centered(n, c, h, w) * rVarOut(c)
+    normalizedOut(n, c, h, w) =        O(n, c, h, w)
+})TC";
 
   auto checkFun = [=](const std::vector<at::Tensor>& inputs,
                       std::vector<at::Tensor>& outputs) {

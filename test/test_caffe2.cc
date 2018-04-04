@@ -76,7 +76,7 @@ TEST_F(Caffe2CopyTest, DISABLED_TcCopyOp_Gradient1D) {
     auto AddInput =
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M}, "I");
-    AddInput(w, {M}, "O_grad");
+    AddInput(w, {M}, "g_O");
   };
   OperatorDef def =
       TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
@@ -99,7 +99,7 @@ TEST_F(Caffe2CopyTest, DISABLED_TcCopyOp_Gradient2D) {
     auto AddInput =
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M, N}, "I");
-    AddInput(w, {M, N}, "O_grad");
+    AddInput(w, {M, N}, "g_O");
   };
   OperatorDef def =
       TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
@@ -122,7 +122,7 @@ TEST_F(Caffe2CopyTest, DISABLED_TcCopyOp_Gradient3D) {
     auto AddInput =
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M, N, P}, "I");
-    AddInput(w, {M, N, P}, "O_grad");
+    AddInput(w, {M, N, P}, "g_O");
   };
   OperatorDef def =
       TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
@@ -145,7 +145,7 @@ TEST_F(Caffe2CopyTest, DISABLED_TcCopyOp_Gradient4D) {
     auto AddInput =
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M, N, P, Q}, "I");
-    AddInput(w, {M, N, P, Q}, "O_grad");
+    AddInput(w, {M, N, P, Q}, "g_O");
   };
   OperatorDef def =
       TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
@@ -168,7 +168,7 @@ TEST_F(Caffe2CopyTest, DISABLED_TcCopyOp_Gradient5D) {
     auto AddInput =
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M, N, P, Q, R}, "I");
-    AddInput(w, {M, N, P, Q, R}, "O_grad");
+    AddInput(w, {M, N, P, Q, R}, "g_O");
   };
   OperatorDef def =
       TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
@@ -201,7 +201,7 @@ TEST_F(Caffe2Test, DISABLED_TcMatMulOp_Gradient) {
         TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
     AddInput(w, {M, K}, "I");
     AddInput(w, {K, N}, "W");
-    AddInput(w, {M, N}, "O_grad");
+    AddInput(w, {M, N}, "g_O");
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
@@ -572,7 +572,7 @@ TEST_F(Caffe2Test, DISABLED_TcConvolutionOp_Gradient) {
     AddInput(w, {NN, C, H, W}, "I");
     AddInput(w, {F, C, KH, KW}, "filter");
     AddInput(w, {F}, "bias");
-    AddInput(w, {NN, F, H - KH + 1, W - KW + 1}, "H_grad");
+    AddInput(w, {NN, F, H - KH + 1, W - KW + 1}, "g_H");
   };
 
   CudaMappingOptions options =

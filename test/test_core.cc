@@ -61,30 +61,30 @@ struct GenericHalideCoreTest : public ::testing::Test {
 TEST_F(GenericHalideCoreTest, TwoMatmul) {
   string tc = R"TC(
 def fun(float(M, K) I, float(K, N) W1, float(N, P) W2) -> (O1, O2) {
-  O1(i, j) +=! I(i, k) * W1(k, j)
-  O2(i, j) +=! O1(i, n) * W2(n, j)
+    O1(m, n) +=!  I(m, r_k) * W1(r_k, n)
+    O2(m, p) +=! O1(m, r_n) * W2(r_n, p)
 }
 )TC";
   CheckC(
       tc,
       {
-          "for (int O1_s0_i = 0; O1_s0_i < M; O1_s0_i++) {",
-          "  for (int O1_s0_j = 0; O1_s0_j < N; O1_s0_j++) {",
-          "    O1[O1_s0_i][O1_s0_j] = 0.000000f",
-          "    for (int O1_s1_k = 0; O1_s1_k < K; O1_s1_k++) {",
-          "      O1[O1_s0_i][O1_s0_j] = (O1[O1_s0_i][O1_s0_j] + (I[O1_s0_i][O1_s1_k]*W1[O1_s1_k][O1_s0_j]))",
-          "for (int O2_s0_i = 0; O2_s0_i < M; O2_s0_i++) {",
-          "  for (int O2_s0_j = 0; O2_s0_j < P; O2_s0_j++) {",
-          "    O2[O2_s0_i][O2_s0_j] = 0.000000f",
-          "    for (int O2_s1_n = 0; O2_s1_n < N; O2_s1_n++) {",
-          "      O2[O2_s0_i][O2_s0_j] = (O2[O2_s0_i][O2_s0_j] + (O1[O2_s0_i][O2_s1_n]*W2[O2_s1_n][O2_s0_j]))",
+          "for (int O1_s0_m = 0; O1_s0_m < M; O1_s0_m++) {",
+          "  for (int O1_s0_n = 0; O1_s0_n < N; O1_s0_n++) {",
+          "    O1[O1_s0_m][O1_s0_n] = 0.000000f",
+          "    for (int O1_s1_r_k = 0; O1_s1_r_k < K; O1_s1_r_k++) {",
+          "      O1[O1_s0_m][O1_s0_n] = (O1[O1_s0_m][O1_s0_n] + (I[O1_s0_m][O1_s1_r_k]*W1[O1_s1_r_k][O1_s0_n]))",
+          "for (int O2_s0_m = 0; O2_s0_m < M; O2_s0_m++) {",
+          "  for (int O2_s0_p = 0; O2_s0_p < P; O2_s0_p++) {",
+          "    O2[O2_s0_m][O2_s0_p] = 0.000000f",
+          "    for (int O2_s1_r_n = 0; O2_s1_r_n < N; O2_s1_r_n++) {",
+          "      O2[O2_s0_m][O2_s0_p] = (O2[O2_s0_m][O2_s0_p] + (O1[O2_s0_m][O2_s1_r_n]*W2[O2_s1_r_n][O2_s0_p]))",
       });
 }
 
 TEST_F(GenericHalideCoreTest, Convolution) {
   string tc = R"TC(
 def fun(float(N, C, H, W) I1, float(C, F, KH, KW) W1) -> (O1) {
-  O1(n, f, h, w) +=! I1(n, c, h + kh, w + kw) * W1(c, f, kh, kw)
+    O1(n, f, h, w) +=! I1(n, r_c, h + r_kh, w + r_kw) * W1(r_c, f, r_kh, r_kw)
 }
 )TC";
   CheckC(
@@ -94,10 +94,10 @@ def fun(float(N, C, H, W) I1, float(C, F, KH, KW) W1) -> (O1) {
        "    for (int O1_s0_h = 0; O1_s0_h < ((H - KH) + 1); O1_s0_h++) {",
        "      for (int O1_s0_w = 0; O1_s0_w < ((W - KW) + 1); O1_s0_w++) {",
        "        O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] = 0.000000f",
-       "        for (int O1_s1_c = 0; O1_s1_c < C; O1_s1_c++) {",
-       "          for (int O1_s1_kh = 0; O1_s1_kh < KH; O1_s1_kh++) {",
-       "            for (int O1_s1_kw = 0; O1_s1_kw < KW; O1_s1_kw++) {",
-       "              O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] = (O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] + (I1[O1_s0_n][O1_s1_c][(O1_s0_h + O1_s1_kh)][(O1_s0_w + O1_s1_kw)]*W1[O1_s1_c][O1_s0_f][O1_s1_kh][O1_s1_kw]))"});
+       "        for (int O1_s1_r_c = 0; O1_s1_r_c < C; O1_s1_r_c++) {",
+       "          for (int O1_s1_r_kh = 0; O1_s1_r_kh < KH; O1_s1_r_kh++) {",
+       "            for (int O1_s1_r_kw = 0; O1_s1_r_kw < KW; O1_s1_r_kw++) {",
+       "              O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] = (O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] + (I1[O1_s0_n][O1_s1_r_c][(O1_s0_h + O1_s1_r_kh)][(O1_s0_w + O1_s1_r_kw)]*W1[O1_s1_r_c][O1_s0_f][O1_s1_r_kh][O1_s1_r_kw]))"});
 }
 
 TEST_F(GenericHalideCoreTest, Copy) {
@@ -112,7 +112,7 @@ TEST_F(GenericHalideCoreTest, Copy) {
 TEST_F(GenericHalideCoreTest, GroupConvolution) {
   string tc = R"TC(
 def fun(float(N, G, C, H, W) I1, float(G, C, F, KH, KW) W1) -> (O1) {
-  O1(n, g, f, h, w) +=! I1(n, g, c, h + kh, w + kw) * W1(g, c, f, kh, kw)
+    O1(n, g, f, h, w) +=! I1(n, g, r_c, h + r_kh, w + r_kw) * W1(g, r_c, f, r_kh, r_kw)
 }
 )TC";
   CheckC(
@@ -123,10 +123,10 @@ def fun(float(N, G, C, H, W) I1, float(G, C, F, KH, KW) W1) -> (O1) {
        "      for (int O1_s0_h = 0; O1_s0_h < ((H - KH) + 1); O1_s0_h++) {",
        "        for (int O1_s0_w = 0; O1_s0_w < ((W - KW) + 1); O1_s0_w++) {",
        "          O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] = 0.000000f",
-       "          for (int O1_s1_c = 0; O1_s1_c < C; O1_s1_c++) {",
-       "            for (int O1_s1_kh = 0; O1_s1_kh < KH; O1_s1_kh++) {",
-       "              for (int O1_s1_kw = 0; O1_s1_kw < KW; O1_s1_kw++) {",
-       "                O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] = (O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] + (I1[O1_s0_n][O1_s0_g][O1_s1_c][(O1_s0_h + O1_s1_kh)][(O1_s0_w + O1_s1_kw)]*W1[O1_s0_g][O1_s1_c][O1_s0_f][O1_s1_kh][O1_s1_kw]))"});
+       "          for (int O1_s1_r_c = 0; O1_s1_r_c < C; O1_s1_r_c++) {",
+       "            for (int O1_s1_r_kh = 0; O1_s1_r_kh < KH; O1_s1_r_kh++) {",
+       "              for (int O1_s1_r_kw = 0; O1_s1_r_kw < KW; O1_s1_r_kw++) {",
+       "                O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] = (O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] + (I1[O1_s0_n][O1_s0_g][O1_s1_r_c][(O1_s0_h + O1_s1_r_kh)][(O1_s0_w + O1_s1_r_kw)]*W1[O1_s0_g][O1_s1_r_c][O1_s0_f][O1_s1_r_kh][O1_s1_r_kw]))"});
 }
 
 TEST_F(GenericHalideCoreTest, Matmul) {
@@ -170,7 +170,7 @@ struct TC2Isl : public ::testing::Test {
 TEST_F(TC2Isl, Copy1D) {
   string tc = R"TC(
 def fun(float(M) I) -> (O) {
-  O(i) = I(i)
+    O(m) = I(m)
 }
 )TC";
   Check(tc, {123});
@@ -179,7 +179,7 @@ def fun(float(M) I) -> (O) {
 TEST_F(TC2Isl, Copy2D) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O) {
-  O(i, j) = I(i, j)
+    O(m, n) = I(m, n)
 }
 )TC";
   Check(tc, {123, 1});
@@ -188,7 +188,7 @@ def fun(float(M, N) I) -> (O) {
 TEST_F(TC2Isl, Copy3D) {
   string tc = R"TC(
 def fun(float(M, N, P) I) -> (O) {
-  O(i, j, k) = I(i, j, k)
+    O(m, n, p) = I(m, n, p)
 }
 )TC";
   Check(tc, {123, 3, 2});
@@ -197,7 +197,7 @@ def fun(float(M, N, P) I) -> (O) {
 TEST_F(TC2Isl, Copy4D) {
   string tc = R"TC(
 def fun(float(M, N, P, Q) I) -> (O) {
-  O(i, j, k, l) = I(i, j, k, l)
+    O(m, n, p, q) = I(m, n, p, q)
 }
 )TC";
   Check(tc, {123, 3, 4, 5});
@@ -206,7 +206,7 @@ def fun(float(M, N, P, Q) I) -> (O) {
 TEST_F(TC2Isl, Copy5D) {
   string tc = R"TC(
 def fun(float(M, N, P, Q, R) I) -> (O) {
-  O(i, j, k, l, m) = I(i, j, k, l, m)
+    O(m, n, p, q, r) = I(m, n, p, q, r)
 }
 )TC";
   Check(tc, {123, 10, 2, 3, 4});
@@ -216,7 +216,7 @@ def fun(float(M, N, P, Q, R) I) -> (O) {
 TEST_F(TC2Isl, DISABLED_Reduction1D) {
   string tc = R"TC(
 def fun(float(M) I) -> (O) {
-  O(0) +=! I(i)
+    O(0) +=! I(r_m)
 }
 )TC";
   Check(tc, {123});
@@ -225,7 +225,7 @@ def fun(float(M) I) -> (O) {
 TEST_F(TC2Isl, Reduction2D) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O) {
-  O(i) +=! I(i, j)
+    O(m) +=! I(m, r_n)
 }
 )TC";
   Check(tc, {123, 12});
@@ -234,7 +234,7 @@ def fun(float(M, N) I) -> (O) {
 TEST_F(TC2Isl, Reduction3D) {
   string tc = R"TC(
 def fun(float(M, N, P) I) -> (O) {
-  O(i) +=! I(i, j, k)
+    O(m) +=! I(m, r_n, r_p)
 }
 )TC";
   Check(tc, {123, 12, 16});
@@ -243,8 +243,8 @@ def fun(float(M, N, P) I) -> (O) {
 TEST_F(TC2Isl, Copy1D2Stmt) {
   string tc = R"TC(
 def fun(float(M) I) -> (O1, O2) {
-  O1(i) = I(i)
-  O2(i) = O1(i)
+    O1(m) = I(m)
+    O2(m) = O1(m)
 }
 )TC";
   Check(tc, {123});
@@ -253,8 +253,8 @@ def fun(float(M) I) -> (O1, O2) {
 TEST_F(TC2Isl, Copy2D2Stmt) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O1, O2) {
-  O1(i, j) = I(i, j)
-  O2(i, j) = O1(i, j)
+    O1(m, n) =  I(m, n)
+    O2(m, n) = O1(m, n)
 }
 )TC";
   Check(tc, {123, 13});
@@ -263,9 +263,9 @@ def fun(float(M, N) I) -> (O1, O2) {
 TEST_F(TC2Isl, Copy2D3Stmt) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O1, O2, O3) {
-  O1(i, j) = I(i, j)
-  O2(i, j) = O1(i, j)
-  O3(i, j) = O2(i, j)
+    O1(m, n) =  I(m, n)
+    O2(m, n) = O1(m, n)
+    O3(m, n) = O2(m, n)
 }
 )TC";
   Check(tc, {123, 13});
@@ -275,8 +275,8 @@ def fun(float(M, N) I) -> (O1, O2, O3) {
 TEST_F(TC2Isl, DISABLED_Reduction1D2Stmt) {
   string tc = R"TC(
 def fun(float(M) I) -> (O1, O2) {
-  O1(i) = I(i)
-  O2(i) = O1(i)
+    O1(m) =  I(m)
+    O2(m) = O1(m)
 }
 )TC";
   Check(tc, {123});
@@ -285,8 +285,8 @@ def fun(float(M) I) -> (O1, O2) {
 TEST_F(TC2Isl, Reduction2D2StmtA) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O1, O2) {
-  O1(i) +=! I(i, j)
-  O2(i) = O1(i)
+    O1(m) +=! I(m, r_n)
+    O2(m)  = O1(m)
 }
 )TC";
   Check(tc, {123, 13});
@@ -295,8 +295,8 @@ def fun(float(M, N) I) -> (O1, O2) {
 TEST_F(TC2Isl, Reduction2D2StmtB) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O1, O2) {
-  O1(i, j) = I(i, j)
-  O2(i) +=! O1(i, j)
+    O1(m, n) =   I(m, n)
+    O2(m)   +=! O1(m, r_n)
 }
 )TC";
   Check(tc, {123, 13});
@@ -305,9 +305,9 @@ def fun(float(M, N) I) -> (O1, O2) {
 TEST_F(TC2Isl, Reduction2D3Stmt) {
   string tc = R"TC(
 def fun(float(M, N) I) -> (O1, O2, O3) {
-  O1(i, j) = I(i, j)
-  O2(i) +=! O1(i, j)
-  O3(i) = O2(i)
+    O1(m, n) =   I(m, n)
+    O2(m)   +=! O1(m, r_n)
+    O3(m)    =  O2(m)
 }
 )TC";
   Check(tc, {123, 13});

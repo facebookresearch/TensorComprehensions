@@ -588,3 +588,10 @@ changes) while working on a feature and even in "WIP" pull requests,
 as long as the pieces are recombined (e.g., through an interactive rebase)
 into logical units when the feature is ready for merging.
 Force-pushing in PR branches is fine.
+
+Coding Conventions for writing Tensor Comprehensions
+====================================================
+
+Please see the following documentation
+[entry](https://facebookresearch.github.io/TensorComprehensions/coding_conventions.html)
+on how to write Tensor Comprehensions in a standard legible fashion.

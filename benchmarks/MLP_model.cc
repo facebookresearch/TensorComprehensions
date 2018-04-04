@@ -64,23 +64,23 @@ DEFINE_uint32(Q, 2, "W4_h");
 //   float(E1, D) LUT1, int32(B, L1) I1,
 //   float(E2, D) LUT2, int32(B, L2) I2) -> (O1, O2)
 // {
-//   O1(i, j) +=! LUT1(I1(i, k), j)
-//   O2(i, j) +=! LUT2(I2(i, k), j)
+//     O1(b, d) +=! LUT1(I1(b, r_l1), d)
+//     O2(b, d) +=! LUT2(I2(b, r_l2), d)
 // }
 // def _3FCRELU(
 //   float(B,M) I, float(O,N) W2, float(O) B2,
 //   float(P,O) W3, float(P) B3, float(Q,P) W4,
 //   float(Q) B4) -> (O1, O2, O3, O4)
 // {
-//   O2(b, o) = B2(o)
-//   O2(b, o) += O1(b, n) * W2(o, n)
-//   O2(b, o) = fmax(O2(b, o), 0)
-//   O3(b, p) = B3(p)
-//   O3(b, p) += O2(b, o) * W3(p, o)
-//   O3(b, p) = fmax(O3(b, p), 0)
-//   O4(b, q) = B4(q)
-//   O4(b, q) += O3(b, p) * W4(q, p)
-//   O4(b, q) = fmax(O4(b, q), 0)
+//     O2(b, o)  = B2(o)
+//     O2(b, o) += O1(b, n) * W2(o, n)
+//     O2(b, o)  = fmax(O2(b, o), 0)
+//     O3(b, p)  = B3(p)
+//     O3(b, p) += O2(b, o) * W3(p, o)
+//     O3(b, p)  = fmax(O3(b, p), 0)
+//     O4(b, q)  = B4(q)
+//     O4(b, q) += O3(b, p) * W4(q, p)
+//     O4(b, q)  = fmax(O4(b, q), 0)
 // }
 // def prod_model(float(E1, D) LUT1, int32(B, L1) I1,
 //                float(E2, D) LUT2, int32(B, L2) I2,
@@ -91,15 +91,15 @@ DEFINE_uint32(Q, 2, "W4_h");
 //                float(Q,P) W4, float(Q) B4)
 // -> (C1, C2, C3, I, O1, O2, O3, O4)
 // {
-//   (C1, C2) = _2LUT(LUT1, I1, LUT2, I2)
-//   C3(b, wy) += I3(b, wxx) * W(wy, wxx)
-//   I(b, m) = Concat(C1, C2, C3) // not in TC atm
-//   O1(b, n) = B1(n)
-//   O1(b, n) += I(b, m) * W1(n, m)
-//   O1(b, n) = fmax(O1(b, n), 0)
+//       (C1, C2) = _2LUT(LUT1, I1, LUT2, I2)
+//     C3(b, wy) +=! I3(b, r_wx) * W(wy, r_wx)
+//        I(b, m) = Concat(C1, C2, C3) // not in TC atm
+//       O1(b, n) = B1(n)
+//      O1(b, n) +=! I(b, m) * W1(n, m)
+//       O1(b, n) = fmax(O1(b, n), 0)
 //   (O2, O3, O4) =
-//     _3FCRELU(I, W1, B1, W2, B2, W3, B3, W4, B4)
-//   # O4 goes out to binary classifier, omitted here
+//       _3FCRELU(I, W1, B1, W2, B2, W3, B3, W4, B4)
+//     # O4 goes out to binary classifier, omitted here
 // }
 
 class ProductionModel : public Benchmark {
@@ -191,9 +191,9 @@ void ProductionModel::run1LUT(
 
     std::vector<at::Tensor> inputs = {LUT1, IDX1};
     std::string tc = R"(
-      def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
-        O1(i, j) +=! LUT1(I1(i, k), j)
-      }
+def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
+    O1(b, d) +=! LUT1(I1(b, r_l1), d)
+}
     )";
 
     std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
@@ -294,10 +294,10 @@ void ProductionModel::run2LUT(
 
     std::vector<at::Tensor> inputs = {LUT1, IDX1, LUT2, IDX2};
     std::string tc = R"(
-      def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2) -> (O1, O2) {
-        O1(i, j) +=! LUT1(I1(i, k), j)
-        O2(i, j) +=! LUT2(I2(i, k), j)
-      }
+def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2) -> (O1, O2) {
+    O1(b, d) +=! LUT1(I1(b, r_l1), d)
+    O2(b, d) +=! LUT2(I2(b, r_l2), d)
+}
     )";
 
     std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
@@ -353,9 +353,9 @@ void ProductionModel::runC3(
 
   std::vector<at::Tensor> inputs = {I, W};
   std::string tc = R"TC(
-  def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
-    C3(b, wy) +=! I(b, wxx) * W(wy, wxx)
-  }
+def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
+    C3(b, wy) +=! I(b, r_wx) * W(wy, r_wx)
+}
 )TC";
 
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
@@ -408,11 +408,11 @@ void ProductionModel::runMLP1(
 
   std::vector<at::Tensor> inputs = {I, W1, B1};
   std::string tc = R"TC(
-  def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
-    O1(b, n) +=! I(b, mm) * W1(mm, n)
-    O1(b, n) = O1(b, n) + B1(n)
-    O1(b, n) = fmax(O1(b, n), 0)
-  }
+def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
+    O1(b, n) +=! I(b, r_m) * W1(r_m, n)
+    O1(b, n)  = O1(b,   n) + B1(n)
+    O1(b, n)  = fmax(O1(b, n), 0)
+}
 )TC";
 
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
@@ -474,17 +474,17 @@ void ProductionModel::runMLP3(
 
   std::vector<at::Tensor> inputs = {I, W2, B2, W3, B3, W4, B4};
   std::string tc = R"TC(
-  def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3, float(Q,P) W4, float(Q) B4) -> (O2, O3, O4) {
-    O2(b, o) +=! I(b, n) * W2(o, n)
-    O2(b, o) = O2(b, o) + B2(o)
-    O2(b, o) = fmax(O2(b, o), 0)
+def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3, float(Q,P) W4, float(Q) B4) -> (O2, O3, O4) {
+    O2(b, o) +=!  I(b, n) * W2(o, n)
+    O2(b, o)  =  O2(b, o) + B2(o)
+    O2(b, o)  = fmax(O2(b, o), 0)
     O3(b, p) +=! O2(b, o) * W3(p, o)
-    O3(b, p) = O3(b, p) + B3(p)
-    O3(b, p) = fmax(O3(b, p), 0)
+    O3(b, p)  =  O3(b, p) + B3(p)
+    O3(b, p)  = fmax(O3(b, p), 0)
     O4(b, q) +=! O3(b, p) * W4(q, p)
-    O4(b, q) = O4(b, q) + B4(q)
-    O4(b, q) = fmax(O4(b, q), 0)
-  }
+    O4(b, q)  =  O4(b, q) + B4(q)
+    O4(b, q)  = fmax(O4(b, q), 0)
+}
 )TC";
 
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +

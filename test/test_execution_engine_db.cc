@@ -34,14 +34,14 @@ TEST(ATenCompilationDbTest, MultiTc) {
                             KW = 3;
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   auto tc = R"(
-    def matmul(float(M,K) A, float(K,N) B) -> (output) {
-      output(m, n) +=! A(m, kk) * B(kk, n)
-    }
-    def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
-    -> (tmp, O1) {
-      tmp(n, o, h, w) +=! I(n, c, h + kh, w + kw) * W1(o, c, kh, kw)
-      O1(n, o, h, w) = tmp(n, o, h, w) + B(o)
-    }
+def matmul(float(M,K) A, float(K,N) B) -> (output) {
+    output(m, n) +=! A(m, r_k) * B(r_k, n)
+}
+def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
+-> (tmp, O1) {
+    tmp(n, o, h, w) +=!  I(n, r_c, h + r_kh, w + r_kw) * W1(o, r_c, r_kh, r_kw)
+    O1(n, o, h, w)   = tmp(n, o, h, w) + B(o)
+}
   )";
 
   atCompl.define(tc);

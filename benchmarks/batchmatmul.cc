@@ -76,9 +76,9 @@ void BatchMatMul::runBatchMatMul(
 
   std::vector<at::Tensor> inputs = {X, Y};
   std::string tc = R"(
-  def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
-    Z(b, n, k) +=! X(b, n, mm) * Y(b, mm, k)
-  }
+def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
+    Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
+}
 )";
 
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +

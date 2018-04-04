@@ -96,13 +96,14 @@ TEST_F(ATenCompilationUnitTest, LayerNorm) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
-       mean(t, b) +=! I(t, b, c) / C
-       centered(t, b, c) = I(t, b, c) - mean(t, b)
-       var(t, b) +=! centered(t, b, c) * centered(t, b, c)
-       var(t, b) = (var(t, b)) / C
-       O(t, b, c) = centered(t, b, c) / rsqrt(var(t, b))
-    }
+def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
+        mean(t, b)    +=! I(t, b, c) / C
+    centered(t, b, c)  = I(t, b, c) - mean(t, b)
+
+    var(t, b)   +=! centered(t, b, c) * centered(t, b, c)
+    var(t, b)    =       var(t, b) / C
+      O(t, b, c) =  centered(t, b, c) / rsqrt(var(t, b))
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "layernorm";
@@ -119,9 +120,9 @@ TEST_F(ATenCompilationUnitTest, MatmulA) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
-    }
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+  output(m, k) +=! A(m, r_n) * B(r_n, k)
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
@@ -138,9 +139,9 @@ TEST_F(ATenCompilationUnitTest, MatmulB) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
-    }
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+  output(m, k) +=! A(m, r_n) * B(r_n, k)
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
@@ -157,9 +158,9 @@ TEST_F(ATenCompilationUnitTest, MatmulC) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
-    }
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+  output(m, k) +=! A(m, r_n) * B(r_n, k)
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "matmul";
@@ -176,9 +177,9 @@ TEST_F(ATenCompilationUnitTest, TensorDot) {
   std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
-    def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
-      O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)
-    }
+def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
+  O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
+}
   )TC";
   auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
   auto name = "tensordot";

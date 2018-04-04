@@ -44,8 +44,8 @@ consider the TC definition below:
 .. code::
 
     def softmax(float(N, D) I) -> (O, expsum) {
-      expsum(n) +=! exp(I(n, d))
-      O(n, d) = exp(I(n, d)) / expsum(n)
+        expsum(n) +=! exp(I(n, d))
+           O(n, d) =  exp(I(n, d)) / expsum(n)
     }
 
 In this TC, :code:`expsum` is a temporary variable that needs to be computed but

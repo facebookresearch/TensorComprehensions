@@ -24,8 +24,8 @@ An example demonstrating each step above is:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -108,8 +108,8 @@ An example for how to pass options:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -134,8 +134,8 @@ argument to the autotuning call. There are two ways of caching the tuned options
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -151,8 +151,8 @@ argument to the autotuning call. There are two ways of caching the tuned options
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -182,8 +182,8 @@ For example:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -207,8 +207,8 @@ For example:
 
     import tensor_comprehensions as tc
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -237,8 +237,8 @@ Below is example describing the above usage:
     import tensor_comprehensions as tc
     cache = "{}/matmul_3_4_5".format(PATH_PREFIX)
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")

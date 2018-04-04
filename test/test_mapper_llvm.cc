@@ -40,7 +40,7 @@ using namespace tc::polyhedral::detail;
 TEST(LLVMCodegen, Basic) {
   string tc = R"TC(
 def fun(float(N, M) A, float(N, M) B) -> (C) {
-  C(i, j) = A(i, j) + B(i, j)
+    C(n, m) = A(n, m) + B(n, m)
 }
 )TC";
   auto N = 40;
@@ -69,7 +69,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 TEST(LLVMCodegen, DISABLED_BasicExecutionEngine) {
   string tc = R"TC(
 def fun(float(N, M) A, float(N, M) B) -> (C) {
-  C(i, j) = A(i, j) + B(i, j)
+    C(n, m) = A(n, m) + B(n, m)
 }
 )TC";
 
@@ -94,9 +94,9 @@ TEST(LLVMCodegen, MultiStmt) {
  def fun(float(N, M, K, L) A, float(N, M) B, float(N, M) C, float(N, M) D)
  -> (O1, O2, O3)
  {
-   O1(i, j) +=! A(i, j, rk, rl) * B(i, j)
-   O2(i, j) = C(i, j) * D(i, j)
-   O3(i, j) = O1(i, j) + O2(i, j)
+     O1(n, m) +=! A(n, m, r_k, r_l) * B(n, m)
+     O2(n, m) = C(n, m) * D(n, m)
+     O3(n, m) = O1(n, m) + O2(n, m)
  }
  )TC";
 
@@ -168,9 +168,9 @@ TEST(LLVMCodegen, BatchMatMul) {
   auto M = 24;
   auto K = 21;
   std::string tc = R"(
-  def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
-    Z(b, n, k) +=! X(b, n, mm) * Y(b, mm, k)
-  }
+def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
+    Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
+}
 )";
   at::Tensor X = at::CPU(at::kFloat).rand({B, N, M});
   at::Tensor Y = at::CPU(at::kFloat).rand({B, M, K});
@@ -200,11 +200,11 @@ TEST(LLVMCodegen, Convolution) {
   auto KW = 2;
   auto KH = 3;
   std::string tc = R"(
-      def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
-      -> (tmp, O1) {
-        tmp(n, o, h, w) +=! I(n, c, h + kh, w + kw) * W1(o, c, kh, kw)
-        O1(n, o, h, w) = tmp(n, o, h, w) + B(o)
-      }
+def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
+{
+    tmp(n, o, h, w) +=!  I(n, r_c, h + r_kh, w + r_kw) * W1(o, r_c, r_kh, r_kw)
+     O1(n, o, h, w)  = tmp(n, o, h, w) + B(o)
+}
     )";
 
   at::Tensor I = at::CPU(at::kFloat).rand({NN, C, H, W});

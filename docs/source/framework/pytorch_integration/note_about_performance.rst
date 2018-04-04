@@ -18,8 +18,8 @@ argument when you run the TC. For a concrete example:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     matmul = tc.define(lang, name="matmul")
