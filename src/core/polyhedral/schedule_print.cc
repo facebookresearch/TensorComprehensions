@@ -149,12 +149,12 @@ std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
   os << " unroll(";
   std::copy(unroll_.begin(), unroll_.end(), make_ostream_joiner(os, ", "));
   os << ")";
-  for (const auto& upa : isl::MUPA(mupa_)) {
+  for (const auto& upa : mupa_.get_union_pw_aff_list()) {
     os << std::endl
        << w.tab()
        << "-----------------------------------------------------------------------";
-    for (const auto& pa : upa) {
-      os << std::endl << w.tab() << "| " << pa.pa;
+    for (const auto& pa : upa.get_pw_aff_list()) {
+      os << std::endl << w.tab() << "| " << pa;
     }
   }
   os << std::endl
