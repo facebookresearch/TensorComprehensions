@@ -117,7 +117,7 @@ void showExpr(std::ostream& s, const TreeRef& expr) {
     case TK_CONST: {
       Const con{expr};
       int scalarType = con.type()->kind();
-      switch (con.type()->kind()) {
+      switch (scalarType) {
         case TK_FLOAT:
         case TK_DOUBLE:
           s << con.value();
