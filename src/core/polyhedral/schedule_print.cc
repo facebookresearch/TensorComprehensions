@@ -165,12 +165,7 @@ std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
 
 std::ostream& ScheduleTreeElemContext::write(std::ostream& os) const {
   WS w;
-  os << w.tab() << "context(";
-  for (const auto& u : isl::UNION_SET(context_)) {
-    WS w2;
-    os << std::endl << w2.tab() << u;
-  }
-  os << ")";
+  os << w.tab() << "context(" << context_ << ")";
   return os;
 }
 
