@@ -80,7 +80,8 @@ std::vector<CudaMappingOptions> GeneticAutotuner::load(
   ExecutionEngine<CudaTcExecutor> ee;
   ee.define(tc_);
   auto outputs = ee.inferOutputTensorInfo(tcName, inputs);
-  return tc::autotune::restoreCandidates(tcName, inputs, outputs);
+  return tc::autotune::restoreCandidates(
+      tcNameMap_.at(tcName), inputs, outputs);
 }
 
 namespace {

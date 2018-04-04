@@ -56,8 +56,7 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
   auto cachedOp = [&]() -> std::unique_ptr<CudaCache::RetrievalResult> {
     if (ManualCudaCache::cacheEnabled()) {
       auto rr = ManualCudaCache::getCache()->retrieveKernel(
-          // TODO:replace this with pretty printed TC
-          executionInfo_.kernelName,
+          cacheKeyId,
           extractRawPtrs(executionInfo_.inputsInfo),
           extractRawPtrs(executionInfo_.outputsInfo));
       if (rr) {
@@ -72,7 +71,7 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
         << "options string is empty, are you trying compile "
         << "a dummy CudaTcExecutor?";
     return CudaCache::getCache()->retrieveKernel(
-        executionInfo_.kernelName, // TODO:replace this with pretty printed TC
+        cacheKeyId,
         options,
         extractRawPtrs(executionInfo_.inputsInfo),
         extractRawPtrs(executionInfo_.outputsInfo));
@@ -94,7 +93,7 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original grid: " << grid;
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original block: " << block;
       CudaCache::getCache()->cacheKernel(
-          executionInfo_.kernelName, // TODO:replace this with pretty printed TC
+          cacheKeyId,
           options,
           extractRawPtrs(executionInfo_.inputsInfo),
           extractRawPtrs(executionInfo_.outputsInfo),
@@ -213,8 +212,7 @@ Duration CudaTcExecutor::run(
       profile);
   if (profile and OptionsCache::cacheEnabled()) {
     OptionsCache::getCache()->recordRuntime(
-        // TODO:replace this with pretty printed TC
-        executionInfo_.kernelName,
+        cacheKeyId,
         CudaMappingOptions(executionInfo_.options),
         inputs,
         constPtrs(outputs),

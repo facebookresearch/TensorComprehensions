@@ -43,7 +43,7 @@ TEST(DivisorsAndPowers, Default) {
 }
 
 std::vector<CudaMappingOptions> restoreCandidates(
-    const std::string& kernelName,
+    const std::string& tc,
     std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs) {
   auto inputsPair = toConstDlpackTensors(inputs);
@@ -54,13 +54,23 @@ std::vector<CudaMappingOptions> restoreCandidates(
   });
 
   return tc::autotune::restoreCandidates(
-      kernelName, inputsPair.first, outputsPair.first);
+      tc, inputsPair.first, outputsPair.first);
 }
 
 TEST(RestoreCandidates, NoCache) {
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
-  ASSERT_THROW(restoreCandidates("bla", inputs, inputs), std::runtime_error);
+  static constexpr auto tc = R"(
+      def tc2(float(M,N) A, float(N,K) B) -> (output) {
+        output(m, k) +=! A(m, nn) * B(nn, k) + 1
+      })";
+  ASSERT_THROW(restoreCandidates(tc, inputs, inputs), std::runtime_error);
+}
+
+TEST(RestoreCandidates, NotATCid) {
+  std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
+                                 at::CUDA(at::kFloat).rand({16, 20})};
+  ASSERT_THROW(restoreCandidates("bla", inputs, inputs), lang::ErrorReport);
 }
 
 static constexpr auto tc_ = R"(
@@ -89,7 +99,7 @@ TEST(RestoreCandidates, NoRuntimeRecorded) {
   atCompl.run("matmul", inputs, outputs_, handle);
 
   FLAGS_tuner_gen_restore_number = 1;
-  ASSERT_EQ(restoreCandidates("matmul", inputs, outputs_).size(), 0);
+  ASSERT_EQ(restoreCandidates(tc_, inputs, outputs_).size(), 0);
 }
 
 TEST(RestoreCandidates, Hit) {
@@ -110,11 +120,11 @@ TEST(RestoreCandidates, Hit) {
   atCompl.run("matmul", inputs, outputs_, handle, true);
 
   FLAGS_tuner_gen_restore_number = 2;
-  auto restored = restoreCandidates("matmul", inputs, outputs_);
+  auto restored = restoreCandidates(tc_, inputs, outputs_);
   ASSERT_EQ(restored.size(), 2);
 
   FLAGS_tuner_gen_restore_number = 1;
-  restored = restoreCandidates("matmul", inputs, outputs_);
+  restored = restoreCandidates(tc_, inputs, outputs_);
   ASSERT_EQ(restored.size(), 1);
 }
 
