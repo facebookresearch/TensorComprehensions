@@ -167,23 +167,14 @@ std::pair<isl::union_set, isl::union_set> reductionInitsUpdates(
   return std::pair<isl::union_set, isl::union_set>(initUnion, update);
 }
 
-int findFirstReductionDim(isl::multi_union_pw_aff islMupa, const Scop& scop) {
-  auto mupa = isl::MUPA(islMupa);
-  int reductionDim = -1;
-  int currentDim = 0;
-  for (auto const& upa : mupa) {
-    for (auto const& pa : upa) {
-      if (isAlmostIdentityReduction(pa.pa, scop)) {
-        reductionDim = currentDim;
-        break;
-      }
-    }
-    if (reductionDim != -1) {
-      break;
-    }
-    ++currentDim;
-  }
-  return reductionDim;
+bool isReductionMember(
+    isl::union_pw_aff member,
+    isl::union_set domain,
+    const Scop& scop) {
+  return domain.every_set([member, &scop](isl::set set) {
+    auto pa = member.extract_on_domain(set.get_space());
+    return isAlmostIdentityReduction(pa, scop);
+  });
 }
 
 } // namespace polyhedral

@@ -220,8 +220,9 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   });
   // The reduction member needs to appear right underneath
   // the coincident members.
-  auto reductionDim = findFirstReductionDim(band->mupa_, scop());
-  if (reductionDim != nCoincident) {
+  auto reductionDim = nCoincident;
+  auto member = band->mupa_.get_union_pw_aff(reductionDim);
+  if (!isReductionMember(member, updates, scop())) {
     return false;
   }
   auto reductionTree = bandSplitOut(scop_->scheduleRoot(), tree, reductionDim);
