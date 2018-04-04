@@ -52,7 +52,6 @@ TEST_F(TcCudaMapper1DReductionTest, DISABLED_Reduction1Dv0) {
                             .tile(0)
                             .mapToBlocks({})
                             .mapToThreads({16});
-  LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 0);
 }
@@ -62,7 +61,6 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv1) {
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
-  LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 1);
 }
@@ -72,7 +70,6 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv2) {
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
-  LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 2);
 }
@@ -82,7 +79,6 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv3) {
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
-  LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 3);
 }
@@ -97,7 +93,6 @@ TEST_F(TcCudaMapper2DReductionTest, Reduction2D1) {
                             .mapToBlocks({1, 1})
                             .mapToThreads({32})
                             .matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M, N});
   Check(A, mappingOptions);
 }
@@ -119,7 +114,6 @@ struct TcCudaMapper2DReductionStressTest : public TcCudaMapper2DReductionTest {
                               .mapToBlocks({1})
                               .mapToThreads({tix, tiy})
                               .matchLibraryCalls(true);
-    LOG(INFO) << mappingOptions << endl;
     at::Tensor A = ones ? at::CUDA(at::kFloat).ones({M, N})
                         : at::CUDA(at::kFloat).rand({M, N});
     return TcCudaMapper2DReductionTest::Check(A, mappingOptions, skipCheck);
@@ -196,8 +190,6 @@ TEST_F(TcCudaMapperMatmulTest, Matmul1DSchedule) {
                             .mapToBlocks({M, N})
                             .mapToThreads({std::min(32u, K)})
                             .matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
-
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({K, N});
   Check(A, B, mappingOptions);
@@ -213,8 +205,6 @@ TEST_F(TcCudaMapperMatmulTest, Matmul1DScheduleMultipleOccurrence) {
                             .mapToBlocks({8})
                             .mapToThreads({16})
                             .matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
-
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({K, N});
   Check(A, B, mappingOptions);
@@ -226,8 +216,6 @@ TEST_F(TcCudaMapperMatmulTest, Matmul3DSchedule) {
                             .mapToBlocks({1, 1, 1})
                             .mapToThreads({4, 1, 1});
   mappingOptions.matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
-
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({K, N});
   Check(A, B, mappingOptions);
@@ -239,8 +227,6 @@ TEST_F(TcCudaMapperMatmulTest, Matmul3DScheduleMultipleOccurrence) {
                             .mapToBlocks({8})
                             .mapToThreads({16})
                             .matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
-
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({K, N});
   Check(A, B, mappingOptions);
@@ -258,8 +244,6 @@ TEST_F(TcCudaMapperBatchMatmulTest, BatchMatmul) {
                             .usePrivateMemory(true)
                             .useSharedMemory(true);
   mappingOptions.matchLibraryCalls(true);
-  LOG(INFO) << mappingOptions << endl;
-
   at::Tensor A = at::CUDA(at::kFloat).rand({50, 26, 72});
   at::Tensor B = at::CUDA(at::kFloat).rand({50, 72, 26});
   Check(A, B, mappingOptions);
