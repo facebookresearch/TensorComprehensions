@@ -355,11 +355,11 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
 ///////////////////////////////////////////////////////////////////////////////
 // SpatialBatchNormalization
 ///////////////////////////////////////////////////////////////////////////////
-TEST_F(TcCudaMapperTest, DISABLED_SpatialBatchNormalization) {
+TEST_F(TcCudaMapperTest, SpatialBatchNormalization) {
   N = 32;
-  at::Tensor eps = at::CUDA(at::kFloat).rand({});
+  at::Tensor eps = at::CUDA(at::kFloat).rand({1});
   eps[0] = 1.0f;
-  at::Tensor momentum = at::CUDA(at::kFloat).rand({});
+  at::Tensor momentum = at::CUDA(at::kFloat).rand({1});
   momentum[0] = 1.0;
   at::Tensor I = at::CUDA(at::kFloat).rand({N, C2, H, W});
   at::Tensor rMeanIn = at::CUDA(at::kFloat).rand({C2});
@@ -369,21 +369,21 @@ TEST_F(TcCudaMapperTest, DISABLED_SpatialBatchNormalization) {
 
   static constexpr auto TC = R"TC(
 def spatial_batch_norm(
-    float momentum, float eps,
+    float(1) momentum, float(1) eps,
     float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn)
 -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut)
 {
     mean(c)    +=!    I(r_n, c, r_h, r_w)
     mean(c)     =  mean(c) / (N * H * W)
-    rMeanOut(c) = (1 - momentum) * rMeanIn(c) + momentum * mean(c)
+    rMeanOut(c) = (1 - momentum(0)) * rMeanIn(c) + momentum(0) * mean(c)
 
     centered(n, c, h, w) =          I(  n, c,   h,   w) - rMeanOut(c)
     variance(n, c, h, w) =   centered(  n, c,   h,   w) * centered(n, c, h, w)
-    expectedVariance(c) +=! (variance(r_n, c, r_h, r_w) + eps) / (N * H * W)
+    expectedVariance(c) +=! (variance(r_n, c, r_h, r_w) + eps(0)) / (N * H * W)
 
     rVarOut(c) = rsqrt(
-        (1 - momentum) * rVarIn(c) +
-             momentum  * expectedVariance(c))
+        (1 - momentum(0)) * rVarIn(c) +
+             momentum(0)  * expectedVariance(c))
 
     O(n, c, h, w)             = centered(n, c, h, w) * rVarOut(c)
     normalizedOut(n, c, h, w) =        O(n, c, h, w)
@@ -406,8 +406,8 @@ def spatial_batch_norm(
         rMeanIn,
         rVarIn,
         training,
-        at::Scalar(momentum).toFloat(),
-        at::Scalar(eps).toFloat(),
+        at::Scalar(momentum[0]).toFloat(),
+        at::Scalar(eps[0]).toFloat(),
         save_mean,
         save_std);
     auto diff = O.sub(outputs[0]);
