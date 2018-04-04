@@ -11,11 +11,6 @@ set(GTEST_LIBS gtest gtest_main)
 
 set(GOOGLE_LIBS ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES} ${GTEST_LIBS})
 
-add_library(tc_test INTERFACE)
-target_include_directories(tc_test INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(tc_test INTERFACE ${GOOGLE_LIBS})
-
-
 ################################################################################
 # Finally, add tests
 ################################################################################
