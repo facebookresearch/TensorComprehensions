@@ -172,7 +172,7 @@ std::ostream& ScheduleTreeElemContext::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "domain(";
-  for (const auto& u : isl::UNION_SET(domain_)) {
+  for (const auto& u : domain_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }
@@ -189,7 +189,7 @@ std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "filter(";
-  for (const auto& u : isl::UNION_SET(filter_)) {
+  for (const auto& u : filter_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }
@@ -204,7 +204,7 @@ std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
     os << id << ", ";
   }
   os << ")";
-  for (const auto& u : isl::UNION_SET(filter_)) {
+  for (const auto& u : filter_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }

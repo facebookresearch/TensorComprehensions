@@ -152,7 +152,7 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
           typename mapping::MappingId::Hash>& ids)
       : ScheduleTreeElemFilter(us), mappingIds(ids) {
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    for (auto s : isl::UNION_SET(us)) {
+    for (auto s : us.get_set_list()) {
       for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
         if (mappingIds.count(id) > 0) {
           CHECK_EQ(1, ids.count(id)) << "id: " << id << " mapped >1 times";

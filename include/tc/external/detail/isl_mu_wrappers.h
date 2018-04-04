@@ -129,14 +129,6 @@ struct MUPA : std::vector<UPA> {
   isl::multi_union_pw_aff mupa;
 };
 
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct UNION_SET : std::vector<isl::set> {
-  UNION_SET(isl::union_set us_) : us(us_) {
-    us_.foreach_set([&](isl::set s) { this->push_back(s); });
-  }
-  isl::union_set us;
-};
-
 template <typename T, isl::dim_type DT>
 struct DimIds : public std::vector<isl::id> {
   DimIds(T s) {
