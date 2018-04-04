@@ -97,14 +97,14 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
           if (!f) {
             return true;
           }
-          auto us = isl::UNION_SET(f->filter_);
-          if (us.size() != 1) {
+          if (f->filter_.n_set() != 1) {
             std::stringstream ss;
             ss << "In tree:\n"
                << *root << "\nnot a single set in filter: " << f->filter_;
             throw tightening::TighteningException(ss.str());
           }
-          return !Scop::isSyncId(us[0].get_tuple_id());
+          auto single = isl::set::from_union_set(f->filter_);
+          return !Scop::isSyncId(single.get_tuple_id());
         },
         leaves(root));
     for (auto p : nonSyncLeaves) {
