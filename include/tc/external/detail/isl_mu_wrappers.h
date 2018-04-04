@@ -93,36 +93,6 @@ namespace isl {
 //   cout << "PA[0] aff: " << M[0][0][0].second << endl;
 //
 
-//
-// multi_val is a vector of val in the vector space ```multi_val.get_space()```
-// A val however is not attached to any (exposed) space (internally it seems
-// to have one, see ```isl/isl_val_private.h```).
-//
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct MV : std::vector<isl::val> {
-  explicit MV(isl::multi_val mv_) : mv(mv_) {
-    this->reserve(mv.dim(isl::dim_type::set));
-    for (size_t i = 0; i < mv.dim(isl::dim_type::set); ++i) {
-      this->push_back(mv.get_val(i));
-    }
-  }
-  isl::multi_val mv;
-};
-
-//
-// multi_aff is a vector of aff in the vector space ```multi_aff.get_space()```
-//
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct MA : std::vector<isl::aff> {
-  explicit MA(isl::multi_aff ma_) : ma(ma_) {
-    this->reserve(ma.dim(isl::dim_type::set));
-    for (size_t i = 0; i < ma.dim(isl::dim_type::set); ++i) {
-      this->push_back(ma.get_aff(i));
-    }
-  }
-  isl::multi_aff ma;
-};
-
 /* WARNING: this does not allow inplace modifications .. ugh */
 struct PA : std::vector<std::pair<isl::set, isl::aff>> {
   explicit PA(isl::pw_aff pa_) : pa(pa_) {
@@ -133,18 +103,6 @@ struct PA : std::vector<std::pair<isl::set, isl::aff>> {
     pa.foreach_piece(f);
   }
   isl::pw_aff pa;
-};
-
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct PMA : std::vector<std::pair<isl::set, isl::multi_aff>> {
-  explicit PMA(isl::pw_multi_aff pma_) : pma(pma_) {
-    this->reserve(pma.n_piece());
-    auto f = [&](isl::set s, isl::multi_aff ma) {
-      this->push_back(std::make_pair(s, ma));
-    };
-    pma.foreach_piece(f);
-  }
-  isl::pw_multi_aff pma;
 };
 
 /* WARNING: this does not allow inplace modifications .. ugh */
@@ -160,36 +118,6 @@ struct UPA : std::vector<PA> {
   isl::union_pw_aff upa;
 };
 
-struct MPA : std::vector<PA> {
-  explicit MPA(isl::multi_pw_aff mpa_) : mpa(mpa_) {
-    this->reserve(mpa.dim(isl::dim_type::set));
-    for (size_t i = 0; i < mpa.dim(isl::dim_type::set); ++i) {
-      this->push_back(PA(mpa.get_pw_aff(i)));
-    }
-  }
-  isl::multi_pw_aff mpa;
-};
-
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct UPMA : std::vector<UPA> {
-  explicit UPMA(isl::union_pw_multi_aff upma_) : upma(upma_) {
-    this->reserve(upma.dim(isl::dim_type::set));
-    for (size_t i = 0; i < upma.dim(isl::dim_type::set); ++i) {
-      this->push_back(UPA(upma.get_union_pw_aff(i)));
-    }
-  }
-  std::vector<PMA> pmas(isl::union_pw_multi_aff upma) const {
-    std::vector<PMA> res;
-    auto f = [&](isl::pw_multi_aff pma) { res.push_back(PMA(pma)); };
-    upma.foreach_pw_multi_aff(f);
-    return res;
-  }
-  PMA extract(isl::space s) const {
-    return PMA(upma.extract_pw_multi_aff(s));
-  }
-  isl::union_pw_multi_aff upma;
-};
-
 /* WARNING: this does not allow inplace modifications .. ugh */
 struct MUPA : std::vector<UPA> {
   explicit MUPA(isl::multi_union_pw_aff mupa_) : mupa(mupa_) {
@@ -197,9 +125,6 @@ struct MUPA : std::vector<UPA> {
     for (size_t i = 0; i < mupa.dim(isl::dim_type::set); ++i) {
       this->push_back(UPA(mupa.get_union_pw_aff(i)));
     }
-  }
-  MPA extract(isl::space s) const {
-    return MPA(mupa.extract_multi_pw_aff(s));
   }
   isl::multi_union_pw_aff mupa;
 };
