@@ -42,7 +42,7 @@ DEFINE_bool(
     "load options from previously stored cache (or store them)");
 DEFINE_bool(no_memory_promotion, false, "disable memory promotion");
 
-struct ATenCompilationUnitTest : public ::testing::Test {
+struct ATenCompilationUnitTest : public ::testing::TestWithParam<bool> {
   static constexpr uint32_t N = 32, C1 = 512, C2 = 8, C3 = 2, H = 28, W = 28;
 
   ATenCompilationUnitTest() {
@@ -53,6 +53,7 @@ struct ATenCompilationUnitTest : public ::testing::Test {
       tc::FLAGS_tuner_threads = std::min(8u, tc::FLAGS_tuner_gen_pop_size);
       tc::FLAGS_tuner_gen_number_elites = tc::FLAGS_tuner_gen_pop_size / 4;
     }
+    tc::FLAGS_tuner_gen_profiled_run = GetParam();
   }
 
   void Check(
@@ -90,7 +91,12 @@ struct ATenCompilationUnitTest : public ::testing::Test {
   }
 };
 
-TEST_F(ATenCompilationUnitTest, LayerNorm) {
+INSTANTIATE_TEST_CASE_P(
+    WithAndWithoutProfiling,
+    ATenCompilationUnitTest,
+    ::testing::Bool());
+
+TEST_P(ATenCompilationUnitTest, LayerNorm) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
   std::vector<at::Tensor> inputs = {mat1};
   std::vector<at::Tensor> outputs;
@@ -113,7 +119,7 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
       autotune(cacheFilename, TC, name, inputs, options, {options});
 }
 
-TEST_F(ATenCompilationUnitTest, MatmulA) {
+TEST_P(ATenCompilationUnitTest, MatmulA) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor mat2 = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {mat1, mat2};
@@ -132,7 +138,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
       autotune(cacheFilename, TC, name, inputs, options, {options});
 }
 
-TEST_F(ATenCompilationUnitTest, MatmulB) {
+TEST_P(ATenCompilationUnitTest, MatmulB) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({72, 26});
   at::Tensor mat2 = at::CUDA(at::kFloat).rand({26, 72});
   std::vector<at::Tensor> inputs = {mat1, mat2};
@@ -151,7 +157,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
       autotune(cacheFilename, TC, name, inputs, options, {options});
 }
 
-TEST_F(ATenCompilationUnitTest, MatmulC) {
+TEST_P(ATenCompilationUnitTest, MatmulC) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({100, 400});
   at::Tensor mat2 = at::CUDA(at::kFloat).rand({400, 500});
   std::vector<at::Tensor> inputs = {mat1, mat2};
@@ -170,7 +176,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
       autotune(cacheFilename, TC, name, inputs, options, {options});
 }
 
-TEST_F(ATenCompilationUnitTest, TensorDot) {
+TEST_P(ATenCompilationUnitTest, TensorDot) {
   at::Tensor I0 = at::CUDA(at::kFloat).rand({N, C1, C2, H, W});
   at::Tensor I1 = at::CUDA(at::kFloat).rand({N, C2, C3, H, W});
   std::vector<at::Tensor> inputs = {I0, I1};
