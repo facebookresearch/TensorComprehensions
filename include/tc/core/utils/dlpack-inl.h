@@ -109,6 +109,9 @@ inline void SetStrides(DLTensor& t, const std::vector<int64_t>& strides) {
 
 inline void SetStridesFromSizes(DLTensor& t, const std::vector<int64_t>&) {
   auto ndim = t.ndim;
+  if (ndim == 0) {
+    return;
+  }
   t.strides[ndim - 1] = 1;
   for (int i = ndim - 2; i >= 0; --i) {
     t.strides[i] = t.strides[i + 1] * t.shape[i + 1];
