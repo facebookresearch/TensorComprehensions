@@ -139,30 +139,30 @@ TEST_F(TcMapper1DReductionTest, DISABLED_Reduction1Dv0) {
   Check(A, mappingOptions, 0);
 }
 
-TEST_F(TcMapper1DReductionTest, DISABLED_Reduction1Dv1) {
+TEST_F(TcMapper1DReductionTest, Reduction1Dv1) {
   auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                             .tile(0)
-                            .mapToBlocks({})
+                            .mapToBlocks({1})
                             .mapToThreads({16});
   LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 1);
 }
 
-TEST_F(TcMapper1DReductionTest, DISABLED_Reduction1Dv2) {
+TEST_F(TcMapper1DReductionTest, Reduction1Dv2) {
   auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                             .tile(0)
-                            .mapToBlocks({})
+                            .mapToBlocks({1})
                             .mapToThreads({16});
   LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
   Check(A, mappingOptions, 2);
 }
 
-TEST_F(TcMapper1DReductionTest, DISABLED_Reduction1Dv3) {
+TEST_F(TcMapper1DReductionTest, Reduction1Dv3) {
   auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
                             .tile(0)
-                            .mapToBlocks({})
+                            .mapToBlocks({1})
                             .mapToThreads({16});
   LOG(INFO) << mappingOptions << endl;
   at::Tensor A = at::CUDA(at::kFloat).rand({M});
