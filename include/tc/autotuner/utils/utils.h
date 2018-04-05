@@ -49,6 +49,11 @@ std::vector<CudaMappingOptions> restoreCandidates(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
 
+std::vector<CudaMappingOptions> restoreCandidates(
+    const lang::TreeRef& tc,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs);
+
 llvm::Optional<CudaMappingOptions> getBestOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,

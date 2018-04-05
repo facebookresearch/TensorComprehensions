@@ -20,6 +20,10 @@
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/utils/math.h"
+#include "tc/lang/canonicalize.h"
+#include "tc/lang/parser.h"
+#include "tc/lang/sema.h"
+#include "tc/lang/tree.h"
 
 namespace tc {
 namespace autotune {
@@ -70,11 +74,20 @@ std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
   return c;
 }
 
+namespace {
+std::string canonicalTC(const lang::TreeRef& tc) {
+  std::stringstream ss;
+  ss << lang::canonicalize(tc);
+  return ss.str();
+}
+} // namespace
+
 std::vector<CudaMappingOptions> restoreCandidates(
-    const std::string& id,
+    const lang::TreeRef& tc,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
-  auto candidates = getOptionsAndMedianRuntimes(id, inputs, outputs);
+  auto candidates = getOptionsAndMedianRuntimes(
+      canonicalTC(lang::Sema().checkFunction(tc)), inputs, outputs);
   LOG_IF(INFO, candidates.size() < FLAGS_tuner_gen_restore_number)
       << "Requested " << FLAGS_tuner_gen_restore_number
       << " candidates but there are only " << candidates.size() << " in cache.";
@@ -94,6 +107,13 @@ std::vector<CudaMappingOptions> restoreCandidates(
       std::back_inserter(res),
       [](const OptionsWithMedianTime& rr) { return rr.options; });
   return res;
+}
+
+std::vector<CudaMappingOptions> restoreCandidates(
+    const std::string& tc,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs) {
+  return restoreCandidates(lang::Parser(tc).parseFunction(), inputs, outputs);
 }
 
 llvm::Optional<CudaMappingOptions> getBestOptions(

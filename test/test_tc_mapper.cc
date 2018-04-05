@@ -24,6 +24,9 @@
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
+#include "tc/lang/canonicalize.h"
+#include "tc/lang/sema.h"
+#include "tc/lang/tree.h"
 
 #include "test_harness_aten_cuda.h"
 
@@ -59,7 +62,12 @@ struct TcMapperTest : public ::testing::Test {
       tc::deleteDlmTensors(outputDLTensorsPair.second);
     });
     auto cached = tc::CudaCache::getCache()->retrieveKernel(
-        name,
+        [&]() {
+          std::stringstream ss;
+          ss << lang::canonicalize(
+              lang::Sema().checkFunction(lang::Parser(tc).parseFunction()));
+          return ss.str();
+        }(),
         mappingOptions,
         inputDLTensorsPair.first,
         outputDLTensorsPair.first);
