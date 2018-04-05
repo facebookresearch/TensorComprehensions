@@ -442,9 +442,11 @@ struct Sema {
 
     // register index variables (non-reductions)
     for (const auto& index : stmt.indices()) {
-      std::string idx = index.name();
-      auto typ = indexType(index);
-      insert(index_env, index, typ, true);
+      if (index->kind() == TK_IDENT) {
+        std::string idx = Ident(index).name();
+        auto typ = indexType(index);
+        insert(index_env, Ident(index), typ, true);
+      }
     }
 
     // make dimension variables for each dimension of the output tensor
@@ -464,6 +466,9 @@ struct Sema {
     // introduce let bindings that are in scope for the rhs
     auto where_clauses_ = stmt.whereClauses().map(
         [&](TreeRef rc) { return checkWhereClause(rc); });
+
+    auto indices_ =
+        stmt.indices().map([&](TreeRef idx) { return checkExp(idx, true); });
 
     TreeRef rhs_ = checkExp(stmt.rhs(), true);
     TreeRef scalar_type = typeOfExpr(rhs_);
@@ -525,7 +530,7 @@ struct Sema {
     TreeRef result = Comprehension::create(
         stmt.range(),
         stmt.ident(),
-        stmt.indices(),
+        indices_,
         stmt.assignment(),
         rhs_,
         where_clauses_,

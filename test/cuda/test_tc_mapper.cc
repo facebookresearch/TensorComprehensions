@@ -352,6 +352,49 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
       checkFun);
 }
 
+TEST_F(TcCudaMapperTest, Histogram) {
+  const int N = 17, M = 82;
+  at::Tensor I =
+      at::CUDA(at::kFloat).rand({N, M}).mul_(256).floor_().toType(at::kByte);
+  std::vector<at::Tensor> inputs = {I};
+  std::vector<at::Tensor> outputs;
+
+  static constexpr auto TC = R"TC(
+def fun(uint8(N, M) I) -> (O) {
+  O(I(i, j)) +=! 1
+}
+)TC";
+
+  auto checkFun = [=](const std::vector<at::Tensor>& inputs,
+                      std::vector<at::Tensor>& outputs) {
+    at::Tensor I = inputs[0].toBackend(at::kCPU);
+    at::Tensor O = outputs[0].toBackend(at::kCPU);
+    auto IAccessor = I.accessor<uint8_t, 2>();
+    auto OAccessor = O.accessor<int, 1>();
+    int sum = 0;
+    for (int i = 0; i < 256; i++) {
+      sum += OAccessor[i];
+    }
+    CHECK_EQ(sum, N * M);
+
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < M; j++) {
+        OAccessor[IAccessor[i][j]]--;
+      }
+    }
+
+    for (int i = 0; i < 256; i++) {
+      CHECK_EQ(OAccessor[i], 0);
+    }
+  };
+  Check(
+      TC,
+      "fun",
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      inputs,
+      checkFun);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // SpatialBatchNormalization
 ///////////////////////////////////////////////////////////////////////////////
