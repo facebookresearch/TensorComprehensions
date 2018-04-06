@@ -159,10 +159,7 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
           CHECK_LE(0, s.find_dim_by_id(isl::dim_type::param, id))
               << "unexpected missing id: " << id << " in filter: " << s;
         } else {
-          auto pos = s.find_dim_by_id(isl::dim_type::param, id);
-          bool involved =
-              pos > 0 && s.involves_dims(isl::dim_type::param, pos, 1);
-          if (involved) {
+          if (s.involves_param(id)) {
             std::stringstream ss;
             for (auto id : ids) {
               ss << id.to_str() << " ";
