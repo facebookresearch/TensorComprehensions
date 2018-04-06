@@ -48,8 +48,7 @@ std::pair<size_t, size_t> rangeOfMappingParameter(
     mapping::MappingId mappingId) {
   auto active =
       activeDomainPoints(root, node).intersect_params(context).params();
-  int pos = active.find_dim_by_id(isl::dim_type::param, mappingId);
-  if (pos < 0) {
+  if (!active.involves_param(mappingId)) {
     return std::make_pair(0, std::numeric_limits<size_t>::max());
   }
   isl::aff a(isl::aff::param_on_domain_space(active.get_space(), mappingId));
