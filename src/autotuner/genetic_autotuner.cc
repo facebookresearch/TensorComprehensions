@@ -186,7 +186,7 @@ llvm::Optional<CudaMappingOptions> GeneticAutotuner::tune(
 
   CHECK_GT(inputs.size(), 0);
   return tc::autotune::getBestOptions(
-      tcName, inputs.begin()->second, outputPtrs);
+      canonicalTC(tcNameMap_.at(tcName)), inputs.begin()->second, outputPtrs);
 }
 
 } // namespace detail

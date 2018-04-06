@@ -21,6 +21,7 @@
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/dlpack.h"
+#include "tc/lang/tree.h"
 
 #include <llvm/ADT/Optional.h>
 
@@ -58,6 +59,8 @@ llvm::Optional<CudaMappingOptions> getBestOptions(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
+
+std::string canonicalTC(const lang::TreeRef& tc);
 
 } // namespace autotune
 } // namespace tc
