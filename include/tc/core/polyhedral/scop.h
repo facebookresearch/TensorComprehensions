@@ -128,16 +128,6 @@ struct Scop {
     return makeSpecializationSet(s, sizes);
   }
 
-  // Returns a set that specializes the (positional) scop's subset of
-  // parameter space to the integer values passed to the function.
-  template <typename T>
-  isl::set makeContext(
-      const std::unordered_map<int, T>& sizes =
-          std::unordered_map<int, T>()) const {
-    auto s = domain().get_space().params();
-    return makeSpecializationSet(s, sizes);
-  }
-
   // Returns a set that specializes the named scop's subset of
   // parameter space to the integer values passed to the function.
   template <typename T>
