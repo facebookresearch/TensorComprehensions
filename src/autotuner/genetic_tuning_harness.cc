@@ -87,7 +87,7 @@ GeneticTunerHarness::GeneticTunerHarness(
         kMutationRate,
         kNumberElites);
   } else {
-    tuner_ = make_unique<GeneticSearch>(
+    tuner_ = std::make_unique<GeneticSearch>(
         configuration,
         kMaxPopulationSize,
         kCrossOverRate,
