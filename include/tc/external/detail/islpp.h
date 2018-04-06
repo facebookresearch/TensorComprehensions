@@ -317,35 +317,22 @@ inline isl::set makeParameterContext(
 
 // Given a space and values for parameters, this function creates the set
 // that ties the space parameter to the values.
-// This assumes space.dim(isl::dim_type::param) == paramValues.size()
 //
 template <typename T>
 inline isl::set makeSpecializationSet(
     isl::space space,
-    const std::unordered_map<int, T>& paramValues) {
-  CHECK_GE(space.dim(isl::dim_type::param), paramValues.size());
-  auto lspace = isl::local_space(space);
+    const std::unordered_map<std::string, T>& paramValues) {
+  auto ctx = space.get_ctx();
+  for (auto kvp : paramValues) {
+    space = space.add_param(isl::id(ctx, kvp.first));
+  }
   auto set = isl::set::universe(space);
   for (auto kvp : paramValues) {
-    auto affParam = isl::aff(lspace, isl::dim_type::param, kvp.first);
+    auto id = isl::id(ctx, kvp.first);
+    isl::aff affParam(isl::aff::param_on_domain_space(space, id));
     set = set & (isl::aff_set(affParam) == kvp.second);
   }
   return set;
-}
-
-template <typename T>
-inline isl::set makeSpecializationSet(
-    isl::space space,
-    const std::unordered_map<std::string, T>& paramValues) {
-  CHECK_GE(space.dim(isl::dim_type::param), paramValues.size());
-  std::unordered_map<int, T> aux;
-  for (auto kvp : paramValues) {
-    auto pos = space.find_dim_by_name(isl::dim_type::param, kvp.first);
-    CHECK_LE(0, pos) << "No " << kvp.first << " in: " << space;
-    CHECK_EQ(0, aux.count(pos));
-    aux[pos] = kvp.second;
-  }
-  return makeSpecializationSet(space, aux);
 }
 
 template <typename T>
