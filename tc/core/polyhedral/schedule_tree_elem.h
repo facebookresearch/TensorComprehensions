@@ -152,24 +152,24 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
           typename mapping::MappingId::Hash>& ids)
       : ScheduleTreeElemFilter(us), mappingIds(ids) {
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    for (auto s : us.get_set_list()) {
-      for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
-        if (mappingIds.count(id) > 0) {
-          CHECK_EQ(1u, ids.count(id)) << "id: " << id << " mapped >1 times";
+    for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
+      if (mappingIds.count(id) > 0) {
+        CHECK_EQ(1u, ids.count(id)) << "id: " << id << " mapped >1 times";
+        for (auto s : us.get_set_list()) {
           CHECK(s.involves_param(id))
               << "unexpected missing id: " << id << " in filter: " << s;
-        } else {
-          if (s.involves_param(id)) {
-            std::stringstream ss;
-            for (auto id : ids) {
-              ss << id.to_str() << " ";
-            }
-            // TODO: will need to relax this if we map the same loop
-            // iteratively without stripmining it beforehand
-            CHECK(false) << "unexpected involved id: " << id
-                         << " in filter: " << s
-                         << " but not present in filter id list: " << ss.str();
+        }
+      } else {
+        if (us.involves_param(id)) {
+          std::stringstream ss;
+          for (auto id : ids) {
+            ss << id.to_str() << " ";
           }
+          // TODO: will need to relax this if we map the same loop
+          // iteratively without stripmining it beforehand
+          CHECK(false) << "unexpected involved id: " << id
+                       << " in filter: " << us
+                       << " but not present in filter id list: " << ss.str();
         }
       }
     }
