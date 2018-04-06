@@ -333,7 +333,7 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
   auto scop = PrepareAndJoinBands(makeMatmulTc());
 
   // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext(std::vector<int>{64, 64, 64});
+  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
   auto& globalParameterContext =
       const_cast<isl::set&>(scop->globalParameterContext);
   globalParameterContext = globalParameterContext.intersect(context);
@@ -349,7 +349,7 @@ TEST_F(PolyhedralMapperTest, FilterMerge) {
   auto schedule = scop->scheduleRoot();
 
   // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext(std::vector<int>{64, 64, 64});
+  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
   auto& globalParameterContext =
       const_cast<isl::set&>(scop->globalParameterContext);
   globalParameterContext = globalParameterContext.intersect(context);

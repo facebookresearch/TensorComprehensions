@@ -348,6 +348,14 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, aux);
 }
 
+template <typename T>
+inline isl::set makeSpecializationSet(
+    isl::space space,
+    std::initializer_list<std::pair<const std::string, T>> paramValues) {
+  std::unordered_map<std::string, T> map(paramValues);
+  return makeSpecializationSet(space, map);
+}
+
 // WARNING: this version relies on parameter ordering, be sure you know what
 // you are doing.
 template <typename T>
