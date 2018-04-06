@@ -156,7 +156,7 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
       for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
         if (mappingIds.count(id) > 0) {
           CHECK_EQ(1u, ids.count(id)) << "id: " << id << " mapped >1 times";
-          CHECK_LE(0, s.find_dim_by_id(isl::dim_type::param, id))
+          CHECK(s.involves_param(id))
               << "unexpected missing id: " << id << " in filter: " << s;
         } else {
           if (s.involves_param(id)) {
