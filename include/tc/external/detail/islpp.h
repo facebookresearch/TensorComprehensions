@@ -356,18 +356,15 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, map);
 }
 
-// WARNING: this version relies on parameter ordering, be sure you know what
-// you are doing.
 template <typename T>
 inline isl::set makeSpecializationSet(
     isl::space space,
-    const std::vector<T>& paramValues) {
-  CHECK_EQ(space.dim(isl::dim_type::param), paramValues.size());
-  std::unordered_map<int, T> paramValuesMap;
-  for (int i = 0; i < paramValues.size(); ++i) {
-    paramValuesMap[i] = paramValues[i];
+    std::initializer_list<std::pair<isl::id, T>> paramValues) {
+  std::unordered_map<std::string, T> map;
+  for (auto kvp : paramValues) {
+    map.emplace(kvp.first.get_name(), kvp.second);
   }
-  return makeSpecializationSet(space, paramValuesMap);
+  return makeSpecializationSet(space, map);
 }
 
 namespace detail {

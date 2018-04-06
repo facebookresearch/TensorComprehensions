@@ -275,7 +275,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     blockSpace = blockSpace.set_dim_id(isl::dim_type::param, 0, BX)
                      .set_dim_id(isl::dim_type::param, 1, BY);
     isl::set blockZero =
-        makeSpecializationSet(blockSpace, std::vector<int>{{0, 0}});
+        isl::makeSpecializationSet<int>(blockSpace, {{BX, 0}, {BY, 0}});
 
     // Must have groups for these tensors, in arbitrary order.
     unordered_set<string> names{"A", "B", "C"};
