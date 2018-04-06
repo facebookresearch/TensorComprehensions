@@ -162,9 +162,10 @@ class MappedScop {
   // (if nInner == 0) and
   // return the updated number of mapped thread identifiers.
   size_t mapToThreads(detail::ScheduleTree* band, size_t nInner);
-  // Map innermost bands to thread identifiers and
-  // return the number of mapped thread identifiers.
-  size_t mapInnermostBandsToThreads(detail::ScheduleTree* st);
+  // Map innermost bands to thread identifiers.
+  // Return the number of mapped thread identifiers
+  // and a flag indicating whether the mapping can continue for ancestors.
+  std::pair<size_t, bool> mapInnermostBandsToThreads(detail::ScheduleTree* st);
 
  private:
   std::unique_ptr<Scop> scop_;

@@ -192,8 +192,9 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
     found |= detectReductions(c);
   }
   auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
-  // Nested reductions are not currently supported.
-  if (!band || found) {
+  // Nested reductions or reductions in non-permutable bands are not currently
+  // supported.
+  if (!band || !band->permutable_ || found) {
     return found;
   }
 
@@ -329,23 +330,6 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
 size_t MappedScop::mapToThreads(detail::ScheduleTree* band, size_t nInner) {
   using namespace tc::polyhedral::detail;
 
-  if (nInner >= numThreads.view.size()) {
-    return nInner;
-  }
-  if (reductionBandUpdates_.count(band) == 1) {
-    // A reduction is assumed to get mapped to threadIdx.x
-    if (nInner != 0) {
-      reductionBandUpdates_.erase(band);
-      return nInner;
-    }
-    CHECK(reductionBandUpdates_.at(band).separated);
-    threadIdxxScheduleDepthState.emplace_back(std::make_pair(
-        activeDomainPoints(schedule(), band),
-        band->scheduleDepth(schedule()) + 0));
-    band = map(band, 0, mapping::ThreadId::x());
-    markUnroll(scop_->scheduleRoot(), band, unroll);
-    return 1;
-  }
   auto bandNode = band->elemAs<ScheduleTreeElemBand>();
   // If any inner node was mapped to threads and
   // the current node has a non-coincident member,
@@ -423,6 +407,12 @@ bool hasOuterSequentialMember(
 
 // Maps bands to threads in DFS postorder, keeping track of
 // the (maximal) number of threads already mapped by descendants.
+// Mapping is allowed if the descendants are not already mapped to threads,
+// except for a single reduction.  Two nested bands cannot have their members
+// mapped to threads at the same time because they are not permutable with each
+// other.  It is possible to keep mapping a parent band of a reduction band, if
+// it exists, because the reduction band was artificially split out from a
+// permutable band.
 //
 // If any separation is needed for mapping reductions to full blocks,
 // then do so first.
@@ -442,15 +432,19 @@ bool hasOuterSequentialMember(
 // to threads needs to be completed to all thread ids
 // because the synchronization needs to be introduced outside
 // any mapping to threads.
-size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
+std::pair<size_t, bool> MappedScop::mapInnermostBandsToThreads(
+    detail::ScheduleTree* st) {
   if (needReductionSeparation(st)) {
     st = separateReduction(st);
   }
   auto children = st->children();
   auto nChildren = children.size();
   std::vector<size_t> nInner(nChildren);
+  bool allowNestedMapping = false;
   for (size_t i = 0; i < nChildren; ++i) {
-    nInner[i] = mapInnermostBandsToThreads(children[i]);
+    auto inner = mapInnermostBandsToThreads(children[i]);
+    nInner[i] = inner.first;
+    allowNestedMapping = (i == 0 ? inner.second : false);
   }
   auto n = nChildren > 0 ? *std::max_element(nInner.begin(), nInner.end()) : 0;
   if (nChildren > 1) {
@@ -474,11 +468,40 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
     }
   }
 
-  if (st->elemAs<detail::ScheduleTreeElemBand>()) {
-    n = mapToThreads(st, n);
+  size_t nMapped = 0;
+  bool keepMapping = false;
+  if (st->elemAs<detail::ScheduleTreeElemBand>() &&
+      n < numThreads.view.size()) {
+    if (n == 0) {
+      if (reductionBandUpdates_.count(st) == 1) {
+        CHECK(reductionBandUpdates_.at(st).separated);
+        threadIdxxScheduleDepthState.emplace_back(std::make_pair(
+            activeDomainPoints(schedule(), st), st->scheduleDepth(schedule())));
+        st = map(st, 0, mapping::ThreadId::x());
+        markUnroll(scop_->scheduleRoot(), st, unroll);
+        nMapped = 1;
+        // Only keep mapping if the reduction bound was split out from a
+        // permutable band.  Permutability condition is checked in reduction
+        // detection.  If the original band did not contain any members before
+        // the reduction, the reduction band appears as its own parent.  In
+        // this case, there are no more coincident dimensions permutable with
+        // the already mapped one, therefore the mapping cannot continue.
+        keepMapping = reductionFromParent_.count(st) == 0;
+      } else {
+        nMapped = mapToThreads(st, n);
+      }
+    } else if (n != 0) {
+      if (reductionBandUpdates_.count(st) == 1) {
+        reductionBandUpdates_.erase(st);
+      }
+
+      if (n == 1 && allowNestedMapping) {
+        nMapped = mapToThreads(st, n);
+      }
+    }
   }
 
-  return n;
+  return std::make_pair(n + nMapped, keepMapping);
 }
 
 /*
@@ -631,7 +654,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
     auto child = outerBand->child({0});
     size_t numMappedInnerThreads =
-        mappedScop->mapInnermostBandsToThreads(child);
+        mappedScop->mapInnermostBandsToThreads(child).first;
     mappedScop->mapRemaining<mapping::ThreadId>(
         child, numMappedInnerThreads, mappedScop->numThreads.view.size());
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
