@@ -22,7 +22,7 @@
 
 namespace tc {
 namespace polyhedral {
-using ThreadIdxxScheduleDepthState =
+using ThreadIdxXScheduleDepthState =
     std::vector<std::pair<isl::union_set, size_t>>;
 
 class MappedScop;
@@ -32,19 +32,19 @@ class Scop;
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
 // Map copies between global and shared memory to threads and unroll those
 // copies if "unrollCopies" is set, using the options in "mscop".
-// "threadIdxxScheduleDepthState" contains the schedule depth at which the
+// "threadIdxXScheduleDepthState" contains the schedule depth at which the
 // computation was mapped to thread x and is used to check whether the global
 // memory is accessed in a coalesced way.
 void promoteGreedilyAtDepth(
     MappedScop& scop,
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     std::size_t depth,
     std::size_t sharedMemorySize,
     bool unrollCopies);
 
 void promoteToRegistersBelowThreads(
     Scop& scop,
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     std::size_t nRegisters);
 } // namespace polyhedral
 } // namespace tc

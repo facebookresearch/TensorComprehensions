@@ -179,7 +179,7 @@ class MappedScop {
   // XXX: this is a partially redundant state as this information can
   // potentially be extracted from the schedule tree; however, until we get a
   // first-class MappingNode, it requires some dirty hacks.
-  ThreadIdxxScheduleDepthState threadIdxxScheduleDepthState;
+  ThreadIdxXScheduleDepthState threadIdxXScheduleDepthState;
 
  private:
   // Information about a detected reduction that can potentially
