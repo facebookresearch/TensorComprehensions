@@ -9,3 +9,7 @@ add_subdirectory(autotuner)
 if (WITH_CAFFE2 AND WITH_CUDA)
   add_subdirectory(c2)
 endif()
+
+if (WITH_CUDA)
+  add_subdirectory(utils)
+endif()

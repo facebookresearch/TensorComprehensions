@@ -574,6 +574,47 @@ void OptionsCache::recordProfilingInfo(
   v->profiles.push_back(pInfo);
 }
 
+void OptionsCache::mergeWith(const OptionsCache& other) {
+  std::lock(mtx_, other.mtx_);
+  std::lock_guard<std::mutex> lock1(mtx_, std::adopt_lock);
+  std::lock_guard<std::mutex> lock2(other.mtx_, std::adopt_lock);
+  for (const auto& entry : other.entries_) {
+    auto it = std::find_if(
+        entries_.begin(),
+        entries_.end(),
+        [&entry](const OptionsCache::CachedEntry& e) {
+          return entry.key == e.key;
+        });
+    if (it == entries_.end()) {
+      entries_.push_back(entry);
+      continue;
+    }
+    auto& values = it->values;
+    for (const auto& val : entry.values) {
+      auto it = std::find_if(
+          values.begin(), values.end(), [&val](const CachedEntry::Values& v) {
+            return v.mappingOptions == val.mappingOptions;
+          });
+      if (it == values.end()) {
+        values.push_back(val);
+      } else {
+        it->recordedRuntimes.insert(
+            it->recordedRuntimes.end(),
+            val.recordedRuntimes.begin(),
+            val.recordedRuntimes.end());
+        it->profiles.insert(
+            it->profiles.end(), val.profiles.begin(), val.profiles.end());
+      }
+    }
+  }
+}
+
+bool OptionsCachedEntry::Key::operator==(const Key& other) const {
+  return id == other.id and inputs == other.inputs and
+      outputs == other.outputs and deviceStr == other.deviceStr and
+      gitVersion == other.gitVersion;
+}
+
 std::vector<OptionsCacheRetrievalResult>
 OptionsCache::retrieveOptionsAndProfilingInfo(
     const std::string& id,

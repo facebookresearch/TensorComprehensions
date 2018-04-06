@@ -78,6 +78,9 @@ class Cache {
   mutable int numberSuccessfulRetrievals = 0;
   mutable int numberCacheAttemps = 0;
 
+  Cache() = default;
+  Cache(Cache&& other) : entries_(std::move(other.entries_)) {}
+
  protected:
   // XXX:this should be a std or boost shared_mutex
   mutable std::mutex mtx_;

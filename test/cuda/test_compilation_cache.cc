@@ -447,6 +447,102 @@ class OptionsCacheTest : public ::testing::Test {
   }
 };
 
+TEST_F(OptionsCacheTest, Merge) {
+  auto options1 =
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().useSharedMemory(
+          false);
+  auto inputPtrs = InputPtrs();
+  auto outputPtrs = InputPtrs();
+  tc::OptionsCache::getCache()->recordRuntime(
+      "kernel0",
+      options1,
+      inputPtrs,
+      outputPtrs,
+      std::chrono::microseconds(10));
+  tc::OptionsCache::getCache()->recordRuntime(
+      "kernel0",
+      options1,
+      inputPtrs,
+      outputPtrs,
+      std::chrono::microseconds(11));
+  tc::OptionsCache::getCache()->recordRuntime(
+      "kernel1", options1, inputPtrs, outputPtrs, std::chrono::microseconds(1));
+
+  tc::OptionsCache cache2;
+
+  // Different key
+  cache2.recordRuntime(
+      "kernel2",
+      options1,
+      inputPtrs,
+      outputPtrs,
+      std::chrono::microseconds(10));
+
+  auto options2 =
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().useSharedMemory(
+          true);
+  // Same key, different mapping options
+  cache2.recordRuntime(
+      "kernel0",
+      options2,
+      inputPtrs,
+      outputPtrs,
+      std::chrono::microseconds(21));
+
+  tc::CudaProfilingInfo pInfoOrig;
+  pInfoOrig.runtime = std::chrono::microseconds(444);
+  pInfoOrig.ipc = 1.23;
+  pInfoOrig.globalLoadEfficiency = 6.546;
+  pInfoOrig.globalStoreEfficiency = 7.123;
+  pInfoOrig.sharedMemoryEfficiency = 7.111111;
+  pInfoOrig.localMemoryOverhead = 888.222;
+  pInfoOrig.achievedOccupancy = 11231231.14;
+  pInfoOrig.warpExecutionEfficiency = 910293123918239.1029381;
+
+  // Same key, same mapping options
+  cache2.recordProfilingInfo(
+      "kernel1", options1, inputPtrs, outputPtrs, pInfoOrig);
+
+  tc::OptionsCache::getCache()->mergeWith(cache2);
+
+  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
+      "kernel0", inputPtrs, outputPtrs);
+  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret[0].options, options1);
+  ASSERT_EQ(ret[0].profilingInfo.size(), 0);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2);
+  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
+  ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(11));
+
+  ASSERT_EQ(ret[1].options, options2);
+  ASSERT_EQ(ret[1].profilingInfo.size(), 0);
+  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[1].recordedRuntimes[0], std::chrono::microseconds(21));
+
+  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
+      "kernel1", inputPtrs, outputPtrs);
+  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret[0].options, options1);
+  ASSERT_EQ(ret[0].profilingInfo.size(), 0);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
+
+  auto retProf = tc::OptionsCache::getCache()->retrieveOptionsAndProfilingInfo(
+      "kernel1", inputPtrs, outputPtrs);
+  ASSERT_EQ(retProf.size(), 1);
+  ASSERT_EQ(retProf[0].options, options1);
+  ASSERT_EQ(retProf[0].profilingInfo.size(), 1);
+  ASSERT_EQ(retProf[0].profilingInfo.front(), pInfoOrig);
+
+  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
+      "kernel2", inputPtrs, outputPtrs);
+  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.front().options, options1);
+  ASSERT_EQ(ret[0].profilingInfo.size(), 0);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
+}
+
 TEST_F(OptionsCacheTest, DifferentIDs) {
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();

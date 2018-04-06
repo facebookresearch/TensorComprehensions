@@ -90,6 +90,8 @@ struct OptionsCachedEntry {
     std::vector<detail::TensorInfo> outputs;
     std::string deviceStr;
     std::string gitVersion;
+
+    bool operator==(const Key& other) const;
   };
 
   struct Values {
@@ -126,6 +128,7 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
 
   OptionsCache() = default;
+  OptionsCache(OptionsCache&&) = default;
   OptionsCache(const OptionsCacheProto& buf);
 
   OptionsCacheProto toProtobuf() const;
@@ -172,6 +175,8 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   // Only (up to) numberToKeep entries per operation (combination of id and
   // input info) are kept in the cache. The best performing versions are kept
   void keepOnlyBestCandidates(size_t numberToKeep);
+
+  void mergeWith(const OptionsCache& other);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
