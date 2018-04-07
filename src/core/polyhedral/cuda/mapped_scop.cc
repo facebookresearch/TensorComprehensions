@@ -113,7 +113,7 @@ void MappedScop::mapRemaining(
 
   for (size_t i = nMapped; i < nToMap; ++i) {
     if (MappingTypeId::makeId(i) == mapping::ThreadId::x()) {
-      threadIdxxScheduleDepthState.emplace_back(std::make_pair(
+      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(schedule(), tree),
           tree->scheduleDepth(schedule())));
     }
@@ -179,7 +179,7 @@ void fixThreadsBelowFilter(
       // Mapping happend below filterTree, so we need points active for its
       // children.  After insertion, filterTree is guaranteed to have at least
       // one child.
-      mscop.threadIdxxScheduleDepthState.emplace_back(std::make_pair(
+      mscop.threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(mscop.schedule(), filterTree->child({0})),
           filterTree->scheduleDepth(mscop.schedule())));
     }
@@ -339,7 +339,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band, size_t nInner) {
       return nInner;
     }
     CHECK(reductionBandUpdates_.at(band).separated);
-    threadIdxxScheduleDepthState.emplace_back(std::make_pair(
+    threadIdxXScheduleDepthState.emplace_back(std::make_pair(
         activeDomainPoints(schedule(), band),
         band->scheduleDepth(schedule()) + 0));
     band = map(band, 0, mapping::ThreadId::x());
@@ -380,7 +380,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band, size_t nInner) {
        ++i, --dim) {
     auto id = mapping::ThreadId::makeId(nInner + i);
     if (id == mapping::ThreadId::x()) {
-      threadIdxxScheduleDepthState.emplace_back(std::make_pair(
+      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(schedule(), band),
           band->scheduleDepth(schedule()) + dim));
     }
@@ -677,7 +677,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
       promoteGreedilyAtDepth(
           *mappedScop,
-          mappedScop->threadIdxxScheduleDepthState,
+          mappedScop->threadIdxXScheduleDepthState,
           std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
@@ -695,7 +695,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // 8. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(
-        mappedScop->scop(), mappedScop->threadIdxxScheduleDepthState, -1ull);
+        mappedScop->scop(), mappedScop->threadIdxXScheduleDepthState, -1ull);
   }
 
   // 9. Insert mapping context

@@ -253,11 +253,11 @@ isl::map makeNextElementMap(isl::space setSpace, int dim) {
 // Obtain the depth of the schedule dimension that was mapped to threadIdx.x
 // for the domain elements identified by "s".  Assumes the depth is the same
 // for all these elements.
-size_t computeThreadIdxxScheduleDepth(
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+size_t computeThreadIdxXScheduleDepth(
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     isl::union_set s) {
   std::unordered_set<size_t> depths;
-  for (auto p : threadIdxxScheduleDepthState) {
+  for (auto p : threadIdxXScheduleDepthState) {
     if (!p.first.intersect(s).is_empty()) {
       depths.insert(p.second);
     }
@@ -284,7 +284,7 @@ size_t computeThreadIdxxScheduleDepth(
  * a coalesced way.
  */
 bool isCoalesced(
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const TensorReferenceGroup& group,
     isl::union_map schedule,
     isl::union_set activePoints) {
@@ -296,8 +296,8 @@ bool isCoalesced(
       auto elementToNext = makeNextElementMap(
           tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
       auto domainUMap = isl::union_set(isl::set(access.domain()));
-      int threadIdxxDepth = computeThreadIdxxScheduleDepth(
-          threadIdxxScheduleDepthState, domainUMap.intersect(activePoints));
+      int threadIdxXDepth = computeThreadIdxXScheduleDepth(
+          threadIdxXScheduleDepthState, domainUMap.intersect(activePoints));
       auto partialScheduleUMap =
           schedule.intersect_domain(domainUMap.universe());
       if (partialScheduleUMap.n_map() != 1) {
@@ -305,7 +305,7 @@ bool isCoalesced(
       }
       auto partialSchedule = isl::map::from_union_map(partialScheduleUMap);
       auto scheduleToNextX = makeNextElementMap(
-          partialSchedule.get_space().range(), threadIdxxDepth);
+          partialSchedule.get_space().range(), threadIdxXDepth);
       auto scheduledAccess = isl::map(access).apply_domain(partialSchedule);
       auto accessedByAdjacentX = scheduleToNextX.apply_domain(scheduledAccess)
                                      .apply_range(scheduledAccess);
@@ -322,13 +322,13 @@ bool isCoalesced(
  * Check if the given "group" can be promoted to registers for the given active
  * domain points under full "schedule" where "nThreads" consecutive dimensions
  * are mapped to threads (the innermost of them being mapped to thread x) and
- * the depth of this mapping can be obtained from threadIdxxScheduleDepthState.
+ * the depth of this mapping can be obtained from threadIdxXScheduleDepthState.
  *
  * In parciular, the group's footprint must contain only one element and the
  * same tensor element should never be accessed by two different threads.
  */
 bool isPromotableToRegisterBelowThreads(
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const TensorReferenceGroup& group,
     isl::union_map schedule,
     size_t nThreads,
@@ -349,8 +349,8 @@ bool isPromotableToRegisterBelowThreads(
   // thread mapping, all refs in the group must all have the same thread-x
   // depth.
   auto depth = 1 +
-      computeThreadIdxxScheduleDepth(
-                   threadIdxxScheduleDepthState,
+      computeThreadIdxXScheduleDepth(
+                   threadIdxXScheduleDepthState,
                    originalAccesses.domain().intersect(activePoints));
 
   auto scheduledAccesses = originalAccesses.apply_domain(schedule);
@@ -431,7 +431,7 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
  */
 void promoteToSharedGreedy(
     Scop& scop,
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const Block& block,
     size_t depth,
     size_t maxMemory) {
@@ -524,7 +524,7 @@ void promoteToSharedGreedy(
         // coalesced way.
         if (!hasReuse(*group, fullSched, depth) &&
             isCoalesced(
-                threadIdxxScheduleDepthState,
+                threadIdxXScheduleDepthState,
                 *group,
                 fullSched,
                 activePoints)) {
@@ -548,14 +548,14 @@ void promoteToSharedGreedy(
 
 void promoteGreedilyAtDepth(
     MappedScop& mscop,
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     size_t depth,
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
   promoteToSharedGreedy(
       mscop.scop(),
-      threadIdxxScheduleDepthState,
+      threadIdxXScheduleDepthState,
       mscop.numThreads,
       depth,
       sharedMemorySize);
@@ -568,14 +568,14 @@ void promoteGreedilyAtDepth(
 // loop is mapped to thread x, promote below that depth.
 void promoteToRegistersBelowThreads(
     Scop& scop,
-    const ThreadIdxxScheduleDepthState& threadIdxxScheduleDepthState,
+    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     size_t nRegisters) {
   using namespace tc::polyhedral::detail;
 
   auto root = scop.scheduleRoot();
 
   auto fullSched = fullSchedule(root);
-  for (const auto& kvp : threadIdxxScheduleDepthState) {
+  for (const auto& kvp : threadIdxXScheduleDepthState) {
     auto depth = kvp.second + 1;
     auto subdomain = kvp.first;
 
@@ -636,7 +636,7 @@ void promoteToRegistersBelowThreads(
             continue;
           }
           if (!isPromotableToRegisterBelowThreads(
-                  threadIdxxScheduleDepthState,
+                  threadIdxXScheduleDepthState,
                   *group,
                   fullSched,
                   nMappedThreads,
