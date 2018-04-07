@@ -25,7 +25,7 @@
 #include "tc/core/utils/dlpack.h"
 #include "tc/core/utils/time.h"
 
-#include "tc/lang/parser.h"
+#include "tc/lang/canonicalize.h"
 
 namespace tc {
 
@@ -124,7 +124,7 @@ class TcExecutor {
 
   tc2halide::HalideComponents halideComponents_;
   lang::TreeRef tcTree_;
-  std::string cacheKeyId;
+  lang::CanonicalTcString cacheKeyId;
 };
 
 // templating to match both const and non-const DLTensor pointers

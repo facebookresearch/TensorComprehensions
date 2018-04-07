@@ -20,8 +20,6 @@
 
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/canonicalize.h"
-#include "tc/lang/parser.h"
-#include "tc/lang/sema.h"
 
 namespace tc {
 
@@ -32,13 +30,6 @@ int toTypeToken(DLDataType dtype) {
   return lang::TypeInfo(lang::TypeInfo::Code(dtype.code), dtype.bits)
       .toScalarToken();
 }
-
-std::string canonicalizedTc(const lang::TreeRef tcDefinition) {
-  std::stringstream ss;
-  ss << canonicalize(lang::Sema().checkFunction(tcDefinition));
-  return ss.str();
-}
-
 } // namespace
 
 TcExecutor::TcExecutor(
@@ -49,7 +40,8 @@ TcExecutor::TcExecutor(
     : identifier(id),
       inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
       options(options),
-      tcTree_(tcDefinition) {
+      tcTree_(tcDefinition),
+      cacheKeyId(lang::canonicalTc(tcDefinition)) {
   executionInfo_.kernelName = lang::Def(tcTree_).name().name();
   halideComponents_ =
       tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
@@ -58,7 +50,6 @@ TcExecutor::TcExecutor(
   // TODO: check if this is wrong, packed tensors may  have 0 strides stored
   executionInfo_.outputsInfo =
       tc::inferOutputTensorInfo(halideComponents_, inputsInfo);
-  cacheKeyId = canonicalizedTc(tcDefinition);
 }
 
 TcExecutor::~TcExecutor() {}

@@ -17,6 +17,8 @@
 
 #include <string>
 
+#include "tc/lang/parser.h"
+#include "tc/lang/sema.h"
 #include "tc/lang/tree.h"
 #include "tc/lang/tree_views.h"
 
@@ -24,7 +26,7 @@ namespace lang {
 
 // takes a tree after semantic analysis and create
 // a canonicalized version that is agnostic to the choice of identifiers
-TreeRef canonicalize(TreeRef tree) {
+inline TreeRef canonicalize(TreeRef tree) {
   struct Context {
     std::unordered_map<std::string, std::string> identMap;
     std::string rename(const std::string& name) {
@@ -52,5 +54,20 @@ TreeRef canonicalize(TreeRef tree) {
 
   Context ctx;
   return ctx.apply(tree);
+}
+
+struct CanonicalTcString : public std::string {
+  explicit CanonicalTcString(const std::string& s) : std::string(s) {}
+};
+
+inline CanonicalTcString canonicalTc(const lang::TreeRef& tc) {
+  std::stringstream ss;
+  // TODO: use tcFormat when more robust
+  ss << lang::canonicalize(lang::Sema().checkFunction(tc));
+  return CanonicalTcString(ss.str());
+}
+
+inline CanonicalTcString canonicalTc(const std::string& tc) {
+  return canonicalTc(lang::Parser(tc).parseFunction());
 }
 } // namespace lang
