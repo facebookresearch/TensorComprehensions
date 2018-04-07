@@ -86,11 +86,6 @@ PYBIND11_MODULE(autotuner, m) {
             tc::FLAGS_tuner_gpus = gpus;
           })
       .def(
-          "proto",
-          [](tc::autotune::GeneticAutotunerATen& instance, std::string& proto) {
-            tc::FLAGS_tuner_proto = proto;
-          })
-      .def(
           "restore_from_proto",
           [](tc::autotune::GeneticAutotunerATen& instance,
              bool restore_from_proto) {
