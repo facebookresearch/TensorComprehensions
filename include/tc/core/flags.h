@@ -47,7 +47,6 @@ DECLARE_uint32(tuner_gen_number_elites);
 DECLARE_uint32(tuner_threads);
 DECLARE_string(tuner_gpus);
 DECLARE_bool(tuner_print_best);
-DECLARE_string(tuner_proto);
 DECLARE_string(tuner_rng_restore);
 DECLARE_bool(tuner_gen_restore_from_proto);
 DECLARE_uint32(tuner_gen_restore_number);

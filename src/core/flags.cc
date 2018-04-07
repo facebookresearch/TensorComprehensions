@@ -84,11 +84,6 @@ DEFINE_bool(
     tuner_print_best,
     false,
     "Print to INFO the best tuning options after each generation");
-DEFINE_string(
-    tuner_proto,
-    "/tmp/tuner.txt",
-    "Filename to load and store proto cache "
-    "(TODO: Hardcoded default a security liability?)");
 DEFINE_string(tuner_rng_restore, "", "Rng state to restore");
 DEFINE_bool(
     tuner_gen_restore_from_proto,
