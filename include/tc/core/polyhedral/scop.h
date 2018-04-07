@@ -118,22 +118,12 @@ struct Scop {
     writes = writes.intersect_params(globalParameterContext);
   }
 
-  // Returns a set that specializes (all) the scop's parameter space to the
-  // integer values passed to the function.
-  // WARNING: this version relies on parameter ordering, be sure you know what
-  // you are doing.
-  template <typename T>
-  isl::set makeContext(const std::vector<T>& sizes = std::vector<T>()) const {
-    auto s = domain().get_space().params();
-    return makeSpecializationSet(s, sizes);
-  }
-
-  // Returns a set that specializes the (positional) scop's subset of
+  // Returns a set that specializes the named scop's subset of
   // parameter space to the integer values passed to the function.
   template <typename T>
   isl::set makeContext(
-      const std::unordered_map<int, T>& sizes =
-          std::unordered_map<int, T>()) const {
+      const std::unordered_map<std::string, T>& sizes =
+          std::unordered_map<std::string, T>()) const {
     auto s = domain().get_space().params();
     return makeSpecializationSet(s, sizes);
   }
@@ -142,8 +132,7 @@ struct Scop {
   // parameter space to the integer values passed to the function.
   template <typename T>
   isl::set makeContext(
-      const std::unordered_map<std::string, T>& sizes =
-          std::unordered_map<std::string, T>()) const {
+      std::initializer_list<std::pair<const std::string, T>> sizes) {
     auto s = domain().get_space().params();
     return makeSpecializationSet(s, sizes);
   }

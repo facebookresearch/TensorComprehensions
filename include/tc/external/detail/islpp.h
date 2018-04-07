@@ -317,17 +317,19 @@ inline isl::set makeParameterContext(
 
 // Given a space and values for parameters, this function creates the set
 // that ties the space parameter to the values.
-// This assumes space.dim(isl::dim_type::param) == paramValues.size()
 //
 template <typename T>
 inline isl::set makeSpecializationSet(
     isl::space space,
-    const std::unordered_map<int, T>& paramValues) {
-  CHECK_GE(space.dim(isl::dim_type::param), paramValues.size());
-  auto lspace = isl::local_space(space);
+    const std::unordered_map<std::string, T>& paramValues) {
+  auto ctx = space.get_ctx();
+  for (auto kvp : paramValues) {
+    space = space.add_param(isl::id(ctx, kvp.first));
+  }
   auto set = isl::set::universe(space);
   for (auto kvp : paramValues) {
-    auto affParam = isl::aff(lspace, isl::dim_type::param, kvp.first);
+    auto id = isl::id(ctx, kvp.first);
+    isl::aff affParam(isl::aff::param_on_domain_space(space, id));
     set = set & (isl::aff_set(affParam) == kvp.second);
   }
   return set;
@@ -336,30 +338,20 @@ inline isl::set makeSpecializationSet(
 template <typename T>
 inline isl::set makeSpecializationSet(
     isl::space space,
-    const std::unordered_map<std::string, T>& paramValues) {
-  CHECK_GE(space.dim(isl::dim_type::param), paramValues.size());
-  std::unordered_map<int, T> aux;
-  for (auto kvp : paramValues) {
-    auto pos = space.find_dim_by_name(isl::dim_type::param, kvp.first);
-    CHECK_LE(0, pos) << "No " << kvp.first << " in: " << space;
-    CHECK_EQ(0, aux.count(pos));
-    aux[pos] = kvp.second;
-  }
-  return makeSpecializationSet(space, aux);
+    std::initializer_list<std::pair<const std::string, T>> paramValues) {
+  std::unordered_map<std::string, T> map(paramValues);
+  return makeSpecializationSet(space, map);
 }
 
-// WARNING: this version relies on parameter ordering, be sure you know what
-// you are doing.
 template <typename T>
 inline isl::set makeSpecializationSet(
     isl::space space,
-    const std::vector<T>& paramValues) {
-  CHECK_EQ(space.dim(isl::dim_type::param), paramValues.size());
-  std::unordered_map<int, T> paramValuesMap;
-  for (int i = 0; i < paramValues.size(); ++i) {
-    paramValuesMap[i] = paramValues[i];
+    std::initializer_list<std::pair<isl::id, T>> paramValues) {
+  std::unordered_map<std::string, T> map;
+  for (auto kvp : paramValues) {
+    map.emplace(kvp.first.get_name(), kvp.second);
   }
-  return makeSpecializationSet(space, paramValuesMap);
+  return makeSpecializationSet(space, map);
 }
 
 namespace detail {
