@@ -25,6 +25,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
@@ -68,6 +69,7 @@ std::string find_library_path(std::string library) {
 
 namespace tc {
 
+#if LLVM_VERSION_MAJOR <= 6
 Jit::Jit()
     : TM_(EngineBuilder().selectTarget()),
       DL_(TM_->createDataLayout()),
@@ -82,20 +84,7 @@ Jit::Jit()
   }
 }
 
-std::shared_ptr<Module> Jit::codegenScop(
-    const std::string& specializedName,
-    const polyhedral::Scop& scop) {
-  std::shared_ptr<Module> mod = emitLLVMKernel(
-      specializedName, scop, getTargetMachine().createDataLayout());
-  addModule(mod);
-  return mod;
-}
-
-TargetMachine& Jit::getTargetMachine() {
-  return *TM_;
-}
-
-Jit::ModuleHandle Jit::addModule(std::shared_ptr<Module> M) {
+void Jit::addModule(std::shared_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto Resolver = orc::createLambdaResolver(
       [&](const std::string& Name) {
@@ -111,7 +100,64 @@ Jit::ModuleHandle Jit::addModule(std::shared_ptr<Module> M) {
 
   auto res = compileLayer_.addModule(M, std::move(Resolver));
   CHECK(res) << "Failed to jit compile.";
-  return *res;
+}
+#else
+Jit::Jit()
+    : Resolver(createLegacyLookupResolver(
+          [this](const std::string& Name) -> JITSymbol {
+            if (auto Sym = compileLayer_.findSymbol(Name, false))
+              return Sym;
+            else if (auto Err = Sym.takeError())
+              return std::move(Err);
+            if (auto SymAddr =
+                    RTDyldMemoryManager::getSymbolAddressInProcess(Name))
+              return JITSymbol(SymAddr, JITSymbolFlags::Exported);
+            return nullptr;
+          },
+          [](Error err) {
+            throw std::runtime_error("Lookup failed: " + err);
+          })),
+      TM_(EngineBuilder().selectTarget()),
+      DL_(TM_->createDataLayout()),
+      objectLayer_(
+          ES,
+          [this](llvm::orc::VModuleKey) {
+            return llvm::orc::RTDyldObjectLinkingLayer::Resources{
+                std::make_shared<SectionMemoryManager>(), Resolver};
+          }),
+      compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
+  std::string err;
+
+  auto path = find_library_path("libcilkrts.so");
+  sys::DynamicLibrary::LoadLibraryPermanently(path.c_str(), &err);
+  if (err != "") {
+    throw std::runtime_error("Failed to find cilkrts: " + err);
+  }
+}
+
+// Note that this copy may cause tapir tests to fail
+// However, this code will never use tapir code
+// and once the LLVM API churn stops, will be modified
+// to be properly compatable.
+void Jit::addModule(std::shared_ptr<Module> M) {
+  M->setTargetTriple(TM_->getTargetTriple().str());
+  auto K = ES.allocateVModule();
+  llvm::Error res = compileLayer_.addModule(K, CloneModule(*M));
+  CHECK(!res) << "Failed to jit compile.";
+}
+#endif
+
+std::shared_ptr<Module> Jit::codegenScop(
+    const std::string& specializedName,
+    const polyhedral::Scop& scop) {
+  std::shared_ptr<Module> mod = emitLLVMKernel(
+      specializedName, scop, getTargetMachine().createDataLayout());
+  addModule(mod);
+  return mod;
+}
+
+TargetMachine& Jit::getTargetMachine() {
+  return *TM_;
 }
 
 JITSymbol Jit::findSymbol(const std::string Name) {

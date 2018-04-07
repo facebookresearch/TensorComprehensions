@@ -21,6 +21,10 @@
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/Target/TargetMachine.h"
 
+#if LLVM_VERSION_MAJOR > 6
+#include "llvm/ExecutionEngine/Orc/Core.h"
+#endif
+
 namespace tc {
 
 namespace polyhedral {
@@ -29,6 +33,10 @@ class Scop;
 
 class Jit {
  private:
+#if LLVM_VERSION_MAJOR > 6
+  llvm::orc::ExecutionSession ES;
+  std::shared_ptr<llvm::orc::SymbolResolver> Resolver;
+#endif
   std::unique_ptr<llvm::TargetMachine> TM_;
   const llvm::DataLayout DL_;
   llvm::orc::RTDyldObjectLinkingLayer objectLayer_;
@@ -38,12 +46,10 @@ class Jit {
  public:
   Jit();
 
-  using ModuleHandle = decltype(compileLayer_)::ModuleHandleT;
   std::shared_ptr<llvm::Module> codegenScop(
       const std::string& specializedName,
       const polyhedral::Scop& scop);
-  ModuleHandle addModule(std::shared_ptr<llvm::Module> M);
-  void removeModule(ModuleHandle H);
+  void addModule(std::shared_ptr<llvm::Module> M);
 
   llvm::JITSymbol findSymbol(const std::string name);
   llvm::JITTargetAddress getSymbolAddress(const std::string name);
