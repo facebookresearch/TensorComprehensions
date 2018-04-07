@@ -1,5 +1,5 @@
 include_directories(.)
-include_directories(../include)
+include_directories(..)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -18,78 +18,55 @@ set(GOOGLE_LIBS ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES} ${GTEST_LIBS})
 ################################################################################
 # Basic tests of external functionalities we rely upon
 ################################################################################
-add_executable(test_basic test_basic.cc)
-add_test(test_basic test_basic)
-target_link_libraries(test_basic ${GOOGLE_LIBS} ${ISL_LIBRARIES} ${ATEN_LIBRARIES})
+add_executable(test_basic_gpu test_basic_gpu.cc)
+set_target_properties(test_basic_gpu PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_CUDA_SDK}" )
+add_test(test_basic_gpu test_basic_gpu)
+target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBS} )
 
 ################################################################################
-# Core library only tests
+# Core GPU library tests
 ################################################################################
-set(CORE_TEST_FILES
-  test_core
-  test_inference
-  test_tc2halide
+add_executable(test_autotuner_utility test_autotuner_utility.cc)
+add_test(test_autotuner_utility test_autotuner_utility)
+target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc_cuda tc_autotuner)
+
+################################################################################
+# ATen execution based test
+################################################################################
+set(ATEN_TEST_FILES
+  test_autotuner
+  test_compilation_cache
+  test_execution_engine
+  test_execution_engine_cache
+  test_execution_engine_db
+  test_tc_mapper
+  test_tc_mapper_bugs
+  test_corner_cases
 )
-
-foreach(i ${CORE_TEST_FILES})
+foreach(i ${ATEN_TEST_FILES})
   add_executable(${i} ${i}.cc)
   add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core)
-endforeach()
-
-################################################################################
-# CPP mapper tests, execution should use ATen C++ API
-################################################################################
-set(CORE_TEST_FILES
-  test_mapper_memory_promotion
-  test_mapper
-)
-
-foreach(i ${CORE_TEST_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} tc_core_cuda_no_sdk)
-endforeach()
-
-add_executable(test_mapper_llvm test_mapper_llvm.cc)
-add_test(test_mapper_llvm test_mapper_llvm)
-target_link_libraries(
-  test_mapper_llvm
-
-  ${GOOGLE_LIBS}
-  ${ATEN_LIBRARIES}
-  -lLLVM
-
-  tc_core_cpu tc_lang)
-
-if (WITH_TAPIR)
-  add_executable(test_mapper_tapir test_mapper_tapir.cc)
-  add_test(test_mapper_tapir test_mapper_tapir)
   target_link_libraries(
-    test_mapper_tapir
+      ${i}
 
-    ${GOOGLE_LIBS}
-    ${ATEN_LIBRARIES}
-    -lLLVM
-
-    tc_core_cpu tc_lang)
-endif()
-
-################################################################################
-# Lang tests
-################################################################################
-set(TEST_TC_FILES
-  test_lang
-)
-
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/test/lang)
-
-foreach(i ${TEST_TC_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
-  target_link_libraries(${i} ${GOOGLE_LIBS} pthread tc_lang)
+      ${GOOGLE_LIBS}
+      ${ATEN_LIBRARIES}
+      tc_autotuner)
 endforeach()
 
-if (WITH_CUDA)
-  add_subdirectory(cuda)
+################################################################################
+# TensorComprehensions tests
+# No real need for NVCC if we only use NVRTC
+# cuda_add_executable(test_matmul test_matmul.cu OPTIONS -std=c++11)
+################################################################################
+if (WITH_CAFFE2)
+  set(TEST_FILES
+    test_caffe2
+  )
+
+  foreach(i ${TEST_FILES})
+    add_executable(${i} ${i}.cc)
+    add_test(${i} ${i})
+    target_link_libraries(${i} ${GOOGLE_LIBS} pthread tc_c2)
+  endforeach()
 endif()
