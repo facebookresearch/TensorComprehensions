@@ -69,25 +69,6 @@ std::vector<const DLTensor*> inferOutputTensorInfo(
   return atCompl.inferOutputTensorInfo(name, inputs);
 }
 
-tc::CudaMappingOptions loadOptionsFromProto(
-    const std::string cacheFilename,
-    const std::string& name,
-    const std::vector<at::Tensor>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  tc::OptionsCache::enableCache();
-  tc::OptionsCache::loadCacheFromProtobuf(cacheFilename);
-  tc::CudaCache::enableCache();
-  tc::CudaCache::loadCacheFromProtobuf(tc::makeCudaFilename(cacheFilename));
-  tc::FLAGS_tuner_gen_restore_number = 1;
-
-  auto mappingOptions = [&]() {
-    auto inputsPair = tc::toConstDlpackTensors(inputs);
-    tc::ScopeGuard g([&]() { tc::deleteDlmTensors(inputsPair.second); });
-    return tc::autotune::restoreCandidates(name, inputsPair.first, outputs);
-  }();
-  return mappingOptions[0];
-}
-
 struct Benchmark : public ::testing::Test {
   void SetUp() {
     if (!FLAGS_disable_version_checks) {
