@@ -148,8 +148,9 @@ Duration CudaRTCFunction::Launch(
         specializedName.c_str()));
   }
 
-  std::array<void*, 20> args_voidp{0};
-  CHECK_GE(20, params.size() + outputs.size() + inputs.size());
+  constexpr int kNumMaxParameters = 100;
+  std::array<void*, kNumMaxParameters> args_voidp{0};
+  CHECK_GE(kNumMaxParameters, params.size() + outputs.size() + inputs.size());
   int ind = 0;
   for (auto& p : params) {
     args_voidp[ind++] = &p;
