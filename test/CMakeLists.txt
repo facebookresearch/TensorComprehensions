@@ -38,11 +38,11 @@ foreach(i ${CORE_TEST_FILES})
 endforeach()
 
 ################################################################################
-# CPP mapper tests, execution should use ATen C++ API
+# CPP cuda_mapper crosscompile tests
 ################################################################################
 set(CORE_TEST_FILES
-  test_mapper_memory_promotion
-  test_mapper
+  test_cuda_mapper
+  test_cuda_mapper_memory_promotion
 )
 
 foreach(i ${CORE_TEST_FILES})
@@ -51,6 +51,9 @@ foreach(i ${CORE_TEST_FILES})
   target_link_libraries(${i} ${GOOGLE_LIBS} tc_core_cuda_no_sdk)
 endforeach()
 
+################################################################################
+# CPP mapper tests, execution should use ATen C++ API
+################################################################################
 add_executable(test_mapper_llvm test_mapper_llvm.cc)
 add_test(test_mapper_llvm test_mapper_llvm)
 target_link_libraries(
