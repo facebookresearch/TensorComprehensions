@@ -124,7 +124,7 @@ class TcExecutor {
 
   tc2halide::HalideComponents halideComponents_;
   lang::TreeRef tcTree_;
-  lang::CanonicalTcString cacheKeyId;
+  lang::CanonicalTcString cacheKeyId_;
 };
 
 // templating to match both const and non-const DLTensor pointers

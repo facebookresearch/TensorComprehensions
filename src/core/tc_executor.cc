@@ -41,7 +41,7 @@ TcExecutor::TcExecutor(
       inputsInfo(dlutils::makeDLTensorVector(inputsInfo)),
       options(options),
       tcTree_(tcDefinition),
-      cacheKeyId(lang::canonicalTc(tcDefinition)) {
+      cacheKeyId_(lang::canonicalTc(tcDefinition)) {
   executionInfo_.kernelName = lang::Def(tcTree_).name().name();
   halideComponents_ =
       tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcTree_);
