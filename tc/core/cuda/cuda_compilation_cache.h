@@ -26,6 +26,7 @@
 
 #include <compcache.pb.h>
 
+#include "tc/core/compilation_cache.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
@@ -33,64 +34,22 @@
 
 namespace tc {
 
-namespace detail {
-/**
- * TensorInfo wraps the necessary bits of DLTensor that are used as part of the
- * CompilationCache's entry keys.
- *
- * It is serializable to protobuf and stored directly in the cache.
- */
-struct TensorInfo {
-  std::vector<int64_t> shape;
-  std::vector<int64_t> strides;
-  uint64_t alignment;
-  DLDataType dType;
-
-  TensorInfo(const DLTensor* t);
-  TensorInfo(const TensorInfoProto& buf);
-
-  bool operator==(const DLTensor* t) const;
-  bool operator==(const TensorInfo& t) const;
-  bool operator<(const TensorInfo& t) const;
-  TensorInfoProto toProtobuf() const;
-};
-} // namespace detail
-
-template <typename CC>
-class Cache {
- public:
-  static void enableCache();
-  static void disableCache();
-  static void dumpCacheToProtobuf(const std::string& filename);
-  static void loadCacheFromProtobuf(const std::string& filename);
-  template <typename Protobuf>
-  static void loadCacheFromProtobuf(const Protobuf& buf);
-  static std::shared_ptr<CC> getCache();
-  static bool cacheEnabled();
-
-  size_t size() const;
-  void clear();
-
-  mutable int numberAttemptedRetrievals = 0;
-  mutable int numberSuccessfulRetrievals = 0;
-  mutable int numberCacheAttemps = 0;
-
- protected:
-  // XXX:this should be a std or boost shared_mutex
-  mutable std::mutex mtx_;
-};
-
-class CacheEntrySameKeyDifferentValue : public std::invalid_argument {
- public:
-  explicit CacheEntrySameKeyDifferentValue(const std::string& what_arg)
-      : invalid_argument(what_arg) {}
-  explicit CacheEntrySameKeyDifferentValue(const char* what_arg)
-      : invalid_argument(what_arg) {}
-};
-
 class OptionsCache;
 /**
  * CudaCache stores the Cuda source of optimized kernels
+ * A CudaCache holds multiple CachedEntry's.
+ * Each CachedEntry is split to two conceptual parts the key and the values.
+ * The values are:
+ *                  the specialized (wrt inputs) Cuda source code,
+ *                  the kernel's specialized name,
+ *                  the kernel parameters,
+ *                  the Cuda block and grid dimensions
+ * The key is:
+ *                  the kernel/op's unique id (string),
+ *                  the specialized input dimensions,
+ *                  the isl options when the kernel was optimized,
+ *                  the target architecture (string),
+ *                  tc's version (string),
  */
 class CudaCache : public Cache<CudaCache> {
  private:
@@ -106,22 +65,6 @@ class CudaCache : public Cache<CudaCache> {
     Grid grid;
     Block block;
   };
-
-  /**
-   * A CudaCache holds multiple CachedEntry's.
-   * Each CachedEntry is split to two conceptual parts the key and the values.
-   * The values are:
-   *                  the specialized (wrt inputs) Cuda source code,
-   *                  the kernel's specialized name,
-   *                  the kernel parameters,
-   *                  the Cuda block and grid dimensions
-   * The key is:
-   *                  the kernel/op's unique id (string),
-   *                  the specialized input dimensions,
-   *                  the isl options when the kernel was optimized,
-   *                  the target architecture (string),
-   *                  tc's version (string),
-   */
   struct CachedEntry {
     CachedEntry(
         const std::string& id,

@@ -9,6 +9,7 @@ add_library(
 
   SHARED
 
+  compilation_cache.cc
   flags.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
