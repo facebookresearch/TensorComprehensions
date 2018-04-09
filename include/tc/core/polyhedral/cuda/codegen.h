@@ -61,17 +61,32 @@ void emitMappedTensorAccess(
 
 } // namespace detail
 
-using IteratorMapsType =
-    std::unordered_map<isl::id, isl::pw_multi_aff, isl::IslIdIslHash>;
+/*
+ * Information attached to an AST node during printing of the AST.
+ * iteratorMap is the inverse schedule, mapping schedule dimensions
+ * to the indices of the statement corresponding to the AST node.
+ * build is the AST build at the point where the AST node is generated.
+ * It is used to generate AST expressions in that context.
+ */
+struct NodeInfo {
+  isl::pw_multi_aff iteratorMap;
+  isl::ast_build build;
+};
+/*
+ * Type used for mapping AST node identifier to the corresponding
+ * AST node information.
+ */
+using NodeInfoMapType =
+    std::unordered_map<isl::id, NodeInfo, isl::IslIdIslHash>;
 
 struct CodegenContext {
   CodegenContext(
       std::stringstream& ss_,
       const MappedScop& s,
-      const IteratorMapsType& i)
-      : ss(ss_), mappedScop(s), iteratorMaps(i) {}
+      const NodeInfoMapType& i)
+      : ss(ss_), mappedScop(s), nodeInfoMap(i) {}
   CodegenContext(const CodegenContext& c)
-      : ss(c.ss), mappedScop(c.mappedScop), iteratorMaps(c.iteratorMaps) {}
+      : ss(c.ss), mappedScop(c.mappedScop), nodeInfoMap(c.nodeInfoMap) {}
 
   const Scop& scop() const {
     return mappedScop.scop();
@@ -79,14 +94,19 @@ struct CodegenContext {
 
   std::stringstream& ss;
   const MappedScop& mappedScop;
-  const IteratorMapsType& iteratorMaps;
+  const NodeInfoMapType& nodeInfoMap;
 };
 
 struct CodegenStatementContext : CodegenContext {
   CodegenStatementContext(const CodegenContext& c, isl::id astId)
       : CodegenContext(c), astNodeId(astId) {}
   isl::pw_multi_aff iteratorMap() const {
-    return this->iteratorMaps.at(astNodeId);
+    return this->nodeInfoMap.at(astNodeId).iteratorMap;
+  }
+  // Return the build where the AST node of this CodegenStatementContext
+  // was constructed.
+  isl::ast_build build() const {
+    return this->nodeInfoMap.at(astNodeId).build;
   }
   isl::id statementId() const {
     return this->iteratorMap().get_tuple_id(isl::dim_type::out);
