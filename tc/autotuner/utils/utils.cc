@@ -65,7 +65,7 @@ std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
       candidates.begin(),
       candidates.end(),
       std::back_inserter(c),
-      [](const OptionsCache::RetrievalResult& rr) -> OptionsWithMedianTime {
+      [](const OptionsCacheRetrievalResult& rr) -> OptionsWithMedianTime {
         return {std::move(rr.options), median(rr.recordedRuntimes)};
       });
   return c;

@@ -53,7 +53,7 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
   }
   executionInfo_.options = options.toProtobufSerializedString();
 
-  auto cachedOp = [&]() -> std::unique_ptr<CudaCache::RetrievalResult> {
+  auto cachedOp = [&]() -> std::unique_ptr<CudaCacheRetrievalResult> {
     if (ManualCudaCache::cacheEnabled()) {
       auto rr = ManualCudaCache::getCache()->retrieveKernel(
           cacheKeyId_,

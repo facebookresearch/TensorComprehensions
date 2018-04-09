@@ -170,7 +170,7 @@ const CudaCachedEntry* CudaCache::searchKernel(
   return searchKernelImpl(*this, id, options, inputs, outputs);
 }
 
-std::unique_ptr<CudaCache::RetrievalResult> CudaCache::retrieveKernel(
+std::unique_ptr<CudaCacheRetrievalResult> CudaCache::retrieveKernel(
     const std::string& id,
     const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
@@ -182,12 +182,12 @@ std::unique_ptr<CudaCache::RetrievalResult> CudaCache::retrieveKernel(
     return nullptr;
   }
   ++numberSuccessfulRetrievals;
-  return std::unique_ptr<CudaCache::RetrievalResult>(
-      new CudaCache::RetrievalResult{entry->values.cudaSource,
-                                     entry->values.kernelSpecializedName,
-                                     entry->values.kernelParameters,
-                                     entry->values.grid,
-                                     entry->values.block});
+  return std::unique_ptr<CudaCacheRetrievalResult>(
+      new CudaCacheRetrievalResult{entry->values.cudaSource,
+                                   entry->values.kernelSpecializedName,
+                                   entry->values.kernelParameters,
+                                   entry->values.grid,
+                                   entry->values.block});
 }
 
 void CudaCache::removeEntriesNotInOptionsCache(const OptionsCache& oc) {
@@ -228,7 +228,7 @@ std::unique_ptr<CudaMappingOptions> OptionsCache::retrieveBestOptions(
       new CudaMappingOptions(ret.front()));
 }
 
-std::vector<OptionsCache::RetrievalResult>
+std::vector<OptionsCacheRetrievalResult>
 OptionsCache::retrieveOptionsAndRuntimes(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
@@ -533,7 +533,7 @@ void removeFromCudaCacheEntriesNotInOptionsCache(
   cc.removeEntriesNotInOptionsCache(oc);
 }
 
-std::unique_ptr<CudaCache::RetrievalResult> ManualCudaCache::retrieveKernel(
+std::unique_ptr<CudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
@@ -544,12 +544,12 @@ std::unique_ptr<CudaCache::RetrievalResult> ManualCudaCache::retrieveKernel(
     return nullptr;
   }
   ++numberSuccessfulRetrievals;
-  return std::unique_ptr<CudaCache::RetrievalResult>(
-      new CudaCache::RetrievalResult{entry->values.cudaSource,
-                                     entry->values.kernelSpecializedName,
-                                     entry->values.kernelParameters,
-                                     entry->values.grid,
-                                     entry->values.block});
+  return std::unique_ptr<CudaCacheRetrievalResult>(
+      new CudaCacheRetrievalResult{entry->values.cudaSource,
+                                   entry->values.kernelSpecializedName,
+                                   entry->values.kernelParameters,
+                                   entry->values.grid,
+                                   entry->values.block});
 }
 
 ManualCudaCachedEntry* ManualCudaCache::searchKernel(

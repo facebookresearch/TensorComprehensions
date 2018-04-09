@@ -72,6 +72,14 @@ struct CudaCachedEntry {
   Values values;
 };
 
+struct CudaCacheRetrievalResult {
+  std::string source;
+  std::string specializedName;
+  std::vector<int> parameters;
+  Grid grid;
+  Block block;
+};
+
 /**
  * CudaCache stores the Cuda source of optimized kernels
  * A CudaCache holds multiple CudaCachedEntry's.
@@ -92,15 +100,8 @@ class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
  public:
   using ProtobufType = CudaCacheProto;
   using CachedEntry = CudaCachedEntry;
+  using RetrievalResult = CudaCacheRetrievalResult;
   static std::shared_ptr<CudaCache>& getGlobalSharedCache();
-
-  struct RetrievalResult {
-    std::string source;
-    std::string specializedName;
-    std::vector<int> parameters;
-    Grid grid;
-    Block block;
-  };
 
  private:
   /**
@@ -161,7 +162,7 @@ class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
    * Returns the cache entry that matches op (id, isl options, target device)
    * and inputs' shapes.
    */
-  std::unique_ptr<RetrievalResult> retrieveKernel(
+  std::unique_ptr<CudaCacheRetrievalResult> retrieveKernel(
       const std::string& id,
       const CudaMappingOptions& options,
       const std::vector<const DLTensor*>& inputs,
@@ -219,10 +220,16 @@ struct OptionsCachedEntry {
   std::vector<Values> values;
 };
 
+struct OptionsCacheRetrievalResult {
+  CudaMappingOptions options;
+  std::vector<Duration> recordedRuntimes;
+};
+
 class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
  public:
   using ProtobufType = OptionsCacheProto;
   using CachedEntry = OptionsCachedEntry;
+  using RetrievalResult = OptionsCacheRetrievalResult;
   static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
 
  private:
@@ -256,10 +263,6 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   OptionsCache(const OptionsCacheProto& buf);
 
   OptionsCacheProto toProtobuf() const;
-  struct RetrievalResult {
-    CudaMappingOptions options;
-    std::vector<Duration> recordedRuntimes;
-  };
 
   // returns the sum of cache entry sizes (that is a single cache entry can have
   // multiple options and profiling information associated with it)
@@ -272,7 +275,7 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
       const std::vector<const DLTensor*>& outputs,
       Duration runtime);
 
-  std::vector<RetrievalResult> retrieveOptionsAndRuntimes(
+  std::vector<OptionsCacheRetrievalResult> retrieveOptionsAndRuntimes(
       const std::string& id,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
@@ -339,6 +342,8 @@ struct ManualCudaCachedEntry {
   Values values;
 };
 
+typedef CudaCacheRetrievalResult ManualCudaCacheRetrievalResult;
+
 /*
  * ManualCudaCache stores the manually injected source of Cuda kernels
  */
@@ -346,6 +351,7 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
  public:
   using ProtobufType = ManualCudaCacheProto;
   using CachedEntry = ManualCudaCachedEntry;
+  using RetrievalResult = ManualCudaCacheRetrievalResult;
   static std::shared_ptr<ManualCudaCache>& getGlobalSharedCache();
 
  private:
@@ -401,7 +407,7 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
    *Returns the cache entry that matches
    *op(id, target device) and inputs' shapes.
    */
-  std::unique_ptr<CudaCache::RetrievalResult> retrieveKernel(
+  std::unique_ptr<ManualCudaCacheRetrievalResult> retrieveKernel(
       const std::string& id,
       const std::vector<const DLTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
