@@ -197,6 +197,11 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
     return found;
   }
 
+  // Only reductions that appear in permutable bands are mapped to threads.
+  if (!band->permutable_) {
+    return false;
+  }
+
   // For now, only support reductions with a sufficient number
   // of coincident outer band members for the remaining thread identifiers.
   auto nCoincident = band->nOuterCoincident();
