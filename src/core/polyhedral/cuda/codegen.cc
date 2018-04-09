@@ -401,6 +401,8 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   auto stmtId = usrExp.get_op_arg(0).get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
+  CHECK_EQ(context_.iteratorMaps.count(nodeId), 1)
+      << "no iterator remapping for op " << nodeId;
 
   WS ws;
   context_.ss << ws.tab();
@@ -414,8 +416,6 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     emitReductionInit(stmtId, updateId, context_);
     inReduction_ = true;
   } else if (inReduction_ && context_.scop().isReductionUpdate(stmtId)) {
-    CHECK_EQ(context_.iteratorMaps.count(nodeId), 1)
-        << "no iterator remapping for op " << nodeId;
     emitReductionUpdate(stmtId, statementContext);
     reductionUpdateNodeId_ = nodeId;
   } else if (context_.scop().isSyncId(stmtId)) {
@@ -424,8 +424,6 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);
   } else { // regular statement
-    CHECK_EQ(context_.iteratorMaps.count(nodeId), 1)
-        << "no iterator remapping for op " << nodeId;
     auto mappedStmtId =
         context_.iteratorMaps.at(nodeId).get_tuple_id(isl::dim_type::out);
     CHECK_EQ(stmtId, mappedStmtId)
