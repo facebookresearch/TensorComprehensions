@@ -56,7 +56,7 @@ struct TensorInfo {
 };
 } // namespace detail
 
-template <typename CC>
+template <typename CC, typename CachedEntryType>
 class Cache {
  public:
   static void enableCache();
@@ -68,6 +68,12 @@ class Cache {
   static std::shared_ptr<CC> getCache();
   static bool cacheEnabled();
 
+  typename std::vector<CachedEntryType>::const_iterator begin() const {
+    return entries_.begin();
+  }
+  typename std::vector<CachedEntryType>::const_iterator end() const {
+    return entries_.end();
+  }
   size_t size() const;
   void clear();
 
@@ -78,6 +84,8 @@ class Cache {
  protected:
   // XXX:this should be a std or boost shared_mutex
   mutable std::mutex mtx_;
+
+  std::vector<CachedEntryType> entries_;
 };
 
 class CacheEntrySameKeyDifferentValue : public std::invalid_argument {

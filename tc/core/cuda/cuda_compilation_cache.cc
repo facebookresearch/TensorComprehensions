@@ -78,7 +78,7 @@ CudaCache::CudaCache(const CudaCacheProto& buf) {
     entries_.emplace_back(entry_buf);
 }
 
-CudaCache::CachedEntry::CachedEntry(
+CudaCachedEntry::CudaCachedEntry(
     const std::string& id,
     const std::string& kernelSpecializedName,
     const std::vector<int>& kernelParameters,
@@ -98,7 +98,7 @@ CudaCache::CachedEntry::CachedEntry(
       values{cudaSource, kernelSpecializedName, kernelParameters, grid, block} {
 }
 
-CudaCache::CachedEntry::CachedEntry(const CudaCacheEntryProto& buf)
+CudaCachedEntry::CudaCachedEntry(const CudaCacheEntryProto& buf)
     : key{buf.id(),
           CudaMappingOptions{buf.kernel_options()},
           ProtoToTensorInfoVector(buf.inputs()),
@@ -146,7 +146,7 @@ void CudaCache::cacheKernel(
       CudaGPUInfo::GPUInfo().GetCudaDeviceStr());
 }
 
-CudaCache::CachedEntry* CudaCache::searchKernel(
+CudaCachedEntry* CudaCache::searchKernel(
     const std::string& id,
     const CudaMappingOptions& options,
     const std::vector<detail::TensorInfo>& inputs,
@@ -154,7 +154,7 @@ CudaCache::CachedEntry* CudaCache::searchKernel(
   return searchKernelImpl(*this, id, options, inputs, outputs);
 }
 
-CudaCache::CachedEntry* CudaCache::searchKernel(
+CudaCachedEntry* CudaCache::searchKernel(
     const std::string& id,
     const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
@@ -162,7 +162,7 @@ CudaCache::CachedEntry* CudaCache::searchKernel(
   return searchKernelImpl(*this, id, options, inputs, outputs);
 }
 
-const CudaCache::CachedEntry* CudaCache::searchKernel(
+const CudaCachedEntry* CudaCache::searchKernel(
     const std::string& id,
     const CudaMappingOptions& options,
     const std::vector<const DLTensor*>& inputs,
@@ -351,21 +351,21 @@ void OptionsCache::recordRuntime(
   v->recordedRuntimes.push_back(runtime);
 }
 
-OptionsCache::CachedEntry* OptionsCache::searchKernel(
+OptionsCachedEntry* OptionsCache::searchKernel(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
   return searchKernelImpl(*this, id, inputs, outputs);
 }
 
-const OptionsCache::CachedEntry* OptionsCache::searchKernel(
+const OptionsCachedEntry* OptionsCache::searchKernel(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
   return searchKernelImpl(*this, id, inputs, outputs);
 }
 
-OptionsCache::CachedEntry::CachedEntry(
+OptionsCachedEntry::OptionsCachedEntry(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
@@ -376,7 +376,7 @@ OptionsCache::CachedEntry::CachedEntry(
   values.emplace_back(options, runtime);
 }
 
-OptionsCache::CachedEntry::Key::Key(
+OptionsCachedEntry::Key::Key(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs_,
     const std::vector<const DLTensor*>& outputs_,
@@ -388,7 +388,7 @@ OptionsCache::CachedEntry::Key::Key(
           deviceStr,
           gitVersion) {}
 
-OptionsCache::CachedEntry::Key::Key(
+OptionsCachedEntry::Key::Key(
     const std::string& id,
     std::vector<detail::TensorInfo>&& inputs_,
     std::vector<detail::TensorInfo>&& outputs_,
@@ -400,12 +400,12 @@ OptionsCache::CachedEntry::Key::Key(
       deviceStr(deviceStr),
       gitVersion(gitVersion) {}
 
-OptionsCache::CachedEntry::Values::Values(
+OptionsCachedEntry::Values::Values(
     const CudaMappingOptions& options,
     Duration runtime)
     : mappingOptions(options), recordedRuntimes{runtime} {}
 
-OptionsCache::CachedEntry::Values::Values(
+OptionsCachedEntry::Values::Values(
     const CudaMappingOptions& options,
     std::vector<Duration>&& runtimes)
     : mappingOptions(options), recordedRuntimes(std::move(runtimes)) {}
@@ -416,15 +416,7 @@ OptionsCache::OptionsCache(const OptionsCacheProto& buf) {
     entries_.emplace_back(entry_buf);
 }
 
-decltype(OptionsCache::entries_)::const_iterator OptionsCache::begin() const {
-  return entries_.begin();
-}
-
-decltype(OptionsCache::entries_)::const_iterator OptionsCache::end() const {
-  return entries_.end();
-}
-
-OptionsCache::CachedEntry::CachedEntry(const OptionsCacheEntryProto& buf)
+OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
     : key(buf.id(),
           ProtoToTensorInfoVector(buf.inputs()),
           ProtoToTensorInfoVector(buf.outputs()),
@@ -432,13 +424,13 @@ OptionsCache::CachedEntry::CachedEntry(const OptionsCacheEntryProto& buf)
           buf.git_version()) {
   if (buf.values_size() == 0) {
     throw std::invalid_argument(
-        "OptionsCache::CachedEntry invalid protobuf: each entry should have at least one value field.");
+        "OptionsCachedEntry invalid protobuf: each entry should have at least one value field.");
   }
 
   for (const auto& value : buf.values()) {
     if (value.recorded_runtimes_size() == 0) {
       throw std::invalid_argument(
-          "OptionsCache::CachedEntry invalid protobuf: each entry value should have at least one recorded runtime.");
+          "OptionsCachedEntry invalid protobuf: each entry value should have at least one recorded runtime.");
     }
     std::vector<Duration> runtimes;
     runtimes.reserve(value.recorded_runtimes_size());
@@ -464,7 +456,7 @@ OptionsCacheProto OptionsCache::toProtobuf() const {
   return buf;
 }
 
-OptionsCacheEntryProto OptionsCache::CachedEntry::toProtobuf() const {
+OptionsCacheEntryProto OptionsCachedEntry::toProtobuf() const {
   OptionsCacheEntryProto buf;
   buf.set_id(key.id);
   std::transform(
@@ -509,7 +501,7 @@ CudaCacheProto CudaCache::toProtobuf() const {
   return buf;
 }
 
-CudaCacheEntryProto CudaCache::CachedEntry::toProtobuf() const {
+CudaCacheEntryProto CudaCachedEntry::toProtobuf() const {
   CudaCacheEntryProto buf;
   buf.set_id(key.id);
   *buf.mutable_kernel_options() = key.mappingOptions.proto();
@@ -560,14 +552,14 @@ std::unique_ptr<CudaCache::RetrievalResult> ManualCudaCache::retrieveKernel(
                                      entry->values.block});
 }
 
-ManualCudaCache::CachedEntry* ManualCudaCache::searchKernel(
+ManualCudaCachedEntry* ManualCudaCache::searchKernel(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
   return searchKernelImpl(*this, id, inputs, outputs);
 }
 
-const ManualCudaCache::CachedEntry* ManualCudaCache::searchKernel(
+const ManualCudaCachedEntry* ManualCudaCache::searchKernel(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
@@ -606,7 +598,7 @@ void ManualCudaCache::cacheKernel(
       cudaSource,
       CudaGPUInfo::GPUInfo().GetCudaDeviceStr());
 }
-ManualCudaCache::CachedEntry::CachedEntry(
+ManualCudaCachedEntry::ManualCudaCachedEntry(
     const std::string& id,
     const std::string& kernelSpecializedName,
     const std::vector<int>& kernelParameters,

@@ -25,18 +25,18 @@
 
 namespace tc {
 
-template <typename CC>
-void Cache<CC>::enableCache() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::enableCache() {
   CC::getGlobalSharedCache() = std::make_shared<CC>();
 }
 
-template <typename CC>
-void Cache<CC>::disableCache() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::disableCache() {
   CC::getGlobalSharedCache() = nullptr;
 }
 
-template <typename CC>
-std::shared_ptr<CC> Cache<CC>::getCache() {
+template <typename CC, typename CachedEntryType>
+std::shared_ptr<CC> Cache<CC, CachedEntryType>::getCache() {
   if (not cacheEnabled()) {
     throw std::runtime_error(
         "EnableCache or LoadCacheFromProtobuf must be called before using the cache.");
@@ -44,8 +44,9 @@ std::shared_ptr<CC> Cache<CC>::getCache() {
   return CC::getGlobalSharedCache();
 }
 
-template <typename CC>
-void Cache<CC>::dumpCacheToProtobuf(const std::string& filename) {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::dumpCacheToProtobuf(
+    const std::string& filename) {
   std::fstream serialized(
       filename, std::ios::binary | std::ios::trunc | std::ios::out);
   if (!serialized) {
@@ -56,8 +57,9 @@ void Cache<CC>::dumpCacheToProtobuf(const std::string& filename) {
   }
 }
 
-template <typename CC>
-void Cache<CC>::loadCacheFromProtobuf(const std::string& filename) {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(
+    const std::string& filename) {
   typename CC::Protobuf buf;
   struct stat buffer = {0};
   if (stat(filename.c_str(), &buffer) == 0) {
@@ -67,28 +69,28 @@ void Cache<CC>::loadCacheFromProtobuf(const std::string& filename) {
   loadCacheFromProtobuf(buf);
 }
 
-template <typename CC>
+template <typename CC, typename CachedEntryType>
 template <typename Protobuf>
-void Cache<CC>::loadCacheFromProtobuf(const Protobuf& buf) {
+void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(const Protobuf& buf) {
   static_assert(
       std::is_same<Protobuf, typename CC::Protobuf>::value,
       "LoadCacheFromProtobuf called with invalide protobuf type.");
   CC::getGlobalSharedCache() = std::make_shared<CC>(buf);
 }
 
-template <typename CC>
-bool Cache<CC>::cacheEnabled() {
+template <typename CC, typename CachedEntryType>
+bool Cache<CC, CachedEntryType>::cacheEnabled() {
   return CC::getGlobalSharedCache() != nullptr;
 }
 
-template <typename CC>
-size_t Cache<CC>::size() const {
+template <typename CC, typename CachedEntryType>
+size_t Cache<CC, CachedEntryType>::size() const {
   std::lock_guard<std::mutex> lock(mtx_);
   return static_cast<const CC*>(this)->entries_.size();
 }
 
-template <typename CC>
-void Cache<CC>::clear() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::clear() {
   std::lock_guard<std::mutex> lock(mtx_);
   numberAttemptedRetrievals = numberSuccessfulRetrievals = numberCacheAttemps =
       0;
@@ -186,5 +188,4 @@ auto ManualCudaCache::searchKernelImpl(
   }
   return nullptr;
 }
-
 } // namespace tc

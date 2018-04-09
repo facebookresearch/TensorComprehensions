@@ -35,10 +35,47 @@
 namespace tc {
 
 class OptionsCache;
+
+struct CudaCachedEntry {
+  CudaCachedEntry(
+      const std::string& id,
+      const std::string& kernelSpecializedName,
+      const std::vector<int>& kernelParameters,
+      const Grid& grid,
+      const Block& block,
+      const CudaMappingOptions& mappingOptions,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& cudaSource,
+      const std::string& deviceStr);
+
+  CudaCachedEntry(const CudaCacheEntryProto& buf);
+  CudaCacheEntryProto toProtobuf() const;
+
+  struct Key {
+    std::string id;
+    CudaMappingOptions mappingOptions;
+    std::vector<detail::TensorInfo> inputs;
+    std::vector<detail::TensorInfo> outputs;
+    std::string deviceStr;
+    std::string gitVersion;
+  };
+
+  struct Values {
+    std::string cudaSource;
+    std::string kernelSpecializedName;
+    std::vector<int> kernelParameters;
+    Grid grid;
+    Block block;
+  };
+  Key key;
+  Values values;
+};
+
 /**
  * CudaCache stores the Cuda source of optimized kernels
- * A CudaCache holds multiple CachedEntry's.
- * Each CachedEntry is split to two conceptual parts the key and the values.
+ * A CudaCache holds multiple CudaCachedEntry's.
+ * Each CudaCachedEntry is split to two conceptual parts the key and the values.
  * The values are:
  *                  the specialized (wrt inputs) Cuda source code,
  *                  the kernel's specialized name,
@@ -51,13 +88,12 @@ class OptionsCache;
  *                  the target architecture (string),
  *                  tc's version (string),
  */
-class CudaCache : public Cache<CudaCache> {
- private:
-  friend class Cache<CudaCache>;
+class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
+ public:
   using Protobuf = CudaCacheProto;
+  using CachedEntry = CudaCachedEntry;
   static std::shared_ptr<CudaCache>& getGlobalSharedCache();
 
- public:
   struct RetrievalResult {
     std::string source;
     std::string specializedName;
@@ -65,45 +101,8 @@ class CudaCache : public Cache<CudaCache> {
     Grid grid;
     Block block;
   };
-  struct CachedEntry {
-    CachedEntry(
-        const std::string& id,
-        const std::string& kernelSpecializedName,
-        const std::vector<int>& kernelParameters,
-        const Grid& grid,
-        const Block& block,
-        const CudaMappingOptions& mappingOptions,
-        const std::vector<const DLTensor*>& inputs,
-        const std::vector<const DLTensor*>& outputs,
-        const std::string& cudaSource,
-        const std::string& deviceStr);
-
-    CachedEntry(const CudaCacheEntryProto& buf);
-    CudaCacheEntryProto toProtobuf() const;
-
-    struct Key {
-      std::string id;
-      CudaMappingOptions mappingOptions;
-      std::vector<detail::TensorInfo> inputs;
-      std::vector<detail::TensorInfo> outputs;
-      std::string deviceStr;
-      std::string gitVersion;
-    };
-
-    struct Values {
-      std::string cudaSource;
-      std::string kernelSpecializedName;
-      std::vector<int> kernelParameters;
-      Grid grid;
-      Block block;
-    };
-    Key key;
-    Values values;
-  };
 
  private:
-  std::vector<CachedEntry> entries_;
-
   /**
    * SearchKernel (through SearchKernelImpl) searches op in the cache
    * if a cached entry that corresponds to the op's configuration
@@ -171,70 +170,62 @@ class CudaCache : public Cache<CudaCache> {
   void removeEntriesNotInOptionsCache(const OptionsCache& oc);
 };
 
-class OptionsCache : public Cache<OptionsCache> {
-  friend class Cache<OptionsCache>;
-  using Protobuf = OptionsCacheProto;
-  static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
+/**
+ * An OptionsCache holds multiple OptionsCachedEntry's.
+ * Each OptionsCachedEntry is split to two conceptual parts the key and the
+ * values. The key is: the kernel/op's unique id (string), the specialized input
+ * dimensions, the target architecture (string), tc's version
+ * (string), The values are a vector of: the isl options used
+ * when the kernel was optimized, profiling information
+ */
+struct OptionsCachedEntry {
+  OptionsCachedEntry(
+      const std::string& id,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& deviceStr,
+      const CudaMappingOptions& options,
+      Duration runtime);
+  OptionsCachedEntry(const OptionsCacheEntryProto& buf);
+  OptionsCacheEntryProto toProtobuf() const;
 
- public:
-  /**
-   * An OptionsCache holds multiple CachedEntry's.
-   * Each CachedEntry is split to two conceptual parts the key and the values.
-   * The key is:
-   *                  the kernel/op's unique id (string),
-   *                  the specialized input dimensions,
-   *                  the target architecture (string),
-   *                  tc's version (string),
-   * The values are a vector of:
-   *                  the isl options used when the kernel was optimized,
-   *                  profiling information
-   */
-  struct CachedEntry {
-    CachedEntry(
-        const std::string& id,
+  struct Key {
+    Key(const std::string& id,
         const std::vector<const DLTensor*>& inputs,
         const std::vector<const DLTensor*>& outputs,
         const std::string& deviceStr,
-        const CudaMappingOptions& options,
-        Duration runtime);
-    CachedEntry(const OptionsCacheEntryProto& buf);
-    OptionsCacheEntryProto toProtobuf() const;
+        const std::string& gitVersion);
 
-    struct Key {
-      Key(const std::string& id,
-          const std::vector<const DLTensor*>& inputs,
-          const std::vector<const DLTensor*>& outputs,
-          const std::string& deviceStr,
-          const std::string& gitVersion);
+    Key(const std::string& id,
+        std::vector<detail::TensorInfo>&& inputs,
+        std::vector<detail::TensorInfo>&& outputs,
+        const std::string& deviceStr,
+        const std::string& gitVersion);
 
-      Key(const std::string& id,
-          std::vector<detail::TensorInfo>&& inputs,
-          std::vector<detail::TensorInfo>&& outputs,
-          const std::string& deviceStr,
-          const std::string& gitVersion);
-
-      std::string id;
-      std::vector<detail::TensorInfo> inputs;
-      std::vector<detail::TensorInfo> outputs;
-      std::string deviceStr;
-      std::string gitVersion;
-    };
-
-    struct Values {
-      Values(const CudaMappingOptions& options, Duration runtime);
-      Values(
-          const CudaMappingOptions& options,
-          std::vector<Duration>&& runtimes);
-      CudaMappingOptions mappingOptions;
-      std::vector<Duration> recordedRuntimes;
-    };
-    Key key;
-    std::vector<Values> values;
+    std::string id;
+    std::vector<detail::TensorInfo> inputs;
+    std::vector<detail::TensorInfo> outputs;
+    std::string deviceStr;
+    std::string gitVersion;
   };
 
- private:
-  std::vector<CachedEntry> entries_;
+  struct Values {
+    Values(const CudaMappingOptions& options, Duration runtime);
+    Values(const CudaMappingOptions& options, std::vector<Duration>&& runtimes);
+    CudaMappingOptions mappingOptions;
+    std::vector<Duration> recordedRuntimes;
+  };
+  Key key;
+  std::vector<Values> values;
+};
 
+class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
+ public:
+  using Protobuf = OptionsCacheProto;
+  using CachedEntry = OptionsCachedEntry;
+  static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
+
+ private:
   /**
    * SearchKernel (through SearchKernelImpl) searches op in the cache
    * if a cached entry that corresponds to the op's configuration
@@ -263,9 +254,6 @@ class OptionsCache : public Cache<OptionsCache> {
  public:
   OptionsCache() = default;
   OptionsCache(const OptionsCacheProto& buf);
-
-  decltype(entries_)::const_iterator begin() const;
-  decltype(entries_)::const_iterator end() const;
 
   OptionsCacheProto toProtobuf() const;
   struct RetrievalResult {
@@ -306,64 +294,61 @@ class OptionsCache : public Cache<OptionsCache> {
 };
 
 /*
- * ManualCudaCache stores the manually injected source of Cuda kernels
+ *A CudaCache holds multiple CachedEntry's.
+ *Each CachedEntry is split to two conceptual parts the key and the values.
+ *The values are:
+ *                 the specialized (wrt inputs) Cuda source code,
+ *                 the Cuda block and grid dimensions
+ *The key is:
+ *                 the kernel/op's unique id (string),
+ *                 the specialized input dimensions,
+ *                 the target architecture (string),
+ *                 tc's version (string),
  */
-class ManualCudaCache : public Cache<ManualCudaCache> {
- private:
-  friend class Cache<ManualCudaCache>;
-  using Protobuf = ManualCudaCacheProto;
-  static std::shared_ptr<ManualCudaCache>& getGlobalSharedCache();
+struct ManualCudaCachedEntry {
+  ManualCudaCachedEntry(
+      const std::string& id,
+      const std::string& kernelSpecializedName,
+      const std::vector<int>& kernelParameters,
+      const Grid& grid,
+      const Block& block,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& cudaSource,
+      const std::string& deviceStr);
 
- public:
-  /*
-   *A CudaCache holds multiple CachedEntry's.
-   *Each CachedEntry is split to two conceptual parts the key and the values.
-   *The values are:
-   *                 the specialized (wrt inputs) Cuda source code,
-   *                 the Cuda block and grid dimensions
-   *The key is:
-   *                 the kernel/op's unique id (string),
-   *                 the specialized input dimensions,
-   *                 the target architecture (string),
-   *                 tc's version (string),
-   */
-  struct CachedEntry {
-    CachedEntry(
-        const std::string& id,
-        const std::string& kernelSpecializedName,
-        const std::vector<int>& kernelParameters,
-        const Grid& grid,
-        const Block& block,
-        const std::vector<const DLTensor*>& inputs,
-        const std::vector<const DLTensor*>& outputs,
-        const std::string& cudaSource,
-        const std::string& deviceStr);
+  ManualCudaCachedEntry(const ManualCudaCacheEntryProto& buf);
+  ManualCudaCacheEntryProto toProtobuf() const;
 
-    CachedEntry(const ManualCudaCacheEntryProto& buf);
-    ManualCudaCacheEntryProto toProtobuf() const;
-
-    struct Key {
-      std::string id;
-      std::vector<detail::TensorInfo> inputs;
-      std::vector<detail::TensorInfo> outputs;
-      std::string deviceStr;
-      std::string gitVersion;
-    };
-
-    struct Values {
-      std::string cudaSource;
-      std::string kernelSpecializedName;
-      std::vector<int> kernelParameters;
-      Grid grid;
-      Block block;
-    };
-    Key key;
-    Values values;
+  struct Key {
+    std::string id;
+    std::vector<detail::TensorInfo> inputs;
+    std::vector<detail::TensorInfo> outputs;
+    std::string deviceStr;
+    std::string gitVersion;
   };
 
- private:
-  std::vector<CachedEntry> entries_;
+  struct Values {
+    std::string cudaSource;
+    std::string kernelSpecializedName;
+    std::vector<int> kernelParameters;
+    Grid grid;
+    Block block;
+  };
+  Key key;
+  Values values;
+};
 
+/*
+ * ManualCudaCache stores the manually injected source of Cuda kernels
+ */
+class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
+ public:
+  using Protobuf = ManualCudaCacheProto;
+  using CachedEntry = ManualCudaCachedEntry;
+  static std::shared_ptr<ManualCudaCache>& getGlobalSharedCache();
+
+ private:
   /*
    *SearchKernel (through SearchKernelImpl) searches op in the cache
    *if a cached entry that corresponds to the op's TargetDevice and the
