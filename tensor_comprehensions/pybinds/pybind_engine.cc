@@ -25,6 +25,7 @@
 
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
@@ -126,14 +127,16 @@ PYBIND11_MODULE(tc, m) {
                 [&]() { tc::deleteDlmTensors(tensorsPair.second); });
             auto outTensorInfo = instance.inferOutputTensorInfo(name, atInputs);
             tc::ManualCudaCache::getCache()->cacheKernel(
-                name,
-                tensorsPair.first,
-                outTensorInfo,
-                injectedKernelName,
-                {},
-                cudaSource,
-                tc::Grid(grid),
-                tc::Block(block));
+                tc::ManualCudaCachedEntry(
+                    name,
+                    injectedKernelName,
+                    {},
+                    tc::Grid(grid),
+                    tc::Block(block),
+                    tensorsPair.first,
+                    outTensorInfo,
+                    cudaSource,
+                    tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
           });
 }
 

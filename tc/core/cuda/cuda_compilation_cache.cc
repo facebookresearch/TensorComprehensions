@@ -111,39 +111,26 @@ CudaCachedEntry::CudaCachedEntry(const CudaCacheEntryProto& buf)
              Grid(buf.grid_dims()),
              Block(buf.block_dims())} {}
 
-void CudaCache::cacheKernel(
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs,
-    const std::string& kernelSpecializedName,
-    const std::vector<int>& kernelParameters,
-    const std::string& cudaSource,
-    const Grid& grid,
-    const Block& block) {
+void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberCacheAttemps;
-  auto entry = searchKernel(id, options, inputs, outputs);
-  if (entry) {
-    if (entry->values.cudaSource == cudaSource or entry->values.grid == grid or
-        entry->values.block == block) {
+  auto retrievedEntry = searchKernel(
+      entry.key.id,
+      entry.key.mappingOptions,
+      entry.key.inputs,
+      entry.key.outputs);
+  if (retrievedEntry) {
+    if (retrievedEntry->values.cudaSource == entry.values.cudaSource or
+        retrievedEntry->values.grid == entry.values.grid or
+        retrievedEntry->values.block == entry.values.block) {
       throw CacheEntrySameKeyDifferentValue(
-          "CudaCache::CacheKernel: a kernel matching the id, options and inputs was previously cached with different cuda source or block or grid dimensions.");
+          "CudaCache::CacheKernel: a kernel matching the id, options and "
+          "inputs was previously cached with different cuda source or block "
+          "or grid dimensions.");
     }
     return;
   }
-
-  entries_.emplace_back(
-      id,
-      kernelSpecializedName,
-      kernelParameters,
-      grid,
-      block,
-      options,
-      inputs,
-      outputs,
-      cudaSource,
-      CudaGPUInfo::GPUInfo().GetCudaDeviceStr());
+  entries_.emplace_back(entry);
 }
 
 CudaCachedEntry* CudaCache::searchKernel(
@@ -554,6 +541,13 @@ std::unique_ptr<CudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
 
 ManualCudaCachedEntry* ManualCudaCache::searchKernel(
     const std::string& id,
+    const std::vector<detail::TensorInfo>& inputs,
+    const std::vector<detail::TensorInfo>& outputs) {
+  return searchKernelImpl(*this, id, inputs, outputs);
+}
+
+ManualCudaCachedEntry* ManualCudaCache::searchKernel(
+    const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) {
   return searchKernelImpl(*this, id, inputs, outputs);
@@ -566,38 +560,23 @@ const ManualCudaCachedEntry* ManualCudaCache::searchKernel(
   return searchKernelImpl(*this, id, inputs, outputs);
 }
 
-void ManualCudaCache::cacheKernel(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs,
-    const std::string& kernelSpecializedName,
-    const std::vector<int>& kernelParameters,
-    const std::string& cudaSource,
-    const Grid& grid,
-    const Block& block) {
+void ManualCudaCache::cacheKernel(ManualCudaCachedEntry&& entry) {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberCacheAttemps;
-  auto entry = searchKernel(id, inputs, outputs);
-  if (entry) {
-    entry->values.grid = grid;
-    entry->values.block = block;
-    entry->values.cudaSource = cudaSource;
-    entry->values.kernelSpecializedName = kernelSpecializedName;
-    entry->values.kernelParameters = kernelParameters;
+  auto retrievedEntry =
+      searchKernel(entry.key.id, entry.key.inputs, entry.key.outputs);
+  if (retrievedEntry) {
+    retrievedEntry->values.grid = entry.values.grid;
+    retrievedEntry->values.block = entry.values.block;
+    retrievedEntry->values.cudaSource = entry.values.cudaSource;
+    retrievedEntry->values.kernelSpecializedName =
+        entry.values.kernelSpecializedName;
+    retrievedEntry->values.kernelParameters = entry.values.kernelParameters;
     return;
   }
-
-  entries_.emplace_back(
-      id,
-      kernelSpecializedName,
-      kernelParameters,
-      grid,
-      block,
-      inputs,
-      outputs,
-      cudaSource,
-      CudaGPUInfo::GPUInfo().GetCudaDeviceStr());
+  entries_.emplace_back(entry);
 }
+
 ManualCudaCachedEntry::ManualCudaCachedEntry(
     const std::string& id,
     const std::string& kernelSpecializedName,

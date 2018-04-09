@@ -147,16 +147,7 @@ class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
    * target device are the same then this is a noop
    * Else (cudaSource, grid, block) is stored in the cache
    */
-  void cacheKernel(
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs,
-      const std::string& kernelSpecializedName,
-      const std::vector<int>& kernelParameters,
-      const std::string& cudaSource,
-      const Grid& grid,
-      const Block& block);
+  void cacheKernel(CudaCachedEntry&& entry);
 
   /**
    * Returns the cache entry that matches op (id, isl options, target device)
@@ -393,15 +384,7 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
    *target device). If the key already exist in the cache,
    *the values are replaced.
    */
-  void cacheKernel(
-      const std::string& id,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs,
-      const std::string& kernelSpecializedName,
-      const std::vector<int>& kernelParameters,
-      const std::string& cudaSource,
-      const Grid& grid,
-      const Block& block);
+  void cacheKernel(ManualCudaCachedEntry&& entry);
 
   /*
    *Returns the cache entry that matches

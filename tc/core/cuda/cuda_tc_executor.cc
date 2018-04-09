@@ -92,16 +92,17 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
     if (CudaCache::cacheEnabled()) {
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original grid: " << grid;
       LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original block: " << block;
-      CudaCache::getCache()->cacheKernel(
+      CudaCache::getCache()->cacheKernel(CudaCachedEntry(
           cacheKeyId_,
+          kernelSpecializedName,
+          executionInfo_.kernelParams,
+          grid,
+          block,
           options,
           extractRawPtrs(executionInfo_.inputsInfo),
           extractRawPtrs(executionInfo_.outputsInfo),
-          kernelSpecializedName,
-          executionInfo_.kernelParams,
           cudaSource,
-          grid,
-          block);
+          CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
     }
   }
 
