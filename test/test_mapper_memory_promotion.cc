@@ -35,18 +35,6 @@ int npoints(isl::set s) {
   isl::union_set(s).foreach_point([&cnt](isl::point pt) { ++cnt; });
   return cnt;
 }
-
-isl::set projectOutThreadParams(isl::set s) {
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::vector<isl::id> ids{TX, TY, TZ};
-  for (auto id : ids) {
-    int pos = s.find_dim_by_id(isl::dim_type::param, id);
-    if (pos != -1) {
-      s = s.project_out(isl::dim_type::param, pos, 1);
-    }
-  }
-  return s;
-}
 } // namespace
 
 class TestMapper : public ::testing::Test {
@@ -304,8 +292,8 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       EXPECT_EQ(
           oneGroup->approximation[1].size,
           isl::val(ctx, std::min(tile2, problemSize2)));
-      auto footprint = projectOutThreadParams(
-          oneGroup->approximateFootprint().intersect_params(blockZero));
+      auto footprint =
+          oneGroup->approximateFootprint().intersect_params(blockZero);
       int np = npoints(footprint);
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));
