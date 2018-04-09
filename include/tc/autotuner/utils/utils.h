@@ -21,16 +21,13 @@
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/dlpack.h"
+#include "tc/lang/canonicalize.h"
+#include "tc/lang/tree.h"
 
 #include <llvm/ADT/Optional.h>
 
 namespace tc {
 namespace autotune {
-
-struct OptionsWithMedianTime {
-  CudaMappingOptions options;
-  Duration medianRuntime;
-};
 
 /// Returns all the powers of 2 up to the first one that is larger than val
 /// and the result of ceil(val/pow2) for each of those powers of 2 (except for
@@ -40,24 +37,28 @@ std::vector<std::size_t> powers2andCeilDivisors(std::size_t val);
 template <typename Vector, typename... Vectors>
 Vector mergeVectors(Vector&& v, Vectors&&... vs);
 
-std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs);
-
+/// The following API allows interacting with the autotuner caches.
+/// Caches generally take arbitrary strings for keys.
+/// The autotuner uses a canonicalized TC expression to load / store into
+/// caches. Add a layer of type safety to interact with these.
 std::vector<CudaMappingOptions> restoreCandidates(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs);
-
-std::vector<CudaMappingOptions> restoreCandidates(
-    const lang::TreeRef& tc,
+    const lang::CanonicalTcString& tc,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
 
 llvm::Optional<CudaMappingOptions> getBestOptions(
-    const std::string& id,
+    const lang::CanonicalTcString& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs);
+
+struct OptionsWithMedianTime {
+  CudaMappingOptions options;
+  Duration medianRuntime;
+};
+
+std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
+    const lang::CanonicalTcString& id,
+    const std::vector<const DLTensor*>& inputs);
 
 } // namespace autotune
 } // namespace tc

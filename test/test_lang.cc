@@ -147,12 +147,6 @@ TreeRef loadText(const std::string& text) {
   return Sema().checkFunction(Parser(text).parseFunction());
 }
 
-std::string canonicalText(const std::string& text) {
-  std::stringstream ss;
-  ss << canonicalize(loadText(text));
-  return ss.str();
-}
-
 void testTcFormat() {
   static std::ios_base::Init initIostreams;
   auto source = R"(def fun2(float(B, N, M) X, float(B, M, K) Y) -> (Q) {
@@ -334,7 +328,7 @@ int main(int argc, char** argv) {
             Q(b, ii, j) += X(b, ii, k) * Y(b, k, j)
     }
   )";
-  ASSERT(canonicalText(option_one) == canonicalText(option_two));
+  ASSERT(lang::canonicalTc(option_one) == lang::canonicalTc(option_two));
 
   testTcFormat();
 

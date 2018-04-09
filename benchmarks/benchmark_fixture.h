@@ -36,6 +36,7 @@
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
+#include "tc/lang/canonicalize.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2
 #include <cuda_runtime_api.h>
@@ -67,25 +68,6 @@ std::vector<const DLTensor*> inferOutputTensorInfo(
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   return atCompl.inferOutputTensorInfo(name, inputs);
-}
-
-tc::CudaMappingOptions loadOptionsFromProto(
-    const std::string cacheFilename,
-    const std::string& name,
-    const std::vector<at::Tensor>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  tc::OptionsCache::enableCache();
-  tc::OptionsCache::loadCacheFromProtobuf(cacheFilename);
-  tc::CudaCache::enableCache();
-  tc::CudaCache::loadCacheFromProtobuf(tc::makeCudaFilename(cacheFilename));
-  tc::FLAGS_tuner_gen_restore_number = 1;
-
-  auto mappingOptions = [&]() {
-    auto inputsPair = tc::toConstDlpackTensors(inputs);
-    tc::ScopeGuard g([&]() { tc::deleteDlmTensors(inputsPair.second); });
-    return tc::autotune::restoreCandidates(name, inputsPair.first, outputs);
-  }();
-  return mappingOptions[0];
 }
 
 struct Benchmark : public ::testing::Test {
@@ -289,7 +271,8 @@ struct Benchmark : public ::testing::Test {
       auto inputsPair = tc::toConstDlpackTensors(inputs);
       auto outputs = atCompl.inferOutputTensorInfo(name, inputs);
       tc::ScopeGuard g([&]() { tc::deleteDlmTensors(inputsPair.second); });
-      return tc::autotune::restoreCandidates(name, inputsPair.first, outputs);
+      return tc::autotune::restoreCandidates(
+          lang::canonicalTc(tc), inputsPair.first, outputs);
     }();
     auto handle = atCompl.compile(name, inputs, mappingOptions[0]);
     std::vector<at::Tensor> outputs;

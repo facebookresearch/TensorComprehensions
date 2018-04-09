@@ -20,6 +20,7 @@
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
+#include "tc/lang/canonicalize.h"
 
 using namespace tc;
 using namespace autotune;
@@ -54,7 +55,7 @@ std::vector<CudaMappingOptions> restoreCandidates(
   });
 
   return tc::autotune::restoreCandidates(
-      tc, inputsPair.first, outputsPair.first);
+      lang::canonicalTc(tc), inputsPair.first, outputsPair.first);
 }
 
 TEST(RestoreCandidates, NoCache) {

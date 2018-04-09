@@ -59,11 +59,8 @@ struct TcMapperTest : public ::testing::Test {
       tc::deleteDlmTensors(outputDLTensorsPair.second);
     });
     // Check that cache insertion worked properly (with canonicalized TC)
-    std::stringstream ss;
-    ss << lang::canonicalize(
-        lang::Sema().checkFunction(lang::Parser(tc).parseFunction()));
     auto cached = CacheType::getCache()->retrieveKernel(
-        ss.str(),
+        lang::canonicalTc(tc),
         mappingOptions,
         inputDLTensorsPair.first,
         outputDLTensorsPair.first);
