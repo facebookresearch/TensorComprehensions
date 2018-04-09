@@ -306,8 +306,8 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
   void cacheKernel(ManualCudaCachedEntry&& entry);
 
   /*
-   * Returns the cache entry that matches op(id, target device) and inputs'
-   * shapes.
+   * Returns the cache entry that matches op(id, target device), input shapes
+   * and output shapes.
    */
   std::unique_ptr<ManualCudaCacheRetrievalResult> retrieveKernel(
       const std::string& id,
