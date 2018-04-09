@@ -208,7 +208,7 @@ void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
     }
     return;
   }
-  entries_.emplace_back(entry);
+  entries_.emplace_back(std::move(entry));
 }
 
 std::unique_ptr<CudaCacheRetrievalResult> CudaCache::retrieveKernel(
@@ -607,7 +607,7 @@ void ManualCudaCache::cacheKernel(ManualCudaCachedEntry&& entry) {
     retrievedEntry->values.kernelParameters = entry.values.kernelParameters;
     return;
   }
-  entries_.emplace_back(entry);
+  entries_.emplace_back(std::move(entry));
 }
 
 std::unique_ptr<ManualCudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
