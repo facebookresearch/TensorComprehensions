@@ -55,6 +55,90 @@ void WriteProtobufArray(const Array& arr, Buf* buf) {
       arr.begin(), arr.end());
   buf->Swap(&data);
 }
+
+template <typename CachedEntryType, typename TensorType>
+const CachedEntryType* searchKernel(
+    const std::vector<CachedEntryType>& entries,
+    const std::string& id,
+    const std::vector<TensorType>& inputs,
+    const std::vector<TensorType>& outputs) {
+  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+  auto it = std::find_if(
+      entries.begin(), entries.end(), [&](const CachedEntryType& c) {
+        using tc::operator==;
+        return id == c.key.id && inputs == c.key.inputs &&
+            outputs == c.key.outputs && gpuStr == c.key.deviceStr;
+      });
+  if (it != entries.end()) {
+    if (it->key.gitVersion != tc::git_version) {
+      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
+                << tc::git_version
+                << " and Proto version is: " << it->key.gitVersion
+                << " .This proto might be incompatible"
+                << " with your TC binary and can break. Please autotune"
+                << " against the correct TC version." << std::endl;
+    }
+    return &*it;
+  }
+  return nullptr;
+}
+
+template <typename CachedEntryType, typename TensorType>
+CachedEntryType* searchKernel(
+    std::vector<CachedEntryType>& entries,
+    const std::string& id,
+    const std::vector<TensorType>& inputs,
+    const std::vector<TensorType>& outputs) {
+  return const_cast<CachedEntryType*>(searchKernel(
+      static_cast<const std::vector<CachedEntryType>&>(entries),
+      id,
+      inputs,
+      outputs));
+}
+
+template <typename CachedEntryType, typename TensorType>
+const CachedEntryType* searchKernel(
+    const std::vector<CachedEntryType>& entries,
+    const std::string& id,
+    const CudaMappingOptions& options,
+    const std::vector<TensorType>& inputs,
+    const std::vector<TensorType>& outputs) {
+  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+  auto it = std::find_if(
+      entries.begin(), entries.end(), [&](const CachedEntryType& c) {
+        using tc::operator==;
+        return id == c.key.id && options == c.key.mappingOptions &&
+            inputs == c.key.inputs && outputs == c.key.outputs &&
+            gpuStr == c.key.deviceStr;
+      });
+  if (it != entries.end()) {
+    if (it->key.gitVersion != tc::git_version) {
+      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
+                << tc::git_version
+                << " and Proto version is: " << it->key.gitVersion
+                << " .This proto might be incompatible"
+                << " with your TC binary and can break. Please autotune"
+                << " against the correct TC version." << std::endl;
+    }
+    return &*it;
+  }
+  return nullptr;
+}
+
+template <typename CachedEntryType, typename TensorType>
+CachedEntryType* searchKernel(
+    std::vector<CachedEntryType>& entries,
+    const std::string& id,
+    const CudaMappingOptions& options,
+    const std::vector<TensorType>& inputs,
+    const std::vector<TensorType>& outputs) {
+  return const_cast<CachedEntryType*>(searchKernel(
+      static_cast<const std::vector<CachedEntryType>&>(entries),
+      id,
+      options,
+      inputs,
+      outputs));
+}
 } // namespace
 
 std::shared_ptr<CudaCache>& CudaCache::getGlobalSharedCache() {
@@ -115,6 +199,7 @@ void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberCacheAttemps;
   auto retrievedEntry = searchKernel(
+      entries_,
       entry.key.id,
       entry.key.mappingOptions,
       entry.key.inputs,
@@ -133,30 +218,6 @@ void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
   entries_.emplace_back(entry);
 }
 
-CudaCachedEntry* CudaCache::searchKernel(
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<detail::TensorInfo>& inputs,
-    const std::vector<detail::TensorInfo>& outputs) {
-  return searchKernelImpl(*this, id, options, inputs, outputs);
-}
-
-CudaCachedEntry* CudaCache::searchKernel(
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  return searchKernelImpl(*this, id, options, inputs, outputs);
-}
-
-const CudaCachedEntry* CudaCache::searchKernel(
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
-  return searchKernelImpl(*this, id, options, inputs, outputs);
-}
-
 std::unique_ptr<CudaCacheRetrievalResult> CudaCache::retrieveKernel(
     const std::string& id,
     const CudaMappingOptions& options,
@@ -164,7 +225,7 @@ std::unique_ptr<CudaCacheRetrievalResult> CudaCache::retrieveKernel(
     const std::vector<const DLTensor*>& outputs) const {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberAttemptedRetrievals;
-  auto entry = searchKernel(id, options, inputs, outputs);
+  auto entry = searchKernel(entries_, id, options, inputs, outputs);
   if (not entry) {
     return nullptr;
   }
@@ -182,6 +243,7 @@ void CudaCache::removeEntriesNotInOptionsCache(const OptionsCache& oc) {
   for (const auto& entry : oc) {
     for (const auto& options : entry.values) {
       auto cudaEntry = searchKernel(
+          entries_,
           entry.key.id,
           options.mappingOptions,
           entry.key.inputs,
@@ -222,7 +284,7 @@ OptionsCache::retrieveOptionsAndRuntimes(
     const std::vector<const DLTensor*>& outputs) const {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberAttemptedRetrievals;
-  auto ret = searchKernel(id, inputs, outputs);
+  auto ret = searchKernel(entries_, id, inputs, outputs);
   if (not ret) {
     return {};
   }
@@ -244,7 +306,7 @@ std::vector<CudaMappingOptions> OptionsCache::retrieveTopKOptions(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs,
     size_t k) const {
-  auto candidates = searchKernel(id, inputs, outputs);
+  auto candidates = searchKernel(entries_, id, inputs, outputs);
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberAttemptedRetrievals;
   if (not candidates) {
@@ -319,7 +381,7 @@ void OptionsCache::recordRuntime(
   ++numberCacheAttemps;
   auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
 
-  auto kernel = searchKernel(id, inputs, outputs);
+  auto kernel = searchKernel(entries_, id, inputs, outputs);
   if (not kernel) {
     entries_.emplace_back(id, inputs, outputs, gpuStr, options, runtime);
     return;
@@ -336,20 +398,6 @@ void OptionsCache::recordRuntime(
   }
 
   v->recordedRuntimes.push_back(runtime);
-}
-
-OptionsCachedEntry* OptionsCache::searchKernel(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  return searchKernelImpl(*this, id, inputs, outputs);
-}
-
-const OptionsCachedEntry* OptionsCache::searchKernel(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
-  return searchKernelImpl(*this, id, inputs, outputs);
 }
 
 OptionsCachedEntry::OptionsCachedEntry(
@@ -526,7 +574,7 @@ std::unique_ptr<CudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
     const std::vector<const DLTensor*>& outputs) const {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberAttemptedRetrievals;
-  auto entry = searchKernel(id, inputs, outputs);
+  auto entry = searchKernel(entries_, id, inputs, outputs);
   if (not entry) {
     return nullptr;
   }
@@ -539,32 +587,11 @@ std::unique_ptr<CudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
                                    entry->values.block});
 }
 
-ManualCudaCachedEntry* ManualCudaCache::searchKernel(
-    const std::string& id,
-    const std::vector<detail::TensorInfo>& inputs,
-    const std::vector<detail::TensorInfo>& outputs) {
-  return searchKernelImpl(*this, id, inputs, outputs);
-}
-
-ManualCudaCachedEntry* ManualCudaCache::searchKernel(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  return searchKernelImpl(*this, id, inputs, outputs);
-}
-
-const ManualCudaCachedEntry* ManualCudaCache::searchKernel(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
-  return searchKernelImpl(*this, id, inputs, outputs);
-}
-
 void ManualCudaCache::cacheKernel(ManualCudaCachedEntry&& entry) {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberCacheAttemps;
   auto retrievedEntry =
-      searchKernel(entry.key.id, entry.key.inputs, entry.key.outputs);
+      searchKernel(entries_, entry.key.id, entry.key.inputs, entry.key.outputs);
   if (retrievedEntry) {
     retrievedEntry->values.grid = entry.values.grid;
     retrievedEntry->values.block = entry.values.block;

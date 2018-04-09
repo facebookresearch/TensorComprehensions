@@ -103,41 +103,6 @@ class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
   using RetrievalResult = CudaCacheRetrievalResult;
   static std::shared_ptr<CudaCache>& getGlobalSharedCache();
 
- private:
-  /**
-   * SearchKernel (through SearchKernelImpl) searches op in the cache
-   * if a cached entry that corresponds to the op's configuration
-   * (CudaMappingOptions and TargetDevice) and the shape of inputs matches it is
-   * returned
-   */
-
-  CachedEntry* searchKernel(
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<detail::TensorInfo>& inputs,
-      const std::vector<detail::TensorInfo>& outputs);
-  CachedEntry* searchKernel(
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs);
-  const CachedEntry* searchKernel(
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs) const;
-
-  // deduces whether C is const or non-const
-  template <typename C, typename TensorTy>
-  static auto searchKernelImpl(
-      C& c,
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<TensorTy>& inputs,
-      const std::vector<TensorTy>& outputs)
-      -> decltype(c.searchKernel(id, options, inputs, outputs));
-
- public:
   CudaCache() = default;
   CudaCache(const CudaCacheProto& buf);
   CudaCacheProto toProtobuf() const;
@@ -223,33 +188,6 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   using RetrievalResult = OptionsCacheRetrievalResult;
   static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
 
- private:
-  /**
-   * SearchKernel (through SearchKernelImpl) searches op in the cache
-   * if a cached entry that corresponds to the op's configuration
-   * (CudaMappingOptions and TargetDevice) and the shape of inputs matches it is
-   * returned
-   */
-
-  CachedEntry* searchKernel(
-      const std::string& id,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs);
-  const CachedEntry* searchKernel(
-      const std::string& id,
-      const std::vector<const DLTensor*>& input,
-      const std::vector<const DLTensor*>& outputs) const;
-
-  // deduces whether C is const or non-const
-  template <typename C>
-  static auto searchKernelImpl(
-      C& c,
-      const std::string& id,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs)
-      -> decltype(c.searchKernel(id, inputs, outputs));
-
- public:
   OptionsCache() = default;
   OptionsCache(const OptionsCacheProto& buf);
 
@@ -345,35 +283,6 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
   using RetrievalResult = ManualCudaCacheRetrievalResult;
   static std::shared_ptr<ManualCudaCache>& getGlobalSharedCache();
 
- private:
-  /*
-   *SearchKernel (through SearchKernelImpl) searches op in the cache
-   *if a cached entry that corresponds to the op's TargetDevice and the
-   *shape of inputs matches it is returned
-   */
-  CachedEntry* searchKernel(
-      const std::string& id,
-      const std::vector<detail::TensorInfo>& inputs,
-      const std::vector<detail::TensorInfo>& outputs);
-  CachedEntry* searchKernel(
-      const std::string& id,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs);
-  const CachedEntry* searchKernel(
-      const std::string& id,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs) const;
-
-  // deduces whether C is const or non-const
-  template <typename C, typename InputTy>
-  static auto searchKernelImpl(
-      C& c,
-      const std::string& id,
-      const std::vector<InputTy>& inputs,
-      const std::vector<InputTy>& outputs)
-      -> decltype(c.searchKernel(id, inputs, outputs));
-
- public:
   ManualCudaCache() = default;
   ManualCudaCache(const ManualCudaCacheProto& buf);
   ManualCudaCacheProto toProtobuf() const;
