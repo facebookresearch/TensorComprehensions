@@ -618,10 +618,4 @@ std::unique_ptr<ManualCudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
                                          entry->values.grid,
                                          entry->values.block});
 }
-
-void removeFromCudaCacheEntriesNotInOptionsCache(
-    CudaCache& cc,
-    const OptionsCache& oc) {
-  cc.removeEntriesNotInOptionsCache(oc);
-}
 } // namespace tc

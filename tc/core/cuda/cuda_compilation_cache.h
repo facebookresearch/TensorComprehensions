@@ -306,9 +306,11 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
       const std::vector<const DLTensor*>& outputs) const;
 };
 
-void removeFromCudaCacheEntriesNotInOptionsCache(
+inline void removeFromCudaCacheEntriesNotInOptionsCache(
     CudaCache& cc,
-    const OptionsCache& oc);
+    const OptionsCache& oc) {
+  cc.removeEntriesNotInOptionsCache(oc);
+}
 } // namespace tc
 
 #include "tc/core/cuda/cuda_compilation_cache-inl.h"
