@@ -88,4 +88,15 @@ class CacheEntrySameKeyDifferentValue : public std::invalid_argument {
       : invalid_argument(what_arg) {}
 };
 
+bool operator==(
+    const std::vector<const DLTensor*>& inputsTensor,
+    const std::vector<detail::TensorInfo>& inputsInfo);
+
+inline std::string makeOptionsFilename(const std::string& filename) {
+  return filename + ".options";
+}
+
+inline std::string makeCudaFilename(const std::string& filename) {
+  return filename + ".cuda";
+}
 } // namespace tc

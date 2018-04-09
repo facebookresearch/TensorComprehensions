@@ -57,21 +57,6 @@ void WriteProtobufArray(const Array& arr, Buf* buf) {
 }
 } // namespace
 
-bool operator==(
-    const std::vector<const DLTensor*>& inputsTensor,
-    const std::vector<detail::TensorInfo>& inputsInfo) {
-  if (inputsTensor.size() != inputsInfo.size()) {
-    return false;
-  }
-  CHECK(inputsTensor.size() == inputsInfo.size());
-  for (size_t i = 0, n = inputsInfo.size(); i < n; ++i) {
-    if (!(inputsInfo[i] == inputsTensor[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
 std::shared_ptr<CudaCache>& CudaCache::getGlobalSharedCache() {
   static std::shared_ptr<CudaCache> cudaCache_;
   return cudaCache_;
@@ -554,14 +539,6 @@ void removeFromCudaCacheEntriesNotInOptionsCache(
     CudaCache& cc,
     const OptionsCache& oc) {
   cc.removeEntriesNotInOptionsCache(oc);
-}
-
-std::string makeOptionsFilename(const std::string& filename) {
-  return filename + ".options";
-}
-
-std::string makeCudaFilename(const std::string& filename) {
-  return filename + ".cuda";
 }
 
 std::unique_ptr<CudaCache::RetrievalResult> ManualCudaCache::retrieveKernel(

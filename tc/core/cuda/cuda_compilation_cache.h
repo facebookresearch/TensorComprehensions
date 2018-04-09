@@ -426,14 +426,6 @@ void removeFromCudaCacheEntriesNotInOptionsCache(
     CudaCache& cc,
     const OptionsCache& oc);
 
-bool operator==(
-    const std::vector<const DLTensor*>& inputsTensor,
-    const std::vector<detail::TensorInfo>& inputsInfo);
-
-std::string makeOptionsFilename(const std::string& filename);
-
-std::string makeCudaFilename(const std::string& filename);
-
 } // namespace tc
 
 #include "tc/core/cuda/cuda_compilation_cache-inl.h"

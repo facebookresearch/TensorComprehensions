@@ -123,4 +123,19 @@ bool detail::TensorInfo::operator<(const TensorInfo& t) const {
       strides < t.strides;
 }
 
+bool operator==(
+    const std::vector<const DLTensor*>& inputsTensor,
+    const std::vector<detail::TensorInfo>& inputsInfo) {
+  if (inputsTensor.size() != inputsInfo.size()) {
+    return false;
+  }
+  CHECK(inputsTensor.size() == inputsInfo.size());
+  for (size_t i = 0, n = inputsInfo.size(); i < n; ++i) {
+    if (!(inputsInfo[i] == inputsTensor[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace tc
