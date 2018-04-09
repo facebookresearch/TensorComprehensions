@@ -36,6 +36,9 @@ namespace tc {
 
 class OptionsCache;
 
+////////////////////////////////////////////////////////////////////////////////
+// CudaCache
+////////////////////////////////////////////////////////////////////////////////
 struct CudaCachedEntry {
   CudaCachedEntry(
       const std::string& id,
@@ -127,6 +130,9 @@ class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
   void removeEntriesNotInOptionsCache(const OptionsCache& oc);
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// OptionsCache
+////////////////////////////////////////////////////////////////////////////////
 /**
  * An OptionsCache holds multiple OptionsCachedEntry's.
  * Each OptionsCachedEntry is split to two conceptual parts the key and the
@@ -225,6 +231,9 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   void keepOnlyBestCandidates(size_t numberToKeep);
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// ManualCudaCache
+////////////////////////////////////////////////////////////////////////////////
 /**
  * A CudaCache holds multiple CudaCachedEntry's.
  * Each CudaCachedEntry is split to two conceptual parts the key and the values.
@@ -306,6 +315,9 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
       const std::vector<const DLTensor*>& outputs) const;
 };
 
+////////////////////////////////////////////////////////////////////////////////
+// Free functions
+////////////////////////////////////////////////////////////////////////////////
 inline void removeFromCudaCacheEntriesNotInOptionsCache(
     CudaCache& cc,
     const OptionsCache& oc) {
