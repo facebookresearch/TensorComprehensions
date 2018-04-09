@@ -16,6 +16,13 @@ project (TensorComprehensions C CXX)
 
 # Display compiler flags for build modes: Release/Debug
 message(STATUS "BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "CMAKE_CXX_COMPILER_VERSION is ${CMAKE_CXX_COMPILER_VERSION}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "5.4")
+  # we officially support these compiler flags for compiler version 5.4 or less
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable -Werror")
+endif()
+message(STATUS "CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
   set(CMAKE_CXX_FLAGS_DEBUG "-g")
   message(STATUS "CMAKE_CXX_FLAGS_DEBUG is ${CMAKE_CXX_FLAGS_DEBUG}")
