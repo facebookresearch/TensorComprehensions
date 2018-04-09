@@ -146,22 +146,6 @@ std::shared_ptr<CudaCache>& CudaCache::getGlobalSharedCache() {
   return cudaCache_;
 }
 
-std::shared_ptr<OptionsCache>& OptionsCache::getGlobalSharedCache() {
-  static std::shared_ptr<OptionsCache> optionsCache_;
-  return optionsCache_;
-}
-
-std::shared_ptr<ManualCudaCache>& ManualCudaCache::getGlobalSharedCache() {
-  static std::shared_ptr<ManualCudaCache> manualCudaCache_;
-  return manualCudaCache_;
-}
-
-CudaCache::CudaCache(const CudaCacheProto& buf) {
-  entries_.reserve(buf.entries_size());
-  for (const auto& entry_buf : buf.entries())
-    entries_.emplace_back(entry_buf);
-}
-
 CudaCachedEntry::CudaCachedEntry(
     const std::string& id,
     const std::string& kernelSpecializedName,
@@ -194,6 +178,12 @@ CudaCachedEntry::CudaCachedEntry(const CudaCacheEntryProto& buf)
              std::vector<int>{buf.parameters().begin(), buf.parameters().end()},
              Grid(buf.grid_dims()),
              Block(buf.block_dims())} {}
+
+CudaCache::CudaCache(const CudaCacheProto& buf) {
+  entries_.reserve(buf.entries_size());
+  for (const auto& entry_buf : buf.entries())
+    entries_.emplace_back(entry_buf);
+}
 
 void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
   std::lock_guard<std::mutex> lock(mtx_);
@@ -239,7 +229,7 @@ std::unique_ptr<CudaCacheRetrievalResult> CudaCache::retrieveKernel(
 }
 
 void CudaCache::removeEntriesNotInOptionsCache(const OptionsCache& oc) {
-  std::vector<CachedEntry> newEntries;
+  std::vector<CudaCachedEntry> newEntries;
   for (const auto& entry : oc) {
     for (const auto& options : entry.values) {
       auto cudaEntry = searchKernel(
@@ -256,148 +246,42 @@ void CudaCache::removeEntriesNotInOptionsCache(const OptionsCache& oc) {
   entries_ = std::move(newEntries);
 }
 
-size_t OptionsCache::totalSize() const {
-  std::lock_guard<std::mutex> lock(mtx_);
-  return std::accumulate(
+CudaCacheProto CudaCache::toProtobuf() const {
+  CudaCacheProto buf;
+  auto* entriesBuf = buf.mutable_entries();
+  entriesBuf->Reserve(entries_.size());
+  std::transform(
       entries_.begin(),
       entries_.end(),
-      size_t(0),
-      [](size_t sum, const CachedEntry& e) { return sum + e.values.size(); });
+      google::protobuf::RepeatedPtrFieldBackInserter(entriesBuf),
+      [](const CudaCachedEntry& entry) { return entry.toProtobuf(); });
+  return buf;
 }
 
-std::unique_ptr<CudaMappingOptions> OptionsCache::retrieveBestOptions(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
-  auto ret = retrieveTopKOptions(id, inputs, outputs, 1);
-  if (ret.empty()) {
-    return nullptr;
-  }
-  return std::unique_ptr<CudaMappingOptions>(
-      new CudaMappingOptions(ret.front()));
-}
-
-std::vector<OptionsCacheRetrievalResult>
-OptionsCache::retrieveOptionsAndRuntimes(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
-  std::lock_guard<std::mutex> lock(mtx_);
-  ++numberAttemptedRetrievals;
-  auto ret = searchKernel(entries_, id, inputs, outputs);
-  if (not ret) {
-    return {};
-  }
-  ++numberSuccessfulRetrievals;
-  std::vector<RetrievalResult> res;
-  res.reserve(ret->values.size());
+CudaCacheEntryProto CudaCachedEntry::toProtobuf() const {
+  CudaCacheEntryProto buf;
+  buf.set_id(key.id);
+  *buf.mutable_kernel_options() = key.mappingOptions.proto();
   std::transform(
-      ret->values.begin(),
-      ret->values.end(),
-      std::back_inserter(res),
-      [](const CachedEntry::Values& v) -> RetrievalResult {
-        return {v.mappingOptions, v.recordedRuntimes};
-      });
-  return res;
-}
-
-std::vector<CudaMappingOptions> OptionsCache::retrieveTopKOptions(
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs,
-    size_t k) const {
-  auto candidates = searchKernel(entries_, id, inputs, outputs);
-  std::lock_guard<std::mutex> lock(mtx_);
-  ++numberAttemptedRetrievals;
-  if (not candidates) {
-    return {};
-  }
-
-  struct OptionsWithMedian {
-    const CudaMappingOptions* options;
-    Duration medianRuntime;
-  };
-
-  std::vector<OptionsWithMedian> candidatesMedian;
-  candidatesMedian.reserve(candidates->values.size());
+      key.inputs.begin(),
+      key.inputs.end(),
+      google::protobuf::RepeatedPtrFieldBackInserter(buf.mutable_inputs()),
+      [](const detail::TensorInfo& input) { return input.toProtobuf(); });
   std::transform(
-      candidates->values.begin(),
-      candidates->values.end(),
-      std::back_inserter(candidatesMedian),
-      [](const CachedEntry::Values& v) {
-        if (v.recordedRuntimes.empty()) {
-          throw std::runtime_error(
-              "OptionsCache invariant violated: each cached option should have at least one associated recorded runtime.");
-        }
-        return OptionsWithMedian{&v.mappingOptions, median(v.recordedRuntimes)};
-      });
-  std::sort(
-      candidatesMedian.begin(),
-      candidatesMedian.end(),
-      [](const OptionsWithMedian& a, const OptionsWithMedian& b) {
-        return a.medianRuntime < b.medianRuntime;
-      });
-  if (k > candidatesMedian.size()) {
-    k = candidatesMedian.size();
-  }
+      key.outputs.begin(),
+      key.outputs.end(),
+      google::protobuf::RepeatedPtrFieldBackInserter(buf.mutable_outputs()),
+      [](const detail::TensorInfo& output) { return output.toProtobuf(); });
+  buf.set_device_str(key.deviceStr);
+  buf.set_git_version(key.gitVersion);
 
-  std::vector<CudaMappingOptions> res;
-  res.reserve(k);
-  std::transform(
-      candidatesMedian.begin(),
-      candidatesMedian.begin() + k,
-      std::back_inserter(res),
-      [](const OptionsWithMedian& c) { return *c.options; });
+  buf.set_cuda_source(values.cudaSource);
+  *buf.mutable_grid_dims() = values.grid.view.proto;
+  *buf.mutable_block_dims() = values.block.view.proto;
+  buf.set_specialized_name(values.kernelSpecializedName);
+  WriteProtobufArray(values.kernelParameters, buf.mutable_parameters());
 
-  ++numberSuccessfulRetrievals;
-  return res;
-}
-
-void OptionsCache::keepOnlyBestCandidates(size_t numberToKeep) {
-  std::lock_guard<std::mutex> lock(mtx_);
-
-  for (auto& entry : entries_) {
-    std::sort(
-        entry.values.begin(),
-        entry.values.end(),
-        [](const CachedEntry::Values& a, const CachedEntry::Values& b) {
-          // XXX:this is stupid, medians should be precomputed
-          return median(a.recordedRuntimes) < median(b.recordedRuntimes);
-        });
-    if (entry.values.size() > numberToKeep) {
-      entry.values.erase(
-          entry.values.begin() + numberToKeep, entry.values.end());
-    }
-  }
-}
-
-void OptionsCache::recordRuntime(
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs,
-    Duration runtime) {
-  std::lock_guard<std::mutex> lock(mtx_);
-  ++numberCacheAttemps;
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
-
-  auto kernel = searchKernel(entries_, id, inputs, outputs);
-  if (not kernel) {
-    entries_.emplace_back(id, inputs, outputs, gpuStr, options, runtime);
-    return;
-  }
-  auto v = std::find_if(
-      kernel->values.begin(),
-      kernel->values.end(),
-      [&options](const CachedEntry::Values& v) {
-        return v.mappingOptions == options;
-      });
-  if (v == kernel->values.end()) {
-    kernel->values.emplace_back(options, runtime);
-    return;
-  }
-
-  v->recordedRuntimes.push_back(runtime);
+  return buf;
 }
 
 OptionsCachedEntry::OptionsCachedEntry(
@@ -445,12 +329,6 @@ OptionsCachedEntry::Values::Values(
     std::vector<Duration>&& runtimes)
     : mappingOptions(options), recordedRuntimes(std::move(runtimes)) {}
 
-OptionsCache::OptionsCache(const OptionsCacheProto& buf) {
-  entries_.reserve(buf.entries_size());
-  for (const auto& entry_buf : buf.entries())
-    entries_.emplace_back(entry_buf);
-}
-
 OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
     : key(buf.id(),
           ProtoToTensorInfoVector(buf.inputs()),
@@ -477,18 +355,6 @@ OptionsCachedEntry::OptionsCachedEntry(const OptionsCacheEntryProto& buf)
     values.emplace_back(
         CudaMappingOptions(value.kernel_options()), std::move(runtimes));
   }
-}
-
-OptionsCacheProto OptionsCache::toProtobuf() const {
-  OptionsCacheProto buf;
-  auto* entriesBuf = buf.mutable_entries();
-  entriesBuf->Reserve(entries_.size());
-  std::transform(
-      entries_.begin(),
-      entries_.end(),
-      google::protobuf::RepeatedPtrFieldBackInserter(entriesBuf),
-      [](const CachedEntry& entry) { return entry.toProtobuf(); });
-  return buf;
 }
 
 OptionsCacheEntryProto OptionsCachedEntry::toProtobuf() const {
@@ -524,84 +390,179 @@ OptionsCacheEntryProto OptionsCachedEntry::toProtobuf() const {
   return buf;
 }
 
-CudaCacheProto CudaCache::toProtobuf() const {
-  CudaCacheProto buf;
+std::shared_ptr<OptionsCache>& OptionsCache::getGlobalSharedCache() {
+  static std::shared_ptr<OptionsCache> optionsCache_;
+  return optionsCache_;
+}
+
+OptionsCache::OptionsCache(const OptionsCacheProto& buf) {
+  entries_.reserve(buf.entries_size());
+  for (const auto& entry_buf : buf.entries())
+    entries_.emplace_back(entry_buf);
+}
+
+OptionsCacheProto OptionsCache::toProtobuf() const {
+  OptionsCacheProto buf;
   auto* entriesBuf = buf.mutable_entries();
   entriesBuf->Reserve(entries_.size());
   std::transform(
       entries_.begin(),
       entries_.end(),
       google::protobuf::RepeatedPtrFieldBackInserter(entriesBuf),
-      [](const CachedEntry& entry) { return entry.toProtobuf(); });
+      [](const OptionsCachedEntry& entry) { return entry.toProtobuf(); });
   return buf;
 }
 
-CudaCacheEntryProto CudaCachedEntry::toProtobuf() const {
-  CudaCacheEntryProto buf;
-  buf.set_id(key.id);
-  *buf.mutable_kernel_options() = key.mappingOptions.proto();
-  std::transform(
-      key.inputs.begin(),
-      key.inputs.end(),
-      google::protobuf::RepeatedPtrFieldBackInserter(buf.mutable_inputs()),
-      [](const detail::TensorInfo& input) { return input.toProtobuf(); });
-  std::transform(
-      key.outputs.begin(),
-      key.outputs.end(),
-      google::protobuf::RepeatedPtrFieldBackInserter(buf.mutable_outputs()),
-      [](const detail::TensorInfo& output) { return output.toProtobuf(); });
-  buf.set_device_str(key.deviceStr);
-  buf.set_git_version(key.gitVersion);
-
-  buf.set_cuda_source(values.cudaSource);
-  *buf.mutable_grid_dims() = values.grid.view.proto;
-  *buf.mutable_block_dims() = values.block.view.proto;
-  buf.set_specialized_name(values.kernelSpecializedName);
-  WriteProtobufArray(values.kernelParameters, buf.mutable_parameters());
-
-  return buf;
+size_t OptionsCache::totalSize() const {
+  std::lock_guard<std::mutex> lock(mtx_);
+  return std::accumulate(
+      entries_.begin(),
+      entries_.end(),
+      size_t(0),
+      [](size_t sum, const OptionsCachedEntry& e) {
+        return sum + e.values.size();
+      });
 }
 
-void removeFromCudaCacheEntriesNotInOptionsCache(
-    CudaCache& cc,
-    const OptionsCache& oc) {
-  cc.removeEntriesNotInOptionsCache(oc);
+void OptionsCache::recordRuntime(
+    const std::string& id,
+    const CudaMappingOptions& options,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs,
+    Duration runtime) {
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberCacheAttemps;
+  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
+
+  auto kernel = searchKernel(entries_, id, inputs, outputs);
+  if (not kernel) {
+    entries_.emplace_back(id, inputs, outputs, gpuStr, options, runtime);
+    return;
+  }
+  auto v = std::find_if(
+      kernel->values.begin(),
+      kernel->values.end(),
+      [&options](const OptionsCachedEntry::Values& v) {
+        return v.mappingOptions == options;
+      });
+  if (v == kernel->values.end()) {
+    kernel->values.emplace_back(options, runtime);
+    return;
+  }
+
+  v->recordedRuntimes.push_back(runtime);
 }
 
-std::unique_ptr<CudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
+std::vector<OptionsCacheRetrievalResult>
+OptionsCache::retrieveOptionsAndRuntimes(
     const std::string& id,
     const std::vector<const DLTensor*>& inputs,
     const std::vector<const DLTensor*>& outputs) const {
   std::lock_guard<std::mutex> lock(mtx_);
   ++numberAttemptedRetrievals;
-  auto entry = searchKernel(entries_, id, inputs, outputs);
-  if (not entry) {
-    return nullptr;
+  auto ret = searchKernel(entries_, id, inputs, outputs);
+  if (not ret) {
+    return {};
   }
   ++numberSuccessfulRetrievals;
-  return std::unique_ptr<CudaCacheRetrievalResult>(
-      new CudaCacheRetrievalResult{entry->values.cudaSource,
-                                   entry->values.kernelSpecializedName,
-                                   entry->values.kernelParameters,
-                                   entry->values.grid,
-                                   entry->values.block});
+  std::vector<OptionsCacheRetrievalResult> res;
+  res.reserve(ret->values.size());
+  std::transform(
+      ret->values.begin(),
+      ret->values.end(),
+      std::back_inserter(res),
+      [](const OptionsCachedEntry::Values& v) -> OptionsCacheRetrievalResult {
+        return {v.mappingOptions, v.recordedRuntimes};
+      });
+  return res;
 }
 
-void ManualCudaCache::cacheKernel(ManualCudaCachedEntry&& entry) {
-  std::lock_guard<std::mutex> lock(mtx_);
-  ++numberCacheAttemps;
-  auto retrievedEntry =
-      searchKernel(entries_, entry.key.id, entry.key.inputs, entry.key.outputs);
-  if (retrievedEntry) {
-    retrievedEntry->values.grid = entry.values.grid;
-    retrievedEntry->values.block = entry.values.block;
-    retrievedEntry->values.cudaSource = entry.values.cudaSource;
-    retrievedEntry->values.kernelSpecializedName =
-        entry.values.kernelSpecializedName;
-    retrievedEntry->values.kernelParameters = entry.values.kernelParameters;
-    return;
+std::unique_ptr<CudaMappingOptions> OptionsCache::retrieveBestOptions(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs) const {
+  auto ret = retrieveTopKOptions(id, inputs, outputs, 1);
+  if (ret.empty()) {
+    return nullptr;
   }
-  entries_.emplace_back(entry);
+  return std::unique_ptr<CudaMappingOptions>(
+      new CudaMappingOptions(ret.front()));
+}
+
+std::vector<CudaMappingOptions> OptionsCache::retrieveTopKOptions(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs,
+    size_t k) const {
+  auto candidates = searchKernel(entries_, id, inputs, outputs);
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberAttemptedRetrievals;
+  if (not candidates) {
+    return {};
+  }
+
+  struct OptionsWithMedian {
+    const CudaMappingOptions* options;
+    Duration medianRuntime;
+  };
+
+  std::vector<OptionsWithMedian> candidatesMedian;
+  candidatesMedian.reserve(candidates->values.size());
+  std::transform(
+      candidates->values.begin(),
+      candidates->values.end(),
+      std::back_inserter(candidatesMedian),
+      [](const OptionsCachedEntry::Values& v) {
+        if (v.recordedRuntimes.empty()) {
+          throw std::runtime_error(
+              "OptionsCache invariant violated: each cached option should have at least one associated recorded runtime.");
+        }
+        return OptionsWithMedian{&v.mappingOptions, median(v.recordedRuntimes)};
+      });
+  std::sort(
+      candidatesMedian.begin(),
+      candidatesMedian.end(),
+      [](const OptionsWithMedian& a, const OptionsWithMedian& b) {
+        return a.medianRuntime < b.medianRuntime;
+      });
+  if (k > candidatesMedian.size()) {
+    k = candidatesMedian.size();
+  }
+
+  std::vector<CudaMappingOptions> res;
+  res.reserve(k);
+  std::transform(
+      candidatesMedian.begin(),
+      candidatesMedian.begin() + k,
+      std::back_inserter(res),
+      [](const OptionsWithMedian& c) { return *c.options; });
+
+  ++numberSuccessfulRetrievals;
+  return res;
+}
+
+void OptionsCache::keepOnlyBestCandidates(size_t numberToKeep) {
+  std::lock_guard<std::mutex> lock(mtx_);
+
+  for (auto& entry : entries_) {
+    std::sort(
+        entry.values.begin(),
+        entry.values.end(),
+        [](const OptionsCachedEntry::Values& a,
+           const OptionsCachedEntry::Values& b) {
+          // XXX:this is stupid, medians should be precomputed
+          return median(a.recordedRuntimes) < median(b.recordedRuntimes);
+        });
+    if (entry.values.size() > numberToKeep) {
+      entry.values.erase(
+          entry.values.begin() + numberToKeep, entry.values.end());
+    }
+  }
+}
+
+std::shared_ptr<ManualCudaCache>& ManualCudaCache::getGlobalSharedCache() {
+  static std::shared_ptr<ManualCudaCache> manualCudaCache_;
+  return manualCudaCache_;
 }
 
 ManualCudaCachedEntry::ManualCudaCachedEntry(
@@ -622,4 +583,45 @@ ManualCudaCachedEntry::ManualCudaCachedEntry(
       values{cudaSource, kernelSpecializedName, kernelParameters, grid, block} {
 }
 
+void ManualCudaCache::cacheKernel(ManualCudaCachedEntry&& entry) {
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberCacheAttemps;
+  auto retrievedEntry =
+      searchKernel(entries_, entry.key.id, entry.key.inputs, entry.key.outputs);
+  if (retrievedEntry) {
+    retrievedEntry->values.grid = entry.values.grid;
+    retrievedEntry->values.block = entry.values.block;
+    retrievedEntry->values.cudaSource = entry.values.cudaSource;
+    retrievedEntry->values.kernelSpecializedName =
+        entry.values.kernelSpecializedName;
+    retrievedEntry->values.kernelParameters = entry.values.kernelParameters;
+    return;
+  }
+  entries_.emplace_back(entry);
+}
+
+std::unique_ptr<ManualCudaCacheRetrievalResult> ManualCudaCache::retrieveKernel(
+    const std::string& id,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<const DLTensor*>& outputs) const {
+  std::lock_guard<std::mutex> lock(mtx_);
+  ++numberAttemptedRetrievals;
+  auto entry = searchKernel(entries_, id, inputs, outputs);
+  if (not entry) {
+    return nullptr;
+  }
+  ++numberSuccessfulRetrievals;
+  return std::unique_ptr<ManualCudaCacheRetrievalResult>(
+      new ManualCudaCacheRetrievalResult{entry->values.cudaSource,
+                                         entry->values.kernelSpecializedName,
+                                         entry->values.kernelParameters,
+                                         entry->values.grid,
+                                         entry->values.block});
+}
+
+void removeFromCudaCacheEntriesNotInOptionsCache(
+    CudaCache& cc,
+    const OptionsCache& oc) {
+  cc.removeEntriesNotInOptionsCache(oc);
+}
 } // namespace tc

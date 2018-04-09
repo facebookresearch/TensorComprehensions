@@ -225,13 +225,13 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   void keepOnlyBestCandidates(size_t numberToKeep);
 };
 
-/*
- *A CudaCache holds multiple CachedEntry's.
- *Each CachedEntry is split to two conceptual parts the key and the values.
- *The values are:
+/**
+ * A CudaCache holds multiple CudaCachedEntry's.
+ * Each CudaCachedEntry is split to two conceptual parts the key and the values.
+ * The values are:
  *                 the specialized (wrt inputs) Cuda source code,
  *                 the Cuda block and grid dimensions
- *The key is:
+ * The key is:
  *                 the kernel/op's unique id (string),
  *                 the specialized input dimensions,
  *                 the target architecture (string),
@@ -288,16 +288,17 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
   ManualCudaCacheProto toProtobuf() const;
 
   /*
-   *Stores (cudaSource, grid, block, specializedName, parameters)
-   *in the cache with key (id, input shapes, output shapes,
-   *target device). If the key already exist in the cache,
-   *the values are replaced.
+   * Stores:
+   *   (cudaSource, grid, block, specializedName, parameters)
+   * in the cache with key:
+   *   (id, input shapes, output shapes, target device).
+   * If the key already exist in the cache, the values are replaced.
    */
   void cacheKernel(ManualCudaCachedEntry&& entry);
 
   /*
-   *Returns the cache entry that matches
-   *op(id, target device) and inputs' shapes.
+   * Returns the cache entry that matches op(id, target device) and inputs'
+   * shapes.
    */
   std::unique_ptr<ManualCudaCacheRetrievalResult> retrieveKernel(
       const std::string& id,
@@ -308,7 +309,6 @@ class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
 void removeFromCudaCacheEntriesNotInOptionsCache(
     CudaCache& cc,
     const OptionsCache& oc);
-
 } // namespace tc
 
 #include "tc/core/cuda/cuda_compilation_cache-inl.h"
