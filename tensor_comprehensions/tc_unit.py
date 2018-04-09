@@ -192,8 +192,8 @@ class TcAutotuner(object):
 
     def set_autotuner_parameters(
         self, pop_size=20, crossover_rate=80, mutation_rate=7, generations=10,
-        number_elites=1, threads=8, gpus="0", proto="/tmp/tuner.txt",
-        restore_from_proto=False, restore_number=10, log_generations=False,
+        number_elites=1, threads=8, gpus="0", restore_from_proto=False,
+        restore_number=10, log_generations=False,
         tuner_min_launch_total_threads=64, **kwargs
     ):
         self.autotuner.pop_size(pop_size)
@@ -203,7 +203,6 @@ class TcAutotuner(object):
         self.autotuner.number_elites(number_elites)
         self.autotuner.threads(threads)
         self.autotuner.gpus(gpus)
-        self.autotuner.proto(proto)
         self.autotuner.restore_from_proto(restore_from_proto)
         self.autotuner.restore_number(restore_number)
         self.autotuner.log_generations(log_generations)
