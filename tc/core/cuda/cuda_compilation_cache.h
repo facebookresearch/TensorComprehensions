@@ -90,7 +90,7 @@ struct CudaCachedEntry {
  */
 class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
  public:
-  using Protobuf = CudaCacheProto;
+  using ProtobufType = CudaCacheProto;
   using CachedEntry = CudaCachedEntry;
   static std::shared_ptr<CudaCache>& getGlobalSharedCache();
 
@@ -221,7 +221,7 @@ struct OptionsCachedEntry {
 
 class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
  public:
-  using Protobuf = OptionsCacheProto;
+  using ProtobufType = OptionsCacheProto;
   using CachedEntry = OptionsCachedEntry;
   static std::shared_ptr<OptionsCache>& getGlobalSharedCache();
 
@@ -344,7 +344,7 @@ struct ManualCudaCachedEntry {
  */
 class ManualCudaCache : public Cache<ManualCudaCache, ManualCudaCachedEntry> {
  public:
-  using Protobuf = ManualCudaCacheProto;
+  using ProtobufType = ManualCudaCacheProto;
   using CachedEntry = ManualCudaCachedEntry;
   static std::shared_ptr<ManualCudaCache>& getGlobalSharedCache();
 

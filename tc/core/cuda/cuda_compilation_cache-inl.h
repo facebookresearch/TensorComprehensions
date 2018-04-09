@@ -60,7 +60,7 @@ void Cache<CC, CachedEntryType>::dumpCacheToProtobuf(
 template <typename CC, typename CachedEntryType>
 void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(
     const std::string& filename) {
-  typename CC::Protobuf buf;
+  typename CC::ProtobufType buf;
   struct stat buffer = {0};
   if (stat(filename.c_str(), &buffer) == 0) {
     std::ifstream serialized(filename, std::ios::binary);
@@ -73,7 +73,7 @@ template <typename CC, typename CachedEntryType>
 template <typename Protobuf>
 void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(const Protobuf& buf) {
   static_assert(
-      std::is_same<Protobuf, typename CC::Protobuf>::value,
+      std::is_same<Protobuf, typename CC::ProtobufType>::value,
       "LoadCacheFromProtobuf called with invalide protobuf type.");
   CC::getGlobalSharedCache() = std::make_shared<CC>(buf);
 }
