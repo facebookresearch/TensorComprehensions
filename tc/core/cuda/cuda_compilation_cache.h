@@ -34,102 +34,6 @@
 
 namespace tc {
 
-class OptionsCache;
-
-////////////////////////////////////////////////////////////////////////////////
-// CudaCache
-////////////////////////////////////////////////////////////////////////////////
-struct CudaCachedEntry {
-  CudaCachedEntry(
-      const std::string& id,
-      const std::string& kernelSpecializedName,
-      const std::vector<int>& kernelParameters,
-      const Grid& grid,
-      const Block& block,
-      const CudaMappingOptions& mappingOptions,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs,
-      const std::string& cudaSource,
-      const std::string& deviceStr);
-
-  CudaCachedEntry(const CudaCacheEntryProto& buf);
-  CudaCacheEntryProto toProtobuf() const;
-
-  struct Key {
-    std::string id;
-    CudaMappingOptions mappingOptions;
-    std::vector<detail::TensorInfo> inputs;
-    std::vector<detail::TensorInfo> outputs;
-    std::string deviceStr;
-    std::string gitVersion;
-  };
-
-  struct Values {
-    std::string cudaSource;
-    std::string kernelSpecializedName;
-    std::vector<int> kernelParameters;
-    Grid grid;
-    Block block;
-  };
-  Key key;
-  Values values;
-};
-
-struct CudaCacheRetrievalResult {
-  std::string source;
-  std::string specializedName;
-  std::vector<int> parameters;
-  Grid grid;
-  Block block;
-};
-
-/**
- * CudaCache stores the Cuda source of optimized kernels
- * A CudaCache holds multiple CudaCachedEntry's.
- * Each CudaCachedEntry is split to two conceptual parts the key and the values.
- * The values are:
- *                  the specialized (wrt inputs) Cuda source code,
- *                  the kernel's specialized name,
- *                  the kernel parameters,
- *                  the Cuda block and grid dimensions
- * The key is:
- *                  the kernel/op's unique id (string),
- *                  the specialized input dimensions,
- *                  the isl options when the kernel was optimized,
- *                  the target architecture (string),
- *                  tc's version (string),
- */
-class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
- public:
-  using ProtobufType = CudaCacheProto;
-  using CachedEntry = CudaCachedEntry;
-  using RetrievalResult = CudaCacheRetrievalResult;
-  static std::shared_ptr<CudaCache>& getGlobalSharedCache();
-
-  CudaCache() = default;
-  CudaCache(const CudaCacheProto& buf);
-  CudaCacheProto toProtobuf() const;
-
-  /**
-   * If op was previously cached and the inputs' shape, isl options, and the
-   * target device are the same then this is a noop
-   * Else (cudaSource, grid, block) is stored in the cache
-   */
-  void cacheKernel(CudaCachedEntry&& entry);
-
-  /**
-   * Returns the cache entry that matches op (id, isl options, target device)
-   * and inputs' shapes.
-   */
-  std::unique_ptr<CudaCacheRetrievalResult> retrieveKernel(
-      const std::string& id,
-      const CudaMappingOptions& options,
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs) const;
-
-  void removeEntriesNotInOptionsCache(const OptionsCache& oc);
-};
-
 ////////////////////////////////////////////////////////////////////////////////
 // OptionsCache
 ////////////////////////////////////////////////////////////////////////////////
@@ -229,6 +133,98 @@ class OptionsCache : public Cache<OptionsCache, OptionsCachedEntry> {
   // Only (up to) numberToKeep entries per operation (combination of id and
   // input info) are kept in the cache. The best performing versions are kept
   void keepOnlyBestCandidates(size_t numberToKeep);
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// CudaCache
+////////////////////////////////////////////////////////////////////////////////
+struct CudaCachedEntry {
+  CudaCachedEntry(
+      const std::string& id,
+      const std::string& kernelSpecializedName,
+      const std::vector<int>& kernelParameters,
+      const Grid& grid,
+      const Block& block,
+      const CudaMappingOptions& mappingOptions,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs,
+      const std::string& cudaSource,
+      const std::string& deviceStr);
+
+  CudaCachedEntry(const CudaCacheEntryProto& buf);
+  CudaCacheEntryProto toProtobuf() const;
+
+  struct Key {
+    std::string id;
+    CudaMappingOptions mappingOptions;
+    std::vector<detail::TensorInfo> inputs;
+    std::vector<detail::TensorInfo> outputs;
+    std::string deviceStr;
+    std::string gitVersion;
+  };
+
+  struct Values {
+    std::string cudaSource;
+    std::string kernelSpecializedName;
+    std::vector<int> kernelParameters;
+    Grid grid;
+    Block block;
+  };
+  Key key;
+  Values values;
+};
+
+struct CudaCacheRetrievalResult {
+  std::string source;
+  std::string specializedName;
+  std::vector<int> parameters;
+  Grid grid;
+  Block block;
+};
+
+/**
+ * CudaCache stores the Cuda source of optimized kernels
+ * A CudaCache holds multiple CudaCachedEntry's.
+ * Each CudaCachedEntry is split to two conceptual parts the key and the values.
+ * The values are:
+ *                  the specialized (wrt inputs) Cuda source code,
+ *                  the kernel's specialized name,
+ *                  the kernel parameters,
+ *                  the Cuda block and grid dimensions
+ * The key is:
+ *                  the kernel/op's unique id (string),
+ *                  the specialized input dimensions,
+ *                  the isl options when the kernel was optimized,
+ *                  the target architecture (string),
+ *                  tc's version (string),
+ */
+class CudaCache : public Cache<CudaCache, CudaCachedEntry> {
+ public:
+  typedef CudaCacheProto ProtobufType;
+  static std::shared_ptr<CudaCache>& getGlobalSharedCache();
+
+  CudaCache() = default;
+  CudaCache(const CudaCacheProto& buf);
+  CudaCacheProto toProtobuf() const;
+
+  /**
+   * If op was previously cached and the inputs' shape, isl options, and the
+   * target device are the same then this is a noop
+   * Else (cudaSource, grid, block) is stored in the cache
+   */
+  void cacheKernel(CudaCachedEntry&& entry);
+
+  /**
+   * Returns the cache entry that matches op (id, isl options, target device)
+   * and inputs' shapes.
+   */
+  std::unique_ptr<CudaCacheRetrievalResult> retrieveKernel(
+      const std::string& id,
+      const CudaMappingOptions& options,
+      const std::vector<const DLTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs) const;
+
+  void removeEntriesNotInOptionsCache(const OptionsCache& oc);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
