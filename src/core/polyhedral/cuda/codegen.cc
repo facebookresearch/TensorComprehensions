@@ -21,7 +21,6 @@
 #include <utility>
 
 #include "tc/core/flags.h"
-#include "tc/core/halide2isl.h"
 #include "tc/core/islpp_wrap.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen.h"
@@ -458,11 +457,10 @@ namespace detail {
 isl::pw_aff makeAffFromMappedExpr(
     const Halide::Expr& expr,
     const CodegenStatementContext& context) {
-  auto space = context.iteratorMap().get_space().range();
   // We only expect this to be called on encountering a free
   // variable. Compound expressions should be emitted as Halide.
   CHECK(expr.as<Halide::Internal::Variable>());
-  auto aff = halide2isl::makeIslAffFromExpr(space, expr);
+  auto aff = context.makeIslAffFromExpr(expr);
   auto pwaff = isl::pw_aff(aff).pullback(context.iteratorMap());
   return pwaff;
 }
@@ -492,8 +490,7 @@ isl::multi_aff makeMultiAffAccess(
 
   auto ma = isl::multi_aff::zero(space);
   for (size_t i = 0; i < subscripts.size(); ++i) {
-    ma = ma.set_aff(
-        i, halide2isl::makeIslAffFromExpr(domainSpace, subscripts[i]));
+    ma = ma.set_aff(i, context.makeIslAffFromExpr(subscripts[i]));
   }
   return ma;
 }

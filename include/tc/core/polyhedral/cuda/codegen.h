@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "tc/core/halide2isl.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/external/isl.h"
@@ -102,6 +103,16 @@ struct CodegenStatementContext : CodegenContext {
       }
     }
     return result;
+  }
+  // Make an affine function from a Halide Expr that is defined
+  // over the instance set of the statement corresponding to
+  // the AST node of this CodegenStatementContext.  Return a
+  // null isl::aff if the expression is not affine.  Fail if any
+  // of the variables does not correspond to a parameter or
+  // an instance identifier of the statement.
+  isl::aff makeIslAffFromExpr(const Halide::Expr& e) const {
+    auto space = iteratorMap().get_space().params();
+    return scop().makeIslAffFromStmtExpr(statementId(), space, e);
   }
 
   isl::id astNodeId;
