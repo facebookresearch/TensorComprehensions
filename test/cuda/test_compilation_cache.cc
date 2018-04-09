@@ -69,6 +69,42 @@ class CudaCacheTest : public ::testing::Test {
   }
 };
 
+TEST_F(CudaCacheTest, EntrySameKeyDifferentValue) {
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto inputPtrs = InputPtrs();
+  auto outputPtrs = InputPtrs();
+
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
+      "kernel0",
+      "ker000",
+      {0, 0, 1},
+      tc::Grid(std::vector<size_t>{1, 1, 1}),
+      tc::Block(std::vector<size_t>{1, 1, 1}),
+      options,
+      inputPtrs,
+      outputPtrs,
+      "source0",
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
+  ASSERT_THROW(
+      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
+          "kernel0",
+          "ker000",
+          {0, 0, 1},
+          tc::Grid(std::vector<size_t>{2, 1, 1}),
+          tc::Block(std::vector<size_t>{1, 2, 1}),
+          options,
+          inputPtrs,
+          outputPtrs,
+          "source1",
+          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
+      tc::CacheEntrySameKeyDifferentValue);
+
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
+}
+
 TEST_F(CudaCacheTest, DifferentIDs) {
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();

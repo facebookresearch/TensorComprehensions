@@ -198,9 +198,9 @@ void CudaCache::cacheKernel(CudaCachedEntry&& entry) {
       entry.key.inputs,
       entry.key.outputs);
   if (retrievedEntry) {
-    if (retrievedEntry->values.cudaSource == entry.values.cudaSource or
-        retrievedEntry->values.grid == entry.values.grid or
-        retrievedEntry->values.block == entry.values.block) {
+    if (retrievedEntry->values.cudaSource != entry.values.cudaSource or
+        retrievedEntry->values.grid != entry.values.grid or
+        retrievedEntry->values.block != entry.values.block) {
       throw CacheEntrySameKeyDifferentValue(
           "CudaCache::CacheKernel: a kernel matching the id, options and "
           "inputs was previously cached with different cuda source or block "
