@@ -20,11 +20,10 @@
 
 #include "tc/core/flags.h"
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 namespace tc {
 
-using namespace dlutils;
 using namespace Halide;
 using namespace Halide::Internal;
 
@@ -39,15 +38,18 @@ DLDataType fromHalideType(const Halide::Type& type) {
 
 std::map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& halide,
-    const std::vector<const DLTensor*>& inputsDLT) {
+    const std::vector<const DLConstTensor*>& inputsDLT) {
   std::map<std::string, int> pvm;
-  CHECK_EQ(halide.inputs.size(), inputsDLT.size())
-      << "Mismatched HalideIR and DLTensor number of inputs";
+  if (halide.inputs.size() != inputsDLT.size()) {
+    throw lang::ErrorReport(halide.getDef())
+        << "expected " << halide.inputs.size() << " inputs but got "
+        << inputsDLT.size();
+  }
 
   // fill the ParameterValMap
   for (size_t i = 0; i < inputsDLT.size(); i++) {
     const ImageParam& in = halide.inputs[i];
-    const DLTensor* tensor = inputsDLT[i];
+    auto tensor = inputsDLT[i];
     // for error messages
     auto paramType = halide.getDef().params()[i].tensorType();
     for (int d = 0; d < in.dimensions(); d++) {
@@ -81,9 +83,9 @@ std::map<std::string, int> computeParamValueMap(
   return pvm;
 }
 
-std::vector<DLTensorUPtr> inferOutputTensorInfo(
+std::vector<TensorInfo> inferOutputTensorInfo(
     const tc2halide::HalideComponents& halide,
-    const std::vector<const DLTensor*>& inputsDLT) {
+    const std::vector<const DLConstTensor*>& inputsDLT) {
   auto pvm = computeParamValueMap(halide, inputsDLT);
 
   // instantiate parameters with runtime values and build output DLpack metadata
@@ -91,10 +93,7 @@ std::vector<DLTensorUPtr> inferOutputTensorInfo(
   for (auto p : pvm) {
     substitutions[p.first] = p.second;
   }
-  DLContext ctx{kDLGPU, 0};
-  if (inputsDLT.size() > 0)
-    ctx = inputsDLT[0]->ctx;
-  std::vector<DLTensorUPtr> outputsDLT;
+  std::vector<TensorInfo> outputTensorInfos;
   for (size_t i = 0; i < halide.outputs.size(); ++i) {
     std::vector<long> sizes;
     auto& out = halide.outputs[i];
@@ -110,11 +109,11 @@ std::vector<DLTensorUPtr> inferOutputTensorInfo(
       }
       sizes.push_back(static_cast<int>(*c));
     }
-    outputsDLT.emplace_back(
-        makeDLTensorWithSizes(ctx, fromHalideType(out.type()), sizes));
+    outputTensorInfos.emplace_back(TensorInfo(
+        fromHalideType(out.type()), 0, sizes, makeStridesFromSizes(sizes)));
   }
 
-  return outputsDLT;
+  return outputTensorInfos;
 }
 
 std::string halideCodegenC(const Stmt& stmt) {

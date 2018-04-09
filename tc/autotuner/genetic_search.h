@@ -51,32 +51,10 @@ namespace autotune {
 class GeneticSearch {
  public:
   /**
-   * conf is used to determine which are the tunable parameters, the selected
-   * values in conf are ignored and the population is randomized
-   *
-   * n is the population size
-   *
-   * crossoverRate is the probability ([0,100]) that a new candidate is produced
-   * through reproduction
-   *
-   * mutationRate is the probability ([0,100]) that parameters are mutated
-   * (randomly changed) whenever a new generation is created
-   *
-   * numberElites best candidates are preserved
-   * across generations (elitism), number Elites must be less than n
-   */
-  GeneticSearch(
-      const TuningConfiguration& conf,
-      size_t n,
-      uint8_t crossOverRate,
-      uint8_t mutationRate,
-      size_t numberElites);
-
-  /**
    * confs are used to seed the first generation, the rest of the population is
    * randomly initialized
    *
-   * n is the population size
+   * populationSize is the population size
    *
    * crossoverRate is the probability ([0,100]) that a new candidate is produced
    * through reproduction
@@ -85,11 +63,13 @@ class GeneticSearch {
    * (randomly changed) whenever a new generation is created
    *
    * numberElites best candidates are preserved
-   * across generations (elitism), number Elites must be less than n
+   * across generations (elitism), number Elites must be less than
+   * populationSize
    */
   GeneticSearch(
       const std::vector<TuningConfiguration>& confs,
-      size_t n,
+      size_t numGenerations,
+      size_t populationSize,
       uint8_t crossOverRate,
       uint8_t mutationRate,
       size_t numberElites);
@@ -112,6 +92,7 @@ class GeneticSearch {
 
   Population population;
   TuningConfiguration lastBestConf;
+  const size_t kNumGenerations;
   const size_t kMaxPopulationSize;
   const uint8_t kCrossOverRate;
   const uint8_t kMutationRate;

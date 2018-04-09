@@ -1,3 +1,4 @@
+
 /**
  * Copyright (c) 2017-present, Facebook, Inc.
  *
@@ -14,10 +15,13 @@
  * limitations under the License.
  */
 #pragma once
+
 #include <algorithm>
 #include <iterator>
 #include <type_traits>
 #include <vector>
+
+#include "tc/core/utils/math.h"
 
 namespace tc {
 namespace autotune {
@@ -37,7 +41,6 @@ void mergeVectorsImpl(Vector& sink, Vector&& v, Vectors&&... vs) {
     sink.insert(sink.end(), v.begin(), v.end());
   }
 }
-
 } // namespace detail
 
 template <typename Vector, typename... Vectors>
@@ -49,6 +52,5 @@ Vector mergeVectors(Vector&& v, Vectors&&... vs) {
   merged.erase(std::unique(merged.begin(), merged.end()), merged.end());
   return merged;
 }
-
 } // namespace autotune
 } // namespace tc

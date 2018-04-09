@@ -17,37 +17,42 @@
 #include <iostream>
 #include <string>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
 
+using OutputsAndCode = std::pair<std::vector<at::Tensor>, std::string>;
+
 ///////////////////////////////////////////////////////////////////////////////
 // Base unit test class
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType>
+template <typename Backend>
 struct TcMapperTest : public ::testing::Test {
   uint32_t M = 165, N = 197, K = 227;
   int B = 100, D = 1000;
   int C1 = 512, C2 = 8, C3 = 2, H = 28, W = 28;
 
   template <typename CheckFunction>
-  std::vector<at::Tensor> Check(
+  OutputsAndCode Check(
       const std::string& tc,
       const std::string& name,
-      const typename TcExecutorType::MappingOptionsType& mappingOptions,
+      const typename Backend::MappingOptionsType& mappingOptions,
       const std::vector<at::Tensor> inputs,
       CheckFunction checkFun) {
-    std::vector<at::Tensor> outputs;
-    tc::ATenCompilationUnit<TcExecutorType> atCompl;
-    atCompl.define(tc);
-    auto handle = atCompl.compile(name, inputs, mappingOptions);
-    atCompl.run(name, inputs, outputs, handle);
+    auto pExecutor =
+        tc::aten::compile<Backend>(tc, name, inputs, mappingOptions);
+    std::vector<at::Tensor> outputs =
+        tc::aten::prepareOutputs(tc, name, inputs);
+    tc::aten::run(*pExecutor, inputs, outputs);
     checkFun(inputs, outputs);
-    return outputs;
+    auto outputDLTensors = tc::aten::makeDLTensors(outputs);
+    return std::make_pair(
+        std::move(outputs), std::move(pExecutor->compiledSource));
   }
 };
 
@@ -55,14 +60,14 @@ struct TcMapperTest : public ::testing::Test {
 // 1-D reduction
 //   C +=! A(r_m)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType>
-struct TcMapper1DReductionTest : public TcMapperTest<TcExecutorType> {
-  using TcMapperTest<TcExecutorType>::Check;
-  using TcMapperTest<TcExecutorType>::M;
+template <typename Backend>
+struct TcMapper1DReductionTest : public TcMapperTest<Backend> {
+  using TcMapperTest<Backend>::Check;
+  using TcMapperTest<Backend>::M;
 
-  std::vector<at::Tensor> Check(
+  OutputsAndCode Check(
       at::Tensor A,
-      const typename TcExecutorType::MappingOptionsType& mappingOptions,
+      const typename Backend::MappingOptionsType& mappingOptions,
       uint32_t version = 0) {
     auto reduction1DTCs = {
         R"TC(
@@ -108,15 +113,15 @@ def sum1D(float(M) A) -> (C) {
 // 2-D reduction
 //   C(m) +=! A(m, r_n)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType>
-struct TcMapper2DReductionTest : public TcMapperTest<TcExecutorType> {
-  using TcMapperTest<TcExecutorType>::Check;
-  using TcMapperTest<TcExecutorType>::M;
-  using TcMapperTest<TcExecutorType>::N;
+template <typename Backend>
+struct TcMapper2DReductionTest : public TcMapperTest<Backend> {
+  using TcMapperTest<Backend>::Check;
+  using TcMapperTest<Backend>::M;
+  using TcMapperTest<Backend>::N;
 
-  std::vector<at::Tensor> Check(
+  OutputsAndCode Check(
       at::Tensor A,
-      const typename TcExecutorType::MappingOptionsType& mappingOptions,
+      const typename Backend::MappingOptionsType& mappingOptions,
       bool skipCheck = false) {
     auto tc = R"TC(
 def sum2D(float(M, N) A) -> (C) {
@@ -142,17 +147,17 @@ def sum2D(float(M, N) A) -> (C) {
 // Matmul tests
 //   C(m, n) +=! A(m, r_k) * B(r_k, n)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType>
-struct TcMapperMatmulTest : public TcMapperTest<TcExecutorType> {
-  using TcMapperTest<TcExecutorType>::Check;
-  using TcMapperTest<TcExecutorType>::K;
-  using TcMapperTest<TcExecutorType>::M;
-  using TcMapperTest<TcExecutorType>::N;
+template <typename Backend>
+struct TcMapperMatmulTest : public TcMapperTest<Backend> {
+  using TcMapperTest<Backend>::Check;
+  using TcMapperTest<Backend>::K;
+  using TcMapperTest<Backend>::M;
+  using TcMapperTest<Backend>::N;
 
-  std::vector<at::Tensor> Check(
+  OutputsAndCode Check(
       at::Tensor A,
       at::Tensor B,
-      const typename TcExecutorType::MappingOptionsType& mappingOptions) {
+      const typename Backend::MappingOptionsType& mappingOptions) {
     constexpr auto tc = R"TC(
 def matmul(float(M, K) A, float(K, N) B) -> (C) {
     C(m, n) +=! A(m, r_k) * B(r_k, n)
@@ -174,17 +179,17 @@ def matmul(float(M, K) A, float(K, N) B) -> (C) {
 // Batch Matmul tests
 //   Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType>
-struct TcMapperBatchMatmulTest : public TcMapperTest<TcExecutorType> {
-  using TcMapperTest<TcExecutorType>::Check;
-  using TcMapperTest<TcExecutorType>::K;
-  using TcMapperTest<TcExecutorType>::M;
-  using TcMapperTest<TcExecutorType>::N;
+template <typename Backend>
+struct TcMapperBatchMatmulTest : public TcMapperTest<Backend> {
+  using TcMapperTest<Backend>::Check;
+  using TcMapperTest<Backend>::K;
+  using TcMapperTest<Backend>::M;
+  using TcMapperTest<Backend>::N;
 
-  std::vector<at::Tensor> Check(
+  OutputsAndCode Check(
       at::Tensor A,
       at::Tensor B,
-      const typename TcExecutorType::MappingOptionsType& mappingOptions) {
+      const typename Backend::MappingOptionsType& mappingOptions) {
     constexpr auto tc = R"TC(
 def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
     Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)

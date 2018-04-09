@@ -21,18 +21,33 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
-
+#include "tc/aten/aten.h"
+#include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
-#include "tc/autotuner/genetic_autotuner_aten.h"
+#include "tc/autotuner/genetic_search.h"
+#include "tc/core/cpu/cpu_mapping_options.h"
+#include "tc/core/cpu/cpu_tc_executor.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
-
-#include "../test/test_harness_aten_cuda.h"
 
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 
-TEST(TensorDot, SimpleAutotune) {
+template <typename Backend>
+at::Tensor makeATenTensor(at::ArrayRef<long int> sizes);
+
+template <>
+at::Tensor makeATenTensor<tc::CudaBackend>(at::ArrayRef<long int> sizes) {
+  return at::CUDA(at::kFloat).rand(sizes);
+}
+
+template <>
+at::Tensor makeATenTensor<tc::CpuBackend>(at::ArrayRef<long int> sizes) {
+  return at::CPU(at::kFloat).rand(sizes);
+}
+
+template <typename Backend>
+void doit() {
   // 1. Define and setup the TC compilation unit with CUDA memory
   // management backed by ATen tensors.
   std::string tc = R"TC(
@@ -42,29 +57,31 @@ def tensordot(float(N, C1, C2, H, W) I0,
     O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
 
   // 2. Allocate tensors with random data.
-  at::Tensor I0 = at::CUDA(at::kFloat).rand({16, 8, 16, 17, 25});
-  at::Tensor I1 = at::CUDA(at::kFloat).rand({16, 16, 2, 17, 25});
+  at::Tensor I0 = makeATenTensor<Backend>({16, 8, 16, 17, 25});
+  at::Tensor I1 = makeATenTensor<Backend>({16, 16, 2, 17, 25});
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
-  auto naiveOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
+  auto naiveOptions = Backend::MappingOptionsType::makeNaiveMappingOptions();
+  tc::aten::ATenAutotuner<Backend, tc::autotune::GeneticSearch>
+      geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_proto_path, "tensordot", {I0, I1}, naiveOptions);
+      "tensordot", {I0, I1}, naiveOptions, FLAGS_proto_path);
+  CHECK_GT(bestOption.size(), 0);
 
   // 4. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
-  auto handle = atCompl.compile("tensordot", {I0, I1}, bestOption.getValue());
-  std::vector<at::Tensor> outputs;
-  auto duration = atCompl.run("tensordot", {I0, I1}, outputs, handle, true);
-  std::cout
-      << "tensordot size I0: " << I0.sizes() << ", "
-      << "size I1: " << I1.sizes() << " ran in: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
-      << "us\n";
+  auto pExecutor =
+      tc::aten::compile<Backend>(tc, "tensordot", {I0, I1}, bestOption[0]);
+  auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
+  auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
+  std::cout << "tensordot size I0: " << I0.sizes() << ", "
+            << "size I1: " << I1.sizes() << " ran in: "
+            << std::chrono::duration_cast<std::chrono::microseconds>(
+                   timings.kernelRuntime)
+                   .count()
+            << "us\n";
 
   // 5. Optionally, perform precision checks against a ref. implementation.
   // TODO.
@@ -74,17 +91,27 @@ def tensordot(float(N, C1, C2, H, W) I0,
            {{4, 9, 7, 16, 14}, {4, 7, 3, 16, 14}},
            {{8, 5, 11, 10, 10}, {8, 11, 16, 10, 10}},
        }) {
-    at::Tensor I0 = at::CUDA(at::kFloat).rand(sizes.first);
-    at::Tensor I1 = at::CUDA(at::kFloat).rand(sizes.second);
-    auto handle = atCompl.compile("tensordot", {I0, I1}, bestOption.getValue());
-    std::vector<at::Tensor> outputs;
-    auto duration = atCompl.run("tensordot", {I0, I1}, outputs, handle, true);
+    at::Tensor I0 = makeATenTensor<Backend>(sizes.first);
+    at::Tensor I1 = makeATenTensor<Backend>(sizes.second);
+    auto pExecutor =
+        tc::aten::compile<Backend>(tc, "tensordot", {I0, I1}, bestOption[0]);
+    auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
+    auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
     std::cout << "tensordot size I0: " << I0.sizes() << ", "
               << "size I1: " << I1.sizes() << " ran in: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(duration)
+              << std::chrono::duration_cast<std::chrono::microseconds>(
+                     timings.kernelRuntime)
                      .count()
               << "us\n";
   }
+}
+
+TEST(TensorDotCPU, SimpleAutotune) {
+  doit<tc::CpuBackend>();
+}
+
+TEST(TensorDotGPU, SimpleAutotune) {
+  doit<tc::CudaBackend>();
 }
 
 // From root, run with:
@@ -95,6 +122,5 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

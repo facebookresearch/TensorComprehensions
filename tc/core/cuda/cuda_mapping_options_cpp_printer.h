@@ -45,6 +45,26 @@ class CudaMappingOptionsCppPrinter : public MappingOptionsCppPrinter {
       const CudaMappingOptions& options);
 };
 
+inline CudaMappingOptionsCppPrinter& operator<<(
+    CudaMappingOptionsCppPrinter& prn,
+    const CudaMappingOptions& cudaOptions) {
+  prn.print(cudaOptions.generic);
+  prn.printListOption("mapToThreads", cudaOptions.block.extractVector());
+  prn.printListOption("mapToBlocks", cudaOptions.grid.extractVector());
+  prn.printBooleanOption(
+      "useSharedMemory", cudaOptions.proto().use_shared_memory());
+  prn.printBooleanOption(
+      "usePrivateMemory", cudaOptions.proto().use_private_memory());
+  prn.printBooleanOption(
+      "unrollCopyShared", cudaOptions.proto().unroll_copy_shared());
+  if (cudaOptions.proto().has_max_shared_memory()) {
+    prn.printValueOption(
+        "maxSharedMemory", cudaOptions.proto().max_shared_memory());
+  }
+  prn.endStmt();
+  return prn;
+}
+
 inline std::ostream& operator<<(
     std::ostream& out,
     const CudaMappingOptionsAsCpp& mo) {

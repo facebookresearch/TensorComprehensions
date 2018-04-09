@@ -47,10 +47,10 @@ void CudaRTCFunction::clear() {
   }
 }
 
-std::shared_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
+std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
     const std::string& name,
     const std::string& source) {
-  std::shared_ptr<CudaRTCFunction> res(new CudaRTCFunction());
+  std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
   res->specializedName = name;
   res->cleared_ = false;
 

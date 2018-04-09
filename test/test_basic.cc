@@ -24,7 +24,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/core/scope_guard.h"
 #include "tc/external/isl.h"

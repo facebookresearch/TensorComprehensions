@@ -23,25 +23,28 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
 #include <version.h>
-
+#include "tc/aten/aten.h"
+#include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
-#include "tc/autotuner/genetic_autotuner_aten.h"
-#include "tc/autotuner/utils/utils.h"
+#include "tc/autotuner/genetic_search.h"
+#include "tc/autotuner/utils.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2
 #include <cuda_runtime_api.h>
 #include <cudnn.h>
 #include <nvrtc.h>
+
+using tc::TensorInfo;
+using tc::extractRawPtrs;
 
 #define TC_CUDA_CUBLAS_ENFORCE(condition)                       \
   do {                                                          \
@@ -60,15 +63,6 @@ DEFINE_bool(
 DEFINE_bool(autotune, false, "Enable autotuning");
 DEFINE_string(save_tuner_proto_prefix, "/tmp", "Enable autotuning");
 DEFINE_bool(validate_proto, false, "whether to load options from proto");
-
-std::vector<const DLTensor*> inferOutputTensorInfo(
-    const std::string& tc,
-    const std::string& name,
-    const std::vector<at::Tensor>& inputs) {
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
-  return atCompl.inferOutputTensorInfo(name, inputs);
-}
 
 struct Benchmark : public ::testing::Test {
   void SetUp() {
@@ -116,23 +110,24 @@ struct Benchmark : public ::testing::Test {
                                   std::vector<at::Tensor>& outputs) {
         return true;
       }) {
-    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-    atCompl.define(tc);
-    auto handle = atCompl.compile(name, inputs, mappingOptions);
-    atCompl.run(name, inputs, outputs, handle);
+    auto pExecutor =
+        tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
+    outputs = tc::aten::prepareOutputs(tc, name, inputs);
+    tc::aten::run(*pExecutor, inputs, outputs);
     EXPECT_TRUE(checkFun(inputs, outputs));
     for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
-      atCompl.run(name, inputs, outputs, handle);
+      tc::aten::run(*pExecutor, inputs, outputs);
     }
     std::vector<tc::Duration> kernelTimes;
     kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
     std::vector<tc::Duration> totalTimes;
     totalTimes.reserve(tc::FLAGS_benchmark_iterations);
     for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-      kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
+      auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
+      kernelTimes.push_back(timings.kernelRuntime);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       auto time(std::chrono::system_clock::now());
-      atCompl.uncheckedRun(inputs, outputs, handle);
+      tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       totalTimes.push_back(
           std::chrono::duration_cast<std::chrono::microseconds>(
@@ -257,36 +252,44 @@ struct Benchmark : public ::testing::Test {
     std::cout << "Validating proto from: "
               << tc::makeOptionsFilename(cacheFilename) << std::endl;
 
-    tc::OptionsCache::enableCache();
-    tc::OptionsCache::loadCacheFromProtobuf(cacheFilename + ".options");
+    using CudaOptionsCache =
+        tc::autotune::Autotuner<tc::CudaBackend, tc::autotune::GeneticSearch>::
+            OptionsCacheType;
+    CudaOptionsCache optionsCache;
+    optionsCache.loadCacheFromFile(cacheFilename + ".options");
     tc::FLAGS_tuner_gen_restore_number = 1;
 
-    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-    atCompl.define(tc);
-
     auto mappingOptions = [&]() {
-      auto inputsPair = tc::toConstDlpackTensors(inputs);
-      auto outputs = atCompl.inferOutputTensorInfo(name, inputs);
-      tc::ScopeGuard g([&]() { tc::deleteDlmTensors(inputsPair.second); });
-      return tc::autotune::restoreCandidates(
-          lang::canonicalTc(tc), inputsPair.first, outputs);
+      auto inputDLTensors = tc::aten::toDLConstTensors(inputs);
+      auto outputDLTensors = tc::aten::inferOutputTensorInfo(tc, name, inputs);
+      return optionsCache.getTopKOptions(
+          lang::canonicalTc(tc),
+          tc::makeTensorInfoVector(extractRawPtrs(inputDLTensors)),
+          tc::makeTensorInfoVector(extractRawPtrs(outputDLTensors)),
+          tc::CudaGPUInfo::GPUInfo().getCudaDeviceStr(),
+          1);
     }();
-    auto handle = atCompl.compile(name, inputs, mappingOptions[0]);
-    std::vector<at::Tensor> outputs;
-    atCompl.run(name, inputs, outputs, handle);
+
+    CHECK_GT(mappingOptions.size(), 0)
+        << "No mapping options for " << tc << " in loaded cache";
+    auto pExecutor =
+        tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions[0]);
+    auto outputs = tc::aten::prepareOutputs(tc, name, inputs);
+    tc::aten::run(*pExecutor, inputs, outputs);
     EXPECT_TRUE(checkFun(inputs, outputs));
     for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
-      atCompl.run(name, inputs, outputs, handle);
+      tc::aten::run(*pExecutor, inputs, outputs);
     }
     std::vector<tc::Duration> kernelTimes;
     kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
     std::vector<tc::Duration> totalTimes;
     totalTimes.reserve(tc::FLAGS_benchmark_iterations);
     for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-      kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
+      auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
+      kernelTimes.push_back(timings.kernelRuntime);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       auto time(std::chrono::system_clock::now());
-      atCompl.uncheckedRun(inputs, outputs, handle);
+      tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       totalTimes.push_back(
           std::chrono::duration_cast<std::chrono::microseconds>(
@@ -360,45 +363,39 @@ struct Benchmark : public ::testing::Test {
       std::string kernelName,
       std::vector<at::Tensor> inputs,
       tc::CudaMappingOptions baseMapping,
-      std::vector<tc::CudaMappingOptions> startingPoints,
       CheckFunction checkFun =
           [](const std::vector<at::Tensor>&, const std::vector<at::Tensor>&) {
             return true;
           },
       const tc::autotune::TuningParameterFixer& fixedParams = {}) {
     if (FLAGS_autotune) {
-      tc::autotune::GeneticAutotunerATen geneticAutotuneATen(TC);
+      tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>
+          geneticAutotuneATen(TC);
       auto bestOptions = [&]() {
         auto options = geneticAutotuneATen.tune(
-            cacheFilename,
-            kernelName,
-            inputs,
-            baseMapping,
-            startingPoints,
-            fixedParams);
-        CHECK(options);
-        return *options;
+            kernelName, inputs, baseMapping, cacheFilename, fixedParams);
+        CHECK_GT(options.size(), 0);
+        return options[0];
       }();
 
-      tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-      atCompl.define(TC);
-      auto handle = atCompl.compile(kernelName, inputs, bestOptions);
-      std::vector<at::Tensor> outputs;
-      atCompl.run(kernelName, inputs, outputs, handle);
+      auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+          TC, kernelName, inputs, bestOptions);
+      auto outputs = tc::aten::prepareOutputs(TC, kernelName, inputs);
+      tc::aten::run(*pExecutor, inputs, outputs);
       EXPECT_TRUE(checkFun(inputs, outputs));
       for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
-        atCompl.run(kernelName, inputs, outputs, handle);
+        tc::aten::run(*pExecutor, inputs, outputs);
       }
       std::vector<tc::Duration> kernelTimes;
       kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
       std::vector<tc::Duration> totalTimes;
       totalTimes.reserve(tc::FLAGS_benchmark_iterations);
       for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-        kernelTimes.push_back(
-            atCompl.run(kernelName, inputs, outputs, handle, true));
+        auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
+        kernelTimes.push_back(timings.kernelRuntime);
         TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
         auto time(std::chrono::system_clock::now());
-        atCompl.uncheckedRun(inputs, outputs, handle);
+        tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
         TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
         totalTimes.push_back(
             std::chrono::duration_cast<std::chrono::microseconds>(

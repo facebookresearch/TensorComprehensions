@@ -21,8 +21,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/external/isl.h"

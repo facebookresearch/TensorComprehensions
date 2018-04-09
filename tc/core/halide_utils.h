@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 namespace tc {
 
@@ -31,16 +31,16 @@ namespace tc {
 /// with given input sizes.
 std::map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& components,
-    const std::vector<const DLTensor*>& inputsDLT);
+    const std::vector<const DLConstTensor*>& inputsDLT);
 
 /// Infer the numerical sizes of the output tensors in the TC definition
 /// translated into Halide using the provided map between symbolic parameter
 /// names and their values ("pvm").
 /// @return metadata of the output tensors, with ownership transfer via
 /// unique_ptr, data pointers of the underlying DLTensors are null/
-std::vector<dlutils::DLTensorUPtr> inferOutputTensorInfo(
+std::vector<TensorInfo> inferOutputTensorInfo(
     const tc2halide::HalideComponents& halide,
-    const std::vector<const DLTensor*>& inputsDLT);
+    const std::vector<const DLConstTensor*>& inputsDLT);
 
 /// Just generates a C function body from a Halide stmt. Exposed for testing.
 std::string halideCodegenC(const Halide::Internal::Stmt& s);

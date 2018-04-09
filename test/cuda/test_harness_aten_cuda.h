@@ -23,7 +23,7 @@
 #include <gflags/gflags.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include <cuda_runtime_api.h>
 
@@ -32,7 +32,7 @@
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 
-#include "test_harness_aten.h"
+#include "../../test/test_harness_aten.h"
 
 at::Tensor subtensor(at::Tensor& tensor, int dim, int groups, int g) {
   if (!tensor.defined()) {
@@ -57,23 +57,23 @@ void benchmarkKernelOptions(
     const std::string& name,
     const std::vector<at::Tensor>& inputs,
     const tc::CudaMappingOptions mappingOptions) {
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
-  auto handle = atCompl.compile(name, inputs, mappingOptions);
-  std::vector<at::Tensor> outputs;
-  atCompl.run(name, inputs, outputs, handle);
+  auto pExecutor =
+      tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
+  std::vector<at::Tensor> outputs = tc::aten::prepareOutputs(tc, name, inputs);
+  tc::aten::run(*pExecutor, inputs, outputs);
   for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
-    atCompl.run(name, inputs, outputs, handle);
+    tc::aten::run(*pExecutor, inputs, outputs);
   }
   std::vector<tc::Duration> kernelTimes;
   kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
   std::vector<tc::Duration> totalTimes;
   totalTimes.reserve(tc::FLAGS_benchmark_iterations);
   for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-    kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
+    auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
+    kernelTimes.push_back(timings.kernelRuntime);
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     auto time(std::chrono::system_clock::now());
-    atCompl.uncheckedRun(inputs, outputs, handle);
+    tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     totalTimes.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
         std::chrono::system_clock::now() - time));

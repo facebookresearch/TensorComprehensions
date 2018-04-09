@@ -79,6 +79,27 @@ BlockId BlockId::z() {
       isl::with_exceptions::globalIslCtx(), std::string("b2"));
   return makeId<2>(z);
 }
+
+bool MappingId::isBlockId() {
+  return *this == BlockId::x() or *this == BlockId::y() or
+      *this == BlockId::z();
+}
+BlockId* MappingId::asBlockId() {
+  if (!isBlockId()) {
+    return nullptr;
+  }
+  return static_cast<BlockId*>(this);
+}
+bool MappingId::isThreadId() {
+  return *this == ThreadId::x() or *this == ThreadId::y() or
+      *this == ThreadId::z();
+}
+ThreadId* MappingId::asThreadId() {
+  if (!isThreadId()) {
+    return nullptr;
+  }
+  return static_cast<ThreadId*>(this);
+}
 } // namespace mapping
 } // namespace polyhedral
 } // namespace tc

@@ -25,7 +25,7 @@
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/scop.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 #include "tc/external/isl.h"
 
 namespace tc {

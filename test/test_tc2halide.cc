@@ -24,23 +24,14 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 using namespace tc;
 using namespace std;
-using namespace tc::dlutils;
 
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}
-  void Check(const string& tc, const std::vector<long>& inputSizes) {
-    auto ctx = getCPUDLContext();
-    DLDataType dtype;
-    dtype.code = kDLFloat;
-    dtype.bits = 32;
-    dtype.lanes = 1;
-    auto UPtr = makeDLTensorWithSizes(ctx, dtype, inputSizes);
-    std::vector<const DLTensor*> inputs{UPtr.get()};
-
+  void Check(const string& tc) {
     auto halide =
         tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
     auto scop = polyhedral::Scop::makeScop(
@@ -57,7 +48,7 @@ def fun(float(M) I) -> (O) {
   O(i) = I(i)
 }
 )TC";
-  Check(tc, {123});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy2D) {
@@ -66,7 +57,7 @@ def fun(float(M, N) I) -> (O) {
   O(i, j) = I(i, j)
 }
 )TC";
-  Check(tc, {123, 1});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy3D) {
@@ -75,7 +66,7 @@ def fun(float(M, N, P) I) -> (O) {
   O(i, j, k) = I(i, j, k)
 }
 )TC";
-  Check(tc, {123, 3, 2});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy4D) {
@@ -84,7 +75,7 @@ def fun(float(M, N, P, Q) I) -> (O) {
   O(i, j, k, l) = I(i, j, k, l)
 }
 )TC";
-  Check(tc, {123, 3, 4, 5});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy5D) {
@@ -93,7 +84,7 @@ def fun(float(M, N, P, Q, R) I) -> (O) {
   O(i, j, k, l, m) = I(i, j, k, l, m)
 }
 )TC";
-  Check(tc, {123, 10, 2, 3, 4});
+  Check(tc);
 }
 
 // Invalid TC atm
@@ -103,7 +94,7 @@ def fun(float(M) I) -> (O) {
   O(0) +=! I(i)
 }
 )TC";
-  Check(tc, {123});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Reduction2D) {
@@ -112,7 +103,7 @@ def fun(float(M, N) I) -> (O) {
   O(i) +=! I(i, j)
 }
 )TC";
-  Check(tc, {123, 12});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Reduction3D) {
@@ -121,7 +112,7 @@ def fun(float(M, N, P) I) -> (O) {
   O(i) +=! I(i, j, k)
 }
 )TC";
-  Check(tc, {123, 12, 16});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy1D2Stmt) {
@@ -131,7 +122,7 @@ def fun(float(M) I) -> (O1, O2) {
   O2(i) = O1(i)
 }
 )TC";
-  Check(tc, {123});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy2D2Stmt) {
@@ -141,7 +132,7 @@ def fun(float(M, N) I) -> (O1, O2) {
   O2(i, j) = O1(i, j)
 }
 )TC";
-  Check(tc, {123, 13});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Copy2D3Stmt) {
@@ -152,7 +143,7 @@ def fun(float(M, N) I) -> (O1, O2, O3) {
   O3(i, j) = O2(i, j)
 }
 )TC";
-  Check(tc, {123, 13});
+  Check(tc);
 }
 
 // Invalid TC atm
@@ -163,7 +154,7 @@ def fun(float(M) I) -> (O1, O2) {
   O2(i) = O1(i)
 }
 )TC";
-  Check(tc, {123});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Reduction2D2StmtA) {
@@ -173,7 +164,7 @@ def fun(float(M, N) I) -> (O1, O2) {
   O2(i) = O1(i)
 }
 )TC";
-  Check(tc, {123, 13});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Reduction2D2StmtB) {
@@ -183,7 +174,7 @@ def fun(float(M, N) I) -> (O1, O2) {
   O2(i) +=! O1(i, j)
 }
 )TC";
-  Check(tc, {123, 13});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, Reduction2D3Stmt) {
@@ -194,7 +185,7 @@ def fun(float(M, N) I) -> (O1, O2, O3) {
   O3(i) = O2(i)
 }
 )TC";
-  Check(tc, {123, 13});
+  Check(tc);
 }
 
 TEST_F(TC2Isl, MutableInput) {
@@ -204,7 +195,7 @@ def foo(float(N) A) -> (B) {
     B(k) +=! A(i) where k in 0:1
 }
 )TC";
-  EXPECT_THROW(Check(tc, {123}), ::lang::ErrorReport);
+  EXPECT_THROW(Check(tc), ::lang::ErrorReport);
 }
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

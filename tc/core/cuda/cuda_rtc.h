@@ -41,7 +41,7 @@ class CudaRTCFunction {
  public:
   ~CudaRTCFunction();
 
-  static std::shared_ptr<CudaRTCFunction> Compile(
+  static std::unique_ptr<CudaRTCFunction> Compile(
       const std::string& name,
       const std::string& source);
 

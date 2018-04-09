@@ -16,16 +16,20 @@
 #include <gtest/gtest.h>
 
 #include "tc/aten/aten_compiler.h"
-#include "tc/aten/utils.h"
-#include "tc/autotuner/genetic_autotuner.h"
-#include "tc/autotuner/utils/utils.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/autotuner/autotuner.h"
+#include "tc/autotuner/genetic_search.h"
+#include "tc/autotuner/utils.h"
+#include "tc/core/cuda/cuda.h"
+#include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/canonicalize.h"
 
 using namespace tc;
-using namespace autotune;
+using namespace tc::aten;
+using namespace tc::autotune;
+using CudaOptionsCache =
+    Autotuner<CudaBackend, GeneticSearch>::OptionsCacheType;
 
 TEST(DivisorsAndPowers, Default) {
   auto dp = powers2andCeilDivisors(10);
@@ -46,34 +50,27 @@ TEST(DivisorsAndPowers, Default) {
 }
 
 std::vector<CudaMappingOptions> restoreCandidates(
+    CudaOptionsCache& optionsCache,
     const std::string& tc,
     std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs) {
-  auto inputsPair = toConstDlpackTensors(inputs);
-  auto outputsPair = toConstDlpackTensors(outputs);
-  ScopeGuard g([&]() {
-    deleteDlmTensors(inputsPair.second);
-    deleteDlmTensors(outputsPair.second);
-  });
-
-  return tc::autotune::restoreCandidates(
-      lang::canonicalTc(tc), inputsPair.first, outputsPair.first);
-}
-
-TEST(RestoreCandidates, NoCache) {
-  std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
-                                 at::CUDA(at::kFloat).rand({16, 20})};
-  static constexpr auto tc = R"(
-      def tc2(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) +=! A(m, nn) * B(nn, k) + 1
-      })";
-  ASSERT_THROW(restoreCandidates(tc, inputs, inputs), std::runtime_error);
+  auto inputDLTensors = toDLConstTensors(inputs);
+  auto outputDLTensors = makeDLTensors(outputs);
+  return optionsCache.getTopKOptions(
+      lang::canonicalTc(tc),
+      makeTensorInfoVector(extractRawPtrs(inputDLTensors)),
+      makeTensorInfoVector(extractRawPtrs(outputDLTensors)),
+      CudaGPUInfo::GPUInfo().getCudaDeviceStr(),
+      FLAGS_tuner_gen_restore_number);
 }
 
 TEST(RestoreCandidates, NotATCid) {
+  CudaOptionsCache optionsCache;
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
-  ASSERT_THROW(restoreCandidates("bla", inputs, inputs), lang::ErrorReport);
+  ASSERT_THROW(
+      restoreCandidates(optionsCache, "bla", inputs, inputs),
+      lang::ErrorReport);
 }
 
 static constexpr auto tc_ = R"(
@@ -81,51 +78,58 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
     output(m, k) +=! A(m, r_n) * B(r_n, k)
 })";
 
-void EnableCaches() {
-  tc::OptionsCache::enableCache();
-  tc::OptionsCache::getCache()->clear();
-}
-
 TEST(RestoreCandidates, NoRuntimeRecorded) {
-  EnableCaches();
+  CudaOptionsCache optionsCache;
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
-
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc_);
-  tc::CudaMappingOptions options =
-      tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  std::vector<at::Tensor> outputs_;
-  auto handle = atCompl.compile("matmul", inputs, options);
-  atCompl.run("matmul", inputs, outputs_, handle);
+  auto options = CudaMappingOptions::makeMlpMappingOptions();
+  auto pExecutor = compile<CudaBackend>(tc_, "matmul", inputs, options);
+  std::vector<at::Tensor> outputs = prepareOutputs(tc_, "matmul", inputs);
+  run(*pExecutor, inputs, outputs);
 
   FLAGS_tuner_gen_restore_number = 1;
-  ASSERT_EQ(restoreCandidates(tc_, inputs, outputs_).size(), 0u);
+  ASSERT_EQ(restoreCandidates(optionsCache, tc_, inputs, outputs).size(), 0u);
 }
 
 TEST(RestoreCandidates, Hit) {
-  EnableCaches();
+  CudaOptionsCache optionsCache;
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
 
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc_);
-  tc::CudaMappingOptions options =
-      tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  std::vector<at::Tensor> outputs_;
-  auto handle = atCompl.compile("matmul", inputs, options);
-  atCompl.run("matmul", inputs, outputs_, handle, true);
+  auto options = CudaMappingOptions::makeMlpMappingOptions();
+  auto pExecutor = compile<CudaBackend>(tc_, "matmul", inputs, options);
+  std::vector<at::Tensor> outputs = prepareOutputs(tc_, "matmul", inputs);
+  auto timings = profile(*pExecutor, inputs, outputs);
 
-  options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  handle = atCompl.compile("matmul", inputs, options);
-  atCompl.run("matmul", inputs, outputs_, handle, true);
+  auto inputDLTensors = toDLConstTensors(inputs);
+  auto outputDLTensors = makeDLTensors(outputs);
+  optionsCache.recordRuntime(
+      lang::canonicalTc(tc_),
+      makeTensorInfoVector(extractRawPtrs(inputDLTensors)),
+      makeTensorInfoVector(extractRawPtrs(outputDLTensors)),
+      CudaGPUInfo::GPUInfo().getCudaDeviceStr(),
+      options,
+      timings.kernelRuntime);
+
+  {
+    options = CudaMappingOptions::makeNaiveMappingOptions();
+    auto pExecutor = compile<CudaBackend>(tc_, "matmul", inputs, options);
+    auto timings = profile(*pExecutor, inputs, outputs);
+    optionsCache.recordRuntime(
+        lang::canonicalTc(tc_),
+        makeTensorInfoVector(extractRawPtrs(inputDLTensors)),
+        makeTensorInfoVector(extractRawPtrs(outputDLTensors)),
+        CudaGPUInfo::GPUInfo().getCudaDeviceStr(),
+        options,
+        timings.kernelRuntime);
+  }
 
   FLAGS_tuner_gen_restore_number = 2;
-  auto restored = restoreCandidates(tc_, inputs, outputs_);
+  auto restored = restoreCandidates(optionsCache, tc_, inputs, outputs);
   ASSERT_EQ(restored.size(), 2u);
 
   FLAGS_tuner_gen_restore_number = 1;
-  restored = restoreCandidates(tc_, inputs, outputs_);
+  restored = restoreCandidates(optionsCache, tc_, inputs, outputs);
   ASSERT_EQ(restored.size(), 1u);
 }
 

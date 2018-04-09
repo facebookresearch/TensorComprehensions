@@ -14,30 +14,59 @@
  * limitations under the License.
  */
 #include <future>
+#include <memory>
 
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/autotuner/autotuner.h"
+#include "tc/autotuner/genetic_search.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
+#include "tc/core/cuda/cuda_backend.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/tensor.h"
+#include "tc/core/utils/time.h"
+#include "tc/lang/canonicalize.h"
 
 #include "test_harness_aten_cuda.h"
+
+using tc::autotune::OptionsCacheKey;
+using CudaOptionsCache = tc::autotune::OptionsCache<tc::CudaBackend>;
+struct CudaOptionsCacheForTesting : public CudaOptionsCache {
+ public:
+  // Unsafe equal_range not performed under lock, for testing only
+  std::pair<MultiMapType::iterator, MultiMapType::iterator> equal_range(
+      const OptionsCacheKey& key) {
+    return store_.equal_range(key);
+  }
+  typename tc::CudaBackend::OptionsCacheProtoType toProtobuf() const {
+    return CudaOptionsCache::toProtobuf();
+  }
+  void fromProtobuf(
+      const typename tc::CudaBackend::OptionsCacheProtoType& proto) {
+    return CudaOptionsCache::fromProtobuf(proto);
+  }
+};
+
+std::string deviceStr() {
+  return tc::CudaGPUInfo::GPUInfo().getCudaDeviceStr();
+}
 
 class OptionsCacheTest : public ::testing::Test {
  protected:
   void SetUp() {
-    tc::OptionsCache::enableCache();
-    ASSERT_TRUE(tc::OptionsCache::cacheEnabled());
-    tc::OptionsCache::getCache()->clear();
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0u);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
+    optionsCache = std::shared_ptr<CudaOptionsCacheForTesting>(
+        new CudaOptionsCacheForTesting);
+    optionsCache->clear();
+    ASSERT_EQ(optionsCache->size(), 0u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 0u);
 
     inputs.resize(3);
     for (auto& input : inputs) {
@@ -49,215 +78,373 @@ class OptionsCacheTest : public ::testing::Test {
     }
     inputs[1].ndim = 0;
     inputs[2].ndim = 0;
+
+    outputs.resize(3);
+    for (auto& output : outputs) {
+      output.ndim = 2;
+      output.shape = new int64_t[2];
+      output.shape[0] = 5;
+      output.shape[1] = 6;
+      output.strides = nullptr;
+    }
+    outputs[1].ndim = 0;
+    outputs[2].ndim = 0;
   }
 
   void TearDown() {
-    tc::OptionsCache::disableCache();
-    ASSERT_FALSE(tc::OptionsCache::cacheEnabled());
     for (auto& input : inputs) {
       delete[] input.shape;
     }
+    for (auto& output : outputs) {
+      delete[] output.shape;
+    }
   }
-  std::vector<DLTensor> inputs;
+  std::vector<DLConstTensor> inputs;
+  std::vector<DLTensor> outputs;
+  std::shared_ptr<CudaOptionsCacheForTesting> optionsCache;
 
-  std::vector<const DLTensor*> InputPtrs() const {
-    std::vector<const DLTensor*> ptrs;
+  std::vector<const DLConstTensor*> makeInputPtrs() const {
+    std::vector<const DLConstTensor*> ptrs;
     for (const auto& input : inputs) {
       ptrs.push_back(&input);
+    }
+    return ptrs;
+  }
+  std::vector<const DLTensor*> makeOutputPtrs() const {
+    std::vector<const DLTensor*> ptrs;
+    for (const auto& output : outputs) {
+      ptrs.push_back(&output);
     }
     return ptrs;
   }
 };
 
 TEST_F(OptionsCacheTest, DifferentIDs) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options, inputPtrs, outputPtrs, std::chrono::microseconds(10));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options, inputPtrs, outputPtrs, std::chrono::microseconds(11));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options, inputPtrs, outputPtrs, std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options,
+      std::chrono::microseconds(10));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options,
+      std::chrono::microseconds(11));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel1"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options,
+      std::chrono::microseconds(1));
 
-  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
-  ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(11));
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel0"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(it->second.mappingOptions, options);
+    ASSERT_EQ(it->second.runtimes.size(), 2u);
+    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(10));
+    ASSERT_EQ(it->second.runtimes[1], std::chrono::microseconds(11));
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel1"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    ASSERT_EQ(it->second.mappingOptions, options);
+    ASSERT_EQ(it->second.runtimes.size(), 1u);
+    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(1));
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0u);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel2"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    ASSERT_EQ(optionsCache->count(key), 0u);
+  }
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
+  ASSERT_EQ(optionsCache->size(), 2u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 3u);
 }
 
 TEST_F(OptionsCacheTest, DifferentOptions) {
-  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto options1 = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto options0 = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  auto options1 = tc::CudaMappingOptions::makeMlpMappingOptions();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(2));
 
-  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel", inputPtrs, outputPtrs);
+  OptionsCacheKey key{lang::CanonicalTcString("kernel"),
+                      tc::makeTensorInfoVector(inputPtrs),
+                      tc::makeTensorInfoVector(outputPtrs),
+                      deviceStr()};
+  ASSERT_EQ(optionsCache->count(key), 2u);
 
-  ASSERT_EQ(ret.size(), 2u);
-  ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[1].options, options1);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
-  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[1].recordedRuntimes[0], std::chrono::microseconds(2));
+  auto range = optionsCache->equal_range(key);
+  // unordered_multimap, no apriori knowledge of insertion order
+  auto it1 = range.first;
+  auto it2 = range.first;
+  it2++;
+  if (it2->second.mappingOptions == options0) {
+    std::swap(it1, it2);
+  }
+  ASSERT_EQ(it1->second.mappingOptions, options0);
+  ASSERT_EQ(it1->second.runtimes.size(), 1u);
+  ASSERT_EQ(it1->second.runtimes[0], std::chrono::microseconds(1));
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);
+  ASSERT_EQ(it2->second.mappingOptions, options1);
+  ASSERT_EQ(it2->second.runtimes.size(), 1u);
+  ASSERT_EQ(it2->second.runtimes[0], std::chrono::microseconds(2));
+
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 2u);
 }
 
 TEST_F(OptionsCacheTest, DifferentInputs) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options, inputPtrs, outputPtrs, std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options,
+      std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options,
+      std::chrono::microseconds(2));
 
   auto s = inputs[0].shape[0];
   inputs[0].shape[0] = 42;
 
-  auto options_ =
-      tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options_, inputPtrs, outputPtrs, std::chrono::microseconds(3));
+  auto options_ = tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options_,
+      std::chrono::microseconds(3));
 
-  inputs[0].shape[0] = s;
-  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel", inputPtrs, outputPtrs);
+  {
+    inputs[0].shape[0] = s;
+    OptionsCacheKey key{lang::CanonicalTcString("kernel"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
 
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
-  ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(2));
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    ASSERT_EQ(it->second.mappingOptions, options);
+    ASSERT_EQ(it->second.runtimes.size(), 2u);
+    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(1));
+    ASSERT_EQ(it->second.runtimes[1], std::chrono::microseconds(2));
+  }
 
-  inputs[0].shape[0] = 42;
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel", inputPtrs, outputPtrs);
+  {
+    inputs[0].shape[0] = 42;
+    OptionsCacheKey key{lang::CanonicalTcString("kernel"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
 
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options_);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(3));
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    ASSERT_EQ(it->second.mappingOptions, options_);
+    ASSERT_EQ(it->second.runtimes.size(), 1u);
+    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(3));
+  }
 
-  inputs[0].shape[0] = 43;
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0u);
-
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
+  {
+    inputs[0].shape[0] = 43;
+    OptionsCacheKey key{lang::CanonicalTcString("kernel"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    ASSERT_EQ(optionsCache->count(key), 0u);
+    ASSERT_EQ(optionsCache->size(), 2u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 3u);
+  }
 }
 
 TEST_F(OptionsCacheTest, RetrieveBest) {
   auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
 
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options2, inputPtrs, outputPtrs, std::chrono::microseconds(3));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options2,
+      std::chrono::microseconds(3));
 
-  auto ret = tc::OptionsCache::getCache()->retrieveBestOptions(
-      "kernel", inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(*ret, options0);
+  auto ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      1);
+  ASSERT_EQ(ret.size(), 1u);
+  ASSERT_EQ(ret[0], options0);
 
-  ret = tc::OptionsCache::getCache()->retrieveBestOptions(
-      "kernelX", inputPtrs, outputPtrs);
-  ASSERT_FALSE(ret);
+  ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernelX"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      1);
+  ASSERT_EQ(ret.size(), 0u);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
+  ASSERT_EQ(optionsCache->getKeys().size(), 1u);
+  ASSERT_EQ(optionsCache->size(), 3u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 2u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 1u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 3u);
 }
 
 TEST_F(OptionsCacheTest, RetrieveTopK) {
   auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
   auto options3 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({4});
   auto options4 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({5});
 
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(3));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options2, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options3, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options4, inputPtrs, outputPtrs, std::chrono::microseconds(5));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(3));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options2,
+      std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options3,
+      std::chrono::microseconds(4));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options4,
+      std::chrono::microseconds(5));
 
-  auto ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
-      "kernelX", inputPtrs, outputPtrs, 3);
+  auto ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernelX"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      3);
   ASSERT_EQ(ret.size(), 0u);
 
-  ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
-      "kernel", inputPtrs, outputPtrs, 3);
+  ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      3);
   ASSERT_EQ(ret.size(), 3u);
   ASSERT_EQ(ret[0], options2);
   ASSERT_EQ(ret[1], options1);
   ASSERT_EQ(ret[2], options0);
 
-  ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
-      "kernel", inputPtrs, outputPtrs, 6);
+  ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      6);
   ASSERT_EQ(ret.size(), 5u);
   ASSERT_EQ(ret[0], options2);
   ASSERT_EQ(ret[1], options1);
@@ -265,227 +452,350 @@ TEST_F(OptionsCacheTest, RetrieveTopK) {
   ASSERT_EQ(ret[3], options3);
   ASSERT_EQ(ret[4], options4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 5u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 5);
+  ASSERT_EQ(optionsCache->getKeys().size(), 1u);
+  ASSERT_EQ(optionsCache->size(), 5u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 3u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 2u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 5u);
 }
 
 TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
   auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
   auto options2 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({3});
   auto options3 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({4});
   auto options4 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({5});
 
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options0, inputPtrs, outputPtrs, std::chrono::microseconds(3));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(3));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options2,
+      std::chrono::microseconds(4));
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options3, inputPtrs, outputPtrs, std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel1"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options2,
+      std::chrono::microseconds(4));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel1"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options3,
+      std::chrono::microseconds(1));
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel2", options4, inputPtrs, outputPtrs, std::chrono::microseconds(5));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel2"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options4,
+      std::chrono::microseconds(5));
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options0, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options1, inputPtrs, outputPtrs, std::chrono::microseconds(6));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options3, inputPtrs, outputPtrs, std::chrono::microseconds(5));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options4, inputPtrs, outputPtrs, std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel3"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(2));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel3"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(6));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel3"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options3,
+      std::chrono::microseconds(5));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel3"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options4,
+      std::chrono::microseconds(1));
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 10u);
-  tc::OptionsCache::getCache()->keepOnlyBestCandidates(2);
+  {
+    ASSERT_EQ(optionsCache->size(), 10u);
+    optionsCache->pruneKeepTopK(2);
+  }
 
-  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2u);
-  ASSERT_EQ(ret[0].options, options1);
-  ASSERT_EQ(ret[1].options, options0);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel0"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 2u);
+    ASSERT_EQ(it->second.mappingOptions, options1);
+    ASSERT_EQ((++it)->second.mappingOptions, options0);
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2u);
-  ASSERT_EQ(ret[0].options, options3);
-  ASSERT_EQ(ret[1].options, options2);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel1"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 2u);
+    ASSERT_EQ(it->second.mappingOptions, options3);
+    ASSERT_EQ((++it)->second.mappingOptions, options2);
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options4);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel2"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    ASSERT_EQ(it->second.mappingOptions, options4);
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel3", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2u);
-  ASSERT_EQ(ret[0].options, options4);
-  ASSERT_EQ(ret[1].options, options0);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel3"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 2u);
+    ASSERT_EQ(it->second.mappingOptions, options4);
+    ASSERT_EQ((++it)->second.mappingOptions, options0);
+  }
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 7u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 4);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 10);
+  ASSERT_EQ(optionsCache->getKeys().size(), 4u);
+  ASSERT_EQ(optionsCache->size(), 7u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 10u);
 }
 
 TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
   auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({1});
   auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
+      tc::CudaMappingOptions::makeNaiveMappingOptions().mapToBlocks({2});
 
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(9));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options0, inputPtrs, outputPtrs, std::chrono::microseconds(10));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(9));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(10));
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(8));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(8));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel", options1, inputPtrs, outputPtrs, std::chrono::microseconds(8));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(8));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(8));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options1,
+      std::chrono::microseconds(8));
 
-  auto ret = tc::OptionsCache::getCache()->retrieveBestOptions(
-      "kernel", inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(*ret, options1);
+  auto ret = optionsCache->getTopKOptions(
+      lang::CanonicalTcString("kernel"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      1);
+  ASSERT_EQ(ret.size(), 1u);
+  ASSERT_EQ(ret[0], options1);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 6);
+  ASSERT_EQ(optionsCache->getKeys().size(), 1u);
+  ASSERT_EQ(optionsCache->size(), 2u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 1u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 1u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 6u);
 }
 
 TEST_F(OptionsCacheTest, Serialization) {
-  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(0);
-  auto options1 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions().tile(1);
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
+  auto options0 = tc::CudaMappingOptions::makeNaiveMappingOptions().tile(0);
+  auto options1 = tc::CudaMappingOptions::makeNaiveMappingOptions().tile(1);
+  auto inputPtrs = makeInputPtrs();
+  auto outputPtrs = makeOutputPtrs();
 
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0",
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
       options0,
-      inputPtrs,
-      outputPtrs,
       std::chrono::microseconds(10));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0",
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel0"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
       options1,
-      inputPtrs,
-      outputPtrs,
       std::chrono::microseconds(11));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options0, inputPtrs, outputPtrs, std::chrono::microseconds(1));
+  optionsCache->recordRuntime(
+      lang::CanonicalTcString("kernel1"),
+      tc::makeTensorInfoVector(inputPtrs),
+      tc::makeTensorInfoVector(outputPtrs),
+      deviceStr(),
+      options0,
+      std::chrono::microseconds(1));
 
-  auto buf = tc::OptionsCache::getCache()->toProtobuf();
-  tc::OptionsCache::loadCacheFromProtobuf(buf);
+  auto buf = optionsCache->toProtobuf();
+  optionsCache->clear();
+  optionsCache->fromProtobuf(buf);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
+  ASSERT_EQ(optionsCache->getKeys().size(), 2u);
+  ASSERT_EQ(optionsCache->size(), 3u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 0u);
 
-  auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2u);
-  ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel0"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    // unordered_multimap, no a-priori knowledge of insertion order
+    auto it1 = range.first;
+    auto it2 = range.first;
+    it2++;
+    if (it2->second.mappingOptions == options0) {
+      std::swap(it1, it2);
+    }
+    ASSERT_EQ(optionsCache->count(key), 2u);
+    ASSERT_EQ(it1->second.mappingOptions, options0);
+    ASSERT_EQ(it1->second.runtimes.size(), 1u);
+    ASSERT_EQ(
+        it1->second.runtimes[0].count(), std::chrono::microseconds(10).count());
 
-  ASSERT_EQ(ret[1].options, options1);
-  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[1].recordedRuntimes[0], std::chrono::microseconds(11));
+    ASSERT_EQ(it2->second.mappingOptions, options1);
+    ASSERT_EQ(it2->second.runtimes.size(), 1u);
+    ASSERT_EQ(
+        it2->second.runtimes[0].count(), std::chrono::microseconds(11).count());
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1u);
-  ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
-  ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel1"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    auto range = optionsCache->equal_range(key);
+    auto it = range.first;
+    ASSERT_EQ(optionsCache->count(key), 1u);
+    ASSERT_EQ(it->second.mappingOptions, options0);
+    ASSERT_EQ(it->second.runtimes.size(), 1u);
+    ASSERT_EQ(
+        it->second.runtimes[0].count(), std::chrono::microseconds(1).count());
+  }
 
-  ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
-      "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0u);
-
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
+  {
+    OptionsCacheKey key{lang::CanonicalTcString("kernel2"),
+                        tc::makeTensorInfoVector(inputPtrs),
+                        tc::makeTensorInfoVector(outputPtrs),
+                        deviceStr()};
+    ASSERT_EQ(optionsCache->count(key), 0u);
+    ASSERT_EQ(optionsCache->getKeys().size(), 2u);
+    ASSERT_EQ(optionsCache->size(), 3u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 0u);
+  }
 }
-
-/*
- *class FCReluTester {
- * public:
- *  FCReluTester(int B, int M, int N)
- *      : inputs_{at::CUDA(at::kFloat).rand({B, M}),
- *                at::CUDA(at::kFloat).rand({N, M}),
- *                at::CUDA(at::kFloat).rand({N})},
- *        M{M} {}
- *  void Run() {
- *    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
- *    atCompl.define(tc_);
- *    std::vector<at::Tensor> outputs_;
- *    atCompl.run(
- *        "fcrelu",
- *        inputs_,
- *        outputs_,
- *        tc::CudaMappingOptions::makeMlpCudaMappingOptions(), true);
- *    at::Tensor diff =
- *        outputs_[0].sub(inputs_[0].mm(inputs_[1]).add(inputs_[2]).clamp_min(0));
- *    checkRtol(diff, inputs_, M);
- *  }
- *
- * private:
- *  std::vector<at::Tensor> inputs_;
- *  int M;
- *  static constexpr auto tc_ = R"(
- *  def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
- *      O1(b, n) += I(b, m) * W1(n, m)
- *      O1(b, n) = O1(b, n) + B1(n)
- *      O1(b, n) = fmax(O1(b, n), 0)
- *    })";
- *};
- */
 
 class MatMulTester {
  public:
-  MatMulTester(int N, int M, int B)
+  MatMulTester(
+      std::shared_ptr<CudaOptionsCacheForTesting> optionsCache,
+      int N,
+      int M,
+      int B)
       : inputs_{at::CUDA(at::kFloat).rand({N, M}),
                 at::CUDA(at::kFloat).rand({M, B})},
-        M{M} {}
+        M{M},
+        optionsCache_{optionsCache} {}
   void Run(
       tc::CudaMappingOptions options =
-          tc::CudaMappingOptions::makeMlpCudaMappingOptions()) {
-    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-    atCompl.define(tc_);
-    std::vector<at::Tensor> outputs_;
-    auto handle = atCompl.compile("matmul", inputs_, options);
-    atCompl.run("matmul", inputs_, outputs_, handle, true);
+          tc::CudaMappingOptions::makeMlpMappingOptions()) {
+    auto pExecutor =
+        tc::aten::compile<tc::CudaBackend>(tc_, "matmul", inputs_, options);
+    auto outputs_ = tc::aten::prepareOutputs(tc_, "matmul", inputs_);
+    auto timings = tc::aten::profile(*pExecutor, inputs_, outputs_);
+
+    auto inputDLTensors = tc::aten::toDLConstTensors(inputs_);
+    auto outputDLTensors = tc::aten::makeDLTensors(outputs_);
+    optionsCache_->recordRuntime(
+        lang::canonicalTc(tc_),
+        tc::makeTensorInfoVector(tc::extractRawPtrs(inputDLTensors)),
+        tc::makeTensorInfoVector(tc::extractRawPtrs(outputDLTensors)),
+        deviceStr(),
+        options,
+        timings.kernelRuntime);
+
     at::Tensor diff = outputs_[0].sub(inputs_[0].mm(inputs_[1]));
     checkRtol(diff, inputs_, M, 1e-6);
   }
@@ -497,25 +807,44 @@ class MatMulTester {
 def matmul(float(M,N) A, float(N,K) B) -> (output) {
     output(m, k) +=! A(m, r_n) * B(r_n, k)
 })";
+  std::shared_ptr<CudaOptionsCacheForTesting> optionsCache_;
 };
 
 class ConvolutionTester {
  public:
-  ConvolutionTester(int N, int C, int H, int W, int O, int KH, int KW)
+  ConvolutionTester(
+      std::shared_ptr<CudaOptionsCacheForTesting> optionsCache,
+      int N,
+      int C,
+      int H,
+      int W,
+      int O,
+      int KH,
+      int KW)
       : inputs_{at::CUDA(at::kFloat).rand({N, C, H, W}),
                 at::CUDA(at::kFloat).rand({O, C, KH, KW}),
                 at::CUDA(at::kFloat).rand({O})},
         C{C},
         KH{KH},
-        KW{KW} {}
+        KW{KW},
+        optionsCache_{optionsCache} {}
   void Run(
       tc::CudaMappingOptions options =
-          tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()) {
-    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-    atCompl.define(tc_);
-    std::vector<at::Tensor> outputs_;
-    auto handle = atCompl.compile("convolution", inputs_, options);
-    atCompl.run("convolution", inputs_, outputs_, handle, true);
+          tc::CudaMappingOptions::makeConvolutionMappingOptions()) {
+    auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+        tc_, "convolution", inputs_, options);
+    auto outputs_ = tc::aten::prepareOutputs(tc_, "convolution", inputs_);
+    auto timings = tc::aten::profile(*pExecutor, inputs_, outputs_);
+
+    auto inputDLTensors = tc::aten::toDLConstTensors(inputs_);
+    auto outputDLTensors = tc::aten::makeDLTensors(outputs_);
+    optionsCache_->recordRuntime(
+        lang::canonicalTc(tc_),
+        tc::makeTensorInfoVector(tc::extractRawPtrs(inputDLTensors)),
+        tc::makeTensorInfoVector(tc::extractRawPtrs(outputDLTensors)),
+        deviceStr(),
+        options,
+        timings.kernelRuntime);
 
     at::Tensor expected = at::conv2d(inputs_[0], inputs_[1], inputs_[2]);
     at::Tensor diff = outputs_[1].sub(expected);
@@ -534,170 +863,132 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
     tmp(n, o, h, w) +=!  I(n, r_c, h + r_kh, w + r_kw) * W1(o, r_c, r_kh, r_kw)
      O1(n, o, h, w)  = tmp(n, o, h, w) + B(o)
 })";
+  std::shared_ptr<CudaOptionsCacheForTesting> optionsCache_;
 };
 
 class CompilationCacheTest : public ::testing::Test {
+ public:
+  CompilationCacheTest()
+      : optionsCache{new CudaOptionsCacheForTesting()},
+        test1{optionsCache, 8, 32, 16},
+        test2{optionsCache, 1, 1, 1, 2, 2, 1, 1} {}
+
  protected:
   void SetUp() {
-    tc::OptionsCache::enableCache();
-    ASSERT_TRUE(tc::OptionsCache::cacheEnabled());
-    tc::OptionsCache::getCache()->clear();
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0u);
-    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 0u);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
+    optionsCache->clear();
+    ASSERT_EQ(optionsCache->size(), 0u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 0u);
 
-    // test0.Run();
     test1.Run();
     test2.Run();
 
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);
+    ASSERT_EQ(optionsCache->size(), 2u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 2u);
   }
 
-  void TearDown() {
-    tc::OptionsCache::disableCache();
-    ASSERT_FALSE(tc::OptionsCache::cacheEnabled());
-  }
-
-  // FCReluTester test0{8, 16, 16};
-  MatMulTester test1{8, 32, 16};
-  ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
+  std::shared_ptr<CudaOptionsCacheForTesting> optionsCache;
+  MatMulTester test1;
+  ConvolutionTester test2;
 };
 
 TEST_F(CompilationCacheTest, ExpectQuerySuccess) {
-  // FCReluTester test0{8, 16, 16};
-  // test0.Run();
-
-  MatMulTester test1{8, 32, 16};
+  MatMulTester test1{optionsCache, 8, 32, 16};
   test1.Run();
 
-  ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
+  ConvolutionTester test2{optionsCache, 1, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->size(), 2u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
 
 TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
-  /*
-   *  auto fut0 = std::async(std::launch::async, []() {
-   *    FCReluTester test0{8, 16, 16};
-   *    test0.Run();
-   *  });
-   *
-   */
-  auto fut1 = std::async(std::launch::async, []() {
-    MatMulTester test1{8, 32, 16};
+  auto fut1 = std::async(std::launch::async, [this]() {
+    MatMulTester test1{this->optionsCache, 8, 32, 16};
     test1.Run();
   });
 
-  auto fut2 = std::async(std::launch::async, []() {
-    ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
+  auto fut2 = std::async(std::launch::async, [this]() {
+    ConvolutionTester test2{this->optionsCache, 1, 1, 1, 2, 2, 1, 1};
     test2.Run();
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->size(), 2u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
 
 TEST_F(CompilationCacheTest, ShapesNotPresentInCache) {
-  // FCReluTester test0{10, 16, 16};
-  // test0.Run();
-
-  MatMulTester test1{12, 32, 16};
+  MatMulTester test1{optionsCache, 12, 32, 16};
   test1.Run();
 
-  ConvolutionTester test2{2, 1, 1, 2, 2, 1, 1};
+  ConvolutionTester test2{optionsCache, 2, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->size(), 4u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
-TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
-  // auto fut0 = std::async(std::launch::async, []() {
-  // FCReluTester test0{10, 16, 16};
-  // test0.Run();
-  //});
 
-  auto fut1 = std::async(std::launch::async, []() {
-    MatMulTester test1{12, 32, 16};
+TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
+  auto fut1 = std::async(std::launch::async, [this]() {
+    MatMulTester test1{this->optionsCache, 12, 32, 16};
     test1.Run();
   });
 
-  auto fut2 = std::async(std::launch::async, []() {
-    ConvolutionTester test2{2, 1, 1, 2, 2, 1, 1};
+  auto fut2 = std::async(std::launch::async, [this]() {
+    ConvolutionTester test2{this->optionsCache, 2, 1, 1, 2, 2, 1, 1};
     test2.Run();
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->size(), 4u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
 
 TEST_F(CompilationCacheTest, ModifyIslOptions) {
-  // FCReluTester test0{8, 16, 16};
-  // test0.ModifyParameters(
-  //{tc::Tile{4}, tc::Block{128}, tc::Grid{1}, tc::Unroll{1}});
-  // test0.Run();
-
-  MatMulTester test1{8, 32, 16};
-  auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+  MatMulTester test1{optionsCache, 8, 32, 16};
+  auto options = tc::CudaMappingOptions::makeMlpMappingOptions()
                      .tile(1, 1, 1)
                      .mapToThreads(2, 2, 2)
                      .mapToBlocks(1, 1, 1)
                      .unroll(1);
   test1.Run(options);
 
-  ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
-  options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
+  ConvolutionTester test2{optionsCache, 1, 1, 1, 2, 2, 1, 1};
+  options = tc::CudaMappingOptions::makeConvolutionMappingOptions()
                 .tile(2, 2, 2)
                 .mapToThreads(1, 1, 1)
                 .mapToBlocks(1, 1)
                 .unroll(1);
   test2.Run(options);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->getKeys().size(), 2u);
+  ASSERT_EQ(optionsCache->size(), 4u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
 
 TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
-  // auto fut0 = std::async(std::launch::async, []() {
-  // FCReluTester test0{8, 16, 16};
-  // test0.ModifyParameters(
-  //{tc::Tile{4}, tc::Block{128}, tc::Grid{1}, tc::Unroll{1}});
-  // test0.Run();
-  //});
-
-  auto fut1 = std::async(std::launch::async, []() {
-    MatMulTester test1{8, 32, 16};
-    auto options = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+  auto fut1 = std::async(std::launch::async, [this]() {
+    MatMulTester test1{this->optionsCache, 8, 32, 16};
+    auto options = tc::CudaMappingOptions::makeMlpMappingOptions()
                        .tile(1, 1, 1)
                        .mapToThreads(2, 2, 2)
                        .mapToBlocks(1, 1, 1)
@@ -705,9 +996,9 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
     test1.Run(options);
   });
 
-  auto fut2 = std::async(std::launch::async, []() {
-    ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
-    auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions()
+  auto fut2 = std::async(std::launch::async, [this]() {
+    ConvolutionTester test2{this->optionsCache, 1, 1, 1, 2, 2, 1, 1};
+    auto options = tc::CudaMappingOptions::makeConvolutionMappingOptions()
                        .tile(2, 2, 2)
                        .mapToThreads(1, 1, 1)
                        .mapToBlocks(1, 1)
@@ -715,79 +1006,38 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
     test2.Run(options);
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
+  ASSERT_EQ(optionsCache->getKeys().size(), 2u);
+  ASSERT_EQ(optionsCache->size(), 4u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 4u);
 }
 
 TEST_F(CompilationCacheTest, Serialization) {
   {
-    auto buf = tc::OptionsCache::getCache()->toProtobuf();
-    tc::OptionsCache::loadCacheFromProtobuf(buf);
+    auto buf = optionsCache->toProtobuf();
+    optionsCache->clear();
+    optionsCache->fromProtobuf(buf);
+    ASSERT_EQ(optionsCache->getKeys().size(), 2u);
+    ASSERT_EQ(optionsCache->size(), 2u);
+    ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+    ASSERT_EQ(optionsCache->numberCacheAttempts, 0u);
   }
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
-
-  /*
-   *FCReluTester test0{8, 16, 16};
-   *test0.Run();
-   */
-
-  MatMulTester test1{8, 32, 16};
+  MatMulTester test1{optionsCache, 8, 32, 16};
   test1.Run();
 
-  ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
+  ConvolutionTester test2{optionsCache, 1, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);
-}
-
-TEST(CompilationCache, ManualInjection) {
-  static constexpr auto tc = R"(
-def add(float(N) A, float(N) B) -> (output) {
-    output(n) = A(n) + B(n)
-})";
-
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
-  std::vector<at::Tensor> outputs;
-  std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({100}),
-                                 at::CUDA(at::kFloat).rand({100})};
-
-  tc::CudaMappingOptions options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-
-  auto tensorsPair = tc::toConstDlpackTensors(inputs);
-  tc::ScopeGuard g([&]() { tc::deleteDlmTensors(tensorsPair.second); });
-  std::string cudaSource = R"CUDA(
-  extern "C"{
-__global__ void add100(float* __restrict__ output, const float* __restrict__ A, const float* __restrict B)
-{
-    int t = threadIdx.x;
-    output[t] = A[t] + B[t];
-}
-}
-)CUDA";
-
-  auto handle = atCompl.compile("add", inputs, options);
-  atCompl.run("add", inputs, outputs, handle, false);
-
-  at::Tensor diff = outputs[0].sub(inputs[0].add(inputs[1]));
-  checkRtol(diff, inputs);
+  ASSERT_EQ(optionsCache->size(), 2u);
+  ASSERT_EQ(optionsCache->numberAttemptedRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
+  ASSERT_EQ(optionsCache->numberCacheAttempts, 2u);
 }
 
 int main(int argc, char** argv) {

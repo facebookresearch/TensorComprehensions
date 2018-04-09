@@ -24,14 +24,13 @@
 #include <unordered_set>
 
 #include "tc/core/flags.h"
-#include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
-#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/polyhedral/scop.h"
@@ -40,6 +39,26 @@
 #include "tc/core/scope_guard.h"
 
 #include <glog/logging.h>
+
+/// Get the shared memory size of the GPU device active in the current thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+/// This can also be used in cross-compilation mode where no CUDA SDK is
+/// installed (in which case it returns 0).
+#ifdef CUDA_HOME
+#include "tc/core/cuda/cuda.h"
+namespace {
+inline size_t querySharedMemorySize() {
+  return tc::CudaGPUInfo::GPUInfo().SharedMemorySize();
+}
+} // namespace
+#else
+namespace {
+inline size_t querySharedMemorySize() {
+  return 0;
+}
+} // namespace
+#endif
 
 namespace tc {
 namespace polyhedral {
@@ -545,12 +564,12 @@ void MappedScop::insertMappingContext() {
   const Block& block = numThreads;
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
   std::unordered_map<isl::id, size_t, isl::IslIdIslHash> mappingIdsWithSizes{
-      {BX, BX.mappingSize(grid)},
-      {BY, BY.mappingSize(grid)},
-      {BZ, BZ.mappingSize(grid)},
-      {TX, TX.mappingSize(block)},
-      {TY, TY.mappingSize(block)},
-      {TZ, TZ.mappingSize(block)}};
+      {BX, mappingSize(BX, grid)},
+      {BY, mappingSize(BY, grid)},
+      {BZ, mappingSize(BZ, grid)},
+      {TX, mappingSize(TX, block)},
+      {TY, mappingSize(TY, block)},
+      {TZ, mappingSize(TZ, block)}};
   auto space = scop.domain().universe().get_space();
   auto mappingContext = makeParameterContext(
       space, mappingIdsWithSizes.begin(), mappingIdsWithSizes.end());

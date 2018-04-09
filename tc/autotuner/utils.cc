@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/autotuner/utils/printer.h"
+#include "tc/autotuner/utils.h"
 
 #include <algorithm>
 #include <sstream>
@@ -21,9 +21,33 @@
 #include <glog/stl_logging.h>
 
 #include "tc/core/flags.h"
+#include "tc/core/utils/time.h"
 
-using namespace tc;
-using namespace autotune;
+namespace tc {
+namespace autotune {
+
+std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
+  auto numPowers = static_cast<std::size_t>(std::ceil(std::log2(val)));
+  // 1. generate `numPowers' powers of 2
+  std::vector<std::size_t> res(numPowers + 1);
+  std::size_t p = 1;
+  std::generate(res.begin(), res.end(), [p]() mutable {
+    auto old_p = p;
+    p *= 2;
+    return old_p;
+  });
+  // 2. additionally insert ceil(val / powers2)
+  res.reserve(res.size() * 2);
+  for (std::size_t i = 0, s = res.size(); i < s; ++i) {
+    if (res[i] > val) {
+      continue;
+    }
+    res.push_back(std::ceil(static_cast<double>(val) / res[i]));
+  }
+  std::sort(res.begin(), res.end());
+  res.erase(std::unique(res.begin(), res.end()), res.end());
+  return res;
+}
 
 void Printer::record(Duration runtime) {
   std::lock_guard<std::mutex> lock(runtimesMtx_);
@@ -41,8 +65,8 @@ void Printer::printLoop() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::stringstream ss;
-    ss << "Generation " << generation_;
-    ss << "\tJobs(Compiled, GPU)/total  ("
+    ss << "Iteration " << iteration_;
+    ss << "\tJobs(Compiled, Evaluated)/total  ("
        << std::min(total_, currentCompilationJob_.load()) << ", "
        << std::min(total_, numEvaluations_.load()) << ")/" << total_;
 
@@ -76,11 +100,11 @@ void Printer::printLoop() {
 }
 
 Printer::Printer(
-    size_t generation,
+    size_t iteration,
     size_t total,
     const std::atomic_size_t& currentCompilationJob,
     const std::atomic_size_t& numEvaluations)
-    : generation_(generation),
+    : iteration_(iteration),
       printerThread_([this]() { printLoop(); }),
       total_(total),
       currentCompilationJob_(currentCompilationJob),
@@ -109,6 +133,8 @@ void Printer::printAll() {
     return runtimes;
   }();
   LOG_IF(INFO, FLAGS_debug_tuner)
-      << "\n [TUNER][GENERATION LOG] median times of each candidate (in us) "
+      << "\n [TUNER][ITERATION LOG] median times of each candidate (in us) "
       << runtimes << std::endl;
 }
+} // namespace autotune
+} // namespace tc
