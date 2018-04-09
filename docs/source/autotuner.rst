@@ -31,7 +31,6 @@ The parameters that control the autotuner's behavior are the following:
 * :code:`Number of threads`: The number of threads that are used to compile different candidates in parallel.
 * :code:`GPUs`: A comma separated list of GPUs (ids) to use for evaluating candidates (e.g., "0,1,2,3").
 * :code:`RNG state`: The state used to seed the tuner's RNG.
-* :code:`Proto`: A protobuf filename to (re)store compilation results and profiling information of the candidate solutions.
 * :code:`min_launch_total_threads`: Prune out kernels mapped to fewer than this many threads and block. Set this to :code:`1` to avoid pruning.
 
 Caching
