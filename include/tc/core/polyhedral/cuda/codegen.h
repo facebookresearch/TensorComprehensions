@@ -88,10 +88,10 @@ struct CodegenStatementContext : CodegenContext {
     return this->iteratorMaps.at(astNodeId);
   }
   isl::id statementId() const {
-    return this->iteratorMaps.at(astNodeId).get_tuple_id(isl::dim_type::out);
+    return this->iteratorMap().get_tuple_id(isl::dim_type::out);
   }
   isl::set domain() const {
-    return isl::map::from(this->iteratorMaps.at(astNodeId)).range();
+    return isl::map::from(this->iteratorMap()).range();
   }
   std::vector<Scop::PromotionInfo> activePromotions() const {
     std::vector<Scop::PromotionInfo> result;
