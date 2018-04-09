@@ -424,12 +424,11 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);
   } else { // regular statement
-    auto mappedStmtId =
-        context_.iteratorMaps.at(nodeId).get_tuple_id(isl::dim_type::out);
+    auto mappedStmtId = statementContext.statementId();
     CHECK_EQ(stmtId, mappedStmtId)
         << "statement ids in expr (" << stmtId << ") and in iteratorMaps ("
         << mappedStmtId << ") do not match";
-    emitUserStmt(stmtId, CodegenStatementContext(context_, nodeId));
+    emitUserStmt(stmtId, statementContext);
   }
 }
 
