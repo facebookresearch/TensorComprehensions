@@ -30,7 +30,7 @@
 
 #include "../test/test_harness_aten_cuda.h"
 
-DEFINE_string(tuner_proto, "", "Filename to load and store proto cache ");
+DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 
 TEST(TensorDot, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -53,7 +53,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
   auto naiveOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_tuner_proto, "tensordot", {I0, I1}, naiveOptions);
+      FLAGS_proto_path, "tensordot", {I0, I1}, naiveOptions);
 
   // 4. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
@@ -90,7 +90,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
 // From root, run with:
 //   ./build/examples/tensordot --tuner_threads=10 --tuner_gen_pop_size=10
 //   --tuner_gen_generations=3 --tuner_gen_number_elites=4
-//   --tuner_proto="/tmp/tensordot"
+//   --proto_path="/tmp/tensordot"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

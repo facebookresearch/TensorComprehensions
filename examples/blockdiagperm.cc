@@ -30,7 +30,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options.h"
 
-DEFINE_string(tuner_proto, "", "Filename to load and store proto cache ");
+DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 
 TEST(BlockDiagPerm, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -77,7 +77,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_tuner_proto, "blockdiagperm2dfissioned_1", {I, W}, options);
+      FLAGS_proto_path, "blockdiagperm2dfissioned_1", {I, W}, options);
   auto handle = atCompl.compile(
       "blockdiagperm2dfissioned_1", {I, W}, bestOption.getValue());
   std::vector<at::Tensor> outputs;
@@ -89,7 +89,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   at::Tensor Idx = at::CPU(at::kInt).randperm({500}).toBackend(at::kCUDA);
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen2(tc);
   auto bestOption2 = geneticAutotuneATen.tune(
-      FLAGS_tuner_proto, "blockdiagperm2dfissioned_2", {O, Idx}, options);
+      FLAGS_proto_path, "blockdiagperm2dfissioned_2", {O, Idx}, options);
   auto handle2 = atCompl.compile(
       "blockdiagperm2dfissioned_2", {O, Idx}, bestOption2.getValue());
   std::vector<at::Tensor> outputs2;
@@ -120,7 +120,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
 // From root, run with:
 //   ./build/examples/blockdiagperm --tuner_threads=10 --tuner_gen_pop_size=10
 //   --tuner_gen_generations=3 --tuner_gen_number_elites=4
-//   --tuner_proto="/tmp/blockdiagperm"
+//   --proto_path="/tmp/blockdiagperm"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
