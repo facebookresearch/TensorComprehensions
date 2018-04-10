@@ -30,11 +30,7 @@
 
 #include "../test/test_harness_aten_cuda.h"
 
-DEFINE_uint32(number_elites, 2, "Number of elites per generation");
-DEFINE_uint32(generations, 3, "Number of generations to tune for");
-DEFINE_uint32(pop_size, 10, "Population size to tune for");
-DEFINE_uint32(threads, 16, "Number of threads to tune with");
-DEFINE_string(gpus, "0", "List of gpus to evaluate on");
+DEFINE_string(tuner_proto, "", "Filename to load and store proto cache ");
 
 TEST(TensorDot, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -57,7 +53,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
   auto naiveOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
-      "/tmp/save_results", "tensordot", {I0, I1}, naiveOptions);
+      FLAGS_tuner_proto, "tensordot", {I0, I1}, naiveOptions);
 
   // 4. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
@@ -91,15 +87,14 @@ def tensordot(float(N, C1, C2, H, W) I0,
   }
 }
 
+// From root, run with:
+//   ./build/examples/tensordot --tuner_threads=10 --tuner_gen_pop_size=10
+//   --tuner_gen_generations=3 --tuner_gen_number_elites=4
+//   --tuner_proto="/tmp/tensordot"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
   setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
-  tc::FLAGS_tuner_gen_number_elites = FLAGS_number_elites;
-  tc::FLAGS_tuner_gen_generations = FLAGS_generations;
-  tc::FLAGS_tuner_gen_pop_size = FLAGS_pop_size;
-  tc::FLAGS_tuner_threads = FLAGS_threads;
-  tc::FLAGS_tuner_gpus = FLAGS_gpus;
   return RUN_ALL_TESTS();
 }

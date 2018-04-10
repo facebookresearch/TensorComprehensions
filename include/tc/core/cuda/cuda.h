@@ -27,6 +27,7 @@
 #include <stdexcept>
 
 #include <cuda.h>
+#include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
 
 #include <glog/logging.h>
@@ -70,6 +71,8 @@
 
 namespace tc {
 
+DECLARE_bool(use_nvprof);
+
 struct WithDevice {
   WithDevice(size_t g) : newGpu(g) {
     int dev;
@@ -109,6 +112,19 @@ class CudaGPUInfo {
 
   std::vector<std::string> gpuNames_;
   std::vector<size_t> sharedMemSizes_;
+};
+
+struct CudaProfiler {
+  CudaProfiler() {
+    if (FLAGS_use_nvprof) {
+      cudaProfilerStart();
+    }
+  }
+  ~CudaProfiler() {
+    if (FLAGS_use_nvprof) {
+      cudaProfilerStop();
+    }
+  }
 };
 
 } // namespace tc

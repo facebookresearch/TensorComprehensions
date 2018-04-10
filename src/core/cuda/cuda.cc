@@ -26,6 +26,8 @@
 #include "tc/core/flags.h"
 
 namespace tc {
+DEFINE_bool(use_nvprof, false, "Start / stop nvprof");
+
 namespace {
 
 std::tuple<std::vector<std::string>, std::vector<size_t>> init() {
