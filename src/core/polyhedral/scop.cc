@@ -324,7 +324,8 @@ isl::set Scop::makeContextFromInputs(
           paramSet & (isl::aff_set(parametricAff) == inputs[i]->shape[j]);
     }
   }
-  CHECK(paramSet.is_singleton()) << "could not infer the values of parameters";
+  CHECK(paramSet.is_equal(paramSet.sample()))
+      << "could not infer the values of parameters";
   return paramSet;
 }
 
