@@ -37,6 +37,7 @@
 
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
+#include "tc/core/halide2isl.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
@@ -54,10 +55,6 @@
 using namespace Halide;
 
 namespace tc {
-
-namespace halide2isl {
-isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
-}
 
 namespace polyhedral {
 
