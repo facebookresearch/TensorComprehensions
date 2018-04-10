@@ -269,6 +269,22 @@ TEST(TestCornerCases, E22) {
       at::Scalar(c[0]).toFloat());
 }
 
+TEST(TestCornerCases, E23) {
+  auto a = F(1);
+  auto b = F(1);
+  auto c = F(1);
+  auto d = F(1);
+  Succeed(
+      "def f(float(1) a, float(1) b, float(1) c) -> (d) { d(i) = min(a(i), max(b(i), c(i))) }",
+      {a, b, c},
+      {d});
+  CHECK_EQ(
+      fminf(
+          at::Scalar(a[0]).toFloat(),
+          fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())),
+      at::Scalar(d[0]).toFloat());
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
