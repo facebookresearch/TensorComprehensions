@@ -55,6 +55,19 @@ struct Parser {
       auto value = parseExp();
       L.expect(')');
       return Cast::create(type->range(), value, type);
+    } else if (L.cur().kind == TK_MIN || L.cur().kind == TK_MAX) {
+      // min/max are treated as operators later in the compilation pipeline.
+      // so we ensure they have precisely two arguments here so they can
+      // use the same pathways as other operators like + where argument
+      // count is ensured by parsing
+      auto range = L.cur().range;
+      auto tok = L.next().kind;
+      L.expect('(');
+      auto a = parseExp();
+      L.expect(',');
+      auto b = parseExp();
+      L.expect(')');
+      prefix = c(tok, range, {a, b});
     } else {
       prefix = parseIdent();
       auto range = L.cur().range;
