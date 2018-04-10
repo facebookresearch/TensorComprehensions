@@ -61,8 +61,8 @@ ScopUPtr Scop::makeScop(
   auto tree = halide2isl::makeScheduleTree(paramSpace, components.stmt);
   scop->scheduleTreeUPtr = std::move(tree.tree);
   scop->reads = tree.reads;
-  scop->mayWrites = tree.writes;
-  scop->mustWrites = isl::union_map::empty(scop->mayWrites.get_space());
+  scop->mayWrites = tree.mayWrites;
+  scop->mustWrites = tree.mustWrites;
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);

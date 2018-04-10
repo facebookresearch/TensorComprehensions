@@ -165,6 +165,10 @@ struct TC2Isl : public ::testing::Test {
     auto scheduleHalide = polyhedral::detail::fromIslSchedule(
         polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());
   }
+
+  std::unique_ptr<polyhedral::Scop> MakeScop(const std::string& tc) {
+    return polyhedral::Scop::makeScop(isl::with_exceptions::globalIslCtx(), tc);
+  }
 };
 
 TEST_F(TC2Isl, Copy1D) {
@@ -311,6 +315,56 @@ def fun(float(M, N) I) -> (O1, O2, O3) {
 }
 )TC";
   Check(tc, {123, 13});
+}
+
+// FIXME: range inference seems unaware of indirections on the LHS
+TEST_F(TC2Isl, DISABLED_MayWritesOnly) {
+  string tc = R"TC(
+def scatter(int32(N) A, int32(M) B) -> (O) {
+    O(A(i)) = B(i)
+}
+)TC";
+  auto scop = MakeScop(tc);
+  CHECK(scop->mustWrites.is_empty())
+      << "expected empty must-writes for scatter, got\n"
+      << scop->mustWrites;
+  CHECK(!scop->mayWrites.is_empty())
+      << "expected non-empty may-writes for scatter, got\n"
+      << scop->mayWrites;
+}
+
+TEST_F(TC2Isl, AllMustWrites) {
+  string tc = R"TC(
+def gather(int32(N) A, int32(N) B) -> (O) {
+    O(i) = A(B(i)) where i in 0:N
+}
+)TC";
+  auto scop = MakeScop(tc);
+  CHECK(!scop->mustWrites.is_empty())
+      << "expected non-empty must-writes for gather, got\n"
+      << scop->mustWrites;
+  CHECK_EQ(scop->mustWrites, scop->mayWrites);
+}
+
+// FIXME: range inference seems unaware of indirections on the LHS
+TEST_F(TC2Isl, DISABLED_MustWritesSubsetMayWrites) {
+  string tc = R"TC(
+def scatter_gather(int32(N) A, int32(N) B) -> (O1,O2) {
+    O1(i) = A(B(i)) where i in 0:N
+    O2(A(i)) = B(i)
+}
+)TC";
+  auto scop = MakeScop(tc);
+  CHECK(!scop->mustWrites.is_empty()) << "expected non-empty must-writes, got\n"
+                                      << scop->mustWrites;
+  CHECK(!scop->mayWrites.is_empty()) << "expected non-empty may-writes, got\n"
+                                     << scop->mustWrites;
+  CHECK(scop->mustWrites.is_subset(scop->mayWrites))
+      << scop->mustWrites << " is expected to be a subsetset of "
+      << scop->mayWrites;
+  CHECK(!scop->mayWrites.subtract(scop->mustWrites).is_empty())
+      << scop->mustWrites << "is expected to be a strict subset of "
+      << scop->mayWrites;
 }
 
 int main(int argc, char** argv) {
