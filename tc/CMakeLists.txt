@@ -1,5 +1,4 @@
 include_directories(.)
-include_directories(../include)
 
 add_subdirectory(lang)
 add_subdirectory(proto)

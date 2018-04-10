@@ -9,7 +9,7 @@ find_package(PythonLibs REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 add_library(tc MODULE pybind_engine.cc)
-target_include_directories(tc PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(tc PUBLIC ${PROJECT_SOURCE_DIR}/tc)
 target_link_libraries(
   tc
 
@@ -20,6 +20,7 @@ target_link_libraries(
   ${GLOG_LIBRARIES}
 )
 add_library(mapping_options MODULE pybind_options.cc)
+target_include_directories(mapping_options PUBLIC ${PROJECT_SOURCE_DIR}/tc)
 target_link_libraries(
   mapping_options
 
@@ -42,7 +43,7 @@ install(TARGETS mapping_options DESTINATION ${PROJECT_SOURCE_DIR}/tensor_compreh
 
 if (WITH_CUDA)
   add_library(autotuner MODULE pybind_autotuner.cc)
-
+  target_include_directories(mapping_options PUBLIC ${PROJECT_SOURCE_DIR}/tc)
   target_link_libraries(
     autotuner
 

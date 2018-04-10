@@ -7,7 +7,6 @@ add_library(
   operator_meta.cc
   register.cc
 )
-target_include_directories(tc_c2 PUBLIC ../include)
 
 target_link_libraries(
   tc_c2

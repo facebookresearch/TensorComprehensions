@@ -42,20 +42,20 @@ test_python/*
 * **Priya Goyal** [@prigoyal](https://github.com/prigoyal)
 ```
 tensor_comprehensions/*
-src/c2/*
-src/aten/*
+tc/c2/*
+tc/aten/*
 ```
 
 ### Tensor Comprehensions language and frontend
 * **Zachary DeVito** [@zdevito](https://github.com/zdevito)
 ```
-src/lang/*
+tc/lang/*
 ```
 
 ### Halide integration
 * **Andrew Adams** [@abadams](https://github.com/abadams)
 ```
-src/core/*halide*
+tc/core/*halide*
 ```
 
 ### Polyhedral scheduling and GPU mapping
@@ -63,14 +63,14 @@ src/core/*halide*
 * **Sven Verdoolaege** [@skimo-openhub](https://github.com/skimo-openhub)
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
-src/core/polyhedral/*
+tc/core/polyhedral/*
 ```
 
 ### Autotuner
 * **Theodoros Theodoridis** [@ttheodor](https://github.com/ttheodor)
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
-src/autotuner/*
+tc/autotuner/*
 ```
 
 ### Protocol buffers
@@ -78,8 +78,8 @@ src/autotuner/*
 * **Theodoros Theodoridis** [@ttheodor](https://github.com/ttheodor)
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
-src/proto/*
-src/mapping_options*
+tc/proto/*
+tc/mapping_options*
 ```
 
 ### LLVM backend and integration
@@ -87,7 +87,7 @@ src/mapping_options*
 * **Theodoros Theodoridis** [@ttheodor](https://github.com/ttheodor)
 * **Andrew Adams** [@abadams](https://github.com/abadams)
 ```
-src/core/*llvm*
+tc/core/*llvm*
 ```
 
 ### Everything not covered by somebody else

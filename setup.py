@@ -38,8 +38,8 @@ print('git_version: {} tc_version: {} tc_build_number: {}'.format(
 ################################################################################
 # Copy the proto files only
 ################################################################################
-copyfile("src/proto/compcache.proto", "tensor_comprehensions/compilation_cache.proto")
-copyfile("src/proto/mapping_options.proto", "tensor_comprehensions/mapping_options.proto")
+copyfile("tc/proto/compcache.proto", "tensor_comprehensions/compilation_cache.proto")
+copyfile("tc/proto/mapping_options.proto", "tensor_comprehensions/mapping_options.proto")
 
 ################################################################################
 # Custom override commands

@@ -1,5 +1,5 @@
 include_directories(.)
-include_directories(../include)
+include_directories(../tc)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 

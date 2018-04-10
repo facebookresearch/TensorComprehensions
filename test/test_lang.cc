@@ -34,7 +34,7 @@ using namespace lang;
 #endif
 
 const std::string expected_file_path =
-    std::string(TC_DIR) + "/src/lang/test_expected/";
+    std::string(TC_DIR) + "/tc/lang/test_expected/";
 
 static inline void barf(const char* fmt, ...) {
   char msg[2048];
