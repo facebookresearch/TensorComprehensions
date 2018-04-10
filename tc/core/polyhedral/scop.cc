@@ -353,19 +353,29 @@ namespace {
 
 using namespace tc::polyhedral;
 
+// Compute the dependence using the given may/must sources, sinks and kills.
+// Any of the inputs may be an empty (but non-null) union map.
+// Dependence analysis removes the cases transitively covered by a must source
+// or a kill.
 isl::union_map computeDependences(
-    isl::union_map sources,
+    isl::union_map maySources,
+    isl::union_map mustSources,
     isl::union_map sinks,
+    isl::union_map kills,
     isl::schedule schedule) {
   auto uai = isl::union_access_info(sinks);
-  uai = uai.set_may_source(sources);
+  uai = uai.set_may_source(maySources);
+  uai = uai.set_must_source(mustSources);
+  uai = uai.set_kill(kills);
   uai = uai.set_schedule(schedule);
   auto flow = uai.compute_flow();
   return flow.get_may_dependence();
 }
 
-// Do the simplest possible dependence analysis.
-// Live-range reordering needs tagged access relations to be available.
+// Set up schedule constraints by performing the dependence analysis using
+// access relations from "scop". Set up callbacks in the constraints depending
+// on "scheduleOptions".
+//
 // The domain of the constraints is intersected with "restrictDomain" if it is
 // provided.
 isl::schedule_constraints makeScheduleConstraints(
@@ -375,12 +385,16 @@ isl::schedule_constraints makeScheduleConstraints(
   auto schedule = toIslSchedule(scop.scheduleRoot());
   auto firstChildNode = scop.scheduleRoot()->child({0});
   auto reads = scop.reads.domain_factor_domain();
-  auto writes = scop.mayWrites.domain_factor_domain();
+  auto mayWrites = scop.mayWrites.domain_factor_domain();
+  auto mustWrites = scop.mustWrites.domain_factor_domain();
+  auto empty = isl::union_map::empty(mustWrites.get_space());
 
   // RAW
-  auto flowDeps = computeDependences(writes, reads, schedule);
+  auto flowDeps =
+      computeDependences(mayWrites, mustWrites, reads, mustWrites, schedule);
   // WAR and WAW
-  auto falseDeps = computeDependences(writes.unite(reads), writes, schedule);
+  auto falseDeps = computeDependences(
+      mayWrites.unite(reads), empty, mayWrites, mustWrites, schedule);
 
   auto allDeps = flowDeps.unite(falseDeps).coalesce();
 
