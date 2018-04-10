@@ -247,6 +247,7 @@ message(STATUS "Found glog: ${GLOG_LIBRARIES}")
 #     message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
+add_subdirectory(tc/proto)
 add_subdirectory(src)
 
 # At the moment pybind is only supported in CUDA mode and compilation fails

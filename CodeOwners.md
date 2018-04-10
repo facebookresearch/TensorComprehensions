@@ -78,7 +78,7 @@ src/autotuner/*
 * **Theodoros Theodoridis** [@ttheodor](https://github.com/ttheodor)
 * **Nicolas Vasilache** [@nicolasvasilache](https://github.com/nicolasvasilache)
 ```
-src/proto/*
+tc/proto/*
 src/mapping_options*
 ```
 
