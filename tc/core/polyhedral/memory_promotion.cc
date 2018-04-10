@@ -348,7 +348,7 @@ TensorGroups TensorReferenceGroup::accessedBySubtree(
   auto schedule = partialSchedule(scop.scheduleRoot(), tree);
 
   addSingletonReferenceGroups(
-      tensorGroups, scop.writes, domain, schedule, AccessType::Write);
+      tensorGroups, scop.mayWrites, domain, schedule, AccessType::Write);
   addSingletonReferenceGroups(
       tensorGroups, scop.reads, domain, schedule, AccessType::Read);
 

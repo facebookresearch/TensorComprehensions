@@ -66,7 +66,8 @@ struct Scop {
     res->globalParameterContext = scop.globalParameterContext;
     res->halide = scop.halide;
     res->reads = scop.reads;
-    res->writes = scop.writes;
+    res->mayWrites = scop.mayWrites;
+    res->mustWrites = scop.mustWrites;
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
@@ -115,7 +116,8 @@ struct Scop {
   void specializeToContext() {
     domain() = domain().intersect_params(globalParameterContext);
     reads = reads.intersect_params(globalParameterContext);
-    writes = writes.intersect_params(globalParameterContext);
+    mayWrites = mayWrites.intersect_params(globalParameterContext);
+    mustWrites = mustWrites.intersect_params(globalParameterContext);
   }
 
   // Returns a set that specializes the named scop's subset of
@@ -442,8 +444,14 @@ struct Scop {
   // This globalParameterContext lives in a parameter space.
   isl::set globalParameterContext; // TODO: not too happy about this name
 
+  // Access relations.
+  // Elements in mayWrite may or may not be written by the execution, depending
+  // on some dynamic condition.  Those in mustWrites are always written.
+  // Thefore, mayWrites do not participate in transitively-covered dependence
+  // removal.
   isl::union_map reads;
-  isl::union_map writes;
+  isl::union_map mayWrites;
+  isl::union_map mustWrites;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise
