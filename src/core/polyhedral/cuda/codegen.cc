@@ -21,7 +21,6 @@
 #include <utility>
 
 #include "tc/core/flags.h"
-#include "tc/core/halide2isl.h"
 #include "tc/core/islpp_wrap.h"
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen.h"
@@ -368,11 +367,7 @@ void emitReductionInit(
 namespace {
 template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
-  // Use a temporary isl::ast_build to print the expression.
-  // Ideally, this should use the build at the point
-  // where the user statement was created.
-  auto astBuild = isl::ast_build::from_context(access.domain());
-  context.ss << astBuild.access_from(access).to_C_str();
+  context.ss << context.build().access_from(access).to_C_str();
 }
 } // namespace
 
@@ -401,6 +396,8 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   auto stmtId = usrExp.get_op_arg(0).get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
+  CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1)
+      << "no info for node " << nodeId;
 
   WS ws;
   context_.ss << ws.tab();
@@ -414,8 +411,6 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     emitReductionInit(stmtId, updateId, context_);
     inReduction_ = true;
   } else if (inReduction_ && context_.scop().isReductionUpdate(stmtId)) {
-    CHECK_EQ(context_.iteratorMaps.count(nodeId), 1)
-        << "no iterator remapping for op " << nodeId;
     emitReductionUpdate(stmtId, statementContext);
     reductionUpdateNodeId_ = nodeId;
   } else if (context_.scop().isSyncId(stmtId)) {
@@ -424,14 +419,11 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);
   } else { // regular statement
-    CHECK_EQ(context_.iteratorMaps.count(nodeId), 1)
-        << "no iterator remapping for op " << nodeId;
-    auto mappedStmtId =
-        context_.iteratorMaps.at(nodeId).get_tuple_id(isl::dim_type::out);
+    auto mappedStmtId = statementContext.statementId();
     CHECK_EQ(stmtId, mappedStmtId)
         << "statement ids in expr (" << stmtId << ") and in iteratorMaps ("
         << mappedStmtId << ") do not match";
-    emitUserStmt(stmtId, CodegenStatementContext(context_, nodeId));
+    emitUserStmt(stmtId, statementContext);
   }
 }
 
@@ -461,11 +453,10 @@ namespace detail {
 isl::pw_aff makeAffFromMappedExpr(
     const Halide::Expr& expr,
     const CodegenStatementContext& context) {
-  auto space = context.iteratorMap().get_space().range();
   // We only expect this to be called on encountering a free
   // variable. Compound expressions should be emitted as Halide.
   CHECK(expr.as<Halide::Internal::Variable>());
-  auto aff = halide2isl::makeIslAffFromExpr(space, expr);
+  auto aff = context.makeIslAffFromExpr(expr);
   auto pwaff = isl::pw_aff(aff).pullback(context.iteratorMap());
   return pwaff;
 }
@@ -495,8 +486,7 @@ isl::multi_aff makeMultiAffAccess(
 
   auto ma = isl::multi_aff::zero(space);
   for (size_t i = 0; i < subscripts.size(); ++i) {
-    ma = ma.set_aff(
-        i, halide2isl::makeIslAffFromExpr(domainSpace, subscripts[i]));
+    ma = ma.set_aff(i, context.makeIslAffFromExpr(subscripts[i]));
   }
   return ma;
 }
@@ -520,11 +510,7 @@ void emitHalideExpr(
     void visit(const Halide::Internal::Variable* op) {
       auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
           Halide::Expr(op), context);
-      // Use a temporary isl::ast_build to print the expression.
-      // Ideally, this should use the build at the point
-      // where the user statement was created.
-      auto astBuild = isl::ast_build::from_context(pwAff.domain());
-      auto expr = astBuild.expr_from(pwAff);
+      auto expr = context.build().expr_from(pwAff);
       auto s = expr.to_C_str();
       if (!is_identifier_or_nonnegative_integer(expr)) {
         s = "(" + s + ")";
@@ -724,42 +710,32 @@ string emitCudaKernel(
   emitTensorViews(ss, scop.halide.inputs, paramValues);
   emitTmpDecl(ss, scop);
   emitPromotedArrayViewsHalide(ss, scop);
-  IteratorMapsType iteratorMaps;
-  auto collect = [&iteratorMaps](
+  NodeInfoMapType nodeInfoMap;
+  auto collect = [&nodeInfoMap](
                      isl::ast_node n, isl::ast_build b) -> isl::ast_node {
     auto collectIteratorMaps =
         [](isl::ast_node node,
            isl::ast_build build,
-           IteratorMapsType* iteratorMaps) -> isl::ast_node {
+           NodeInfoMapType* nodeInfoMap) -> isl::ast_node {
       auto user = node.as<isl::ast_node_user>();
       CHECK(user);
       auto expr = user.get_expr();
       auto stmtId = expr.get_op_arg(0).get_id();
-      // We rename loop-related dimensions manually.
       auto schedule = build.get_schedule();
-      auto scheduleSpace = build.get_schedule_space();
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto nodeId = isl::id(
           node.get_ctx(),
           std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
-      CHECK_EQ(0, iteratorMaps->count(nodeId)) << "entry exists: " << nodeId;
-      CHECK_EQ(
-          scheduleMap.dim(isl::dim_type::out),
-          scheduleSpace.dim(isl::dim_type::set));
-      for (int i = 0; i < scheduleSpace.dim(isl::dim_type::set); ++i) {
-        scheduleMap = scheduleMap.set_dim_id(
-            isl::dim_type::out,
-            i,
-            scheduleSpace.get_dim_id(isl::dim_type::set, i));
-      }
+      CHECK_EQ(0, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
 
-      auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-      iteratorMaps->emplace(nodeId, iteratorMap);
+      auto& nodeInfo = (*nodeInfoMap)[nodeId];
+      nodeInfo.iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
+      nodeInfo.build = build;
       return node.set_annotation(nodeId);
     };
 
-    return collectIteratorMaps(n, b, &iteratorMaps);
+    return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
   auto bands = detail::ScheduleTree::collect(
@@ -781,7 +757,7 @@ string emitCudaKernel(
   astBuild = astBuild.set_at_each_domain(collect);
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
   auto astNode = astBuild.node_from(schedule);
-  AstPrinter(CodegenContext(ss, mscop, iteratorMaps)).emit(astNode);
+  AstPrinter(CodegenContext(ss, mscop, nodeInfoMap)).emit(astNode);
   ss << "}" << endl;
 
   return ss.str();
