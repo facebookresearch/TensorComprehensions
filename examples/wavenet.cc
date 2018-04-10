@@ -30,7 +30,7 @@
 
 #include "../test/test_harness_aten_cuda.h"
 
-DEFINE_string(tuner_proto, "", "Filename to load and store proto cache ");
+DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 
 TEST(WaveNet2Layers, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -121,7 +121,7 @@ def wavenet2layers(
                                      skip_weight1,
                                      skip_bias1};
   auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_tuner_proto, "wavenet2layers", tensors, naiveOptions);
+      FLAGS_proto_path, "wavenet2layers", tensors, naiveOptions);
 
   // 4. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
@@ -165,7 +165,7 @@ def wavenet2layers(
 // From root, run with:
 //   ./build/examples/wavenet --tuner_threads=10 --tuner_gen_pop_size=10
 //   --tuner_gen_generations=3 --tuner_gen_number_elites=4
-//   --benchmark_iterations=1000 --tuner_proto="/tmp/wavenet"
+//   --benchmark_iterations=1000 --proto_path="/tmp/wavenet"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
