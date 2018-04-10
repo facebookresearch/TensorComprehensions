@@ -149,12 +149,12 @@ std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
   os << " unroll(";
   std::copy(unroll_.begin(), unroll_.end(), make_ostream_joiner(os, ", "));
   os << ")";
-  for (const auto& upa : isl::MUPA(mupa_)) {
+  for (const auto& upa : mupa_.get_union_pw_aff_list()) {
     os << std::endl
        << w.tab()
        << "-----------------------------------------------------------------------";
-    for (const auto& pa : upa) {
-      os << std::endl << w.tab() << "| " << pa.pa;
+    for (const auto& pa : upa.get_pw_aff_list()) {
+      os << std::endl << w.tab() << "| " << pa;
     }
   }
   os << std::endl
@@ -172,7 +172,7 @@ std::ostream& ScheduleTreeElemContext::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "domain(";
-  for (const auto& u : isl::UNION_SET(domain_)) {
+  for (const auto& u : domain_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }
@@ -189,7 +189,7 @@ std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "filter(";
-  for (const auto& u : isl::UNION_SET(filter_)) {
+  for (const auto& u : filter_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }
@@ -204,7 +204,7 @@ std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
     os << id << ", ";
   }
   os << ")";
-  for (const auto& u : isl::UNION_SET(filter_)) {
+  for (const auto& u : filter_.get_set_list()) {
     WS w2;
     os << std::endl << w2.tab() << u;
   }
