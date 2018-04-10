@@ -214,4 +214,4 @@ GFG GFG::makeGFG(const string& grammar) {
 
 #undef CHECK
 }
-} // ns tc::parser
+} // namespace tc

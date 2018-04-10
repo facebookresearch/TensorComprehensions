@@ -247,8 +247,8 @@ message(STATUS "Found glog: ${GLOG_LIBRARIES}")
 #     message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
-add_subdirectory(tc/proto)
-add_subdirectory(src)
+include_directories(BEFORE ${PROJECT_SOURCE_DIR})
+add_subdirectory(tc)
 
 # At the moment pybind is only supported in CUDA mode and compilation fails
 # for non-CUDA mode (CUDA_HOME and CUB_HOME undefined error).
@@ -262,13 +262,13 @@ enable_testing()
 add_subdirectory(test)
 
 if (WITH_CUDA)
-  add_subdirectory(examples)
+  add_subdirectory(tc/examples)
 else()
   message(STATUS "Not building examples, CUDA not available")
 endif()
 
 if (WITH_CAFFE2 AND WITH_CUDA)
-  add_subdirectory(benchmarks)
+  add_subdirectory(tc/benchmarks)
 else()
   message(STATUS "Not building benchmarks, caffe2 or CUDA not available")
 endif()

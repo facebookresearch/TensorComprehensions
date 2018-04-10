@@ -75,5 +75,5 @@ struct GFG {
 std::ostream& operator<<(std::ostream& os, const Node& n);
 std::ostream& operator<<(std::ostream& os, const Edge& e);
 std::ostream& operator<<(std::ostream& os, const GFG& g);
-}
-} // ns tc::parser
+} // namespace parser
+} // namespace tc

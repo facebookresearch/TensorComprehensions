@@ -43,4 +43,4 @@ NetDef ReferenceImplementationRegistry::ConvertNet(const NetDef& net) {
   }
   return result;
 }
-}
+} // namespace caffe2
