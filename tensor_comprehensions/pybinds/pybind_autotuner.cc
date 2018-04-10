@@ -111,6 +111,13 @@ PYBIND11_MODULE(autotuner, m) {
                 tuner_min_launch_total_threads;
           })
       .def(
+          "save_best_candidates_count",
+          [](tc::autotune::GeneticAutotunerATen& instance,
+             bool save_best_candidates_count) {
+            tc::FLAGS_tuner_save_best_candidates_count =
+                save_best_candidates_count;
+          })
+      .def(
           "tune",
           [dlpack](
               tc::autotune::GeneticAutotunerATen& instance,
