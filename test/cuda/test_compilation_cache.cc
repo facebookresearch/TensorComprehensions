@@ -20,6 +20,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -68,31 +69,69 @@ class CudaCacheTest : public ::testing::Test {
   }
 };
 
+TEST_F(CudaCacheTest, EntrySameKeyDifferentValue) {
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto inputPtrs = InputPtrs();
+  auto outputPtrs = InputPtrs();
+
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
+      "kernel0",
+      "ker000",
+      {0, 0, 1},
+      tc::Grid(std::vector<size_t>{1, 1, 1}),
+      tc::Block(std::vector<size_t>{1, 1, 1}),
+      options,
+      inputPtrs,
+      outputPtrs,
+      "source0",
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
+  ASSERT_THROW(
+      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
+          "kernel0",
+          "ker000",
+          {0, 0, 1},
+          tc::Grid(std::vector<size_t>{2, 1, 1}),
+          tc::Block(std::vector<size_t>{1, 2, 1}),
+          options,
+          inputPtrs,
+          outputPtrs,
+          "source1",
+          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
+      tc::CacheEntrySameKeyDifferentValue);
+
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
+  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
+}
+
 TEST_F(CudaCacheTest, DifferentIDs) {
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel0",
-      options,
-      inputPtrs,
-      outputPtrs,
       "ker000",
       {0, 0, 1},
-      "source0",
-      {1, 1, 1},
-      {1, 1, 1});
-  tc::CudaCache::getCache()->cacheKernel(
-      "kernel1",
+      tc::Grid(std::vector<size_t>{1, 1, 1}),
+      tc::Block(std::vector<size_t>{1, 1, 1}),
       options,
       inputPtrs,
       outputPtrs,
+      "source0",
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
+      "kernel1",
       "ker111",
       {1, 1, 0},
+      tc::Grid(std::vector<size_t>{2, 1, 1}),
+      tc::Block(std::vector<size_t>{1, 2, 1}),
+      options,
+      inputPtrs,
+      outputPtrs,
       "source1",
-      {2, 1, 1},
-      {1, 2, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   auto ret = tc::CudaCache::getCache()->retrieveKernel(
       "kernel0", options, inputPtrs, outputPtrs);
@@ -133,28 +172,30 @@ TEST_F(CudaCacheTest, DifferentOptions) {
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options0,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   auto options1 = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 2, 1}}),
       options1,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source1",
-      {2, 1, 1},
-      {1, 2, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   auto ret = tc::CudaCache::getCache()->retrieveKernel(
       "kernel", options0, inputPtrs, outputPtrs);
@@ -186,29 +227,31 @@ TEST_F(CudaCacheTest, DifferentInputs) {
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   auto s = inputs[0].shape[0];
   inputs[0].shape[0] = 42;
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 2, 1}}),
       options,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source1",
-      {2, 1, 1},
-      {1, 2, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   inputs[0].shape[0] = s;
   auto ret = tc::CudaCache::getCache()->retrieveKernel(
@@ -242,54 +285,58 @@ TEST_F(CudaCacheTest, DoubleInsertion) {
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(
+      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
           "kernel",
+          "",
+          {},
+          tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+          tc::Block(std::vector<size_t>{{1, 1, 1}}),
           options,
           inputPtrs,
           outputPtrs,
-          "",
-          {},
           "source1",
-          {1, 1, 1},
-          {1, 1, 1}),
+          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
       tc::CacheEntrySameKeyDifferentValue);
 
   EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(
+      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
           "kernel",
+          "",
+          {},
+          tc::Grid(std::vector<size_t>{{2, 1, 1}}),
+          tc::Block(std::vector<size_t>{{1, 1, 1}}),
           options,
           inputPtrs,
           outputPtrs,
-          "",
-          {},
           "source0",
-          {2, 1, 1},
-          {1, 1, 1}),
+          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
       tc::CacheEntrySameKeyDifferentValue);
 
   EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(
+      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
           "kernel",
+          "",
+          {},
+          tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+          tc::Block(std::vector<size_t>{{1, 2, 1}}),
           options,
           inputPtrs,
           outputPtrs,
-          "",
-          {},
           "source0",
-          {1, 1, 1},
-          {1, 2, 1}),
+          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
       tc::CacheEntrySameKeyDifferentValue);
 
   ASSERT_EQ(tc::CudaCache::getCache()->size(), 1);
@@ -303,26 +350,28 @@ TEST_F(CudaCacheTest, Serialization) {
   auto inputPtrs = InputPtrs();
   auto outputPtrs = InputPtrs();
 
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel0",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
-  tc::CudaCache::getCache()->cacheKernel(
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel1",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 2, 1}}),
       options,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source1",
-      {2, 1, 1},
-      {1, 2, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   auto buf = tc::CudaCache::getCache()->toProtobuf();
 
@@ -817,127 +866,137 @@ TEST(
 
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel0", options0, inputPtrs, outputPtrs, std::chrono::microseconds(3));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel0",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options0,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel0", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel0",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options1,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source1",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel0", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel0",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options2,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source2",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel1", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel1",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options2,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source2",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel1", options3, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel1",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options3,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source3",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel2", options4, inputPtrs, outputPtrs, std::chrono::microseconds(5));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel2",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options4,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source4",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel3", options0, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel3",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options0,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source0",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel3", options1, inputPtrs, outputPtrs, std::chrono::microseconds(6));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel3",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options1,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source1",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel3", options3, inputPtrs, outputPtrs, std::chrono::microseconds(5));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel3",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options3,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source3",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel3", options4, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::CudaCache::getCache()->cacheKernel(
+  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
       "kernel3",
+      "",
+      {},
+      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
+      tc::Block(std::vector<size_t>{{1, 1, 1}}),
       options4,
       inputPtrs,
       outputPtrs,
-      "",
-      {},
       "source4",
-      {1, 1, 1},
-      {1, 1, 1});
+      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
 
   tc::OptionsCache::getCache()->keepOnlyBestCandidates(1);
   tc::removeFromCudaCacheEntriesNotInOptionsCache(
@@ -1386,15 +1445,16 @@ __global__ void add100(float* __restrict__ output, const float* __restrict__ A, 
   {
     std::vector<const DLTensor*> outputs{tensorsPair.first[0]};
 
-    tc::ManualCudaCache::getCache()->cacheKernel(
+    tc::ManualCudaCache::getCache()->cacheKernel(tc::ManualCudaCachedEntry(
         "add",
-        tensorsPair.first,
-        outputs,
         "add100",
         {},
+        tc::Grid(std::vector<size_t>{1, 1, 1}),
+        tc::Block(std::vector<size_t>{100, 1, 1}),
+        tensorsPair.first,
+        outputs,
         cudaSource,
-        tc::Grid({1, 1, 1}),
-        tc::Block({100, 1, 1}));
+        tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
   }
 
   auto handle = atCompl.compile("add", inputs, options);

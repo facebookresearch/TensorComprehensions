@@ -25,18 +25,18 @@
 
 namespace tc {
 
-template <typename CC>
-void Cache<CC>::enableCache() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::enableCache() {
   CC::getGlobalSharedCache() = std::make_shared<CC>();
 }
 
-template <typename CC>
-void Cache<CC>::disableCache() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::disableCache() {
   CC::getGlobalSharedCache() = nullptr;
 }
 
-template <typename CC>
-std::shared_ptr<CC> Cache<CC>::getCache() {
+template <typename CC, typename CachedEntryType>
+std::shared_ptr<CC> Cache<CC, CachedEntryType>::getCache() {
   if (not cacheEnabled()) {
     throw std::runtime_error(
         "EnableCache or LoadCacheFromProtobuf must be called before using the cache.");
@@ -44,8 +44,9 @@ std::shared_ptr<CC> Cache<CC>::getCache() {
   return CC::getGlobalSharedCache();
 }
 
-template <typename CC>
-void Cache<CC>::dumpCacheToProtobuf(const std::string& filename) {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::dumpCacheToProtobuf(
+    const std::string& filename) {
   std::fstream serialized(
       filename, std::ios::binary | std::ios::trunc | std::ios::out);
   if (!serialized) {
@@ -56,9 +57,10 @@ void Cache<CC>::dumpCacheToProtobuf(const std::string& filename) {
   }
 }
 
-template <typename CC>
-void Cache<CC>::loadCacheFromProtobuf(const std::string& filename) {
-  typename CC::Protobuf buf;
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(
+    const std::string& filename) {
+  typename CC::ProtobufType buf;
   struct stat buffer = {0};
   if (stat(filename.c_str(), &buffer) == 0) {
     std::ifstream serialized(filename, std::ios::binary);
@@ -67,124 +69,31 @@ void Cache<CC>::loadCacheFromProtobuf(const std::string& filename) {
   loadCacheFromProtobuf(buf);
 }
 
-template <typename CC>
+template <typename CC, typename CachedEntryType>
 template <typename Protobuf>
-void Cache<CC>::loadCacheFromProtobuf(const Protobuf& buf) {
+void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(const Protobuf& buf) {
   static_assert(
-      std::is_same<Protobuf, typename CC::Protobuf>::value,
+      std::is_same<Protobuf, typename CC::ProtobufType>::value,
       "LoadCacheFromProtobuf called with invalide protobuf type.");
   CC::getGlobalSharedCache() = std::make_shared<CC>(buf);
 }
 
-template <typename CC>
-bool Cache<CC>::cacheEnabled() {
+template <typename CC, typename CachedEntryType>
+bool Cache<CC, CachedEntryType>::cacheEnabled() {
   return CC::getGlobalSharedCache() != nullptr;
 }
 
-template <typename CC>
-size_t Cache<CC>::size() const {
+template <typename CC, typename CachedEntryType>
+size_t Cache<CC, CachedEntryType>::size() const {
   std::lock_guard<std::mutex> lock(mtx_);
   return static_cast<const CC*>(this)->entries_.size();
 }
 
-template <typename CC>
-void Cache<CC>::clear() {
+template <typename CC, typename CachedEntryType>
+void Cache<CC, CachedEntryType>::clear() {
   std::lock_guard<std::mutex> lock(mtx_);
   numberAttemptedRetrievals = numberSuccessfulRetrievals = numberCacheAttemps =
       0;
   static_cast<CC*>(this)->entries_.clear();
 }
-
-template <typename C, typename InputTy> // deduces whether C is const or
-// non-const
-auto CudaCache::searchKernelImpl(
-    C& c,
-    const std::string& id,
-    const CudaMappingOptions& options,
-    const std::vector<InputTy>& inputs,
-    const std::vector<InputTy>& outputs)
-    -> decltype(c.searchKernel(id, options, inputs, outputs)) {
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
-  auto it = std::find_if(
-      c.entries_.begin(), c.entries_.end(), [&](const CachedEntry& c) {
-        using tc::operator==;
-        return id == c.key.id && options == c.key.mappingOptions &&
-            inputs == c.key.inputs && outputs == c.key.outputs &&
-            gpuStr == c.key.deviceStr;
-      });
-  if (it != c.entries_.end()) {
-    if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
-                << tc::git_version
-                << " and Proto version is: " << it->key.gitVersion
-                << " .This proto might be incompatible"
-                << " with your TC binary and can break. Please autotune"
-                << " against the correct TC version." << std::endl;
-    }
-    return &*it;
-  }
-  return nullptr;
-}
-
-// deduces whether C is const or non-const
-template <typename C>
-auto OptionsCache::searchKernelImpl(
-    C& c,
-    const std::string& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs)
-    -> decltype(c.searchKernel(id, inputs, outputs)) {
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
-  auto it = std::find_if(
-      c.entries_.begin(), c.entries_.end(), [&](const CachedEntry& c) {
-        using tc::operator==;
-        return id == c.key.id && inputs == c.key.inputs &&
-            outputs == c.key.outputs && gpuStr == c.key.deviceStr;
-      });
-  if (it != c.entries_.end()) {
-    if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
-                << tc::git_version
-                << " and Proto version is: " << it->key.gitVersion
-                << " .This proto might be incompatible"
-                << " with your TC binary and can break. Please autotune"
-                << " against the correct TC version." << std::endl;
-      ;
-    }
-    return &*it;
-  }
-  return nullptr;
-}
-
-// deduces whether C is const or non-const
-template <typename C, typename TensorTy>
-auto ManualCudaCache::searchKernelImpl(
-    C& c,
-    const std::string& id,
-    const std::vector<TensorTy>& inputs,
-    const std::vector<TensorTy>& outputs)
-    -> decltype(c.searchKernel(id, inputs, outputs)) {
-  auto gpuStr = CudaGPUInfo::GPUInfo().GetCudaDeviceStr();
-  auto it = std::find_if(
-      c.entries_.begin(), c.entries_.end(), [&](const CachedEntry& c) {
-        using tc::operator==;
-        return id == c.key.id && inputs == c.key.inputs &&
-            outputs == c.key.outputs && gpuStr == c.key.deviceStr;
-      });
-  if (it != c.entries_.end()) {
-    std::cout << "RETURNING IT: " << it->key.gitVersion << std::endl;
-    if (it->key.gitVersion != tc::git_version) {
-      std::cerr << "[WARNING] Proto version doesn't match. TC git version is: "
-                << tc::git_version
-                << " and Proto version is: " << it->key.gitVersion
-                << " .This proto might be incompatible"
-                << " with your TC binary and can break. Please autotune"
-                << " against the correct TC version." << std::endl;
-      ;
-    }
-    return &*it;
-  }
-  return nullptr;
-}
-
 } // namespace tc

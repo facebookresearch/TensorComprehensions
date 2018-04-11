@@ -105,6 +105,10 @@ class CudaDim {
     return view == other.view;
   }
 
+  inline bool operator!=(const CudaDim& other) const {
+    return not(*this == other);
+  }
+
  private:
   CudaDimProto ownedProto_;
 
@@ -122,6 +126,7 @@ class Block : public CudaDim {
   Block(std::vector<uint64_t> il) : CudaDim(il) {}
 
   using CudaDim::operator=;
+  using CudaDim::operator!=;
 };
 
 /// Specializing CudaDim to differentiate between Block and Grid sizes.
@@ -134,6 +139,7 @@ class Grid : public CudaDim {
   Grid(std::vector<uint64_t> il) : CudaDim(il) {}
 
   using CudaDim::operator=;
+  using CudaDim::operator!=;
 };
 
 class CudaMappingOptions {
