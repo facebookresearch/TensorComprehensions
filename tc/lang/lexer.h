@@ -418,9 +418,9 @@ struct Lexer {
 
  private:
   Token lex() {
-    int kind;
-    size_t start;
-    size_t length;
+    int kind = -1;
+    size_t start = 0;
+    size_t length = 0;
     assert(file);
     if (!shared.match(*file, pos, &kind, &start, &length)) {
       reportError(
