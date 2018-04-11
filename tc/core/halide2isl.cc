@@ -347,8 +347,8 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
  * (for the writes) to the corresponding tag in the access relations.
  * "statements" collects the mapping from instance set tuple identifiers
  * to the corresponding Provide node.
- * "iterators" collects the mapping from instance set tuple identifiers
- * to the corresponding outer loop iterator names, from outermost to innermost.
+ * "domains" collects the mapping from instance set tuple identifiers
+ * to the corresponding iteration domain information.
  */
 isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
@@ -358,7 +358,7 @@ isl::schedule makeScheduleTreeHelper(
     isl::union_map* writes,
     AccessMap* accesses,
     StatementMap* statements,
-    IteratorMap* iterators) {
+    IterationDomainMap* domains) {
   isl::schedule schedule;
   if (auto op = s.as<For>()) {
     // Add one additional dimension to our set of loop variables
@@ -397,14 +397,7 @@ isl::schedule makeScheduleTreeHelper(
     auto outerNext = outer;
     outerNext.push_back(op->name);
     auto body = makeScheduleTreeHelper(
-        op->body,
-        set,
-        outerNext,
-        reads,
-        writes,
-        accesses,
-        statements,
-        iterators);
+        op->body, set, outerNext, reads, writes, accesses, statements, domains);
 
     // Create an affine function that defines an ordering for all
     // the statements in the body of this loop over the values of
@@ -434,7 +427,7 @@ isl::schedule makeScheduleTreeHelper(
     std::vector<isl::schedule> schedules;
     for (Stmt stmt : stmts) {
       schedules.push_back(makeScheduleTreeHelper(
-          stmt, set, outer, reads, writes, accesses, statements, iterators));
+          stmt, set, outer, reads, writes, accesses, statements, domains));
     }
     schedule = schedules[0].sequence(schedules[1]);
 
@@ -445,7 +438,9 @@ isl::schedule makeScheduleTreeHelper(
     size_t stmtIndex = statements->size();
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
-    iterators->emplace(id, outer);
+    IterationDomain iterationDomain;
+    iterationDomain.iterators = outer;
+    domains->emplace(id, iterationDomain);
     isl::set domain = set.set_tuple_id(id);
     schedule = isl::schedule::from_domain(domain);
 
@@ -476,7 +471,7 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
       &result.writes,
       &result.accesses,
       &result.statements,
-      &result.iterators);
+      &result.domains);
 
   result.tree = fromIslSchedule(schedule);
 

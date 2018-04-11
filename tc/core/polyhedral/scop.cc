@@ -64,7 +64,7 @@ ScopUPtr Scop::makeScop(
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
-  scop->halide.iterators = std::move(tree.iterators);
+  scop->halide.domains = std::move(tree.domains);
 
   return scop;
 }
@@ -508,7 +508,7 @@ isl::aff Scop::makeIslAffFromStmtExpr(
     isl::space paramSpace,
     const Halide::Expr& e) const {
   auto ctx = stmtId.get_ctx();
-  auto iterators = halide.iterators.at(stmtId);
+  auto iterators = halide.domains.at(stmtId).iterators;
   auto space = paramSpace.named_set_from_params_id(stmtId, iterators.size());
   // Set the names of the set dimensions of "space" for use
   // by halide2isl::makeIslAffFromExpr.
