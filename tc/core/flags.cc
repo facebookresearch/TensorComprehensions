@@ -105,6 +105,10 @@ DEFINE_int64(
     random_seed,
     -1,
     "The number of best candidates to restore from the proto cache");
+DEFINE_uint32(
+    tuner_save_best_candidates_count,
+    10,
+    "Number of best candidates to save from autotuning");
 
 uint64_t initRandomSeed() {
   static std::mutex mut;
