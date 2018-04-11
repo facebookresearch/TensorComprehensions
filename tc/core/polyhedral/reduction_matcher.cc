@@ -134,21 +134,21 @@ isl::id statementId(const Scop& scop, const Halide::Internal::Stmt& stmt) {
 
 } // namespace
 
-std::pair<isl::union_set, std::vector<isl::id>> reductionInitsUpdates(
+std::pair<isl::union_set, isl::union_set> reductionInitsUpdates(
     isl::union_set domain,
     const Scop& scop) {
   auto initUnion = isl::union_set::empty(domain.get_space());
-  std::vector<isl::id> update;
+  auto update = initUnion;
   std::unordered_set<isl::id, isl::IslIdIslHash> init;
   std::vector<isl::set> nonUpdate;
-  // First collect all the update statement identifiers,
+  // First collect all the update statements,
   // the corresponding init statement and all non-update statements.
   domain.foreach_set([&init, &update, &nonUpdate, &scop](isl::set set) {
     auto setId = set.get_tuple_id();
     Halide::Internal::Stmt initStmt;
     std::vector<size_t> reductionDims;
     if (isReductionUpdateId(setId, scop, initStmt, reductionDims)) {
-      update.emplace_back(setId);
+      update = update.unite(set);
       init.emplace(statementId(scop, initStmt));
     } else {
       nonUpdate.emplace_back(set);
@@ -156,34 +156,25 @@ std::pair<isl::union_set, std::vector<isl::id>> reductionInitsUpdates(
   });
   // Then check if all the non-update statements are init statements
   // that correspond to the update statements found.
-  // If not, return an empty list of update statement identifiers.
+  // If not, return an empty list of update statements.
   for (auto set : nonUpdate) {
     if (init.count(set.get_tuple_id()) != 1) {
-      return std::pair<isl::union_set, std::vector<isl::id>>(
-          initUnion, std::vector<isl::id>());
+      return std::pair<isl::union_set, isl::union_set>(
+          initUnion, isl::union_set::empty(domain.get_space()));
     }
     initUnion = initUnion.unite(set);
   }
-  return std::pair<isl::union_set, std::vector<isl::id>>(initUnion, update);
+  return std::pair<isl::union_set, isl::union_set>(initUnion, update);
 }
 
-int findFirstReductionDim(isl::multi_union_pw_aff islMupa, const Scop& scop) {
-  auto mupa = isl::MUPA(islMupa);
-  int reductionDim = -1;
-  int currentDim = 0;
-  for (auto const& upa : mupa) {
-    for (auto const& pa : upa) {
-      if (isAlmostIdentityReduction(pa.pa, scop)) {
-        reductionDim = currentDim;
-        break;
-      }
-    }
-    if (reductionDim != -1) {
-      break;
-    }
-    ++currentDim;
-  }
-  return reductionDim;
+bool isReductionMember(
+    isl::union_pw_aff member,
+    isl::union_set domain,
+    const Scop& scop) {
+  return domain.every_set([member, &scop](isl::set set) {
+    auto pa = member.extract_on_domain(set.get_space());
+    return isAlmostIdentityReduction(pa, scop);
+  });
 }
 
 } // namespace polyhedral
