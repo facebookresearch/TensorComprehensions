@@ -3,6 +3,9 @@ __pycache__/
 *~
 build/*
 docs/build/*
+tc/proto/*.py
+tc/proto/*.cc
+tc/proto/*.h
 third-party/*_cache
 third-party/llvm_sources*
 third-party-install/*
