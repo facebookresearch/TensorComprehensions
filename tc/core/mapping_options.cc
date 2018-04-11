@@ -21,7 +21,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include <mapping_options.pb.h>
+#include "tc/proto/mapping_options.pb.h"
 
 #include "tc/core/flags.h"
 #include "tc/core/mapping_options_cpp_printer.h"

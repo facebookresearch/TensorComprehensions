@@ -15,7 +15,7 @@
  */
 #pragma once
 
-#include <mapping_options.pb.h>
+#include "tc/proto/mapping_options.pb.h"
 
 #include <array>
 #include <iostream>

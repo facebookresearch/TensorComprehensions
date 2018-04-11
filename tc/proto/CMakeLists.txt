@@ -60,7 +60,7 @@ function(tc_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
   set(${python_var} ${${python_var}} PARENT_SCOPE)
 endfunction()
 
-tc_protobuf_generate_cpp_py(${CMAKE_CURRENT_BINARY_DIR} PROTO_SRCS PROTO_HDRS PROTO_PY mapping_options.proto compcache.proto)
+tc_protobuf_generate_cpp_py(${PROJECT_SOURCE_DIR}/tc/proto PROTO_SRCS PROTO_HDRS PROTO_PY mapping_options.proto compcache.proto)
 
 add_library(tc_proto SHARED ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tc_proto ${PROTOBUF_LIBRARIES})

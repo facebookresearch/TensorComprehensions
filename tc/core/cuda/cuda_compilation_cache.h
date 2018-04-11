@@ -24,7 +24,7 @@
 
 #include <dlpack/dlpack.h>
 
-#include <compcache.pb.h>
+#include "tc/proto/compcache.pb.h"
 
 #include "tc/core/compilation_cache.h"
 #include "tc/core/cuda/cuda.h"
