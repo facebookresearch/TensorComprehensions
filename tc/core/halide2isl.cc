@@ -433,6 +433,7 @@ isl::schedule makeScheduleTreeHelper(
     auto tupleSpace = isl::space(set.get_ctx(), 0);
     tupleSpace = tupleSpace.named_set_from_params_id(id, outer.n());
     IterationDomain iterationDomain;
+    iterationDomain.paramSpace = set.get_space();
     iterationDomain.tuple = isl::multi_id(tupleSpace, outer);
     domains->emplace(id, iterationDomain);
     auto domain = set.unbind_params(iterationDomain.tuple);
