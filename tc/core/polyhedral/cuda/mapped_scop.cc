@@ -367,8 +367,8 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band, size_t nInner) {
   }
   // With current isl scheduler, if coincident dimensions exist in a band,
   // they are outermost.
-  // If a band has more than 3 coincident dimensions, this will choose
-  // outermost, but we may also want innermost.
+  // If a band has more than 3 coincident dimensions,
+  // then the innermost of those will be used.
   auto nOuterCoincident = bandNode->nOuterCoincident();
   if (!bandNode->permutable_ || nOuterCoincident < 1) {
     return nInner;
