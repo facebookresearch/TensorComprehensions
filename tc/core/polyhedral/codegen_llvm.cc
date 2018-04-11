@@ -636,7 +636,7 @@ isl::ast_node collectIteratorMaps(
   auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
   CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
   auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-  auto iterators = scop.halide.iterators.at(stmtId);
+  auto iterators = scop.halide.domains.at(stmtId).iterators;
   auto& stmtIteratorMap = iteratorMaps[stmtId];
   for (size_t i = 0; i < iterators.size(); ++i) {
     auto expr = build.expr_from(iteratorMap.get_pw_aff(i));

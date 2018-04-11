@@ -489,7 +489,7 @@ struct Scop {
     std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
         statements;
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
-    halide2isl::IteratorMap iterators;
+    halide2isl::IterationDomainMap domains;
   } halide;
 
   // Polyhedral IR

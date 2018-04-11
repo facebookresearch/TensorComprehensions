@@ -56,8 +56,14 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 // does not correspond to a parameter or set dimension of the space.
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
-typedef std::unordered_map<isl::id, std::vector<std::string>, isl::IslIdIslHash>
-    IteratorMap;
+// Iteration domain information associated to a statement identifier.
+struct IterationDomain {
+  // The outer loop iterators, from outermost to innermost.
+  std::vector<std::string> iterators;
+};
+
+typedef std::unordered_map<isl::id, IterationDomain, isl::IslIdIslHash>
+    IterationDomainMap;
 typedef std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
     StatementMap;
 typedef std::unordered_map<const Halide::Internal::IRNode*, isl::id> AccessMap;
@@ -81,9 +87,9 @@ struct ScheduleTreeAndAccesses {
   /// refered to above.
   StatementMap statements;
 
-  /// The correspondence between statement ids and the outer loop iterators
+  /// The correspondence between statement ids and the iteration domain
   /// of the corresponding leaf Stmt.
-  IteratorMap iterators;
+  IterationDomainMap domains;
 };
 
 /// Make a schedule tree from a Halide Stmt, along with auxiliary data
