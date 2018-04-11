@@ -332,7 +332,7 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
  * recursively descending over the Stmt.
  * "s" is the current position in the recursive descent.
  * "set" describes the bounds on the outer loop iterators.
- * "outer" contains the names of the outer loop iterators
+ * "outer" contains the identifiers of the outer loop iterators
  * from outermost to innermost.
  * Return the schedule corresponding to the subtree at "s".
  *
@@ -347,7 +347,7 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
 isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
-    std::vector<std::string>& outer,
+    isl::id_list outer,
     isl::union_map* reads,
     isl::union_map* writes,
     AccessMap* accesses,
@@ -388,8 +388,7 @@ isl::schedule makeScheduleTreeHelper(
     }
 
     // Recursively descend.
-    auto outerNext = outer;
-    outerNext.push_back(op->name);
+    auto outerNext = outer.add(isl::id(set.get_ctx(), op->name));
     auto body = makeScheduleTreeHelper(
         op->body, set, outerNext, reads, writes, accesses, statements, domains);
 
@@ -432,8 +431,10 @@ isl::schedule makeScheduleTreeHelper(
     size_t stmtIndex = statements->size();
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
+    auto tupleSpace = isl::space(set.get_ctx(), 0);
+    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.n());
     IterationDomain iterationDomain;
-    iterationDomain.iterators = outer;
+    iterationDomain.tuple = isl::multi_id(tupleSpace, outer);
     domains->emplace(id, iterationDomain);
     isl::set domain = set.set_tuple_id(id);
     schedule = isl::schedule::from_domain(domain);
@@ -457,7 +458,7 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   result.writes = result.reads = isl::union_map::empty(paramSpace);
 
   // Walk the IR building a schedule tree
-  std::vector<std::string> outer;
+  isl::id_list outer(paramSpace.get_ctx(), 0);
   auto schedule = makeScheduleTreeHelper(
       s,
       isl::set::universe(paramSpace),

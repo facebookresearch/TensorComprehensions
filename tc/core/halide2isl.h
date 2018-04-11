@@ -58,8 +58,10 @@ isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
 // Iteration domain information associated to a statement identifier.
 struct IterationDomain {
-  // The outer loop iterators, from outermost to innermost.
-  std::vector<std::string> iterators;
+  // The identifier tuple corresponding to the iteration domain.
+  // The identifiers in the tuple are the outer loop iterators,
+  // from outermost to innermost.
+  isl::multi_id tuple;
 };
 
 typedef std::unordered_map<isl::id, IterationDomain, isl::IslIdIslHash>
