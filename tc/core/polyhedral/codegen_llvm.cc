@@ -243,8 +243,22 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       CodeGen_X86::visit(call);
     }
   }
+
   void visit(const Halide::Internal::Variable* op) override {
     value = getValue(iteratorMap_->at(op->name));
+
+    // Generate code for type casting if necessary.
+    llvm::Type* ty = llvm_type_of(op->type);
+    if (value->getType() != ty) {
+      if (op->type.is_int()) {
+        value = builder->CreateIntCast(value, ty, true);
+      } else {
+        CHECK(false) << "Type inconsistency not handled. "
+                     << "Variable " << op->name << " is " << op->type
+                     << ", but its corresponding llvm::Value is "
+                     << toString(value->getType()) << ".";
+      }
+    }
   }
 
  public:
