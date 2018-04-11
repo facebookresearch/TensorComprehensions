@@ -58,6 +58,9 @@ isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
 // Iteration domain information associated to a statement identifier.
 struct IterationDomain {
+  // All parameters active at the point where the iteration domain
+  // was created, including those corresponding to outer loop iterators.
+  isl::space paramSpace;
   // The identifier tuple corresponding to the iteration domain.
   // The identifiers in the tuple are the outer loop iterators,
   // from outermost to innermost.
