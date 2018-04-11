@@ -103,7 +103,8 @@ void Jit::addModule(std::shared_ptr<Module> M) {
 }
 #else
 Jit::Jit()
-    : ES(),
+    : SSP(),
+      ES(SSP),
       Resolver(llvm::orc::createLegacyLookupResolver(
           [this](const std::string& Name) -> JITSymbol {
             if (auto Sym = compileLayer_.findSymbol(Name, false))
@@ -115,9 +116,7 @@ Jit::Jit()
               return JITSymbol(SymAddr, JITSymbolFlags::Exported);
             return nullptr;
           },
-          [](Error err) {
-            throw std::runtime_error("Lookup failed: ");// + err);
-          })),
+          [](Error err) { throw std::runtime_error("Lookup failed!"); })),
       TM_(EngineBuilder().selectTarget()),
       DL_(TM_->createDataLayout()),
       objectLayer_(
