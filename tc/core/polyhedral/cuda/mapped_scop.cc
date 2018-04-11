@@ -381,9 +381,9 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band, size_t nInner) {
 
   // Map the coincident dimensions to threads starting from the innermost and
   // from thread x.
-  for (int i = 0, dim = nOuterCoincident - 1; i < nMappedThreads && dim >= 0;
-       ++i, --dim) {
+  for (int i = 0; i < nMappedThreads; ++i) {
     auto id = mapping::ThreadId::makeId(nInner + i);
+    auto dim = nOuterCoincident - 1 - i;
     if (id == mapping::ThreadId::x()) {
       threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(schedule(), band),
