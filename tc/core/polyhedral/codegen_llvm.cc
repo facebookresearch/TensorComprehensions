@@ -252,6 +252,10 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     if (value->getType() != ty) {
       if (op->type.is_int()) {
         value = builder->CreateIntCast(value, ty, true);
+      } else if (op->type.is_uint()) {
+        value = builder->CreateIntCast(value, ty, false);
+      } else if (op->type.is_float()) {
+        value = builder->CreateFPCast(value, ty);
       } else {
         CHECK(false) << "Type inconsistency not handled. "
                      << "Variable " << op->name << " is " << op->type
