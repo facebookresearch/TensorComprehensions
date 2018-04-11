@@ -507,14 +507,12 @@ isl::aff Scop::makeIslAffFromStmtExpr(
     isl::id stmtId,
     isl::space paramSpace,
     const Halide::Expr& e) const {
-  auto ctx = stmtId.get_ctx();
-  auto iterators = halide.domains.at(stmtId).iterators;
-  auto space = paramSpace.named_set_from_params_id(stmtId, iterators.size());
+  auto tuple = halide.domains.at(stmtId).tuple;
+  auto space = paramSpace.named_set_from_params_id(stmtId, tuple.size());
   // Set the names of the set dimensions of "space" for use
   // by halide2isl::makeIslAffFromExpr.
-  for (size_t i = 0; i < iterators.size(); ++i) {
-    isl::id id(ctx, iterators[i]);
-    space = space.set_dim_id(isl::dim_type::set, i, id);
+  for (int i = 0; i < tuple.size(); ++i) {
+    space = space.set_dim_id(isl::dim_type::set, i, tuple.get_id(i));
   }
   return halide2isl::makeIslAffFromExpr(space, e);
 }
