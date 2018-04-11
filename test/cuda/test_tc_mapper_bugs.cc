@@ -20,6 +20,7 @@
 #include <ATen/ATen.h>
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/autotuner/genetic_autotuner_aten.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -788,6 +789,91 @@ TEST(Convolution, NestedExpressions) {
   cu.run(convolution, inputs, outputs, handle);
   auto B = outputs[0];
   CHECK_EQ(at::Scalar(B[10]).toFloat(), 1);
+}
+
+TEST(Convolution2D, InvalidPtx) {
+  auto TC = std::string(R"TC(
+def conv2d(float(N, C, H, W) I, float(M, C, KH, KW) W1) -> (output) {
+    output(n, m, h, w) +=! I(n, c, 2 * h + kh, 2 * w + kw) * W1(m, c, kh, kw)
+}
+)TC");
+
+  auto N = 1;
+  auto H = 58;
+  auto W = H;
+  auto C = 64;
+  auto M = 128;
+  auto KH = 3;
+  auto KW = KH;
+
+  auto I = at::CUDA(at::kFloat).randn({N, C, H, W});
+  auto W1 = at::CUDA(at::kFloat).randn({M, C, KW, KW});
+
+  auto options =
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .tile(8, 16, 1)
+          .unroll(4)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads(29, 15)
+          .mapToBlocks(3)
+          .useSharedMemory(true)
+          .usePrivateMemory(false)
+          .unrollCopyShared(true);
+
+// memory corruption on P6000
+#if 0
+.outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+.outerScheduleAllowSkewing(false)
+.outerSchedulePositiveOrthant(true)
+.intraTileScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+.intraTileScheduleAllowSkewing(false)
+.intraTileSchedulePositiveOrthant(true)
+.tile(16, 8, 2)
+.unroll(128)
+.tileImperfectlyNested(false)
+.matchLibraryCalls(true)
+.mapToThreads(128, 4)
+.mapToBlocks(8, 58)
+.useSharedMemory(true)
+.usePrivateMemory(true)
+.unrollCopyShared(true);
+#endif
+
+// invalid PTX + INVALID_HANDLE on P6000
+#if 0
+.outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+.outerScheduleAllowSkewing(false)
+.outerSchedulePositiveOrthant(true)
+.intraTileScheduleFusionStrategy(tc::FusionStrategy::Max)
+.intraTileScheduleAllowSkewing(false)
+.intraTileSchedulePositiveOrthant(true)
+.tile(8, 1)
+.unroll(128)
+.tileImperfectlyNested(false)
+.matchLibraryCalls(true)
+.mapToThreads(64, 8)
+.mapToBlocks(64, 3, 8)
+.useSharedMemory(true)
+.usePrivateMemory(false)
+.unrollCopyShared(true);
+#endif
+
+  tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
+  cu.define(TC);
+  std::vector<at::Tensor> inputs = {I, W1};
+  std::vector<at::Tensor> outputs;
+  auto handle = cu.compile("conv2d", inputs, options);
+  cu.run("conv2d", inputs, outputs, handle);
+
+  tc::autotune::GeneticAutotunerATen geneticAutotuneATen(TC);
+  geneticAutotuneATen.tune("", "conv2d", inputs, options, {options});
 }
 
 int main(int argc, char** argv) {
