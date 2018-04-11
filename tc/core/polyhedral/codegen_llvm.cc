@@ -647,8 +647,7 @@ isl::ast_node collectIteratorMaps(
       scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
   for (auto e : provide->args) {
     const auto& map = iteratorMap;
-    auto space = map.get_space().params();
-    auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
+    auto aff = scop.makeIslAffFromStmtExpr(stmtId, e);
     auto pulled = isl::pw_aff(aff).pullback(map);
     CHECK_EQ(pulled.n_piece(), 1);
     subscripts.push_back(build.expr_from(pulled));
