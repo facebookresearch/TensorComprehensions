@@ -19,7 +19,7 @@
 #include <memory>
 #include <vector>
 
-#include "tc/autotuner/genetic_tuning_harness.h"
+#include "tc/autotuner/parameters.h"
 #include "tc/autotuner/utils/utils.h"
 #include "tc/lang/parser.h"
 
