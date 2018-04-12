@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "tc/autotuner/parameters.h"
-#include "tc/autotuner/utils/utils.h"
 #include "tc/lang/parser.h"
 
 #include <llvm/ADT/Optional.h>
