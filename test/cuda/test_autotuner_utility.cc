@@ -15,6 +15,8 @@
  */
 #include <gtest/gtest.h>
 
+#include "tc/aten/aten_compiler.h"
+#include "tc/aten/utils.h"
 #include "tc/autotuner/genetic_autotuner.h"
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"

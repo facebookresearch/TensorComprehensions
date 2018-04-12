@@ -16,8 +16,6 @@
 #pragma once
 #include <vector>
 
-#include <ATen/ATen.h>
-
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/dlpack.h"
