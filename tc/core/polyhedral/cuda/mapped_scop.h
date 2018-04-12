@@ -142,8 +142,8 @@ class MappedScop {
       detail::ScheduleTree* band,
       std::vector<size_t> tileSizes);
   // Look for innermost reduction band members.
-  // Store them in reductionBandUpdates_ and their parents
-  // in reductionFromParent_.  Return true if any were found.
+  // Store them in reductionBandUpdates_.
+  // Return true if any were found.
   bool detectReductions(detail::ScheduleTree* band);
   // Does separateReduction need to be called on this node?
   bool needReductionSeparation(const detail::ScheduleTree* st);
@@ -155,13 +155,12 @@ class MappedScop {
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.
   detail::ScheduleTree* separateReduction(detail::ScheduleTree* band);
-  // Map "band" to thread identifiers, assuming "nInner" thread identifiers
-  // have already been used and using as many remaining blockSizes values as
-  // outer coincident dimensions,
-  // unroll band members that execute at most "unroll" instances
-  // (if nInner == 0) and
-  // return the updated number of mapped thread identifiers.
-  size_t mapToThreads(detail::ScheduleTree* band, size_t nInner);
+  // Split out reduction bands and insert reduction synchronizations.
+  void splitOutReductionsAndInsertSyncs();
+  // Map "band" to thread identifiers using as many blockSizes values as outer
+  // coincident dimensions, unroll band members that execute at most "unroll"
+  // instances and return the number of mapped thread identifiers.
+  size_t mapToThreads(detail::ScheduleTree* band);
   // Map innermost bands to thread identifiers and
   // return the number of mapped thread identifiers.
   size_t mapInnermostBandsToThreads(detail::ScheduleTree* st);
@@ -185,17 +184,15 @@ class MappedScop {
   // Information about a detected reduction that can potentially
   // be mapped to a library call.
   struct Reduction {
-    Reduction(std::vector<isl::id> ids) : ids(ids), separated(false) {}
+    Reduction(std::vector<isl::id> ids, size_t index)
+        : ids(ids), separated(false), reductionDim(index) {}
     // The statement identifiers of the reduction update statements.
     std::vector<isl::id> ids;
     // Has the reduction been separated out as a full block?
     bool separated;
+    // Index of the band member in which the reduction was detected.
+    int reductionDim;
   };
-  // Map parent band of reduction band to the reduction band.
-  // As a special case, the parent band may be missing,
-  // in which case it is the reduction band that gets mapped to itself.
-  std::unordered_map<const detail::ScheduleTree*, const detail::ScheduleTree*>
-      reductionFromParent_;
   // Map isolated innermost reduction band members to information
   // about the detected reduction.
   std::map<const detail::ScheduleTree*, Reduction> reductionBandUpdates_;
