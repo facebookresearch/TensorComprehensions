@@ -138,14 +138,14 @@ Duration CudaRTCFunction::Launch(
   int dev;
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
   if (perGpuModule_.count(dev) == 0) {
-    perGpuModule_.emplace(dev, CUmodule());
-    perGpuKernel_.emplace(dev, CUfunction());
-    TC_CUDA_DRIVERAPI_ENFORCE(cuModuleLoadDataEx(
-        &(perGpuModule_.at(dev)), nvrtc_ptx.data(), 0, 0, 0));
-    TC_CUDA_DRIVERAPI_ENFORCE(cuModuleGetFunction(
-        &(perGpuKernel_.at(dev)),
-        perGpuModule_.at(dev),
-        specializedName.c_str()));
+    CUmodule module;
+    CUfunction function;
+    TC_CUDA_DRIVERAPI_ENFORCE(
+        cuModuleLoadDataEx(&module, nvrtc_ptx.data(), 0, 0, 0));
+    perGpuModule_.emplace(dev, module);
+    TC_CUDA_DRIVERAPI_ENFORCE(
+        cuModuleGetFunction(&function, module, specializedName.c_str()));
+    perGpuKernel_.emplace(dev, function);
   }
 
   constexpr int kNumMaxParameters = 100;
