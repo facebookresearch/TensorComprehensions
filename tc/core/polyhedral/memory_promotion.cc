@@ -372,7 +372,7 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   isl::map map = scopedAccesses();
   auto accessSpace = map.get_space();
 
-  // lower bounsd space is S -> O; which we transform into [S -> O] -> P
+  // lower bounds space is S -> P; which we transform into [S -> O] -> P
   auto lowerBounds = approximation.lowerBounds().pullback(
       isl::multi_aff::domain_map(accessSpace));
   auto promotion = isl::multi_aff::range_map(accessSpace)
