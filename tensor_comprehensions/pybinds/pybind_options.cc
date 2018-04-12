@@ -90,8 +90,8 @@ PYBIND11_MODULE(mapping_options, m) {
           "Require TC to try and execute different TC expressions interleaved (Max), separately (Min)\nor interleaved as long as sufficient parallelism is exploited (Preserve3Coincident) by\nperforming loop fusion and fission. Applies before tiling")
       .def(
           "serializeToProtobuf",
-          []() {
-            std::string str = tc::CudaMappingOptions::toProtobufSerializedString;
+          [](tc::CudaMappingOptions& instance) {
+            std::string str = instance.toProtobufSerializedString;
             return py::bytes(str);
           },
           "Serialize the options to a protobuf string")
