@@ -467,20 +467,24 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
   if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
     if (n == 0) {
       // If children were not mapped to threads, the current band can be mapped.
+      // First, map the coincidence and reduction dimension to threads.
+      // Then, if some threads were mapped, fix unused thread dimensions to 0
+      // because we cannot map parent bands anyway.
       auto nMapped = mapToThreads(st);
-      markUnroll(scop_->scheduleRoot(), st, unroll);
-      return nMapped;
+      if (nMapped > 0) {
+        mapRemaining<mapping::ThreadId>(st, nMapped, numThreads.view.size());
+        markUnroll(scop_->scheduleRoot(), st, unroll);
+        return numThreads.view.size();
+      }
     } else if (anyNonCoincidentMember(band)) {
       // If children were mapped to threads, and this band has a non-coincident
       // member, insert a synchronization after its last child.
-      // This also implies the mapping must be completed first.
       // The node must have children if some of them were mapped to threads,
       // double-check.  Note that a band node has at most one child.
       CHECK_EQ(st->numChildren(), 1);
-      mapRemaining<mapping::ThreadId>(
-          st->child({0}), n, numThreads.view.size());
+      // The mapping should be always complete, double-check.
+      CHECK_EQ(n, numThreads.view.size());
       scop_->insertSyncAfter(st->child({0}));
-      return numThreads.view.size();
     }
   }
 
