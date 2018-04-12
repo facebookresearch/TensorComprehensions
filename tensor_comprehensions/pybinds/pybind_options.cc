@@ -91,7 +91,7 @@ PYBIND11_MODULE(mapping_options, m) {
       .def(
           "serializeToProtobuf",
           [](tc::CudaMappingOptions& instance) {
-            std::string str = instance.toProtobufSerializedString;
+            std::string str = instance.toProtobufSerializedString();
             return py::bytes(str);
           },
           "Serialize the options to a protobuf string")
