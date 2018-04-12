@@ -31,8 +31,7 @@ isl::id_list Codegen::makeLoopIterators(
   size_t n = 0;
   for (auto const& node : bands) {
     auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
-    auto depth =
-        node->scheduleDepth(root) + bandElem->mupa_.dim(isl::dim_type::set);
+    auto depth = node->scheduleDepth(root) + bandElem->nMember();
     if (depth > n) {
       n = depth;
     }
