@@ -17,32 +17,27 @@
 
 namespace tc {
 namespace polyhedral {
-template <typename MappingIdType>
-inline detail::ScheduleTree* insertMappingFilterAbove(
+inline detail::ScheduleTree* insertNodeAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-        mappingIds) {
+    ScheduleTreeUPtr&& node) {
+  CHECK_EQ(node->numChildren(), 0u);
   auto parent = tree->ancestor(root, 1);
   auto childPos = tree->positionInParent(parent);
-  parent->insertChild(
-      childPos,
-      detail::ScheduleTree::makeMappingFilter(
-          filter, mappingIds, parent->detachChild(childPos)));
+  node->appendChild(parent->detachChild(childPos));
+  parent->insertChild(childPos, std::move(node));
   return parent->child({childPos});
 }
 
-template <typename MappingIdType>
-inline void insertMappingFilterBelow(
+inline detail::ScheduleTree* insertNodeBelow(
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-        mappingIds) {
+    ScheduleTreeUPtr&& node) {
+  CHECK_EQ(node->numChildren(), 0u);
   auto numChildren = tree->numChildren();
   CHECK_LE(numChildren, 1u);
-  tree->appendChild(detail::ScheduleTree::makeMappingFilter(
-      filter, mappingIds, tree->detachChildren()));
+  node->appendChildren(tree->detachChildren());
+  tree->appendChild(std::move(node));
+  return tree->child({0});
 }
 
 template <typename MappingIdType>
@@ -70,8 +65,9 @@ inline detail::ScheduleTree* mapToParameterWithExtent(
       band->mupa_.get_union_pw_aff(pos).mod_val(isl::val(tree->ctx_, extent));
   upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
   auto filter = upa.zero_union_set();
-  return insertMappingFilterAbove<MappingIdType>(root, tree, filter, {id})
-      ->child({0});
+  auto mapping =
+      detail::ScheduleTree::makeMappingFilter<MappingIdType>(filter, {id});
+  return insertNodeAbove(root, tree, std::move(mapping))->child({0});
 }
 } // namespace polyhedral
 } // namespace tc
