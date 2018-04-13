@@ -332,45 +332,36 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     return 0;
   }
 
-  size_t nMappedReductionThreads = 0;
-  if (reductionBandUpdates_.count(band) == 1) {
-    // A reduction is assumed to get mapped to threadIdx.x
-    CHECK(reductionBandUpdates_.at(band).separated);
-    auto reductionDim = reductionBandUpdates_.at(band).reductionDim;
-    threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-        activeDomainPoints(schedule(), band),
-        band->scheduleDepth(schedule()) + reductionDim));
-    band = map(band, reductionDim, mapping::ThreadId::x());
-    nMappedReductionThreads = 1;
-  }
-
   // With current isl scheduler, if coincident dimensions exist in a band,
   // they are outermost.
   // If a band has more than 3 coincident dimensions,
   // then the innermost of those will be used.
-  auto nOuterCoincident = bandNode->nOuterCoincident();
-  if (nOuterCoincident < 1) {
-    return nMappedReductionThreads;
+  auto nCanMap = bandNode->nOuterCoincident();
+
+  // If the band has a detected reduction, then the first member
+  // after the coincident members is the reduction member and
+  // this member has to be mapped as well.
+  // In particular, it will get mapped to threadIdx.x
+  if (reductionBandUpdates_.count(band) == 1) {
+    CHECK(reductionBandUpdates_.at(band).separated);
+    nCanMap++;
   }
 
-  auto nMappedThreads = std::min(
-      numThreads.view.size() - nMappedReductionThreads,
-      static_cast<size_t>(nOuterCoincident));
-
-  // Immediately return if mapping to one thread dimension only was requested
-  // and a reduction was already mapped.  (Note that reduction is detected only
-  // if there are not enough outer coincident members, 0 in this case).
-  if (nMappedThreads == 0) {
-    return nMappedReductionThreads;
+  if (nCanMap < 1) {
+    return 0;
   }
-  CHECK_LE(nMappedThreads, 3 - nMappedReductionThreads)
-      << "mapping to too many threads";
+
+  auto nMappedThreads =
+      std::min(numThreads.view.size(), static_cast<size_t>(nCanMap));
+
+  CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
+  CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";
 
   // Map the coincident dimensions to threads starting from the innermost and
-  // from thread x unless it was already mapped to a reduction.
+  // from thread x.
   for (size_t i = 0; i < nMappedThreads; ++i) {
-    auto id = mapping::ThreadId::makeId(nMappedReductionThreads + i);
-    auto dim = nOuterCoincident - 1 - i;
+    auto id = mapping::ThreadId::makeId(i);
+    auto dim = nCanMap - 1 - i;
     if (id == mapping::ThreadId::x()) {
       threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(schedule(), band),
@@ -379,7 +370,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     band = map(band, dim, id);
   }
 
-  return nMappedReductionThreads + nMappedThreads;
+  return nMappedThreads;
 }
 
 namespace {
