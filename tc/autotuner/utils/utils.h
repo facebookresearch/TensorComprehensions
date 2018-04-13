@@ -59,6 +59,10 @@ struct OptionsWithMedianTime {
 std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
     const lang::CanonicalTcString& id,
     const std::vector<const DLTensor*>& inputs);
+double mean(std::vector<double>& v);
+double stdv(std::vector<double>& v, double mean);
+void normalizeVector(std::vector<double>& v);
+void sigmaScale(std::vector<double>& v);
 
 } // namespace autotune
 } // namespace tc

@@ -59,6 +59,17 @@ DEFINE_uint32(
     tuner_gen_pop_size,
     100,
     "Population size for genetic autotuning");
+
+DEFINE_uint32(
+    tuner_gen_mating_pool_size,
+    300,
+    "Mating pool size for genetic autotuning");
+
+DEFINE_uint32(
+    tuner_gen_selection_pool_size,
+    300,
+    "Selection pool size for genetic autotuning");
+
 DEFINE_uint32(
     tuner_gen_crossover_rate,
     80,
@@ -71,10 +82,6 @@ DEFINE_uint32(
     tuner_gen_generations,
     25,
     "How many generations to run genetic tuning for");
-DEFINE_uint32(
-    tuner_gen_number_elites,
-    10,
-    "The number of best candidates that are preserved intact between generations");
 DEFINE_uint32(tuner_threads, 1, "Number of CPU threads to use when autotuning");
 DEFINE_string(
     tuner_gpus,

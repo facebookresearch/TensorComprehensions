@@ -33,7 +33,7 @@ namespace autotune {
 class Printer {
  public:
   Printer(
-      size_t generation,
+      std::string prefix,
       size_t total,
       const std::atomic_size_t& currentCompilationJob,
       const std::atomic_size_t& numEvaluations);
@@ -47,7 +47,7 @@ class Printer {
  private:
   void printLoop();
 
-  size_t generation_;
+  std::string prefix_;
   std::vector<Duration> runtimes_;
   mutable std::mutex runtimesMtx_;
 
