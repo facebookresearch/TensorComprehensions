@@ -187,14 +187,11 @@ class MappedScop {
   // Information about a detected reduction that can potentially
   // be mapped to a library call.
   struct Reduction {
-    Reduction(std::vector<isl::id> ids, size_t index)
-        : ids(ids), separated(false), reductionDim(index) {}
+    Reduction(std::vector<isl::id> ids) : ids(ids), separated(false) {}
     // The statement identifiers of the reduction update statements.
     std::vector<isl::id> ids;
     // Has the reduction been separated out as a full block?
     bool separated;
-    // Index of the band member in which the reduction was detected.
-    size_t reductionDim;
   };
   // Map isolated innermost reduction band members to information
   // about the detected reduction.

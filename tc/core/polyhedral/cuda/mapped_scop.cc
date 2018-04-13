@@ -239,7 +239,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   if (!inits.is_empty()) {
     orderBefore(scop_->scheduleRoot(), tree, inits);
   }
-  reductionBandUpdates_.emplace(tree, Reduction(updateIds, reductionDim));
+  reductionBandUpdates_.emplace(tree, Reduction(updateIds));
   return true;
 }
 
@@ -261,11 +261,9 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   // mapped to threads.
   auto reductionSchedule = reductionBand->mupa_;
   auto nMember = reductionBand->nMember();
-  auto reductionDim = reductionBandUpdates_.at(st).reductionDim;
-  auto nMappedThreads =
-      std::min(numThreads.view.size(), reductionBand->nOuterCoincident() + 1);
+  auto reductionDim = reductionBand->nOuterCoincident();
+  auto nMappedThreads = std::min(numThreads.view.size(), reductionDim + 1);
   CHECK_GE(nMember, reductionDim);
-  CHECK_GE(reductionDim + 1, nMappedThreads);
   reductionSchedule = reductionSchedule.drop_dims(
       isl::dim_type::set, reductionDim + 1, nMember - (reductionDim + 1));
   reductionSchedule = reductionSchedule.drop_dims(
