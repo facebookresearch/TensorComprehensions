@@ -338,11 +338,12 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   // then the innermost of those will be used.
   auto nCanMap = bandNode->nOuterCoincident();
 
+  auto isReduction = reductionBandUpdates_.count(band) == 1;
   // If the band has a detected reduction, then the first member
   // after the coincident members is the reduction member and
   // this member has to be mapped as well.
   // In particular, it will get mapped to threadIdx.x
-  if (reductionBandUpdates_.count(band) == 1) {
+  if (isReduction) {
     CHECK(reductionBandUpdates_.at(band).separated);
     nCanMap++;
   }
@@ -368,6 +369,10 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
           band->scheduleDepth(schedule()) + dim));
     }
     band = map(band, dim, id);
+  }
+
+  if (isReduction) {
+    splitOutReductionAndInsertSyncs(band, nCanMap - 1);
   }
 
   return nMappedThreads;
@@ -585,19 +590,16 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
       mappedScopForCodegen->numThreads);
 }
 
-// Split out reduction loops into separate bands and insert reduction
-// synchronizations outside those bands.
-void MappedScop::splitOutReductionsAndInsertSyncs() {
+// Split out reduction member at position "dim" in "band" and
+// insert reduction synchronizations outside this split off band.
+void MappedScop::splitOutReductionAndInsertSyncs(
+    detail::ScheduleTree* band,
+    int dim) {
   using namespace polyhedral::detail;
 
-  for (auto bandUpdate : reductionBandUpdates_) {
-    auto tree = bandSplitOut(
-        scop_->scheduleRoot(),
-        const_cast<ScheduleTree*>(bandUpdate.first),
-        bandUpdate.second.reductionDim);
-    for (auto updateId : bandUpdate.second.ids) {
-      scop_->insertReductionSync1D(tree, updateId);
-    }
+  auto tree = bandSplitOut(scop_->scheduleRoot(), band, dim);
+  for (auto updateId : reductionBandUpdates_.at(band).ids) {
+    scop_->insertReductionSync1D(tree, updateId);
   }
 }
 
@@ -664,13 +666,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 7. Insert reduction synchronizations if necessary.
-  mappedScop->splitOutReductionsAndInsertSyncs();
-  LOG_IF(INFO, FLAGS_debug_tc_mapper)
-      << "After inserting reduction synchronization:" << std::endl
-      << *mappedScop->schedule();
-
-  // 8. Promote to shared memory below the loops mapped to blocks.
+  // 7. Promote to shared memory below the loops mapped to blocks.
   // This may split the outer band, so find the new outer band after promotion.
   if (cudaOptions.proto().use_shared_memory()) {
     size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
@@ -717,13 +713,13 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
   }
 
-  // 9. Promote to registers below the loops mapped to threads.
+  // 8. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(
         mappedScop->scop(), mappedScop->threadIdxXScheduleDepthState, -1ull);
   }
 
-  // 10. Insert mapping context
+  // 9. Insert mapping context
   mappedScop->insertMappingContext();
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "After outerBlockInnerThread strategy:" << std::endl

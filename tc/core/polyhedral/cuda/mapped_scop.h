@@ -155,13 +155,16 @@ class MappedScop {
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.
   detail::ScheduleTree* separateReduction(detail::ScheduleTree* band);
-  // Split out reduction bands and insert reduction synchronizations.
-  void splitOutReductionsAndInsertSyncs();
+  // Split out reduction member at position "dim" in "band" and
+  // insert reduction synchronizations.
+  void splitOutReductionAndInsertSyncs(detail::ScheduleTree* band, int dim);
   // Map "band" to thread identifiers using as many blockSizes values as outer
-  // coincident dimensions (plus reduction dimension, if any), and
+  // coincident dimensions (plus reduction dimension, if any),
+  // insert synchronization in case of a reduction, and
   // return the number of mapped thread identifiers.
   size_t mapToThreads(detail::ScheduleTree* band);
-  // Map innermost bands to thread identifiers and
+  // Map innermost bands to thread identifiers,
+  // inserting synchronization in case of a reduction, and
   // return the number of mapped thread identifiers.
   size_t mapInnermostBandsToThreads(detail::ScheduleTree* st);
 
