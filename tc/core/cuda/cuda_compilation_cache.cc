@@ -378,13 +378,9 @@ tc::CudaProfilingInfo fromProto(const tc::CudaProfilingProto& buf) {
   tc::CudaProfilingInfo pInfo;
   pInfo.runtime = std::chrono::microseconds(buf.runtime());
   pInfo.ipc = buf.ipc();
-  pInfo.flopSP = buf.flopsp();
   pInfo.globalLoadEfficiency = buf.globalloadefficiency();
   pInfo.globalStoreEfficiency = buf.globalstoreefficiency();
-  pInfo.branchEfficiency = buf.branchefficiency();
   pInfo.sharedMemoryEfficiency = buf.sharedmemoryefficiency();
-  pInfo.streamingMultiprocessorEfficiency =
-      buf.streamingmultiprocessorefficiency();
   pInfo.localMemoryOverhead = buf.localmemoryoverhead();
   pInfo.achievedOccupancy = buf.achievedoccupancy();
   pInfo.warpExecutionEfficiency = buf.warpexecutionefficiency();
@@ -437,13 +433,9 @@ tc::CudaProfilingProto toProto(const tc::CudaProfilingInfo& pInfo) {
       std::chrono::duration_cast<std::chrono::microseconds>(pInfo.runtime)
           .count());
   buf.set_ipc(pInfo.ipc);
-  buf.set_flopsp(pInfo.flopSP);
   buf.set_globalloadefficiency(pInfo.globalLoadEfficiency);
   buf.set_globalstoreefficiency(pInfo.globalStoreEfficiency);
-  buf.set_branchefficiency(pInfo.branchEfficiency);
   buf.set_sharedmemoryefficiency(pInfo.sharedMemoryEfficiency);
-  buf.set_streamingmultiprocessorefficiency(
-      pInfo.streamingMultiprocessorEfficiency);
   buf.set_localmemoryoverhead(pInfo.localMemoryOverhead);
   buf.set_achievedoccupancy(pInfo.achievedOccupancy);
   buf.set_warpexecutionefficiency(pInfo.warpExecutionEfficiency);
