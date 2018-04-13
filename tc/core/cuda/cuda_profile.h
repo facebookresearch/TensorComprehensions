@@ -27,12 +27,9 @@ namespace tc {
 struct CudaProfilingInfo {
   Duration runtime;
   double ipc;
-  uint64_t flopSP;
   double globalLoadEfficiency;
   double globalStoreEfficiency;
-  double branchEfficiency;
   double sharedMemoryEfficiency;
-  double streamingMultiprocessorEfficiency;
   double localMemoryOverhead;
   double achievedOccupancy;
   double warpExecutionEfficiency;

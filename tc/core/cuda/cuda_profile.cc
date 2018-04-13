@@ -60,24 +60,18 @@ bool operator==(const CudaProfilingInfo& a, const CudaProfilingInfo& b) {
   return std::tie(
              a.runtime,
              a.ipc,
-             a.flopSP,
              a.globalLoadEfficiency,
              a.globalStoreEfficiency,
-             a.branchEfficiency,
              a.sharedMemoryEfficiency,
-             a.streamingMultiprocessorEfficiency,
              a.localMemoryOverhead,
              a.achievedOccupancy,
              a.warpExecutionEfficiency) ==
       std::tie(
              b.runtime,
              b.ipc,
-             b.flopSP,
              b.globalLoadEfficiency,
              b.globalStoreEfficiency,
-             b.branchEfficiency,
              b.sharedMemoryEfficiency,
-             b.streamingMultiprocessorEfficiency,
              b.localMemoryOverhead,
              b.achievedOccupancy,
              b.warpExecutionEfficiency);
@@ -87,13 +81,10 @@ CudaCuptiProfiler::CudaCuptiProfiler(KernelType kernel, CUdevice device)
     : kernel_{std::move(kernel)},
       device_{device},
       metrics{{"ipc", device_},
-              {"flop_count_sp", device_},
               {"gld_efficiency", device_},
               {"gst_efficiency", device_},
               {"achieved_occupancy", device_},
-              {"branch_efficiency", device_},
               {"shared_efficiency", device_},
-              {"sm_efficiency", device_},
               {"warp_execution_efficiency", device_},
               {"local_memory_overhead", device_}} {}
 
@@ -486,10 +477,6 @@ void CudaCuptiProfiler::writeMetricValues(CudaProfilingInfo& pinfo) const {
       pinfo.ipc = metric;
       continue;
     }
-    if (metric.name == "flop_count_sp") {
-      pinfo.flopSP = metric;
-      continue;
-    }
     if (metric.name == "gld_efficiency") {
       pinfo.globalLoadEfficiency = metric;
       continue;
@@ -498,16 +485,8 @@ void CudaCuptiProfiler::writeMetricValues(CudaProfilingInfo& pinfo) const {
       pinfo.globalStoreEfficiency = metric;
       continue;
     }
-    if (metric.name == "branch_efficiency") {
-      pinfo.branchEfficiency = metric;
-      continue;
-    }
     if (metric.name == "shared_efficiency") {
       pinfo.sharedMemoryEfficiency = metric;
-      continue;
-    }
-    if (metric.name == "sm_efficiency") {
-      pinfo.streamingMultiprocessorEfficiency = metric;
       continue;
     }
     if (metric.name == "achieved_occupancy") {
