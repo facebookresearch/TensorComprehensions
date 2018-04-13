@@ -143,22 +143,26 @@ TEST_F(Sum4D, CodeOuterBand) {
   EXPECT_GT(posSync4, posC);
 }
 
-TEST_F(Sum4D, CodeBeforeThreadMapping) {
-  auto declarations = {"__shared__ float32 _A_0[16][16][16][1];",
-                       "__shared__ float32 _B_0[16][16][16][1];",
-                       "__shared__ float32 _C_0[16][16][16][1];"};
+/*
+ * Check code when promotion is performed above the mapping to threads.
+ * Note that the copying code is not mapped to threads because
+ * promoteEverythingAt does not call mapCopiesToThreads.
+ */
+TEST_F(Sum4D, CodeAboveThreadMapping) {
+  auto declarations = {"__shared__ float32 _A_0[16][16][16][16];",
+                       "__shared__ float32 _B_0[16][16][16][16];",
+                       "__shared__ float32 _C_0[16][16][16][16];"};
   auto copyA =
-      "_A_0[c4][c5][c6][0] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
+      "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7]";
   auto copyB =
-      "_B_0[c4][c5][c6][0] = B[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
+      "_B_0[c4][c5][c6][c7] = B[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7]";
   auto compute =
-      "_C_0[c4][c5][c6][0] = (_A_0[c4][c5][c6][0] + _B_0[c4][c5][c6][0]);";
+      "_C_0[c4][c5][c6][t0] = (_A_0[c4][c5][c6][t0] + _B_0[c4][c5][c6][t0]);";
   auto copyC =
-      "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3] = _C_0[c4][c5][c6][0];";
+      "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7] = _C_0[c4][c5][c6][c7];";
   auto sync = "__syncthreads()";
 
-  auto code =
-      emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0, 0, 0});
+  auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0});
 
   // Order of copies may be arbitrary, but syncs must be inserted before and
   // after
