@@ -66,7 +66,7 @@ class MapperMemoryPromotion2DHelper : public TestMapper {
         CudaMappingOptions::makeNaiveCudaMappingOptions()
             .tile(tileSizes) // passing more tiling values triggers a check...
             .useSharedMemory(false) // do not auto-promote
-            .usePrivateMemory(true);
+            .usePrivateMemory(false);
     return makeMappedScop(tc, mappingOptions, problemSizes);
   }
 };
@@ -86,7 +86,7 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
     auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
                               .tile(tileSizes)
                               .useSharedMemory(false) // do not autopromote
-                              .usePrivateMemory(true);
+                              .usePrivateMemory(false);
     auto mscop = makeMappedScop(
         tc,
         mappingOptions,
