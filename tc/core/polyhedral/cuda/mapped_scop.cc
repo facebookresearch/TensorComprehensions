@@ -342,11 +342,25 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     return 0;
   }
 
-  auto nMappedThreads =
-      std::min(numThreads.view.size(), static_cast<size_t>(nCanMap));
+  auto nMappedThreads = nCanMap;
+  if (nMappedThreads > numThreads.view.size()) {
+    // Split band such that mapping filters get inserted
+    // right above the first member mapped to a thread identifier.
+    nMappedThreads = numThreads.view.size();
+    bandSplit(scop_->scheduleRoot(), band, nCanMap - nMappedThreads);
+    auto child = band->child({0});
+    if (isReduction) {
+      // Update reductionBandUpdates_ such that splitOutReductionAndInsertSyncs
+      // can find the information it needs.
+      reductionBandUpdates_.emplace(child, reductionBandUpdates_.at(band));
+      reductionBandUpdates_.erase(band);
+    }
+    band = child;
+    bandNode = band->elemAs<ScheduleTreeElemBand>();
+  }
 
-  if (nCanMap < bandNode->nMember()) {
-    bandSplit(scop_->scheduleRoot(), band, nCanMap);
+  if (nMappedThreads < bandNode->nMember()) {
+    bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
   }
 
   auto ctx = band->ctx_;
@@ -359,7 +373,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   // from thread x.
   for (size_t i = 0; i < nMappedThreads; ++i) {
     auto id = mapping::ThreadId::makeId(i);
-    auto dim = nCanMap - 1 - i;
+    auto dim = nMappedThreads - 1 - i;
     if (id == mapping::ThreadId::x()) {
       threadIdxXScheduleDepthState.emplace_back(std::make_pair(
           activeDomainPoints(schedule(), band),
@@ -369,7 +383,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   }
 
   if (isReduction) {
-    splitOutReductionAndInsertSyncs(band, nCanMap - 1);
+    splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);
   }
 
   return nMappedThreads;
