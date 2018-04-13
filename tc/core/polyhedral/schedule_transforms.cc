@@ -454,6 +454,14 @@ isl::multi_union_pw_aff prefixScheduleMupa(
   return prefix;
 }
 
+isl::multi_union_pw_aff partialScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree) {
+  auto band = tree->elemAs<ScheduleTreeElemBand>();
+  CHECK(band);
+  return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
+}
+
 ScheduleTree* insertBandAbove(
     ScheduleTree* root,
     ScheduleTree* tree,

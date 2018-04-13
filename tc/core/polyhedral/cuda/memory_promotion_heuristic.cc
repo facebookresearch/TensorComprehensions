@@ -210,25 +210,19 @@ isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
 }
 
 /*
- * Check if a reference group features reuse at "depth" after applying
- * "schedule". In particular, consider first depth schedule dimensions as fixed
- * by equating them to parameters and check if the resulting relation is not
- * injective.
+ * Check if a reference group features reuse within the "outer" schedule.
+ * In particular, check that for some given point in the outer schedule and
+ * some given group element, there is more than one statement instance
+ * accessing the element within the point in the outer schedule.
+ * In other words, check that the mapping from statement instances
+ * to pairs of outer schedule points and group elements is not injective.
  */
-bool hasReuse(
+bool hasReuseWithin(
     const TensorReferenceGroup& group,
-    isl::union_map schedule,
-    size_t depth) {
-  auto scheduledAccessesUMap = group.originalAccesses().apply_domain(schedule);
-  auto scheduledAccessMaps =
-      isl::UnionAsVector<isl::union_map>(scheduledAccessesUMap);
-  return std::any_of(
-      scheduledAccessMaps.begin(),
-      scheduledAccessMaps.end(),
-      [schedule, depth](isl::map access) {
-        access = fixOuterInputDimsAsParameters(access, static_cast<int>(depth));
-        return !access.is_injective();
-      });
+    isl::multi_union_pw_aff outer) {
+  auto map = isl::union_map::from(outer);
+  map = map.range_product(group.originalAccesses());
+  return !map.is_injective();
 }
 
 /*
@@ -463,6 +457,8 @@ void promoteToSharedGreedy(
   for (auto bandNode : bands) {
     auto groupMap = TensorReferenceGroup::accessedBySubtree(bandNode, scop);
     auto partialSched = partialSchedule(root, bandNode);
+    // Pure affine schedule without (mapping) filters.
+    auto partialSchedMupa = partialScheduleMupa(root, bandNode);
     auto activePoints = activeDomainPoints(root, bandNode);
 
     // Prepare groups for sorting, to have specified order necessary for
@@ -522,7 +518,7 @@ void promoteToSharedGreedy(
         }
         // Do not promote if the group features no reuse and is accessed in a
         // coalesced way.
-        if (!hasReuse(*group, fullSched, depth) &&
+        if (!hasReuseWithin(*group, partialSchedMupa) &&
             isCoalesced(
                 threadIdxXScheduleDepthState,
                 *group,
@@ -606,6 +602,8 @@ void promoteToRegistersBelowThreads(
       // per-thread-group access relations.
       auto points = activeDomainPoints(root, band);
       auto partialSched = partialSchedule(root, band);
+      // Pure affine schedule without (mapping) filters.
+      auto partialSchedMupa = partialScheduleMupa(root, band);
 
       size_t nMappedThreads = 0;
       for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
@@ -643,7 +641,7 @@ void promoteToRegistersBelowThreads(
                   points)) {
             continue;
           }
-          if (!hasReuse(*group, fullSched, depth)) {
+          if (!hasReuseWithin(*group, partialSchedMupa)) {
             continue;
           }
           // TODO: if something is already in shared, but reuse it within one

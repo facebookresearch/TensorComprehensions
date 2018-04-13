@@ -276,6 +276,14 @@ isl::multi_union_pw_aff prefixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 
+// Return the concatenation of all outer band node partial schedules,
+// including that of the node itself.
+// Note that this function does not take into account
+// any intermediate filter nodes.
+isl::multi_union_pw_aff partialScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree);
+
 // Get the set of domain points active at the given node.  A domain
 // point is active if it was not filtered away on the path from the
 // root to the node.  The root must be a domain element, otherwise no
