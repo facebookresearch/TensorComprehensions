@@ -334,10 +334,10 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   if (reductionBandUpdates_.count(band) == 1) {
     // A reduction is assumed to get mapped to threadIdx.x
     CHECK(reductionBandUpdates_.at(band).separated);
+    auto reductionDim = reductionBandUpdates_.at(band).reductionDim;
     threadIdxXScheduleDepthState.emplace_back(std::make_pair(
         activeDomainPoints(schedule(), band),
-        band->scheduleDepth(schedule()) + 0));
-    auto reductionDim = reductionBandUpdates_.at(band).reductionDim;
+        band->scheduleDepth(schedule()) + reductionDim));
     band = map(band, reductionDim, mapping::ThreadId::x());
     nMappedReductionThreads = 1;
   }
