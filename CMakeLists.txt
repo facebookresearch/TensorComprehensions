@@ -20,7 +20,7 @@ message(STATUS "CMAKE_CXX_COMPILER_VERSION is ${CMAKE_CXX_COMPILER_VERSION}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "5.4")
   # we officially support these compiler flags for compiler version 5.4 or less
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable -Werror")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-variable -Werror -Wno-sign-compare")
 endif()
 message(STATUS "CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")
 if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
@@ -170,10 +170,6 @@ message(STATUS "Found Halide.so file: ${HALIDE_LIBRARIES}")
 
 # Caffe2
 if (WITH_CAFFE2)
-  # We suppress sign-compare error messages because caffe2 headers have these
-  # errors.
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-sign-compare")
-
   # eigen - needed inside Caffe2 only
   # Caffe2 probably used its bundled Eigen (which it didn't install) in this case.
   message(WARNING "Couldn't find Eigen headers, assuming caffe2 used in-tree headers")
