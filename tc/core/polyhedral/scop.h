@@ -67,6 +67,7 @@ struct Scop {
     res->halide = scop.halide;
     res->reads = scop.reads;
     res->writes = scop.writes;
+    res->dependences = scop.dependences;
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
@@ -456,6 +457,11 @@ struct Scop {
       const SchedulerOptionsView& schedulerOptions);
 
  public:
+  // Do the simplest possible dependence analysis.
+  // Compute all RAW, WAR, and WAW dependences, and save them in dependences.
+  void computeAllDependences();
+
+ public:
   // Halide stuff
   struct {
     std::vector<Halide::Internal::Parameter> params;
@@ -492,6 +498,9 @@ struct Scop {
 
   isl::union_map reads;
   isl::union_map writes;
+
+  // RAW, WAR, and WAW dependences
+  isl::union_map dependences;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise
