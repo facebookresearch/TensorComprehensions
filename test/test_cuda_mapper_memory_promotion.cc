@@ -427,7 +427,7 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
       << "expected one reference group to be promoted";
 
   // Note that due to bank conflict heuristic, we will allocate 32x33 arrays in
-  // shraed memory which require 32x33x2x4=8448 bytes.
+  // shared memory which require 32x33x2x4=8448 bytes.
   auto mscop3 = makeWithSharedGreedy(42, 40, 32, 32, 2, 8448);
   EXPECT_EQ(mscop3->scop().promotedDecls().size(), 2)
       << "expected two reference groups to fit";

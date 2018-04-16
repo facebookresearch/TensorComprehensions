@@ -64,8 +64,8 @@ detail::ScheduleTree* joinBandsIterative(
     detail::ScheduleTree* tree,
     bool permutable = false);
 
-// Split tree rooted under relativeRoot two nested trees, one with the first
-// "pos" dimensions and one with the remaining dimensions.
+// Split tree rooted under relativeRoot into two nested trees,
+// one with the first "pos" dimensions and one with the remaining dimensions.
 // The schedules of the two bands live in anonymous spaces.
 // This updates the current ScheduleTree and returns it so we can chain
 // expressions.

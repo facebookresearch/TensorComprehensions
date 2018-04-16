@@ -318,7 +318,7 @@ bool isCoalesced(
  * are mapped to threads (the innermost of them being mapped to thread x) and
  * the depth of this mapping can be obtained from threadIdxXScheduleDepthState.
  *
- * In parciular, the group's footprint must contain only one element and the
+ * In particular, the group's footprint must contain only one element and the
  * same tensor element should never be accessed by two different threads.
  */
 bool isPromotableToRegisterBelowThreads(
@@ -350,7 +350,7 @@ bool isPromotableToRegisterBelowThreads(
   auto scheduledAccesses = originalAccesses.apply_domain(schedule);
 
   // Scheduled accesses contain maps from schedule dimensions to tensor
-  // subscripts.  Compute the relation that between the schedule dimensions
+  // subscripts.  Compute the relation between the schedule dimensions
   // mapped to threads and tensor subscripts by first removing dimensions
   // following the one mapped to thread x (last one assuming inverse mapping
   // order), then by equating all dimensions not mapped to threads to
@@ -358,7 +358,7 @@ bool isPromotableToRegisterBelowThreads(
   // relation is injective, i.e. the same tensor element is never accessed by
   // more than one thread.  Note that our current check is overly conservative
   // because different values of schedule dimension may get mapped to the same
-  // thread, in which case the could access the same tensor element.
+  // thread, in which case they could access the same tensor element.
   for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
     sa = sa.project_out(
         isl::dim_type::in, depth, sa.dim(isl::dim_type::in) - depth);

@@ -176,7 +176,7 @@ void fixThreadsBelowFilter(
 
   for (size_t i = begin; i < end; ++i) {
     if (mapping::ThreadId::makeId(i) == mapping::ThreadId::x()) {
-      // Mapping happend below filterTree, so we need points active for its
+      // Mapping happened below filterTree, so we need points active for its
       // children.  After insertion, filterTree is guaranteed to have at least
       // one child.
       mscop.threadIdxXScheduleDepthState.emplace_back(std::make_pair(
