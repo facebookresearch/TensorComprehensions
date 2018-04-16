@@ -21,6 +21,7 @@
 
 #include "tc/autotuner/genetic_tuning_harness.h"
 #include "tc/autotuner/utils/utils.h"
+#include "tc/core/execution_engine.h"
 #include "tc/lang/parser.h"
 
 #include <llvm/ADT/Optional.h>
