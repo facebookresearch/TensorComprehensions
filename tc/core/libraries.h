@@ -43,6 +43,13 @@ constexpr auto defines = R"C(
 #define inf __longlong_as_double(0x7ff0000000000000LL)
 )C";
 
+constexpr auto warpSyncFunctions = R"C(
+// Before CUDA 9, syncwarp is a noop since warps are always synchronized.
+#if __CUDACC_VER_MAJOR__ < 9
+__device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
+#endif
+)C";
+
 constexpr auto mathFunctionDecl = R"C(
 
 // BEGIN MATH FUNCTIONS FROM CUDA
