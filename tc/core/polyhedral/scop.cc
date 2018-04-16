@@ -224,6 +224,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
       << "unexpected tree structure";
 
   int foundMainComputations = 0;
+  std::string lastTupleName = "";
   for (size_t i = 0; i < seqNode->numChildren(); ++i) {
     auto filterNode =
         seqNode->child({i})->elemAs<detail::ScheduleTreeElemFilter>();
@@ -233,6 +234,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
         (filters[0].get_tuple_name() == kReadIdName ||
          filters[0].get_tuple_name() == kWriteIdName);
     if ((foundMainComputations != 0) ^ isCopyFilter) {
+      lastTupleName = "";
       continue;
     }
     if (!isCopyFilter) {
@@ -240,8 +242,11 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
     }
     CHECK_LT(foundMainComputations, 2)
         << "copies are interleaved with computation" << *seqNode;
-    insertSync(seqNode, i);
-    ++i;
+    if (filters[0].get_tuple_name() != lastTupleName) {
+      lastTupleName = filters[0].get_tuple_name();
+      insertSync(seqNode, i);
+      ++i;
+    }
   }
   insertSync(seqNode, 0);
   insertSync(seqNode, seqNode->numChildren());
