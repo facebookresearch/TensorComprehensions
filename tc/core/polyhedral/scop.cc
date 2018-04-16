@@ -144,10 +144,6 @@ isl::id Scop::insertReductionSync1D(
   return treeSyncId;
 }
 
-void Scop::insertSync(detail::ScheduleTree* seqNode, size_t i) {
-  insertExtensionLabelAt(scheduleRoot(), seqNode, i, makeSyncId());
-}
-
 namespace {
 
 void checkFiltersDisjointStatements(const ScheduleTree* root) {
