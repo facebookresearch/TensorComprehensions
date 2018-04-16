@@ -135,6 +135,49 @@ isl::union_set activeDomainPoints(
   return domain;
 }
 
+// Get a set of domain elements that are active at the given node.
+//
+// Domain elements are introduced by the root domain node.  Filter nodes
+// disable the points that do not intersect with the filter.  Extension nodes
+// are considered to introduce additional domain points.
+//
+// If the given node is a filter, elements are not considered active if
+// they are filtered by the node.
+isl::union_set activeDomainPointsInclusive(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
+  CHECK(domainElem) << "root must be a Domain node" << *root;
+
+  auto domain = domainElem->domain_;
+  if (root == node) {
+    return domain;
+  }
+
+  for (auto anc : node->ancestors(root)) {
+    if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
+      domain = domain.intersect(filterElem->filter_);
+    } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
+      auto parentSchedule = prefixSchedule(root, anc);
+      auto extension = extensionElem->extension_;
+      CHECK(parentSchedule.get() || extension.dim(isl::dim_type::in) == 0)
+          << "expected a zero-dimensional domain of the Extension node "
+             "in absence of parent band nodes";
+      if (parentSchedule.get()) {
+        parentSchedule = parentSchedule.intersect_domain(domain);
+        domain = domain.unite(parentSchedule.range().apply(extension));
+      } else {
+        domain = domain.unite(extension.range());
+      }
+    }
+  }
+
+  if (auto filterNode = node->elemAsBase<ScheduleTreeElemFilter>()) {
+    domain = domain.intersect(filterNode->filter_);
+  }
+  return domain;
+}
+
 vector<ScheduleTree*> collectScheduleTreesPath(
     std::function<ScheduleTree*(ScheduleTree*)> next,
     ScheduleTree* start) {
