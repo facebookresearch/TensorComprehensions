@@ -212,6 +212,36 @@ inline void insertMappingFilterBelow(
     const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
         mappingIds);
 
+// Insert an extension with the given extension map and extension filter node
+// before node "tree".
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
+// then the new statement is inserted in the right position
+// of that sequence node.
+// Otherwise, a new sequence node is inserted.
+// The modification is performed within the subtree at "relativeRoot".
+void insertExtensionBefore(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
+    detail::ScheduleTree* tree,
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode);
+
+// Insert an extension with the given extension map and extension filter node
+// after node "tree".
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
+// then the new statement is inserted in the right position
+// of that sequence node.
+// Otherwise, a new sequence node is inserted.
+// The modification is performed within the subtree at "relativeRoot".
+void insertExtensionAfter(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
+    detail::ScheduleTree* tree,
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode);
+
 // Given a sequence node in the schedule tree, insert
 // a zero-dimensional extension statement with the given identifier
 // before the child at position "pos".

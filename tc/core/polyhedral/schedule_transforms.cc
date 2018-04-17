@@ -507,8 +507,16 @@ void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
   contextElem->context_ = contextElem->context_ & context;
 }
 
-ScheduleTree* insertSequenceAbove(ScheduleTree* root, ScheduleTree* tree) {
-  auto parent = tree->ancestor(root, 1);
+namespace {
+
+// In a tree starting at "root", insert a sequence node with
+// as only child the node identified by "tree"
+// within the subtree at "relativeRoot".
+ScheduleTree* insertSequenceAbove(
+    const ScheduleTree* root,
+    ScheduleTree* relativeRoot,
+    ScheduleTree* tree) {
+  auto parent = tree->ancestor(relativeRoot, 1);
   auto childPos = tree->positionInParent(parent);
   auto filter = activeDomainPoints(root, tree).universe();
   parent->insertChild(
@@ -516,6 +524,12 @@ ScheduleTree* insertSequenceAbove(ScheduleTree* root, ScheduleTree* tree) {
       ScheduleTree::makeSequence(
           ScheduleTree::makeFilter(filter, parent->detachChild(childPos))));
   return parent->child({childPos});
+}
+
+} // namespace
+
+ScheduleTree* insertSequenceAbove(ScheduleTree* root, ScheduleTree* tree) {
+  return insertSequenceAbove(root, root, tree);
 }
 
 void insertSequenceBelow(
@@ -544,49 +558,77 @@ namespace {
 /*
  * Insert an empty extension node above "st" in a tree with the given root and
  * return a pointer to the inserted extension node.
+ * The modification is performed within the subtree at "relativeRoot".
  */
 detail::ScheduleTree* insertEmptyExtensionAbove(
-    ScheduleTree* root,
+    const ScheduleTree* root,
+    ScheduleTree* relativeRoot,
     ScheduleTree* st) {
   auto domain = root->elemAs<ScheduleTreeElemDomain>();
   CHECK(domain);
   auto space = domain->domain_.get_space();
   auto extension = isl::union_map::empty(space);
-  return insertExtensionAbove(root, st, extension);
+  return insertExtensionAbove(relativeRoot, st, extension);
 }
-} // namespace
 
-void insertExtensionLabelAt(
-    ScheduleTree* root,
-    ScheduleTree* seqNode,
-    size_t pos,
-    isl::id id) {
-  auto extensionTree = seqNode->ancestor(root, 1);
-  auto extensionNode =
-      extensionTree->elemAs<detail::ScheduleTreeElemExtension>();
-  if (!extensionNode) {
-    extensionTree = insertEmptyExtensionAbove(root, seqNode);
-    extensionNode = extensionTree->elemAs<detail::ScheduleTreeElemExtension>();
-  }
-  CHECK(extensionNode);
-  CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>());
-  auto prefix = prefixScheduleMupa(root, extensionTree);
+/*
+ * Construct an extension map for a zero-dimensional statement
+ * with the given identifier.
+ */
+isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
+  auto prefix = prefixScheduleMupa(root, tree);
   auto scheduleSpace = prefix.get_space();
   auto space = scheduleSpace.params().set_from_params().set_tuple_id(
       isl::dim_type::set, id);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
-  auto extension = isl::map::universe(extensionSpace);
-  extensionNode->extension_ = extensionNode->extension_.unite(extension);
-  auto filterNode = detail::ScheduleTree::makeFilter(extension.range());
-  seqNode->insertChild(pos, std::move(filterNode));
+  return isl::map::universe(extensionSpace);
 }
 
-void insertExtensionLabelBefore(
-    ScheduleTree* root,
+/*
+ * Construct a filter node for a zero-dimensional extension statement
+ * with the given extension map.
+ */
+ScheduleTreeUPtr labelFilterFromExtension(isl::map extension) {
+  return detail::ScheduleTree::makeFilter(extension.range());
+}
+
+/*
+ * Given a sequence node in the schedule tree, insert
+ * an extension with the given extension map and extension filter node
+ * before the child at position "pos".
+ * If "pos" is equal to the number of children, then
+ * the statement is added after the last child.
+ * The modification is performed within the subtree at "relativeRoot".
+ */
+void insertExtensionAt(
+    const ScheduleTree* root,
+    ScheduleTree* relativeRoot,
+    ScheduleTree* seqNode,
+    size_t pos,
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode) {
+  auto extensionTree = seqNode->ancestor(relativeRoot, 1);
+  auto extensionNode =
+      extensionTree->elemAs<detail::ScheduleTreeElemExtension>();
+  if (!extensionNode) {
+    extensionTree = insertEmptyExtensionAbove(root, relativeRoot, seqNode);
+    extensionNode = extensionTree->elemAs<detail::ScheduleTreeElemExtension>();
+  }
+  CHECK(extensionNode);
+  CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>());
+  extensionNode->extension_ = extensionNode->extension_.unite(extension);
+  seqNode->insertChild(pos, std::move(filterNode));
+}
+} // namespace
+
+void insertExtensionBefore(
+    const ScheduleTree* root,
+    ScheduleTree* relativeRoot,
     ScheduleTree* tree,
-    isl::id id) {
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode) {
   size_t pos;
-  auto parent = tree->ancestor(root, 1);
+  auto parent = tree->ancestor(relativeRoot, 1);
   ScheduleTree* seqTree;
   if (tree->elemAs<detail::ScheduleTreeElemExtension>()) {
     tree = tree->child({0});
@@ -598,21 +640,24 @@ void insertExtensionLabelBefore(
   } else if (
       parent->elemAs<detail::ScheduleTreeElemFilter>() &&
       parent->ancestor(root, 1)->elemAs<detail::ScheduleTreeElemSequence>()) {
-    seqTree = parent->ancestor(root, 1);
+    seqTree = parent->ancestor(relativeRoot, 1);
     pos = parent->positionInParent(seqTree);
   } else {
-    seqTree = insertSequenceAbove(root, tree);
+    seqTree = insertSequenceAbove(root, relativeRoot, tree);
     pos = 0;
   }
-  insertExtensionLabelAt(root, seqTree, pos, id);
+  insertExtensionAt(
+      root, relativeRoot, seqTree, pos, extension, std::move(filterNode));
 }
 
-void insertExtensionLabelAfter(
-    ScheduleTree* root,
+void insertExtensionAfter(
+    const ScheduleTree* root,
+    ScheduleTree* relativeRoot,
     ScheduleTree* tree,
-    isl::id id) {
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode) {
   size_t pos;
-  auto parent = tree->ancestor(root, 1);
+  auto parent = tree->ancestor(relativeRoot, 1);
   ScheduleTree* seqTree;
   if (tree->elemAs<detail::ScheduleTreeElemExtension>()) {
     tree = tree->child({0});
@@ -624,13 +669,42 @@ void insertExtensionLabelAfter(
   } else if (
       parent->elemAs<detail::ScheduleTreeElemFilter>() &&
       parent->ancestor(root, 1)->elemAs<detail::ScheduleTreeElemSequence>()) {
-    seqTree = parent->ancestor(root, 1);
+    seqTree = parent->ancestor(relativeRoot, 1);
     pos = parent->positionInParent(seqTree) + 1;
   } else {
-    seqTree = insertSequenceAbove(root, tree);
+    seqTree = insertSequenceAbove(root, relativeRoot, tree);
     pos = 1;
   }
-  insertExtensionLabelAt(root, seqTree, pos, id);
+  insertExtensionAt(
+      root, relativeRoot, seqTree, pos, extension, std::move(filterNode));
+}
+
+void insertExtensionLabelAt(
+    ScheduleTree* root,
+    ScheduleTree* seqNode,
+    size_t pos,
+    isl::id id) {
+  auto extension = labelExtension(root, seqNode, id);
+  auto filterNode = labelFilterFromExtension(extension);
+  insertExtensionAt(root, root, seqNode, pos, extension, std::move(filterNode));
+}
+
+void insertExtensionLabelBefore(
+    ScheduleTree* root,
+    ScheduleTree* tree,
+    isl::id id) {
+  auto extension = labelExtension(root, tree, id);
+  auto filterNode = labelFilterFromExtension(extension);
+  insertExtensionBefore(root, root, tree, extension, std::move(filterNode));
+}
+
+void insertExtensionLabelAfter(
+    ScheduleTree* root,
+    ScheduleTree* tree,
+    isl::id id) {
+  auto extension = labelExtension(root, tree, id);
+  auto filterNode = labelFilterFromExtension(extension);
+  insertExtensionAfter(root, root, tree, extension, std::move(filterNode));
 }
 
 namespace {
