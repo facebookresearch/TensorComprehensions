@@ -79,9 +79,9 @@ std::ostream& operator<<(
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
-  CHECK_GT(sizes.size(), 0)
+  CHECK_GT(sizes.size(), 0u)
       << "expected at least one block size in " << commaSeparatedSizes;
-  CHECK_LE(sizes.size(), 3)
+  CHECK_LE(sizes.size(), 3u)
       << "expected at most three block sizes in " << commaSeparatedSizes;
   sizes.resize(3, CudaDimView::defaultDim);
   return mapToThreads(sizes[0], sizes[1], sizes[2]);
@@ -90,9 +90,9 @@ CudaMappingOptions& CudaMappingOptions::mapToThreads(
 CudaMappingOptions& CudaMappingOptions::mapToBlocks(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
-  CHECK_GT(sizes.size(), 0)
+  CHECK_GT(sizes.size(), 0u)
       << "expected at least one grid size in " << commaSeparatedSizes;
-  CHECK_LE(sizes.size(), 3)
+  CHECK_LE(sizes.size(), 3u)
       << "expected at most three grid sizes in " << commaSeparatedSizes;
   sizes.resize(3, CudaDimView::defaultDim);
   return mapToBlocks(sizes[0], sizes[1], sizes[2]);

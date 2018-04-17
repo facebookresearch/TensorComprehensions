@@ -260,7 +260,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
         scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
-    EXPECT_EQ(groups.size(), 3);
+    EXPECT_EQ(groups.size(), 3u);
 
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
     isl::space blockSpace = isl::space(ctx, 2);
@@ -273,21 +273,21 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     unordered_set<string> names{"A", "B", "C"};
     for (const auto& g : groups) {
       auto name = g.first.get_name();
-      EXPECT_EQ(names.count(name), 1);
+      EXPECT_EQ(names.count(name), 1u);
       names.erase(name);
       const auto& tensorGroups = g.second;
 
-      ASSERT_EQ(tensorGroups.size(), 1) << "Expected one group";
+      ASSERT_EQ(tensorGroups.size(), 1u) << "Expected one group";
       auto oneGroup = tensorGroups[0].get();
 
-      ASSERT_EQ(oneGroup->references.size(), 1)
+      ASSERT_EQ(oneGroup->references.size(), 1u)
           << "Expected one reference in group";
       if (name != "C") {
         EXPECT_TRUE(oneGroup->isReadOnly());
       }
 
       auto ref = oneGroup->references[0].get();
-      ASSERT_EQ(oneGroup->approximation.size(), 2)
+      ASSERT_EQ(oneGroup->approximation.size(), 2u)
           << "Could not compute footprint for" << ref->scopedAccess;
 
       EXPECT_EQ(
@@ -298,7 +298,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
           isl::val(ctx, std::min(tile2, problemSize2)));
       auto footprint =
           oneGroup->approximateFootprint().intersect_params(blockZero);
-      int np = npoints(footprint);
+      size_t np = npoints(footprint);
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));
 
@@ -342,17 +342,17 @@ def fun(float(N, M) A) -> (B, C) {
         scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
-    ASSERT_EQ(groups.size(), 3);
+    ASSERT_EQ(groups.size(), 3u);
     auto idA = isl::id(ctx, std::string("A"));
     auto idB = isl::id(ctx, std::string("B"));
     auto idC = isl::id(ctx, std::string("C"));
-    EXPECT_EQ(groups.count(idA), 1) << "could not group A references";
-    EXPECT_EQ(groups.count(idB), 1) << "could not group B references";
-    EXPECT_EQ(groups.count(idC), 1) << "could not group C references";
+    EXPECT_EQ(groups.count(idA), 1u) << "could not group A references";
+    EXPECT_EQ(groups.count(idB), 1u) << "could not group B references";
+    EXPECT_EQ(groups.count(idC), 1u) << "could not group C references";
 
     const auto& groupsB = groups.at(idB);
-    ASSERT_EQ(groupsB.size(), 1) << "expected B refereces to be grouped";
-    ASSERT_EQ(groupsB[0]->approximation.size(), 2) << "B should be a 2D array";
+    ASSERT_EQ(groupsB.size(), 1u) << "expected B refereces to be grouped";
+    ASSERT_EQ(groupsB[0]->approximation.size(), 2u) << "B should be a 2D array";
     EXPECT_EQ(
         groupsB[0]->approximation[0].size,
         isl::val(ctx, std::min(tile1, problemSize1)));
@@ -363,7 +363,7 @@ def fun(float(N, M) A) -> (B, C) {
     auto t = scop.scheduleRoot()->child(childPos);
     LOG(INFO) << "Create copy for group:\n" << groupsB << "\t@" << *t;
 
-    EXPECT_EQ(1, groupsB.size());
+    EXPECT_EQ(1u, groupsB.size());
     LOG(INFO) << "Read: " << groupsB[0]->readFootprint();
     LOG(INFO) << "Write: " << groupsB[0]->writeFootprint();
 
@@ -419,21 +419,21 @@ TEST_F(MapperMemoryPromotionRAW, array42x40_tile64x64_firstBand) {
 
 TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
   auto mscop1 = makeWithSharedGreedy(42, 40, 64, 64, 1, 8192);
-  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 1)
+  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 1u)
       << "expected one reference group to be promoted";
 
   auto mscop2 = makeWithSharedGreedy(42, 40, 64, 64, 2, 8192);
-  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 1)
+  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 1u)
       << "expected one reference group to be promoted";
 
   // Note that due to bank conflict heuristic, we will allocate 32x33 arrays in
   // shared memory which require 32x33x2x4=8448 bytes.
   auto mscop3 = makeWithSharedGreedy(42, 40, 32, 32, 2, 8448);
-  EXPECT_EQ(mscop3->scop().promotedDecls().size(), 2)
+  EXPECT_EQ(mscop3->scop().promotedDecls().size(), 2u)
       << "expected two reference groups to fit";
 
   auto mscop4 = makeWithSharedGreedy(42, 40, 32, 32, 2, 8447);
-  EXPECT_EQ(mscop4->scop().promotedDecls().size(), 1)
+  EXPECT_EQ(mscop4->scop().promotedDecls().size(), 1u)
       << "expected one reference group to be promoted";
 }
 

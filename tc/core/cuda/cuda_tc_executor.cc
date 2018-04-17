@@ -193,15 +193,15 @@ Duration CudaTcExecutor::run(
 
   std::vector<const void*> I;
   std::vector<void*> O;
-  for (int i = 0; i < inputs.size(); ++i) {
+  for (size_t i = 0; i < inputs.size(); ++i) {
     I.push_back(inputs[i]->data);
   }
-  for (int i = 0; i < outputs.size(); ++i) {
+  for (size_t i = 0; i < outputs.size(); ++i) {
     O.push_back(outputs[i]->data);
   }
   cudaStream_t stream = 0;
-  CHECK_NE(grid.view[0], 0) << "Grid dims are not set up";
-  CHECK_NE(block.view[0], 0) << "Block dims are not set up";
+  CHECK_NE(grid.view[0], 0u) << "Grid dims are not set up";
+  CHECK_NE(block.view[0], 0u) << "Block dims are not set up";
   auto res = rtcFun->Launch(
       grid.view.extractDefaultedArray(),
       block.view.extractDefaultedArray(),
@@ -226,8 +226,8 @@ void CudaTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) const {
   cudaStream_t stream = 0;
-  CHECK_NE(grid.view[0], 0) << "Grid dims are not set up";
-  CHECK_NE(block.view[0], 0) << "Block dims are not set up";
+  CHECK_NE(grid.view[0], 0u) << "Grid dims are not set up";
+  CHECK_NE(block.view[0], 0u) << "Block dims are not set up";
   bool profile = false;
   rtcFun->Launch(
       grid.view.extractDefaultedArray(),

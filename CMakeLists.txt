@@ -176,7 +176,7 @@ if (WITH_CAFFE2)
   include_directories(third-party/caffe2/third_party/eigen)
 
   find_path(CAFFE2_INCLUDE_DIR NAMES caffe2)
-  include_directories(${CAFFE2_INCLUDE_DIR})
+  include_directories(SYSTEM ${CAFFE2_INCLUDE_DIR})
   find_library(CAFFE2_CPU_LIBRARIES NAMES caffe2 PATHS ${CMAKE_INSTALL_PREFIX} PATH_SUFFIXES lib lib64)
   message(STATUS "Found Caffe2_CPU: ${CAFFE2_CPU_LIBRARIES}")
   if (WITH_CUDA)

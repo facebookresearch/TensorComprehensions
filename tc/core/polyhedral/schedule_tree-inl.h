@@ -27,7 +27,7 @@ inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
   // slicing may happen below if not careful
   std::unordered_set<mapping::MappingId, typename mapping::MappingId::Hash> ids;
   for (auto id : mappingIds) {
-    CHECK_EQ(1, mappingIds.count(id)) << "id: " << id << " mapped != 1 times";
+    CHECK_EQ(1u, mappingIds.count(id)) << "id: " << id << " mapped != 1 times";
     ids.insert(id);
   }
   isl::ctx ctx(filter.get_ctx());

@@ -148,7 +148,7 @@ Duration CudaRTCFunction::Launch(
     perGpuKernel_.emplace(dev, function);
   }
 
-  constexpr int kNumMaxParameters = 100;
+  constexpr size_t kNumMaxParameters = 100;
   std::array<void*, kNumMaxParameters> args_voidp{0};
   CHECK_GE(kNumMaxParameters, params.size() + outputs.size() + inputs.size());
   int ind = 0;

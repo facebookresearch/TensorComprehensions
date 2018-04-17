@@ -49,7 +49,7 @@ void prepareOutputs(
     throw lang::ErrorReport(func) << "expected " << tensorInfo.size()
                                   << " outputs but found " << outputs.size();
   }
-  for (int i = 0; i < tensorInfo.size(); ++i) {
+  for (size_t i = 0; i < tensorInfo.size(); ++i) {
     auto info = tensorInfo[i];
     auto stype = at::toScalarType(info->dtype);
     if (outputs.size() < tensorInfo.size()) {
@@ -121,7 +121,7 @@ void ATenCompilationUnit<ExecutorType>::uncheckedRun(
   constexpr auto kReservedSize = 8;
   std::vector<const void*> I(kReservedSize, nullptr);
   std::vector<void*> O(kReservedSize, nullptr);
-  int i;
+  size_t i;
   for (i = 0; i < inputs.size(); ++i) {
     if (i < kReservedSize) {
       I[i] = inputs[i].data_ptr();

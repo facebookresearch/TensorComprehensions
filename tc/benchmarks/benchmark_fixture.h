@@ -121,14 +121,14 @@ struct Benchmark : public ::testing::Test {
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);
     EXPECT_TRUE(checkFun(inputs, outputs));
-    for (int i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
+    for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
       atCompl.run(name, inputs, outputs, handle);
     }
     std::vector<tc::Duration> kernelTimes;
     kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
     std::vector<tc::Duration> totalTimes;
     totalTimes.reserve(tc::FLAGS_benchmark_iterations);
-    for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+    for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
       kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       auto time(std::chrono::system_clock::now());
@@ -201,12 +201,12 @@ struct Benchmark : public ::testing::Test {
   template <typename InitFunction, typename InplaceFunction>
   void Reference(InitFunction init, InplaceFunction compute) {
     auto res = init();
-    for (int i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
+    for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
       compute(res);
     }
     std::vector<tc::Duration> times;
     times.reserve(tc::FLAGS_benchmark_iterations);
-    for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+    for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
       auto time(std::chrono::system_clock::now());
       compute(res);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
@@ -278,14 +278,14 @@ struct Benchmark : public ::testing::Test {
     std::vector<at::Tensor> outputs;
     atCompl.run(name, inputs, outputs, handle);
     EXPECT_TRUE(checkFun(inputs, outputs));
-    for (int i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
+    for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
       atCompl.run(name, inputs, outputs, handle);
     }
     std::vector<tc::Duration> kernelTimes;
     kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
     std::vector<tc::Duration> totalTimes;
     totalTimes.reserve(tc::FLAGS_benchmark_iterations);
-    for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+    for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
       kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
       auto time(std::chrono::system_clock::now());
@@ -389,14 +389,14 @@ struct Benchmark : public ::testing::Test {
       std::vector<at::Tensor> outputs;
       atCompl.run(kernelName, inputs, outputs, handle);
       EXPECT_TRUE(checkFun(inputs, outputs));
-      for (int i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
+      for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
         atCompl.run(kernelName, inputs, outputs, handle);
       }
       std::vector<tc::Duration> kernelTimes;
       kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
       std::vector<tc::Duration> totalTimes;
       totalTimes.reserve(tc::FLAGS_benchmark_iterations);
-      for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+      for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
         kernelTimes.push_back(
             atCompl.run(kernelName, inputs, outputs, handle, true));
         TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());

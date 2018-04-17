@@ -73,7 +73,7 @@ void TcExecutor::checkSizesAndStridesAreCompliant(
   std::vector<int64_t> shapeA(actual->shape, actual->shape + actual->ndim);
   std::vector<int64_t> shapeE(
       expected->shape, expected->shape + expected->ndim);
-  for (int i = 0; i < shapeA.size(); ++i) {
+  for (size_t i = 0; i < shapeA.size(); ++i) {
     if (shapeA[i] != shapeE[i]) {
       throw lang::ErrorReport(dbg)
           << "expected size " << shapeE[i] << " for dim " << i << " but found "

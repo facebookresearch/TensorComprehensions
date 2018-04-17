@@ -155,7 +155,7 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
     for (auto s : us.get_set_list()) {
       for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
         if (mappingIds.count(id) > 0) {
-          CHECK_EQ(1, ids.count(id)) << "id: " << id << " mapped >1 times";
+          CHECK_EQ(1u, ids.count(id)) << "id: " << id << " mapped >1 times";
           CHECK_LE(0, s.find_dim_by_id(isl::dim_type::param, id))
               << "unexpected missing id: " << id << " in filter: " << s;
         } else {
@@ -270,7 +270,7 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // We apply the transformation even if "n" is zero to ensure consistent
   // behavior with respect to changes in the schedule space.
   // The caller is responsible for updating the isolate option (Note: why?)
-  void drop(int pos, int n);
+  void drop(size_t pos, size_t n);
 
  public:
   bool permutable_{false};

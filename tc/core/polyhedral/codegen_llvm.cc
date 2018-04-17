@@ -111,7 +111,7 @@ std::vector<int64_t> getTensorSizesWithoutLeadingDim(
   auto dims = t.dimensions();
   std::vector<int64_t> sizes;
   sizes.reserve(dims);
-  for (size_t d = 1; d < dims; ++d) {
+  for (int d = 1; d < dims; ++d) {
     Halide::Expr extent = t.parameter().extent_constraint(d);
     CHECK(extent.defined())
         << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
@@ -447,7 +447,7 @@ class LLVMCodegen {
   llvm::Type* makePtrToArrayType(
       llvm::Type* baseTy,
       const std::vector<int64_t>& sizes) {
-    CHECK_GE(sizes.size(), 1);
+    CHECK_GE(sizes.size(), 1u);
     CHECK(baseTy);
     llvm::Type* arrTy = llvm::ArrayType::get(baseTy, sizes.back());
     for (auto s = sizes.rbegin() + 1; s != sizes.rend(); ++s) {
@@ -637,11 +637,11 @@ IslCodegenRes codegenISL(const Scop& scop) {
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto stmtId = expr.get_op_arg(0).get_id();
-      CHECK_EQ(0, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
+      CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
       auto iterators = scop.halide.iterators.at(stmtId);
       auto& stmtIteratorMap = iteratorMaps[stmtId];
-      for (int i = 0; i < iterators.size(); ++i) {
+      for (size_t i = 0; i < iterators.size(); ++i) {
         auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
         stmtIteratorMap.emplace(iterators[i], expr);
       }
@@ -665,7 +665,7 @@ IslCodegenRes codegenISL(const Scop& scop) {
 
   auto bands = detail::ScheduleTree::collect(
       scop.scheduleRoot(), detail::ScheduleTreeType::Band);
-  int maxDepth = 0;
+  size_t maxDepth = 0;
   for (auto const& node : bands) {
     auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
     auto depth = node->scheduleDepth(scop.scheduleRoot()) +

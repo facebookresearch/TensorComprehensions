@@ -330,7 +330,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     return 0;
   }
 
-  int nMappedReductionThreads = 0;
+  size_t nMappedReductionThreads = 0;
   if (reductionBandUpdates_.count(band) == 1) {
     // A reduction is assumed to get mapped to threadIdx.x
     CHECK(reductionBandUpdates_.at(band).separated);
@@ -366,7 +366,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
 
   // Map the coincident dimensions to threads starting from the innermost and
   // from thread x unless it was already mapped to a reduction.
-  for (int i = 0; i < nMappedThreads; ++i) {
+  for (size_t i = 0; i < nMappedThreads; ++i) {
     auto id = mapping::ThreadId::makeId(nMappedReductionThreads + i);
     auto dim = nOuterCoincident - 1 - i;
     if (id == mapping::ThreadId::x()) {
@@ -481,7 +481,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       // member, insert a synchronization after its last child.
       // The node must have children if some of them were mapped to threads,
       // double-check.  Note that a band node has at most one child.
-      CHECK_EQ(st->numChildren(), 1);
+      CHECK_EQ(st->numChildren(), 1u);
       // The mapping should be always complete, double-check.
       CHECK_EQ(n, numThreads.view.size());
       scop_->insertSyncAfter(st->child({0}));
@@ -630,7 +630,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   scop = Scop::makeScheduled(*scop, generic.outerScheduleOptions);
 
   // 3. Tile
-  CHECK_LT(0, generic.tiling.size())
+  CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
   auto outerBand = scop->tileOuterBand(generic.tiling);
 
@@ -650,7 +650,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
   // 5. Map to threads
   if (outerBand->numChildren() > 0) {
-    CHECK_EQ(1, outerBand->numChildren());
+    CHECK_EQ(1u, outerBand->numChildren());
     // 5.1. Optionally detect reductions while mapping to threads
     if (generic.proto.match_library_calls()) {
       mappedScop->detectReductions(outerBand->child({0}));

@@ -150,7 +150,7 @@ std::string halideCodegenC(const Stmt& stmt) {
         stream << "]";
       }
       stream << " = ";
-      CHECK_EQ(1, op->values.size())
+      CHECK_EQ(1u, op->values.size())
           << "Cannot generate C for provide with != 1 values";
       op->values[0].accept(this);
       stream << ";\n";

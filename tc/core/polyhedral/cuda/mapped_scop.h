@@ -191,7 +191,7 @@ class MappedScop {
     // Has the reduction been separated out as a full block?
     bool separated;
     // Index of the band member in which the reduction was detected.
-    int reductionDim;
+    size_t reductionDim;
   };
   // Map isolated innermost reduction band members to information
   // about the detected reduction.

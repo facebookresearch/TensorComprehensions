@@ -270,7 +270,7 @@ void emitTreeSyncCall(
     isl::id id,
     isl::id reductionUpdateNodeId,
     const CodegenStatementContext& context) {
-  CHECK_EQ(1, context.scop().treeSyncUpdateMap.count(id));
+  CHECK_EQ(1u, context.scop().treeSyncUpdateMap.count(id));
   isl::id updateId = context.scop().treeSyncUpdateMap.at(id);
 
   // Halide reduction.
@@ -359,7 +359,7 @@ void emitReductionInit(
   auto assoc = prove_associativity(provide->name, provide->args, call->args);
   CHECK(assoc.associative());
   auto statementContext = CodegenStatementContext(context, stmtId);
-  CHECK_EQ(assoc.pattern.identities.size(), 1);
+  CHECK_EQ(assoc.pattern.identities.size(), 1u);
   detail::emitHalideExpr(assoc.pattern.identities[0], statementContext);
   context.ss << ";" << endl;
 }
@@ -396,7 +396,7 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   auto stmtId = usrExp.get_op_arg(0).get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
-  CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1)
+  CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1u)
       << "no info for node " << nodeId;
 
   WS ws;
@@ -476,7 +476,7 @@ isl::multi_aff makeMultiAffAccess(
     isl::id tensorId,
     const std::vector<Halide::Expr>& subscripts,
     const CodegenStatementContext& context) {
-  CHECK_NE(subscripts.size(), 0) << "cannot build subscript aff for a scalar";
+  CHECK_NE(subscripts.size(), 0u) << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
   auto tensorSpace = domainSpace.params().set_from_params().add_dims(
@@ -565,7 +565,7 @@ void emitMappedTensorAccess(
     return;
   }
 
-  CHECK_EQ(context.scop().halide.accesses.count(node), 1)
+  CHECK_EQ(context.scop().halide.accesses.count(node), 1u)
       << "attempting to generate code for tensor " << name
       << " reference not present in Scop" << node;
   auto refId = context.scop().halide.accesses.at(node);
@@ -694,7 +694,7 @@ string emitCudaKernel(
   map<string, Halide::Expr> paramValues;
   {
     auto set = scop.globalParameterContext;
-    for (int i = 0; i < set.n_param(); i++) {
+    for (unsigned i = 0; i < set.n_param(); i++) {
       auto val = set.plain_get_val_if_fixed(isl::dim_type::param, i);
       auto name = set.get_space().get_dim_name(isl::dim_type::param, i);
       if (!val.is_nan()) {
@@ -727,7 +727,7 @@ string emitCudaKernel(
       auto nodeId = isl::id(
           node.get_ctx(),
           std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
-      CHECK_EQ(0, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
+      CHECK_EQ(0u, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
 
       auto& nodeInfo = (*nodeInfoMap)[nodeId];
       nodeInfo.iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
@@ -740,7 +740,7 @@ string emitCudaKernel(
 
   auto bands = detail::ScheduleTree::collect(
       mscop.schedule(), detail::ScheduleTreeType::Band);
-  int maxDepth = 0;
+  size_t maxDepth = 0;
   for (auto const& node : bands) {
     auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
     auto depth = node->scheduleDepth(mscop.schedule()) +

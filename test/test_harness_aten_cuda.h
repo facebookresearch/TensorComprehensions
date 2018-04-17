@@ -62,14 +62,14 @@ void benchmarkKernelOptions(
   auto handle = atCompl.compile(name, inputs, mappingOptions);
   std::vector<at::Tensor> outputs;
   atCompl.run(name, inputs, outputs, handle);
-  for (int i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
+  for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
     atCompl.run(name, inputs, outputs, handle);
   }
   std::vector<tc::Duration> kernelTimes;
   kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
   std::vector<tc::Duration> totalTimes;
   totalTimes.reserve(tc::FLAGS_benchmark_iterations);
-  for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+  for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
     kernelTimes.push_back(atCompl.run(name, inputs, outputs, handle, true));
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     auto time(std::chrono::system_clock::now());

@@ -151,11 +151,11 @@ size_t ScheduleTreeElemBand::nOuterCoincident() const {
   return i;
 }
 
-void ScheduleTreeElemBand::drop(int pos, int n) {
-  CHECK_LE(0, n) << "range out of bounds";
-  CHECK_LE(0, pos) << "range  out of bounds";
+void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
+  CHECK_LE(0u, n) << "range out of bounds";
+  CHECK_LE(0u, pos) << "range  out of bounds";
   CHECK_GE(nMember(), pos + n) << "range out of bounds";
-  int nBegin = nMember();
+  auto nBegin = nMember();
 
   if (mupa_.has_tuple_id(isl::dim_type::set)) {
     mupa_ = dropDimsPreserveTuple(mupa_, isl::dim_type::set, pos, n);

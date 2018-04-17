@@ -145,7 +145,7 @@ ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {
 const ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) const {
   auto st = this;
   for (auto pos : positions) {
-    CHECK_LE(0, pos) << "Reached a leaf";
+    CHECK_LE(0u, pos) << "Reached a leaf";
     CHECK_GT(st->children_.size(), pos) << "Out of children bounds";
     st = st->children_[pos].get();
   }
@@ -162,7 +162,7 @@ ScheduleTree* ScheduleTree::ancestor(
 const ScheduleTree* ScheduleTree::ancestor(
     const ScheduleTree* relativeRoot,
     size_t generations) const {
-  CHECK_LT(0, generations) << "Nonpositive ancestor generation";
+  CHECK_LT(0u, generations) << "Nonpositive ancestor generation";
   auto as = constAncestorsInSubTree(relativeRoot, this);
   CHECK_GE(as.size(), generations) << "Out of ancestors bounds";
   return as[as.size() - generations];

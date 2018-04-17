@@ -86,7 +86,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     // If not all available thread ids are used, fix remaining to 1 thread.
     auto filter = node->elemAs<ScheduleTreeElemFilter>()->filter_;
     auto filterSets = isl::UnionAsVector<isl::union_set>(filter);
-    int t = 0;
+    size_t t = 0;
     for (int i = band->nMember() - 1;
          i >= 0 && t < mscop.numThreads.view.size();
          --i) {
@@ -100,7 +100,8 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
               throw promotion::PromotionLogicError(ss.str());
             }
             auto decl = mscop.scop().promotedDecls().at(groupId);
-            return i >= decl.sizes.size() || decl.sizes[i] == 1;
+            return static_cast<size_t>(i) >= decl.sizes.size() ||
+                decl.sizes[i] == 1;
           });
       if (skip) {
         continue;
@@ -182,7 +183,7 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
  * Insert map constraints that equate first "nDims" input dimensions to newly
  * introduced parameters.
  */
-isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
+isl::map fixOuterInputDimsAsParameters(isl::map map, unsigned nDims) {
   if (nDims < 0 || nDims > map.dim(isl::dim_type::in)) {
     std::stringstream ss;
     ss << nDims << "  is out of [0, " << map.dim(isl::dim_type::in)
@@ -194,13 +195,13 @@ isl::map fixOuterInputDimsAsParameters(isl::map map, int nDims) {
   auto localSpace = isl::local_space(map.get_space().domain());
   auto nParams = map.dim(isl::dim_type::param);
   localSpace = localSpace.add_dims(isl::dim_type::param, nDims);
-  for (int i = 0; i < nDims; ++i) {
+  for (unsigned i = 0; i < nDims; ++i) {
     localSpace = localSpace.set_dim_name(
         isl::dim_type::param,
         nParams + i,
         "__tcFixerParam" + std::to_string(i));
   }
-  for (int i = 0; i < nDims; ++i) {
+  for (unsigned i = 0; i < nDims; ++i) {
     auto left = isl::aff(localSpace, isl::dim_type::param, nParams + i);
     auto right = isl::aff(localSpace, isl::dim_type::set, i);
     auto dom = isl::aff_set(left) == right;
@@ -229,7 +230,7 @@ bool hasReuseWithin(
  * Create a map that increments the "dim"-th dimension and keeps all other
  * dimensions unchanged.
  */
-isl::map makeNextElementMap(isl::space setSpace, int dim) {
+isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
   if (dim < 0 || dim >= setSpace.dim(isl::dim_type::set)) {
     std::stringstream ss;
     ss << dim << "  is out of [0, " << setSpace.dim(isl::dim_type::set)
@@ -511,7 +512,7 @@ void promoteToSharedGreedy(
         }
         auto nApproximationElements = std::accumulate(
             sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
-        auto memoryRequirement =
+        size_t memoryRequirement =
             nApproximationElements * scop.findArgument(tensorId).type().bytes();
         if (memoryRequirement > remainingMemory) {
           continue;
@@ -606,7 +607,7 @@ void promoteToRegistersBelowThreads(
       auto partialSchedMupa = partialScheduleMupa(root, band);
 
       size_t nMappedThreads = 0;
-      for (int j = 0; j < points.dim(isl::dim_type::param); ++j) {
+      for (unsigned j = 0; j < points.dim(isl::dim_type::param); ++j) {
         auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
         for (size_t i = 0; i < mapping::ThreadId::kMaxDim; ++i) {
           if (id != mapping::ThreadId::makeId(i)) {

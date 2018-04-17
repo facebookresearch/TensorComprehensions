@@ -194,7 +194,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   ASSERT_NE(std::string::npos, std::get<0>(res).find(expected))
       << std::get<0>(res);
-  ASSERT_EQ(32, std::get<1>(res).view[0])
+  ASSERT_EQ(32u, std::get<1>(res).view[0])
       << "Improper dim in: " << std::get<1>(res).view;
 }
 
@@ -372,7 +372,7 @@ TEST_F(PolyhedralMapperTest, Match1) {
           }),
           filter(mapping_filter(band()))),
       schedule);
-  EXPECT_EQ(1, f.size());
+  EXPECT_EQ(1u, f.size());
 }
 
 TEST_F(PolyhedralMapperTest, CopyTC) {
@@ -482,8 +482,8 @@ def fun(float(N) I) -> (O) {
       std::move(scop), DefaultOptions());
   auto codeAndLaunchBounds = mscop->codegen(specializedName);
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  EXPECT_EQ(1, BY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
-  EXPECT_EQ(1, TY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
+  EXPECT_EQ(1u, BY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
+  EXPECT_EQ(1u, TY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
 }
 
 /*
@@ -619,14 +619,14 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiledMatches = match(maxMaxStructure, tiledBand.get());
 
   // The right structure should be matched.
-  ASSERT_EQ(maxMinMatches.size(), 1);
-  ASSERT_EQ(maxMaxMatches.size(), 1);
-  ASSERT_EQ(tiledMatches.size(), 1);
+  ASSERT_EQ(maxMinMatches.size(), 1u);
+  ASSERT_EQ(maxMaxMatches.size(), 1u);
+  ASSERT_EQ(tiledMatches.size(), 1u);
 
   // The wrong structure should not be matched.
-  EXPECT_EQ(match(maxMaxStructure, maxMinOuterBand.get()).size(), 0);
-  EXPECT_EQ(match(maxMinStructure, maxMaxOuterBand.get()).size(), 0);
-  EXPECT_EQ(match(maxMinStructure, tiledBand.get()).size(), 0);
+  EXPECT_EQ(match(maxMaxStructure, maxMinOuterBand.get()).size(), 0u);
+  EXPECT_EQ(match(maxMinStructure, maxMaxOuterBand.get()).size(), 0u);
+  EXPECT_EQ(match(maxMinStructure, tiledBand.get()).size(), 0u);
 
   // The tile band subtree should be the top node of the match.
   EXPECT_EQ(maxMinMatches[0], maxMinOuterBand.get());

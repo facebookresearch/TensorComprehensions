@@ -156,7 +156,7 @@ def wavenet2layers(
   //   nvprof --profile-from-start off executable --use_nvprof=1
   {
     tc::CudaProfiler cp;
-    for (int i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
+    for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
       atCompl.uncheckedRun(tensors, outputs, handle);
     }
   }

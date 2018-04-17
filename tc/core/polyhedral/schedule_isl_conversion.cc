@@ -181,10 +181,10 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     node = node.insert_partial_schedule(band->mupa_);
     auto bandNode = node.as<isl::schedule_node_band>();
     bandNode = bandNode.set_permutable(band->permutable_);
-    for (int i = 0; i < band->coincident_.size(); ++i) {
+    for (size_t i = 0; i < band->coincident_.size(); ++i) {
       bandNode = bandNode.member_set_coincident(i, band->coincident_[i]);
     }
-    for (int i = 0; i < band->unroll_.size(); ++i) {
+    for (size_t i = 0; i < band->unroll_.size(); ++i) {
       if (band->unroll_[i]) {
         bandNode =
             bandNode.member_set_ast_loop_type(i, isl::ast_loop_type::unroll);
@@ -254,7 +254,7 @@ std::unique_ptr<ScheduleTree> fromIslScheduleNode(isl::schedule_node node) {
   if (n == 1 && node.child(0).isa<isl::schedule_node_leaf>()) {
     return res;
   }
-  for (size_t i = 0; i < n; ++i) {
+  for (int i = 0; i < n; ++i) {
     res->appendChild(fromIslScheduleNode(node.child(i)));
   }
   return res;
@@ -370,7 +370,7 @@ bool refersToUndefinedParameters(
 
   // If space uses some parameters that are not avaialbe in paramSpace,
   // they will be introduced into paramSpace, making its dimension larger.
-  int definedParams = paramSpace.dim(isl::dim_type::param);
+  auto definedParams = paramSpace.dim(isl::dim_type::param);
   paramSpace = paramSpace.align_params(space);
   return paramSpace.dim(isl::dim_type::param) > definedParams;
 }
@@ -425,7 +425,7 @@ void checkValidIslSchedule(const ScheduleTree* root_) {
     }
 
     if (!nodeIsSet && !nodeIsSequence) {
-      CHECK_LE(nChildren, 1)
+      CHECK_LE(nChildren, 1u)
           << "only sequence or set nodes can have multiple children" << *node;
     } else {
       auto filters = isl::null<isl::union_set>();

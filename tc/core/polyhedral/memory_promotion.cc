@@ -56,7 +56,7 @@ std::pair<isl::val, isl::aff> outputRange(
 }
 
 std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
-  CHECK_EQ(access.dim(isl::dim_type::out), 1)
+  CHECK_EQ(access.dim(isl::dim_type::out), 1u)
       << "expected 1-dim output, call outputRanges instead";
   access = access.detect_equalities();
   auto wrappedAccess = access.wrap().flatten().compute_divs().simple_hull();

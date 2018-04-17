@@ -79,7 +79,7 @@ struct Tree : std::enable_shared_from_this<Tree> {
   void expect(int k) {
     expect(k, trees().size());
   }
-  void expect(int k, int numsubtrees) {
+  void expect(int k, size_t numsubtrees) {
     if (kind() != k || trees().size() != numsubtrees) {
       std::stringstream ss;
       ss << "expected kind '" << kindToString(k) << "' with " << numsubtrees

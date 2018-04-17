@@ -20,7 +20,7 @@
 namespace lang {
 namespace {
 
-std::unordered_map<std::string, int> builtin_functions({
+std::unordered_map<std::string, size_t> builtin_functions({
     // from CUDA float documentation
     // WARNING: if you add a builtin function here that does not
     // propagate the type of its inputs using match_types in Sema.h

@@ -40,7 +40,7 @@ inline void insertMappingFilterBelow(
     const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
         mappingIds) {
   auto numChildren = tree->numChildren();
-  CHECK_LE(numChildren, 1);
+  CHECK_LE(numChildren, 1u);
   tree->appendChild(detail::ScheduleTree::makeMappingFilter(
       filter, mappingIds, tree->detachChildren()));
 }
@@ -49,14 +49,14 @@ template <typename MappingIdType>
 inline detail::ScheduleTree* mapToParameterWithExtent(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    int pos,
+    size_t pos,
     MappingIdType id,
     size_t extent) {
   auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
   CHECK(band) << "expected a band, got " << *tree;
-  CHECK_GE(pos, 0) << "dimension underflow";
+  CHECK_GE(pos, 0u) << "dimension underflow";
   CHECK_LT(pos, band->nMember()) << "dimension overflow";
-  CHECK_NE(extent, 0) << "NYI: mapping to 0";
+  CHECK_NE(extent, 0u) << "NYI: mapping to 0";
 
   auto domain = activeDomainPoints(root, tree).universe();
 

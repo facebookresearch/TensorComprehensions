@@ -34,7 +34,7 @@ class CudaCacheTest : public ::testing::Test {
     tc::CudaCache::enableCache();
     ASSERT_TRUE(tc::CudaCache::cacheEnabled());
     tc::CudaCache::getCache()->clear();
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0);
+    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0u);
     ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
@@ -99,7 +99,7 @@ TEST_F(CudaCacheTest, EntrySameKeyDifferentValue) {
           tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
       tc::CacheEntrySameKeyDifferentValue);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
@@ -161,7 +161,7 @@ TEST_F(CudaCacheTest, DifferentIDs) {
       "kernel2", options, inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
@@ -216,7 +216,7 @@ TEST_F(CudaCacheTest, DifferentOptions) {
       "kernel", options2, inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
@@ -274,7 +274,7 @@ TEST_F(CudaCacheTest, DifferentInputs) {
       "kernel", options, inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
@@ -339,7 +339,7 @@ TEST_F(CudaCacheTest, DoubleInsertion) {
           tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
       tc::CacheEntrySameKeyDifferentValue);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
@@ -377,7 +377,7 @@ TEST_F(CudaCacheTest, Serialization) {
 
   tc::CudaCache::loadCacheFromProtobuf(buf);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
@@ -400,7 +400,7 @@ TEST_F(CudaCacheTest, Serialization) {
       "kernel2", options, inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
@@ -412,7 +412,7 @@ class OptionsCacheTest : public ::testing::Test {
     tc::OptionsCache::enableCache();
     ASSERT_TRUE(tc::OptionsCache::cacheEnabled());
     tc::OptionsCache::getCache()->clear();
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0);
+    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0u);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
@@ -461,25 +461,25 @@ TEST_F(OptionsCacheTest, DifferentIDs) {
 
   auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
   ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(11));
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0);
+  ASSERT_EQ(ret.size(), 0u);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
@@ -499,16 +499,16 @@ TEST_F(OptionsCacheTest, DifferentOptions) {
   auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel", inputPtrs, outputPtrs);
 
-  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options0);
   ASSERT_EQ(ret[1].options, options1);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
-  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[1].recordedRuntimes[0], std::chrono::microseconds(2));
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 1);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);
@@ -536,9 +536,9 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
   auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel", inputPtrs, outputPtrs);
 
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 2u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
   ASSERT_EQ(ret[0].recordedRuntimes[1], std::chrono::microseconds(2));
 
@@ -546,18 +546,18 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel", inputPtrs, outputPtrs);
 
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options_);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(3));
 
   inputs[0].shape[0] = 43;
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0);
+  ASSERT_EQ(ret.size(), 0u);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
@@ -590,8 +590,8 @@ TEST_F(OptionsCacheTest, RetrieveBest) {
       "kernelX", inputPtrs, outputPtrs);
   ASSERT_FALSE(ret);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 2);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 3);
@@ -625,26 +625,26 @@ TEST_F(OptionsCacheTest, RetrieveTopK) {
 
   auto ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
       "kernelX", inputPtrs, outputPtrs, 3);
-  ASSERT_EQ(ret.size(), 0);
+  ASSERT_EQ(ret.size(), 0u);
 
   ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
       "kernel", inputPtrs, outputPtrs, 3);
-  ASSERT_EQ(ret.size(), 3);
+  ASSERT_EQ(ret.size(), 3u);
   ASSERT_EQ(ret[0], options2);
   ASSERT_EQ(ret[1], options1);
   ASSERT_EQ(ret[2], options0);
 
   ret = tc::OptionsCache::getCache()->retrieveTopKOptions(
       "kernel", inputPtrs, outputPtrs, 6);
-  ASSERT_EQ(ret.size(), 5);
+  ASSERT_EQ(ret.size(), 5u);
   ASSERT_EQ(ret[0], options2);
   ASSERT_EQ(ret[1], options1);
   ASSERT_EQ(ret[2], options0);
   ASSERT_EQ(ret[3], options3);
   ASSERT_EQ(ret[4], options4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 5);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 5u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 5);
@@ -689,34 +689,34 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
   tc::OptionsCache::getCache()->recordRuntime(
       "kernel3", options4, inputPtrs, outputPtrs, std::chrono::microseconds(1));
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 10);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 10u);
   tc::OptionsCache::getCache()->keepOnlyBestCandidates(2);
 
   auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options1);
   ASSERT_EQ(ret[1].options, options0);
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options3);
   ASSERT_EQ(ret[1].options, options2);
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options4);
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel3", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options4);
   ASSERT_EQ(ret[1].options, options0);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 7);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 7u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 4);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 10);
@@ -750,8 +750,8 @@ TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
   ASSERT_TRUE(ret);
   ASSERT_EQ(*ret, options1);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 1u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 1);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 1);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 6);
@@ -781,36 +781,36 @@ TEST_F(OptionsCacheTest, Serialization) {
   auto buf = tc::OptionsCache::getCache()->toProtobuf();
   tc::OptionsCache::loadCacheFromProtobuf(buf);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 
   auto ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel0", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 2);
+  ASSERT_EQ(ret.size(), 2u);
   ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(10));
 
   ASSERT_EQ(ret[1].options, options1);
-  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[1].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[1].recordedRuntimes[0], std::chrono::microseconds(11));
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel1", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 1);
+  ASSERT_EQ(ret.size(), 1u);
   ASSERT_EQ(ret[0].options, options0);
-  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1);
+  ASSERT_EQ(ret[0].recordedRuntimes.size(), 1u);
   ASSERT_EQ(ret[0].recordedRuntimes[0], std::chrono::microseconds(1));
 
   ret = tc::OptionsCache::getCache()->retrieveOptionsAndRuntimes(
       "kernel2", inputPtrs, outputPtrs);
-  ASSERT_EQ(ret.size(), 0);
+  ASSERT_EQ(ret.size(), 0u);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 3u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 3);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
@@ -1002,7 +1002,7 @@ TEST(
   tc::removeFromCudaCacheEntriesNotInOptionsCache(
       *tc::CudaCache::getCache(), *tc::OptionsCache::getCache());
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
 
   ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
       "kernel0", options0, inputPtrs, outputPtrs));
@@ -1134,7 +1134,7 @@ class CompilationCacheTest : public ::testing::Test {
     tc::CudaCache::enableCache();
     ASSERT_TRUE(tc::CudaCache::cacheEnabled());
     tc::CudaCache::getCache()->clear();
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0);
+    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0u);
     ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
@@ -1142,8 +1142,8 @@ class CompilationCacheTest : public ::testing::Test {
     tc::OptionsCache::enableCache();
     ASSERT_TRUE(tc::OptionsCache::cacheEnabled());
     tc::OptionsCache::getCache()->clear();
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0);
-    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 0);
+    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 0u);
+    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 0u);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
@@ -1151,7 +1151,7 @@ class CompilationCacheTest : public ::testing::Test {
     tc::ManualCudaCache::enableCache();
     ASSERT_TRUE(tc::ManualCudaCache::cacheEnabled());
     tc::ManualCudaCache::getCache()->clear();
-    ASSERT_EQ(tc::ManualCudaCache::getCache()->size(), 0);
+    ASSERT_EQ(tc::ManualCudaCache::getCache()->size(), 0u);
     ASSERT_EQ(tc::ManualCudaCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::ManualCudaCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::ManualCudaCache::getCache()->numberCacheAttemps, 0);
@@ -1160,13 +1160,13 @@ class CompilationCacheTest : public ::testing::Test {
     test1.Run();
     test2.Run();
 
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+    ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
     ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 2);
     ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
 
-    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+    ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+    ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);
@@ -1194,13 +1194,13 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccess) {
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1228,13 +1228,13 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1250,13 +1250,13 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCache) {
   ConvolutionTester test2{2, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1281,13 +1281,13 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1315,13 +1315,13 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
                 .unroll(1);
   test2.Run(options);
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1359,13 +1359,13 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
@@ -1381,13 +1381,13 @@ TEST_F(CompilationCacheTest, Serialization) {
     tc::OptionsCache::loadCacheFromProtobuf(buf);
   }
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
@@ -1403,13 +1403,13 @@ TEST_F(CompilationCacheTest, Serialization) {
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2);
+  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
   ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
 
-  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2);
-  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2);
+  ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
+  ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 2);

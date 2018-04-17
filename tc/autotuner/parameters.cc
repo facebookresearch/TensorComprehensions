@@ -97,7 +97,7 @@ RangeParameter& RangeParameter::operator=(const RangeParameter& other) {
 }
 
 void BoolParameter::selectOption(size_t idx) {
-  CHECK_LE(idx, 1);
+  CHECK_LE(idx, 1u);
   selectValue(idx);
 }
 
