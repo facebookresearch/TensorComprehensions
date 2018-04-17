@@ -198,7 +198,7 @@ struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
   explicit ScheduleTreeElemSequence() {}
-  ScheduleTreeElemSequence(const ScheduleTreeElemSequence& eb) {}
+  ScheduleTreeElemSequence(const ScheduleTreeElemSequence&) {}
   virtual ~ScheduleTreeElemSequence() override {}
   bool operator==(const ScheduleTreeElemSequence& other) const;
   bool operator!=(const ScheduleTreeElemSequence& other) const {
@@ -216,7 +216,7 @@ struct ScheduleTreeElemSet : public ScheduleTreeElemBase {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
   explicit ScheduleTreeElemSet() {}
-  ScheduleTreeElemSet(const ScheduleTreeElemSet& eb) {}
+  ScheduleTreeElemSet(const ScheduleTreeElemSet&) {}
   virtual ~ScheduleTreeElemSet() override {}
   bool operator==(const ScheduleTreeElemSet& other) const;
   bool operator!=(const ScheduleTreeElemSet& other) const {

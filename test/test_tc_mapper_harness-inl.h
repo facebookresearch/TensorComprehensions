@@ -152,8 +152,8 @@ def sum2D(float(M, N) A) -> (C) {
       at::Tensor diff = outputs[0].sub(refOutput);
       return checkRtol(diff, inputs, N, 5e-7);
     };
-    auto noCheckFun = [](const std::vector<at::Tensor>& inputs,
-                         std::vector<at::Tensor>& outputs) { return true; };
+    auto noCheckFun = [](const std::vector<at::Tensor>&,
+                         std::vector<at::Tensor>&) { return true; };
     return skipCheck ? Check(tc, "sum2D", mappingOptions, {A}, noCheckFun)
                      : Check(tc, "sum2D", mappingOptions, {A}, checkFun);
   }

@@ -132,14 +132,12 @@ void dropInvalidConfigurations(GeneticSearch::Population& population) {
 
 } // namespace
 
-#define VALIDATE()                                     \
-  CHECK_LT(kNumberElites, kMaxPopulationSize);         \
-  CHECK(kMutationRate >= 0 and kMutationRate <= 100)   \
-      << "the mutation rate (" << kMutationRate        \
-      << ") should be in the [0,100] interval";        \
-  CHECK(kCrossOverRate >= 0 and kCrossOverRate <= 100) \
-      << "the crossover (" << kCrossOverRate           \
-      << ") rate should be in the [0,100] interval";
+#define VALIDATE()                                                      \
+  CHECK_LT(kNumberElites, kMaxPopulationSize);                          \
+  CHECK(kMutationRate <= 100) << "the mutation rate (" << kMutationRate \
+                              << ") should be in the [0,100] interval"; \
+  CHECK(kCrossOverRate <= 100) << "the crossover (" << kCrossOverRate   \
+                               << ") rate should be in the [0,100] interval";
 
 namespace {
 

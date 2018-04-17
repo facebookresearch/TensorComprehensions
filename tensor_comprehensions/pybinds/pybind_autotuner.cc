@@ -48,71 +48,64 @@ PYBIND11_MODULE(autotuner, m) {
       .def(py::init<const std::string>())
       .def(
           "pop_size",
-          [](tc::autotune::GeneticAutotunerATen& instance, uint32_t& pop_size) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& pop_size) {
             tc::FLAGS_tuner_gen_pop_size = pop_size;
           })
       .def(
           "crossover_rate",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& crossover_rate) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& crossover_rate) {
             tc::FLAGS_tuner_gen_crossover_rate = crossover_rate;
           })
       .def(
           "mutation_rate",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& mutation_rate) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& mutation_rate) {
             tc::FLAGS_tuner_gen_mutation_rate = mutation_rate;
           })
       .def(
           "generations",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& generations) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& generations) {
             tc::FLAGS_tuner_gen_generations = generations;
           })
       .def(
           "number_elites",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& number_elites) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& number_elites) {
             tc::FLAGS_tuner_gen_number_elites = number_elites;
           })
       .def(
           "threads",
-          [](tc::autotune::GeneticAutotunerATen& instance, uint32_t& threads) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& threads) {
             tc::FLAGS_tuner_threads = threads;
           })
       .def(
           "gpus",
-          [](tc::autotune::GeneticAutotunerATen& instance, std::string& gpus) {
+          [](tc::autotune::GeneticAutotunerATen&, std::string& gpus) {
             tc::FLAGS_tuner_gpus = gpus;
           })
       .def(
           "restore_from_proto",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool restore_from_proto) {
+          [](tc::autotune::GeneticAutotunerATen&, bool restore_from_proto) {
             tc::FLAGS_tuner_gen_restore_from_proto = restore_from_proto;
           })
       .def(
           "restore_number",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& restore_number) {
+          [](tc::autotune::GeneticAutotunerATen&, uint32_t& restore_number) {
             tc::FLAGS_tuner_gen_restore_number = restore_number;
           })
       .def(
           "log_generations",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool log_generations) {
+          [](tc::autotune::GeneticAutotunerATen&, bool log_generations) {
             tc::FLAGS_tuner_gen_log_generations = log_generations;
           })
       .def(
           "tuner_min_launch_total_threads",
-          [](tc::autotune::GeneticAutotunerATen& instance,
+          [](tc::autotune::GeneticAutotunerATen&,
              bool tuner_min_launch_total_threads) {
             tc::FLAGS_tuner_min_launch_total_threads =
                 tuner_min_launch_total_threads;
           })
       .def(
           "save_best_candidates_count",
-          [](tc::autotune::GeneticAutotunerATen& instance,
+          [](tc::autotune::GeneticAutotunerATen&,
              bool save_best_candidates_count) {
             tc::FLAGS_tuner_save_best_candidates_count =
                 save_best_candidates_count;

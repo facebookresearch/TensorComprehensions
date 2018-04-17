@@ -582,8 +582,7 @@ TEST_F(ProductionModel, C21LUTReference) {
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 TEST_F(ProductionModel, ATen1LUTReference) {
@@ -674,8 +673,7 @@ TEST_F(ProductionModel, C22LUTReference) {
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 TEST_F(ProductionModel, ATen2LUTReference) {
@@ -773,8 +771,7 @@ TEST_F(ProductionModel, C2C3Reference) {
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 TEST_F(ProductionModel, MLP1) {
@@ -870,8 +867,7 @@ TEST_F(ProductionModel, C2MLP1Reference) {
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 TEST_F(ProductionModel, MLP3) {
@@ -998,8 +994,7 @@ TEST_F(ProductionModel, C2MLP3Reference) {
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 int main(int argc, char** argv) {

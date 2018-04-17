@@ -265,11 +265,11 @@ bool ScheduleTreeElemMappingFilter::operator==(
 }
 
 bool ScheduleTreeElemSequence::operator==(
-    const ScheduleTreeElemSequence& other) const {
+    const ScheduleTreeElemSequence&) const {
   return true;
 }
 
-bool ScheduleTreeElemSet::operator==(const ScheduleTreeElemSet& other) const {
+bool ScheduleTreeElemSet::operator==(const ScheduleTreeElemSet&) const {
   return true;
 }
 

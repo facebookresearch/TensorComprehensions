@@ -33,11 +33,11 @@
 
 namespace caffe2 {
 
-caffe2::TensorCPU context2tensor(caffe2::CPUContext& ctx) {
+caffe2::TensorCPU context2tensor(caffe2::CPUContext&) {
   return caffe2::TensorCPU();
 }
 
-caffe2::TensorCUDA context2tensor(caffe2::CUDAContext& ctx) {
+caffe2::TensorCUDA context2tensor(caffe2::CUDAContext&) {
   return caffe2::TensorCUDA();
 }
 
@@ -227,7 +227,7 @@ struct TestHarness {
       caffe2::Workspace& expected,
       caffe2::Workspace& actual,
       std::string name,
-      float relativePrecision = 0.0) {
+      float) {
     // Resolved dynamically
     caffe2::Tensor<caffe2::CPUContext> Texpected(
         expected.GetBlob(name)->Get<caffe2::TensorCUDA>());

@@ -375,7 +375,7 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
       "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
   std::unique_ptr<OperatorBase> net(CreateOperator(ndef, &w));
 
-  Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
+  Reference([&]() { return true; }, [&](bool) { net->Run(); });
 }
 
 int main(int argc, char** argv) {
