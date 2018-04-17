@@ -223,7 +223,7 @@ struct Scop {
     name = name.substr(std::string(kSyncIdPrefix).size());
     char* end;
     std::strtol(name.c_str(), &end, 10);
-    if (end - name.c_str() != name.size()) {
+    if (name.c_str() + name.size() != end) {
       return false;
     }
     return true;
@@ -240,8 +240,8 @@ struct Scop {
         domain().get_ctx(), std::string("red_update") + std::to_string(uid));
     auto reductionInitId = isl::id(
         domain().get_ctx(), std::string("red_init") + std::to_string(uid));
-    CHECK_EQ(0, treeSyncUpdateMap.count(treeSyncId));
-    CHECK_EQ(0, defaultReductionInitMap.count(treeSyncId));
+    CHECK_EQ(0u, treeSyncUpdateMap.count(treeSyncId));
+    CHECK_EQ(0u, defaultReductionInitMap.count(treeSyncId));
 
     treeSyncUpdateMap.emplace(treeSyncId, updateId);
     defaultReductionInitMap.emplace(treeSyncId, reductionInitId);

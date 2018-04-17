@@ -194,7 +194,7 @@ inline std::ostream& operator<<(std::ostream& os, const TensorGroupsInfo& ti) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const TensorGroups& tg) {
-  int i = 0;
+  size_t i = 0;
   for (const auto& kvp : tg) {
     os << "id: " << kvp.first << "; acc: " << kvp.second;
     if (++i < tg.size()) {

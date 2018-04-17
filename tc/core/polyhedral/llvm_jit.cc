@@ -56,7 +56,7 @@ std::string find_library_path(std::string library) {
   }
   pclose(fpipe);
 
-  int idx = output.rfind("=> ");
+  auto idx = output.rfind("=> ");
   if (idx == std::string::npos) {
     throw std::runtime_error("Failed locate library: " + library);
   }

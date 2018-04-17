@@ -49,7 +49,7 @@ template <typename RNG>
 void mutate(
     CandidateConfiguration& candidate,
     double rate,
-    int iterations,
+    size_t iterations,
     RNG& rng) {
   auto shouldMutate = [&]() -> bool {
     return std::discrete_distribution<int>{static_cast<double>(100 - rate),
@@ -179,7 +179,7 @@ GeneticSearch::GeneticSearch(
   }
   if (kMaxPopulationSize - population.size() > 0) {
     auto oldSize = population.size();
-    for (int i = oldSize; i < kMaxPopulationSize; ++i) {
+    for (size_t i = oldSize; i < kMaxPopulationSize; ++i) {
       population.emplace_back(
           make_unique<CandidateConfiguration>(*population.front()));
     }
@@ -202,7 +202,7 @@ GeneticSearch::GeneticSearch(
       rng{std::random_device{}()} {
   restoreRngState(rng);
   VALIDATE();
-  for (int i = 0; i < kMaxPopulationSize; ++i) {
+  for (size_t i = 0; i < kMaxPopulationSize; ++i) {
     population.emplace_back(make_unique<CandidateConfiguration>(conf));
   }
   randomizePopulation(population.begin(), population.end(), rng);
@@ -320,18 +320,18 @@ void GeneticSearch::updateParameters() {
            "when autotuning a TC operating on small tensors. The next "
            "generation will be randomly initialized.";
     population.resize(0);
-    for (int i = 0; i < kMaxPopulationSize; ++i) {
+    for (size_t i = 0; i < kMaxPopulationSize; ++i) {
       population.emplace_back(
           make_unique<CandidateConfiguration>(lastBestConf));
     }
     // Don't lose the first one which was the best from before
-    CHECK_LT(0, population.size());
+    CHECK_LT(0u, population.size());
     randomizePopulation(population.begin() + 1, population.end(), rng);
     return;
   }
 
   breed();
-  for (int i = kNumberElites; i < population.size(); ++i) {
+  for (size_t i = kNumberElites; i < population.size(); ++i) {
     mutate(*population[i], kMutationRate, kMutateIterations, rng);
   }
 }

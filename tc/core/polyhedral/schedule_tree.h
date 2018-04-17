@@ -164,8 +164,8 @@ struct ScheduleTree {
   }
 
   // Swap a tree with with the given tree.
-  void swapChild(int pos, ScheduleTreeUPtr& swappee) {
-    CHECK_GE(pos, 0) << "position out of children bounds";
+  void swapChild(size_t pos, ScheduleTreeUPtr& swappee) {
+    CHECK_GE(pos, 0u) << "position out of children bounds";
     CHECK_LE(pos, children_.size()) << "position out of children bounds";
     CHECK(swappee.get()) << "Cannot swap in a null tree";
     std::swap(children_[pos], swappee);
@@ -180,7 +180,7 @@ struct ScheduleTree {
 
   // Manipulators for the list of children.
   void insertChildren(size_t pos, std::vector<ScheduleTreeUPtr>&& children) {
-    CHECK_GE(pos, 0) << "position out of children bounds";
+    CHECK_GE(pos, 0u) << "position out of children bounds";
     CHECK_LE(pos, children_.size()) << "position out of children bounds";
     for (const auto& c : children) {
       CHECK(c.get()) << "inserting null or moved-from child";
@@ -207,7 +207,7 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr detachChild(size_t pos) {
-    CHECK_GE(pos, 0) << "position out of children bounds";
+    CHECK_GE(pos, 0u) << "position out of children bounds";
     CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr child = std::move(children_[pos]);
@@ -229,7 +229,7 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr replaceChild(size_t pos, ScheduleTreeUPtr&& child) {
-    CHECK_GE(pos, 0) << "position out of children bounds";
+    CHECK_GE(pos, 0u) << "position out of children bounds";
     CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr oldChild = std::move(children_[pos]);
@@ -271,7 +271,7 @@ struct ScheduleTree {
 
   inline size_t positionInParent(const ScheduleTree* parent) const {
     auto p = positionRelativeTo(parent);
-    CHECK_EQ(1, p.size()) << *parent << " is not the parent of " << *this;
+    CHECK_EQ(1u, p.size()) << *parent << " is not the parent of " << *this;
     return p[0];
   }
 

@@ -102,7 +102,7 @@ TEST(RestoreCandidates, NoRuntimeRecorded) {
   atCompl.run("matmul", inputs, outputs_, handle);
 
   FLAGS_tuner_gen_restore_number = 1;
-  ASSERT_EQ(restoreCandidates(tc_, inputs, outputs_).size(), 0);
+  ASSERT_EQ(restoreCandidates(tc_, inputs, outputs_).size(), 0u);
 }
 
 TEST(RestoreCandidates, Hit) {
@@ -124,11 +124,11 @@ TEST(RestoreCandidates, Hit) {
 
   FLAGS_tuner_gen_restore_number = 2;
   auto restored = restoreCandidates(tc_, inputs, outputs_);
-  ASSERT_EQ(restored.size(), 2);
+  ASSERT_EQ(restored.size(), 2u);
 
   FLAGS_tuner_gen_restore_number = 1;
   restored = restoreCandidates(tc_, inputs, outputs_);
-  ASSERT_EQ(restored.size(), 1);
+  ASSERT_EQ(restored.size(), 1u);
 }
 
 int main(int argc, char** argv) {

@@ -85,7 +85,7 @@ class TcOp : public Operator<Context> {
   virtual void setupDefaultGradCudaMappingOptions() {}
 
   void prepareOutputs(const std::vector<const DLTensor*> tensorInfo) {
-    for (int i = 0; i < tensorInfo.size(); ++i) {
+    for (size_t i = 0; i < tensorInfo.size(); ++i) {
       auto info = tensorInfo[i];
       std::vector<int64_t> shape(info->shape, info->shape + info->ndim);
       Output(i)->Resize(shape);

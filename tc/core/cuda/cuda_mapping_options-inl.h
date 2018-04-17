@@ -20,8 +20,8 @@ namespace tc {
 // CudaDimView & CudaDim
 //
 CudaDim::CudaDim(std::vector<uint64_t> il) : ownedProto_(), view(ownedProto_) {
-  CHECK_GT(il.size(), 0) << "list of values in CudaDimView must be non-empty";
-  CHECK_LE(il.size(), 3) << "at most 3 values allowed in CudaDimView";
+  CHECK_GT(il.size(), 0u) << "list of values in CudaDimView must be non-empty";
+  CHECK_LE(il.size(), 3u) << "at most 3 values allowed in CudaDimView";
 
   switch (il.size()) {
     case 3:
@@ -80,13 +80,13 @@ std::array<uint64_t, 3> CudaDimView::extractDefaultedArray() const {
                               CudaDimView::defaultDim,
                               CudaDimView::defaultDim};
   auto v = extractVector();
-  CHECK_LE(v.size(), 3);
+  CHECK_LE(v.size(), 3u);
   std::copy(v.begin(), v.end(), arr.begin());
   return arr;
 }
 
 ValueAccessor<uint64_t> CudaDimView::operator[](size_t i) {
-  CHECK_LT(i, 3) << "index overflow";
+  CHECK_LT(i, 3u) << "index overflow";
   if (i == 0) {
     return ValueAccessor<uint64_t>(
         [this](uint64_t u) { this->proto.set_x(u); },
@@ -109,7 +109,7 @@ ValueAccessor<uint64_t> CudaDimView::operator[](size_t i) {
 }
 
 uint64_t CudaDimView::operator[](size_t i) const {
-  CHECK_LT(i, 3) << "index overflow";
+  CHECK_LT(i, 3u) << "index overflow";
   if (i == 0) {
     return proto.x();
   } else if (i == 1) {
@@ -192,8 +192,8 @@ CudaMappingOptions::mapToThreads(uint64_t x, uint64_t y, uint64_t z) {
 
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::vector<uint64_t>& threads) {
-  CHECK_GT(threads.size(), 0) << "expected at least one thread size";
-  CHECK_LE(threads.size(), 3) << "expected at most three thread sizes";
+  CHECK_GT(threads.size(), 0u) << "expected at least one thread size";
+  CHECK_LE(threads.size(), 3u) << "expected at most three thread sizes";
 
   uint64_t x = threads[0];
   uint64_t y = threads.size() > 1 ? threads[1] : CudaDimView::defaultDim;
@@ -216,8 +216,8 @@ CudaMappingOptions::mapToBlocks(uint64_t x, uint64_t y, uint64_t z) {
 
 CudaMappingOptions& CudaMappingOptions::mapToBlocks(
     const std::vector<uint64_t>& blocks) {
-  CHECK_GT(blocks.size(), 0) << "expected at least one thread size";
-  CHECK_LE(blocks.size(), 3) << "expected at most three thread sizes";
+  CHECK_GT(blocks.size(), 0u) << "expected at least one thread size";
+  CHECK_LE(blocks.size(), 3u) << "expected at most three thread sizes";
 
   uint64_t x = blocks[0];
   uint64_t y = blocks.size() > 1 ? blocks[1] : CudaDimView::defaultDim;

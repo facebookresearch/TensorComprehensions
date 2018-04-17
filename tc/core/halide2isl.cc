@@ -130,8 +130,8 @@ inline isl::aff combineSingleAffs(
     isl::aff (isl::aff::*combine)(isl::aff) const) {
   auto left = makeIslAffBoundsFromExpr(space, op->a, false, false);
   auto right = makeIslAffBoundsFromExpr(space, op->b, false, false);
-  CHECK_EQ(left.size(), 1);
-  CHECK_EQ(right.size(), 1);
+  CHECK_EQ(left.size(), 1u);
+  CHECK_EQ(right.size(), 1u);
 
   return (left[0].*combine)(right[0]);
 }
@@ -195,7 +195,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     // We cannot span multiple constraints if a modulo operation is involved.
     // x > max(a,b) % C is not equivalent to (x > a % C && x > b % C).
     auto lhs = makeIslAffBoundsFromExpr(space, e, false, false);
-    CHECK_EQ(lhs.size(), 1);
+    CHECK_EQ(lhs.size(), 1u);
     if (const int64_t* b = as_const_int(op->b)) {
       return {lhs[0].mod(isl::val(space.get_ctx(), *b))};
     }
@@ -208,9 +208,9 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
 
 isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
   auto list = makeIslAffBoundsFromExpr(space, e, false, false);
-  CHECK_LE(list.size(), 1) << "Halide expr " << e
-                           << " unrolled into more than 1 isl aff"
-                           << " but min/max operations were disabled";
+  CHECK_LE(list.size(), 1u)
+      << "Halide expr " << e << " unrolled into more than 1 isl aff"
+      << " but min/max operations were disabled";
 
   // Non-affine
   if (list.size() == 0) {
@@ -366,7 +366,7 @@ isl::schedule makeScheduleTreeHelper(
     // Then we add our new loop bound constraints.
     auto lbs = halide2isl::makeIslAffBoundsFromExpr(
         set.get_space(), op->min, false, true);
-    CHECK_GT(lbs.size(), 0)
+    CHECK_GT(lbs.size(), 0u)
         << "could not obtain polyhedral lower bounds from " << op->min;
     for (auto lb : lbs) {
       set = set.intersect(loopVar.ge_set(lb));
@@ -375,7 +375,7 @@ isl::schedule makeScheduleTreeHelper(
     Expr max = simplify(op->min + op->extent - 1);
     auto ubs =
         halide2isl::makeIslAffBoundsFromExpr(set.get_space(), max, true, false);
-    CHECK_GT(ubs.size(), 0)
+    CHECK_GT(ubs.size(), 0u)
         << "could not obtain polyhedral upper bounds from " << max;
     for (auto ub : ubs) {
       set = set.intersect(ub.ge_set(loopVar));

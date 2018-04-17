@@ -72,10 +72,10 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     }
   }
 
-  ASSERT_NE(0, calledFunctions.count("__cilkrts_get_tls_worker"));
-  ASSERT_NE(0, calledFunctions.count("__cilkrts_bind_thread_1"));
-  ASSERT_NE(0, calledFunctions.count("llvm.stacksave"));
-  ASSERT_NE(0, calledFunctions.count("__cilkrts_sync"));
+  ASSERT_NE(0u, calledFunctions.count("__cilkrts_get_tls_worker"));
+  ASSERT_NE(0u, calledFunctions.count("__cilkrts_bind_thread_1"));
+  ASSERT_NE(0u, calledFunctions.count("llvm.stacksave"));
+  ASSERT_NE(0u, calledFunctions.count("__cilkrts_sync"));
 
   auto fptr =
       (void (*)(float*, float*, float*))jit.getSymbolAddress("kernel_anon");

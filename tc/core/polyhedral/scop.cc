@@ -564,7 +564,7 @@ isl::aff Scop::makeIslAffFromStmtExpr(
   space = space.add_dims(isl::dim_type::set, iterators.size());
   // Set the names of the set dimensions of "space" for use
   // by halide2isl::makeIslAffFromExpr.
-  for (int i = 0; i < iterators.size(); ++i) {
+  for (size_t i = 0; i < iterators.size(); ++i) {
     isl::id id(ctx, iterators[i]);
     space = space.set_dim_id(isl::dim_type::set, i, id);
   }

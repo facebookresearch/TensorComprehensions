@@ -98,11 +98,11 @@ llvm::Optional<CudaMappingOptions> GeneticAutotuner::tune(
     CudaMappingOptions baseMapping,
     std::vector<CudaMappingOptions> startingPoints,
     const TuningParameterFixer& fixedParams) {
-  CHECK_EQ(1, tcNameMap_.count(tcName)) << "Error looking up " << tcName;
+  CHECK_EQ(1u, tcNameMap_.count(tcName)) << "Error looking up " << tcName;
   enableOrLoadCache(cacheFileName);
 
   if (FLAGS_tuner_gen_restore_from_proto && !(cacheFileName.empty())) {
-    CHECK_GT(inputs.size(), 0);
+    CHECK_GT(inputs.size(), 0u);
 
     auto restoredCandidates = load(
         cacheFileName,
@@ -185,7 +185,7 @@ llvm::Optional<CudaMappingOptions> GeneticAutotuner::tune(
   ee.define(tc_);
   auto outputPtrs = ee.inferOutputTensorInfo(tcName, inputs.begin()->second);
 
-  CHECK_GT(inputs.size(), 0);
+  CHECK_GT(inputs.size(), 0u);
   return tc::autotune::getBestOptions(
       canonicalTc(tcNameMap_.at(tcName)), inputs.begin()->second, outputPtrs);
 }

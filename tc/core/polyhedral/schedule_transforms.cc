@@ -216,7 +216,7 @@ ScheduleTree* joinBands(ScheduleTree* st, bool permutable) {
   if (moveChildren) {
     // Just overwrite children and let shared pointers go out of scope
     auto children = st->detachChildren();
-    CHECK_EQ(1, children.size()) << "expected a sequence of bands";
+    CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
     st->appendChildren(children[0]->detachChildren());
   }
   st->elemAs<ScheduleTreeElemBand>()->permutable_ = permutable;
@@ -230,7 +230,7 @@ ScheduleTree* joinBandsIterative(ScheduleTree* st, bool permutable) {
     // Stupid private access hack, remove when moving to unique_ptr
     if (moveChildren) {
       auto children = st->detachChildren();
-      CHECK_EQ(1, children.size()) << "expected a sequence of bands";
+      CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
       st->appendChildren(children[0]->detachChildren());
     }
   }
@@ -265,8 +265,8 @@ bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
   CHECK(tree->elemAs<ScheduleTreeElemBand>()) << "Not a band:\n" << *tree;
   auto band = tree->elemAs<ScheduleTreeElemBand>();
   size_t n = band->nMember();
-  CHECK_LT(0, n) << "no bands to split";
-  CHECK_LE(0, pos) << "position out of bounds";
+  CHECK_LT(0u, n) << "no bands to split";
+  CHECK_LE(0u, pos) << "position out of bounds";
   CHECK_GE(n, pos) << "position out of bounds";
 
   // Detach and reattach children to avoid making copies.
@@ -477,7 +477,7 @@ ScheduleTree* insertBandBelow(
     detail::ScheduleTree* tree,
     isl::multi_union_pw_aff mupa) {
   auto numChildren = tree->numChildren();
-  CHECK_LE(numChildren, 1);
+  CHECK_LE(numChildren, 1u);
   tree->appendChild(ScheduleTree::makeBand(mupa, tree->detachChildren()));
   return tree->child({0});
 }
@@ -701,7 +701,7 @@ detail::ScheduleTree* mergeConsecutiveMappingFilters(
           typename mapping::MappingId::Hash>&>(
           p->elemAs<ScheduleTreeElemMappingFilter>()->mappingIds);
       for (auto id : filter->mappingIds) {
-        CHECK_EQ(0, ids.count(id))
+        CHECK_EQ(0u, ids.count(id))
             << "Error when merging filters\n"
             << *f << "\nand\n"
             << *p << "\nid: " << id << " mapped in both!";

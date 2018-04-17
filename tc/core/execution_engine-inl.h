@@ -64,7 +64,7 @@ ExecutionEngine<ExecutorType>::inferOutputTensorInfo(
     const std::vector<const DLTensor*>& inputs) {
   {
     std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-    CHECK_EQ(1, tcNameMap_.count(name))
+    CHECK_EQ(1u, tcNameMap_.count(name))
         << "attempting to access undefined function " << name;
     // If we have already compiled for the given inputs, regardless of
     // the options, we can get sizes from a corresponding ExecutorType.
