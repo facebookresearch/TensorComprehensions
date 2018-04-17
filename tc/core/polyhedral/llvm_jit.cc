@@ -128,8 +128,7 @@ Jit::Jit()
       compileLayer_(objectLayer_, orc::SimpleCompiler(*TM_)) {
   std::string err;
 
-  auto path = find_library_path("libcilkrts.so");
-  sys::DynamicLibrary::LoadLibraryPermanently(path.c_str(), &err);
+  sys::DynamicLibrary::LoadLibraryPermanently(nullptr, &err);
   if (err != "") {
     throw std::runtime_error("Failed to find cilkrts: " + err);
   }
