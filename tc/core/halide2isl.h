@@ -43,6 +43,10 @@ SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components);
 /// Make the space of all parameter values from the symbol table
 isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable);
 
+/// Make the parameter set marking all parameters from the symbol table
+/// as non-negative.
+isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable);
+
 /// Make a constant-valued affine function over a space.
 isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 

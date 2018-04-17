@@ -228,6 +228,16 @@ isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable) {
   return space;
 }
 
+isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable) {
+  auto space = makeParamSpace(ctx, symbolTable);
+  auto context = isl::set::universe(space);
+  for (auto p : symbolTable.params) {
+    isl::aff a(isl::aff::param_on_domain_space(space, isl::id(ctx, p.name())));
+    context = context & (a >= 0);
+  }
+  return context;
+}
+
 isl::map extractAccess(
     isl::set domain,
     const IRNode* op,

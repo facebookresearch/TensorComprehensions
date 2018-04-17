@@ -47,13 +47,8 @@ ScopUPtr Scop::makeScop(
 
   halide2isl::SymbolTable sym = halide2isl::makeSymbolTable(components);
 
-  isl::space paramSpace = halide2isl::makeParamSpace(ctx, sym);
-  auto globalParameterContext = isl::set::universe(paramSpace);
-  isl::local_space ls(globalParameterContext.get_space());
-  for (int i = 0; i < globalParameterContext.dim(isl::dim_type::param); ++i) {
-    globalParameterContext =
-        globalParameterContext & (isl::aff(ls, isl::dim_type::param, i) >= 0);
-  }
+  auto globalParameterContext = halide2isl::makeParamContext(ctx, sym);
+  isl::space paramSpace = globalParameterContext.get_space();
 
   ScopUPtr scop(new Scop());
   scop->globalParameterContext = globalParameterContext;
