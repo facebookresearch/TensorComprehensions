@@ -63,7 +63,7 @@ class GeneticTunerHarness {
       const std::vector<DLTensor*>& outputs,
       const std::vector<const DLTensor*>& inputs,
       size_t handle,
-      size_t bestTimeSoFar);
+      Duration bestTimeSoFar);
 
   /// Helper function to delegate compiling on the cpu to different threads
   template <typename ExecutorType>
@@ -85,7 +85,8 @@ class GeneticTunerHarness {
  public:
   static constexpr int kReducedWarmupIterations = 2;
   static constexpr int kReducedBenchmarkIterations = 10;
-  static constexpr int kEarlyPruneFactor = 5;
+  static constexpr size_t kEarlyPruneFactor = 5;
+  static constexpr size_t kCatastrophicPerfFactor = 100;
 
   const size_t kMaxPopulationSize;
   const uint8_t kCrossOverRate;
@@ -96,7 +97,7 @@ class GeneticTunerHarness {
 
  private:
   std::mutex bestTimeMtx_;
-  size_t bestTime_ = std::numeric_limits<size_t>::max();
+  Duration bestTime_ = Duration::max();
   CudaMappingOptions bestCudaMappingOptions_;
 
   const lang::TreeRef kTc_;

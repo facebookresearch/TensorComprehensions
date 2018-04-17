@@ -208,6 +208,9 @@ std::vector<size_t> parseGpus() {
     LOG(GSTREAM) << line;                                \
   }
 
+constexpr size_t GeneticTunerHarness::kEarlyPruneFactor;
+constexpr size_t GeneticTunerHarness::kCatastrophicPerfFactor;
+
 // This function is ran on a single pre-determined GPU, in a single thread
 // It takes the input/output DLTensor objects that reside on that GPU
 //
@@ -222,7 +225,7 @@ bool GeneticTunerHarness::warmupOrPrune(
     const std::vector<DLTensor*>& outputs,
     const std::vector<const DLTensor*>& inputs,
     size_t handle,
-    size_t bestTimeSoFar) {
+    Duration bestTimeSoFar) {
   // Pruning based on number of threads: if you don't hit at least k warps
   // (default k = 8; 256 total threads, controlled by
   // FLAGS_tuner_min_launch_total_threads) then it's likely the kernel is not
@@ -276,10 +279,8 @@ bool GeneticTunerHarness::warmupOrPrune(
   }
 
   // 1.b.
-  constexpr size_t kCatastrophicPerfFactor = 100;
-  if (bestTimeSoFar < std::numeric_limits<size_t>::max() and
-      prof >= std::chrono::microseconds(
-                  (kCatastrophicPerfFactor * bestTimeSoFar))) {
+  if (bestTimeSoFar < Duration::max() and
+      prof >= kCatastrophicPerfFactor * bestTimeSoFar) {
     return true;
   }
 
@@ -291,8 +292,8 @@ bool GeneticTunerHarness::warmupOrPrune(
   // 2. After reasonable warmup, look at the performance and prune with
   // kEarlyPruneFactor
   prof = engine.run(handle, inputs, outputs, true);
-  if (bestTimeSoFar < std::numeric_limits<size_t>::max() and
-      prof >= std::chrono::microseconds((kEarlyPruneFactor * bestTimeSoFar))) {
+  if (bestTimeSoFar < Duration::max() and
+      prof >= kEarlyPruneFactor * bestTimeSoFar) {
     return true;
   }
 
@@ -394,7 +395,7 @@ void GeneticTunerHarness::doGpuWork(
 
     std::vector<Duration> runtimes;
     try {
-      size_t bestTimeSoFar;
+      Duration bestTimeSoFar;
       {
         std::lock_guard<std::mutex> lock(bestTimeMtx_);
         bestTimeSoFar = bestTime_;
@@ -451,8 +452,8 @@ void GeneticTunerHarness::doGpuWork(
     // Save best time under lock
     {
       std::lock_guard<std::mutex> lock(bestTimeMtx_);
-      if (prof_us < bestTime_) {
-        bestTime_ = prof_us;
+      if (prof < bestTime_) {
+        bestTime_ = prof;
         bestCudaMappingOptions_ = options;
       }
     }
