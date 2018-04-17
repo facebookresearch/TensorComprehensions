@@ -127,7 +127,7 @@ template <typename MappingIdType>
 detail::ScheduleTree* mapToParameterWithExtent(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    int pos,
+    size_t pos,
     MappingIdType id,
     size_t extent);
 
