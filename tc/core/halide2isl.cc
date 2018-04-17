@@ -448,7 +448,7 @@ isl::schedule makeScheduleTreeHelper(
     LOG(FATAL) << "Unhandled Halide stmt: " << s;
   }
   return schedule;
-};
+}
 
 ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   ScheduleTreeAndAccesses result;

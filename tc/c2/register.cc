@@ -35,8 +35,8 @@ namespace caffe2 {
 // TODO: generate optimized CPU code too if needed
 // REGISTER_CPU_OPERATOR(TcMatMulOp, TcMatMulOp<float, CPUContext>);
 
-REGISTER_CUDA_OPERATOR(TcMatMulOp, TcMatMulOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcMatMulOp, GetTcOpGradient);
+REGISTER_CUDA_OPERATOR(TcMatMulOp, TcMatMulOp<float, CUDAContext>)
+REGISTER_GRADIENT(TcMatMulOp, GetTcOpGradient)
 OPERATOR_SCHEMA(TcMatMulOp)
     .NumInputs(2)
     .NumOutputs(1)
@@ -52,9 +52,9 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(0), op_def.input(1)},
           {"O"},
           op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(TcFCReluOp, TcFCReluOp<float, CUDAContext>);
+REGISTER_CUDA_OPERATOR(TcFCReluOp, TcFCReluOp<float, CUDAContext>)
 OPERATOR_SCHEMA(TcFCReluOp)
     .NumInputs(3)
     .NumOutputs(1)
@@ -70,9 +70,9 @@ TC_REFERENCE_IMPLEMENTATION(
           op_def.device_option()));
       net_def->add_op()->CopyFrom(CreateOperatorDef(
           "Relu", "", {"O1_r"}, {op_def.output(0)}, op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(Tc2FCReluOp, Tc2FCReluOp<float, CUDAContext>);
+REGISTER_CUDA_OPERATOR(Tc2FCReluOp, Tc2FCReluOp<float, CUDAContext>)
 OPERATOR_SCHEMA(Tc2FCReluOp)
     .NumInputs(5)
     .NumOutputs(2)
@@ -96,9 +96,9 @@ TC_REFERENCE_IMPLEMENTATION(
           op_def.device_option()));
       net_def->add_op()->CopyFrom(CreateOperatorDef(
           "Relu", "", {"O2_r"}, {op_def.output(1)}, op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(Tc3FCReluOp, Tc3FCReluOp<float, CUDAContext>);
+REGISTER_CUDA_OPERATOR(Tc3FCReluOp, Tc3FCReluOp<float, CUDAContext>)
 OPERATOR_SCHEMA(Tc3FCReluOp)
     .NumInputs(7)
     .NumOutputs(3)
@@ -130,9 +130,9 @@ TC_REFERENCE_IMPLEMENTATION(
           op_def.device_option()));
       net_def->add_op()->CopyFrom(CreateOperatorDef(
           "Relu", "", {"O3_r"}, {op_def.output(2)}, op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(Tc4FCReluOp, Tc4FCReluOp<float, CUDAContext>);
+REGISTER_CUDA_OPERATOR(Tc4FCReluOp, Tc4FCReluOp<float, CUDAContext>)
 OPERATOR_SCHEMA(Tc4FCReluOp)
     .NumInputs(9)
     .NumOutputs(4)
@@ -172,10 +172,10 @@ TC_REFERENCE_IMPLEMENTATION(
           op_def.device_option()));
       net_def->add_op()->CopyFrom(CreateOperatorDef(
           "Relu", "", {"O4_r"}, {op_def.output(3)}, op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(TcCopyOp, TcCopyOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcCopyOp, GetTcOpGradient);
+REGISTER_CUDA_OPERATOR(TcCopyOp, TcCopyOp<float, CUDAContext>)
+REGISTER_GRADIENT(TcCopyOp, GetTcOpGradient)
 OPERATOR_SCHEMA(TcCopyOp).NumInputs(1).NumOutputs(1).SetDoc(
     TcCopyOp<float, CUDAContext>::description);
 TC_REFERENCE_IMPLEMENTATION(
@@ -187,10 +187,10 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(0)},
           {op_def.output(0)},
           op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(TcConvolutionOp, TcConvolutionOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcConvolutionOp, GetTcOpGradient);
+REGISTER_CUDA_OPERATOR(TcConvolutionOp, TcConvolutionOp<float, CUDAContext>)
+REGISTER_GRADIENT(TcConvolutionOp, GetTcOpGradient)
 OPERATOR_SCHEMA(TcConvolutionOp)
     .NumInputs(3)
     .NumOutputs(1)
@@ -204,12 +204,12 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(0), op_def.input(1), op_def.input(2)},
           {op_def.output(0)},
           op_def.device_option()));
-    });
+    })
 
 REGISTER_CUDA_OPERATOR(
     TcGroupConvolutionOp,
-    TcGroupConvolutionOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcGroupConvolutionOp, GetTcOpGradient);
+    TcGroupConvolutionOp<float, CUDAContext>)
+REGISTER_GRADIENT(TcGroupConvolutionOp, GetTcOpGradient)
 OPERATOR_SCHEMA(TcGroupConvolutionOp).NumInputs(3).NumOutputs(1).SetDoc(R"DOC(
     O(b, g, o, x, y)  = 0
     O(b, g, o, x, y) += I(b, g, i, x + kx, y + ky) * W(g, i, o, kx, ky)
@@ -218,7 +218,7 @@ OPERATOR_SCHEMA(TcGroupConvolutionOp).NumInputs(3).NumOutputs(1).SetDoc(R"DOC(
 ////////////////////////////////////////////////////////////////////////////////
 // TcLUTOp
 ////////////////////////////////////////////////////////////////////////////////
-REGISTER_CUDA_OPERATOR(TcLUTOp, TcLUTOp<float, int, CUDAContext>);
+REGISTER_CUDA_OPERATOR(TcLUTOp, TcLUTOp<float, int, CUDAContext>)
 OPERATOR_SCHEMA(TcLUTOp).NumInputs(2).NumOutputs(1).SetDoc(
     TcLUTOp<float, int, CUDAContext>::description);
 TC_REFERENCE_IMPLEMENTATION(
@@ -246,9 +246,9 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(0), "__indices1_casted", "__lengths"}, // HACK
           {op_def.output(0)},
           op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(Tc2LUTOp, Tc2LUTOp<float, int, CUDAContext>);
+REGISTER_CUDA_OPERATOR(Tc2LUTOp, Tc2LUTOp<float, int, CUDAContext>)
 OPERATOR_SCHEMA(Tc2LUTOp).NumInputs(4).NumOutputs(2).SetDoc(
     Tc2LUTOp<float, int, CUDAContext>::description);
 TC_REFERENCE_IMPLEMENTATION(
@@ -295,11 +295,11 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(2), "__indices2_casted", "__lengths2"}, // HACK
           {op_def.output(1)},
           op_def.device_option()));
-    });
+    })
 
 REGISTER_CUDA_OPERATOR(
     TcDperLutConcatOp,
-    TcDperLutConcatOp<float, CUDAContext>);
+    TcDperLutConcatOp<float, CUDAContext>)
 OPERATOR_SCHEMA(TcDperLutConcatOp)
     .NumInputs(7)
     .NumOutputs(3)
@@ -354,9 +354,9 @@ TC_REFERENCE_IMPLEMENTATION(
           {op_def.input(6), "__indices2_casted", "__lengths2"}, // HACK
           {op_def.output(2)},
           op_def.device_option()));
-    });
+    })
 
-REGISTER_CUDA_OPERATOR(TcOp, TcOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcOp, GetTcOpGradient);
+REGISTER_CUDA_OPERATOR(TcOp, TcOp<float, CUDAContext>)
+REGISTER_GRADIENT(TcOp, GetTcOpGradient)
 OPERATOR_SCHEMA(TcOp).SetDoc(R"DOC(Generic Op using CudaExecutionEngine)DOC");
-}; // namespace caffe2
+} // namespace caffe2
