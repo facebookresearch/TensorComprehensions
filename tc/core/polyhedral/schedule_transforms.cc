@@ -358,7 +358,7 @@ ScheduleTree* bandTile(
   if (tileOptions & TileOptions::ShiftPointLoops) {
     auto mupa = band.mupa_;
     if (!(tileOptions & TileOptions::ScaleTileLoops)) {
-      mupa = mupa.scale_multi_val(makeMultiVal(mupa.get_space(), ts));
+      mupa = mupa.scale(makeMultiVal(mupa.get_space(), ts));
     }
     childBand.mupa_ = childBand.mupa_.sub(mupa);
   }
@@ -386,7 +386,7 @@ ScheduleTree* bandScale(ScheduleTree* tree, const vector<size_t>& scales) {
   }
   auto& mupa = band.mupa_;
   auto space = mupa.get_space();
-  mupa = mupa.scale_multi_val(isl::makeMultiVal(space, s));
+  mupa = mupa.scale(isl::makeMultiVal(space, s));
   return tree;
 }
 
