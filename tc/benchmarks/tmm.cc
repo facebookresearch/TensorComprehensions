@@ -224,8 +224,7 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
       new TestHarness::OpTester(op_def, precision));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
 
-  Reference(
-      [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
+  Reference([&]() { return true; }, [&](bool) { reference->RunReference(); });
 }
 
 int main(int argc, char** argv) {

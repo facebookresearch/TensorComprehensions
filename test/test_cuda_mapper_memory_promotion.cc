@@ -32,7 +32,7 @@ using namespace tc::polyhedral;
 namespace {
 int npoints(isl::set s) {
   int cnt = 0;
-  isl::union_set(s).foreach_point([&cnt](isl::point pt) { ++cnt; });
+  isl::union_set(s).foreach_point([&cnt](isl::point) { ++cnt; });
   return cnt;
 }
 } // namespace

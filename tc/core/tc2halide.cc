@@ -950,7 +950,7 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
 } // namespace
 
 HalideComponents
-translate(isl::ctx ctx, const lang::TreeRef& treeRef, bool throwWarnings) {
+translate(isl::ctx, const lang::TreeRef& treeRef, bool throwWarnings) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << treeRef;
   return translateDef(
       lang::Def(lang::Sema().checkFunction(treeRef)), throwWarnings);

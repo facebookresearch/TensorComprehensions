@@ -31,14 +31,14 @@ namespace tc {
 
 using namespace dlutils;
 
-void CpuTcExecutor::compile(const tc::CpuMappingOptions& options) {}
+void CpuTcExecutor::compile(const tc::CpuMappingOptions&) {}
 
 void CpuTcExecutor::compileWithTcMapper() {}
 
 Duration CpuTcExecutor::run(
     const std::vector<const DLTensor*>& inputs,
     const std::vector<DLTensor*>& outputs,
-    bool profile) const {
+    bool) const {
   CHECK(rtcFunction) << "Can't launch uncompiled: "
                      << executionInfo_.kernelName;
   CHECK_NE(executionInfo_.options, "");
@@ -53,7 +53,7 @@ Duration CpuTcExecutor::run(
 }
 
 void CpuTcExecutor::uncheckedRun(
-    const std::vector<const void*>& inputs,
-    const std::vector<void*>& outputs) const {}
+    const std::vector<const void*>&,
+    const std::vector<void*>&) const {}
 
 } // namespace tc

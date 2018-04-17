@@ -628,7 +628,7 @@ void emitMappedTensorAccess(
 //       bx,by,bz and tx,ty,tz do not work and this is actually scary!!
 // TODO: This is terrible and needs to be changed. Funny enough it is already
 //       strictly better than the previous implementation...
-void emitThreadIdInit(stringstream& ss, const MappedScop& scop) {
+void emitThreadIdInit(stringstream& ss, const MappedScop&) {
   WS ws;
   ss << ws.tab();
   ss << "int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;\n";

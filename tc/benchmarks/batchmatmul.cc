@@ -176,7 +176,7 @@ TEST_F(BatchMatMul, C2TransposedBatchMatMulReference) {
   OperatorDef ref_def =
       TestHarness::ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
   std::unique_ptr<OperatorBase> net(CreateOperator(ref_def, &w_ref));
-  Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
+  Reference([&]() { return true; }, [&](bool) { net->Run(); });
 }
 
 int main(int argc, char** argv) {

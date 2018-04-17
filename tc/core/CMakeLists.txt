@@ -34,7 +34,7 @@ add_library(
   polyhedral/separation.cc
   polyhedral/unroll.cc
 )
-target_include_directories(tc_core PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories(tc_core SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
   tc_core
 
@@ -68,7 +68,7 @@ add_library(
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
 )
-target_include_directories(tc_core_cpu PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories(tc_core_cpu SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
   tc_core_cpu
 
@@ -115,7 +115,7 @@ add_library(
 set_target_properties(tc_core_cuda_no_sdk
                       PROPERTIES COMPILE_FLAGS
                       "${CMAKE_CXX_FLAGS} -UCUDA_HOME -Wl,--no-undefined")
-target_include_directories(tc_core_cuda_no_sdk PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories(tc_core_cuda_no_sdk SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
   tc_core_cuda_no_sdk
 
@@ -158,7 +158,7 @@ if (WITH_CUDA)
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
   )
-  target_include_directories(tc_cuda PUBLIC ${LLVM_INCLUDE_DIRS})
+  target_include_directories(tc_cuda SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS})
   target_link_libraries(
     tc_cuda
 

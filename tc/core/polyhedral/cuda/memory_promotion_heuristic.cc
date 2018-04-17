@@ -184,7 +184,7 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
  * introduced parameters.
  */
 isl::map fixOuterInputDimsAsParameters(isl::map map, unsigned nDims) {
-  if (nDims < 0 || nDims > map.dim(isl::dim_type::in)) {
+  if (nDims > map.dim(isl::dim_type::in)) {
     std::stringstream ss;
     ss << nDims << "  is out of [0, " << map.dim(isl::dim_type::in)
        << ") range";
@@ -231,7 +231,7 @@ bool hasReuseWithin(
  * dimensions unchanged.
  */
 isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
-  if (dim < 0 || dim >= setSpace.dim(isl::dim_type::set)) {
+  if (dim >= setSpace.dim(isl::dim_type::set)) {
     std::stringstream ss;
     ss << dim << "  is out of [0, " << setSpace.dim(isl::dim_type::set)
        << ") range";
@@ -427,7 +427,7 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 void promoteToSharedGreedy(
     Scop& scop,
     const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    const Block& block,
+    const Block&,
     size_t depth,
     size_t maxMemory) {
   using namespace tc::polyhedral::detail;
@@ -566,7 +566,7 @@ void promoteGreedilyAtDepth(
 void promoteToRegistersBelowThreads(
     Scop& scop,
     const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    size_t nRegisters) {
+    size_t) {
   using namespace tc::polyhedral::detail;
 
   auto root = scop.scheduleRoot();

@@ -689,7 +689,7 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
   TestHarness::CheckEqual(w_ref, w_test, "Z");
-};
+}
 
 TEST_F(Caffe2Test, TcFunctions) {
   auto init_ws = [&](Workspace& w) {
@@ -729,7 +729,7 @@ def fun(float(B, N, M) X) -> (Z) {
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
   TestHarness::CheckEqual(w_ref, w_test, "Z", 1e-6);
-};
+}
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

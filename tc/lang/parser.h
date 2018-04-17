@@ -149,10 +149,10 @@ struct Parser {
     return List::create(range, std::move(elements));
   }
   TreeRef parseExpList() {
-    return parseList('(', ',', ')', [&](int i) { return parseExp(); });
+    return parseList('(', ',', ')', [&](int) { return parseExp(); });
   }
   TreeRef parseIdentList() {
-    return parseList('(', ',', ')', [&](int i) { return parseIdent(); });
+    return parseList('(', ',', ')', [&](int) { return parseIdent(); });
   }
   TreeRef parseRangeConstraint() {
     auto id = parseIdent();
@@ -192,7 +192,7 @@ struct Parser {
   }
   TreeRef parseWhereClauses() {
     if (L.nextIf(TK_WHERE)) {
-      return parseNonEmptyList(',', [&](int i) { return parseWhereClause(); });
+      return parseNonEmptyList(',', [&](int) { return parseWhereClause(); });
     }
     return List::create(L.cur().range, {});
   }
@@ -260,7 +260,7 @@ struct Parser {
     return list;
   }
   TreeRef parseDimList() {
-    return parseList('(', ',', ')', [&](int i) {
+    return parseList('(', ',', ')', [&](int) {
       if (L.cur().kind == TK_NUMBER) {
         return parseConst();
       } else {
@@ -286,10 +286,9 @@ struct Parser {
     L.expect(TK_DEF);
     auto name = parseIdent();
     auto paramlist =
-        parseList('(', ',', ')', [&](int i) { return parseParam(); });
+        parseList('(', ',', ')', [&](int) { return parseParam(); });
     L.expect(TK_ARROW);
-    auto retlist =
-        parseList('(', ',', ')', [&](int i) { return parseParam(); });
+    auto retlist = parseList('(', ',', ')', [&](int) { return parseParam(); });
     L.expect('{');
     auto r = L.cur().range;
     TreeList stmts;

@@ -64,20 +64,17 @@ int run0_1(int (*callback)(SomeType, void*), void* user) {
   return callback(SomeType(), user);
 }
 
-int run1_1(float f, int (*callback)(SomeType, void*), void* user) {
+int run1_1(float, int (*callback)(SomeType, void*), void* user) {
   return callback(SomeType(), user);
 }
 
-int run1_2(
-    float f,
-    int (*callback)(SomeType, SomeOtherType, void*),
-    void* user) {
+int run1_2(float, int (*callback)(SomeType, SomeOtherType, void*), void* user) {
   return callback(SomeType(), SomeOtherType(), user);
 }
 
 int run2_2(
-    float f,
-    SomeType st,
+    float,
+    SomeType,
     int (*callback)(SomeType, SomeOtherType, void*),
     void* user) {
   return callback(SomeType(), SomeOtherType(), user);

@@ -296,8 +296,9 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
 }
   )TC";
   // No defaults for this case
-  auto checkFun = [](const std::vector<at::Tensor>& inputs,
-                     std::vector<at::Tensor>& outputs) { return true; };
+  auto checkFun = [](const std::vector<at::Tensor>&, std::vector<at::Tensor>&) {
+    return true;
+  };
   auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
   auto name = "tensordot";
   Check(TC, name, options, inputs, checkFun);

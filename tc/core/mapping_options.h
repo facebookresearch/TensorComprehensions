@@ -327,18 +327,18 @@ class MappingOptions {
     return *this;                                 \
   }
 
-  FORWARD_FUN(tile);
-  FORWARD_FUN(unroll);
-  FORWARD_FUN(fixParametersBeforeScheduling);
-  FORWARD_FUN(tileImperfectlyNested);
-  FORWARD_FUN(matchLibraryCalls);
-  FORWARD_FUN(scheduleFusionStrategy);
-  FORWARD_FUN(outerScheduleFusionStrategy);
-  FORWARD_FUN(outerScheduleAllowSkewing);
-  FORWARD_FUN(outerSchedulePositiveOrthant);
-  FORWARD_FUN(intraTileScheduleFusionStrategy);
-  FORWARD_FUN(intraTileScheduleAllowSkewing);
-  FORWARD_FUN(intraTileSchedulePositiveOrthant);
+  FORWARD_FUN(tile)
+  FORWARD_FUN(unroll)
+  FORWARD_FUN(fixParametersBeforeScheduling)
+  FORWARD_FUN(tileImperfectlyNested)
+  FORWARD_FUN(matchLibraryCalls)
+  FORWARD_FUN(scheduleFusionStrategy)
+  FORWARD_FUN(outerScheduleFusionStrategy)
+  FORWARD_FUN(outerScheduleAllowSkewing)
+  FORWARD_FUN(outerSchedulePositiveOrthant)
+  FORWARD_FUN(intraTileScheduleFusionStrategy)
+  FORWARD_FUN(intraTileScheduleAllowSkewing)
+  FORWARD_FUN(intraTileSchedulePositiveOrthant)
 
 #undef FORWARD_FUN
 

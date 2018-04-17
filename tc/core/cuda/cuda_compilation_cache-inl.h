@@ -61,7 +61,7 @@ template <typename CC, typename CachedEntryType>
 void Cache<CC, CachedEntryType>::loadCacheFromProtobuf(
     const std::string& filename) {
   typename CC::ProtobufType buf;
-  struct stat buffer = {0};
+  struct stat buffer;
   if (stat(filename.c_str(), &buffer) == 0) {
     std::ifstream serialized(filename, std::ios::binary);
     buf.ParseFromIstream(&serialized);

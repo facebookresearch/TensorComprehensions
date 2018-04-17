@@ -260,8 +260,7 @@ void applyTileOptions(isl::ctx& ctx, TileOptions tileOptions) {
       ctx.get(), (tileOptions & TileOptions::ShiftPointLoops) ? 1 : 0);
 }
 
-ScheduleTree*
-bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
+ScheduleTree* bandSplit(ScheduleTree*, ScheduleTree* tree, size_t pos) {
   CHECK(tree->elemAs<ScheduleTreeElemBand>()) << "Not a band:\n" << *tree;
   auto band = tree->elemAs<ScheduleTreeElemBand>();
   size_t n = band->nMember();
