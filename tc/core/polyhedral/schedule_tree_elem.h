@@ -270,7 +270,7 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // We apply the transformation even if "n" is zero to ensure consistent
   // behavior with respect to changes in the schedule space.
   // The caller is responsible for updating the isolate option (Note: why?)
-  void drop(int pos, int n);
+  void drop(size_t pos, size_t n);
 
  public:
   bool permutable_{false};
