@@ -292,6 +292,14 @@ isl::union_set activeDomainPoints(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
+// Get the set of domain points active below the given node.  A domain
+// point is active if it was not filtered away on the path from the
+// root to the node.  The root must be a domain element, otherwise no
+// elements would be considered active.
+isl::union_set activeDomainPointsBelow(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Experimental
 ////////////////////////////////////////////////////////////////////////////////

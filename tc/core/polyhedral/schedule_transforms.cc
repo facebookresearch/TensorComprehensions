@@ -99,20 +99,22 @@ isl::union_map partialSchedule(
   return partialScheduleImpl(root, node, true);
 }
 
-// Get a set of domain elements that are active at the given node.
+namespace {
+// Get a set of domain elements that are active below
+// the given branch of nodes.
 //
 // Domain elements are introduced by the root domain node.  Filter nodes
 // disable the points that do not intersect with the filter.  Extension nodes
 // are considered to introduce additional domain points.
-isl::union_set activeDomainPoints(
+isl::union_set activeDomainPointsHelper(
     const ScheduleTree* root,
-    const ScheduleTree* node) {
+    const vector<const ScheduleTree*>& nodes) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
   CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
-  for (auto anc : node->ancestors(root)) {
+  for (auto anc : nodes) {
     if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
       domain = domain.intersect(filterElem->filter_);
     } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
@@ -130,6 +132,21 @@ isl::union_set activeDomainPoints(
     }
   }
   return domain;
+}
+} // namespace
+
+isl::union_set activeDomainPoints(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  return activeDomainPointsHelper(root, node->ancestors(root));
+}
+
+isl::union_set activeDomainPointsBelow(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  auto ancestors = node->ancestors(root);
+  ancestors.emplace_back(node);
+  return activeDomainPointsHelper(root, ancestors);
 }
 
 vector<ScheduleTree*> collectScheduleTreesPath(
