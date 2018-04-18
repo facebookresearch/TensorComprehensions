@@ -514,10 +514,6 @@ struct ScheduleTree {
 };
 
 } // namespace detail
-
-isl::union_set activeDomainPoints(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
 } // namespace polyhedral
 } // namespace tc
 
