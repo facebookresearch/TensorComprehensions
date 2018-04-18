@@ -167,14 +167,14 @@ detail::ScheduleTree* insertSequenceAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree);
 
-// In a tree starting at a (relative) "root", insert an extension node with the
+// In a tree starting at a "relativeRoot", insert an extension node with the
 // given extension above the node identified by "tree".
 //
 // The tree is modified in place.
 // Return a non-owning pointer to the inserted extension node
 // for call chaining purposes.
 detail::ScheduleTree* insertExtensionAbove(
-    detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
     detail::ScheduleTree* tree,
     isl::union_map extension);
 

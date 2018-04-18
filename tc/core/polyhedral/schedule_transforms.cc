@@ -505,10 +505,10 @@ ScheduleTree* insertSequenceAbove(ScheduleTree* root, ScheduleTree* tree) {
 }
 
 ScheduleTree* insertExtensionAbove(
-    ScheduleTree* root,
+    ScheduleTree* relativeRoot,
     ScheduleTree* tree,
     isl::union_map extension) {
-  auto parent = tree->ancestor(root, 1);
+  auto parent = tree->ancestor(relativeRoot, 1);
   auto childPos = tree->positionInParent(parent);
   auto child = parent->detachChild(childPos);
   parent->insertChild(
