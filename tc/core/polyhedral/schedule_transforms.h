@@ -167,6 +167,14 @@ detail::ScheduleTree* insertSequenceAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree);
 
+// In a tree starting at "root", insert a sequence node underneath "tree".
+// "tree" is assumed to have at most one child.
+//
+// The tree is modified in place.
+void insertSequenceBelow(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* tree);
+
 // In a tree starting at a "relativeRoot", insert an extension node with the
 // given extension above the node identified by "tree".
 //

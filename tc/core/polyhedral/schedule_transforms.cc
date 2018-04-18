@@ -518,6 +518,16 @@ ScheduleTree* insertSequenceAbove(ScheduleTree* root, ScheduleTree* tree) {
   return parent->child({childPos});
 }
 
+void insertSequenceBelow(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* tree) {
+  auto numChildren = tree->numChildren();
+  CHECK_LE(numChildren, 1u);
+  auto filter = activeDomainPointsBelow(root, tree).universe();
+  auto node = ScheduleTree::makeFilter(filter, tree->detachChildren());
+  tree->appendChild(ScheduleTree::makeSequence(std::move(node)));
+}
+
 ScheduleTree* insertExtensionAbove(
     ScheduleTree* relativeRoot,
     ScheduleTree* tree,
