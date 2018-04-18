@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <iostream>
+#include <random>
 #include <sstream>
 #include <string>
 #include <unordered_set>
@@ -154,6 +155,192 @@ struct PolyhedralMapperTest : public ::testing::Test {
   static constexpr auto specializedName = "kernel_anon";
   std::unique_ptr<Scop> scop;
 };
+
+// struct used to test the corectness and the optimality of
+// MappedScop::findBestSyncConfigInSeq.
+struct SyncConfigInSeqOptimalityTest : public ::testing::Test {
+  // Check if the configuration config is correct when given bestSync.
+  bool checkConfig(
+      const std::vector<std::pair<int, int>>& config,
+      const std::vector<std::vector<int>>& bestSync,
+      size_t nChildren,
+      bool hasOuterSequentialMember) {
+    // For every pair of children i and i+k, test if they is a
+    // needed synchronization between them.
+    for (size_t k = 1; k < nChildren; ++k) {
+      auto range = hasOuterSequentialMember ? nChildren : nChildren - k;
+      for (size_t i = 0; i < range; ++i) {
+        if (bestSync[i][k] == 0) {
+          continue;
+        }
+        bool areSeparated = false;
+        for (size_t c = 0; c < config.size(); ++c) {
+          if ((i + k) % nChildren > i) {
+            if (config[c].first >= (int)i && config[c].first < (int)(i + k) &&
+                config[c].second >= bestSync[i][k]) {
+              areSeparated = true;
+              break;
+            }
+          } else {
+            // The child i+k correspond to the child (i+k) % nChildren
+            // at the next iteration of the outer sequential member
+            if ((config[c].first < (int)((i + k) % nChildren) ||
+                 config[c].first >= (int)i) &&
+                config[c].second >= bestSync[i][k]) {
+              areSeparated = true;
+              break;
+            }
+          }
+        }
+        if (not areSeparated) {
+          return false;
+        }
+      }
+    }
+
+    if (not hasOuterSequentialMember) {
+      return true;
+    }
+    // If there is an outer sequential member, check also if there is
+    // the synchronization needed between a child i and the same child but
+    // at the next iteration.
+    int maxValue = 0;
+    for (size_t i = 0; i < nChildren; ++i) {
+      maxValue = std::max(maxValue, bestSync[i][0]);
+    }
+    if (maxValue == 0) {
+      return true;
+    }
+    for (size_t c = 0; c < config.size(); ++c) {
+      if (config[c].second >= maxValue) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Get the number of synchronizations of a configuration
+  // The first element is the number of __syncthreads, and
+  // the second one is the number of __syncwarp.
+  std::pair<int, int> getConfigValue(
+      const std::vector<std::pair<int, int>>& config) {
+    std::pair<int, int> value = {0, 0};
+    for (size_t i = 0; i < config.size(); i++) {
+      if (config[i].second == 1) {
+        value.second++;
+      }
+      if (config[i].second == 2) {
+        value.first++;
+      }
+    }
+    return value;
+  }
+
+  // Find the number of synchronizations of the optimal configuration
+  // The optimal configuration is found by brute force.
+  pair<int, int> findBestConfigValue(
+      const std::vector<std::vector<int>>& bestSync,
+      size_t nChildren,
+      bool hasOuterSequentialMember) {
+    auto range = hasOuterSequentialMember ? nChildren + 1 : nChildren;
+    std::vector<std::pair<int, int>> config(range);
+    for (size_t i = 0; i < range; i++) {
+      config[i] = {i, 0};
+    }
+
+    // Test for every config possible.
+    pair<int, int> bestValue = {range + 1, range + 1};
+    while (true) {
+      // Check if the current configuration is correct,
+      // and update the best value if needed.
+      if (checkConfig(config, bestSync, nChildren, hasOuterSequentialMember)) {
+        bestValue = std::min(bestValue, getConfigValue(config));
+      }
+      // Compute the next configuration
+      int current = range - 1;
+      while (current != -1 && config[current].second == 2) {
+        config[current].second = 0;
+        current--;
+      }
+      if (current == -1) {
+        // Every configuration has been tested.
+        return bestValue;
+      }
+      config[current].second++;
+    }
+  }
+
+  // Test the correctness of the findBestSyncConfigInSeq function
+  // on an example.
+  bool testCorrectness(
+      const std::vector<std::vector<int>>& bestSync,
+      size_t nChildren,
+      bool hasOuterSequentialMember) {
+    std::vector<std::pair<int, int>> config =
+        MappedScop::findBestSyncConfigInSeq(
+            bestSync, nChildren, hasOuterSequentialMember);
+    return checkConfig(config, bestSync, nChildren, hasOuterSequentialMember);
+  }
+
+  // Test the optimality of the findBestSyncConfigInSeq function
+  // on an example.
+  bool testOptimality(
+      const std::vector<std::vector<int>>& bestSync,
+      size_t nChildren,
+      bool hasOuterSequentialMember) {
+    std::vector<std::pair<int, int>> config =
+        MappedScop::findBestSyncConfigInSeq(
+            bestSync, nChildren, hasOuterSequentialMember);
+    std::pair<int, int> computedBestValue = getConfigValue(config);
+    std::pair<int, int> bestValue =
+        findBestConfigValue(bestSync, nChildren, hasOuterSequentialMember);
+    return bestValue == computedBestValue;
+  }
+
+  //  Generate a random example to be used by findBestSyncConfigInSeq.
+  std::vector<std::vector<int>> generateRandomBestSync(
+      size_t nChildren,
+      bool hasOuterSequentialMember,
+      int seed) {
+    std::mt19937 generator(seed);
+    std::uniform_int_distribution<int> distribution(0, 2);
+    std::vector<std::vector<int>> bestSync(
+        nChildren, std::vector<int>(nChildren));
+    for (size_t i = 0; i < nChildren; ++i) {
+      for (size_t k = 0; k < nChildren; ++k) {
+        bestSync[i][k] = distribution(generator);
+      }
+    }
+
+    return bestSync;
+  }
+};
+
+TEST_F(SyncConfigInSeqOptimalityTest, WithoutOuterSequentialMember) {
+  std::vector<std::vector<int>> bestSync;
+  for (size_t nChildren = 2; nChildren < 5; ++nChildren) {
+    for (int i = 0; i < 50; i++) {
+      bestSync = generateRandomBestSync(nChildren, false, i);
+      ASSERT_TRUE(testCorrectness(bestSync, nChildren, false))
+          << "Synchronization configuration is not correct.";
+      ASSERT_TRUE(testOptimality(bestSync, nChildren, false))
+          << "Synchronization configuration is not optimal.";
+    }
+  }
+}
+
+TEST_F(SyncConfigInSeqOptimalityTest, WithOuterSequentialMember) {
+  std::vector<std::vector<int>> bestSync;
+  for (size_t nChildren = 2; nChildren < 5; ++nChildren) {
+    for (int i = 0; i < 50; i++) {
+      bestSync = generateRandomBestSync(nChildren, true, i);
+      ASSERT_TRUE(testCorrectness(bestSync, nChildren, true))
+          << "Synchronization configuration is no correct.";
+      ASSERT_TRUE(testOptimality(bestSync, nChildren, true))
+          << "Synchronization configuration is not optimal.";
+    }
+  }
+}
 
 TEST_F(PolyhedralMapperTest, Basic) {
   string tc = R"TC(
@@ -549,6 +736,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto maxFusionSchedulerOptions = SchedulerOptions();
   maxFusionSchedulerOptions.view.proto.set_fusion_strategy(FusionStrategy::Max);
 
+  originalScop->computeAllDependences();
   // Schedule with maximal fusion, then tile and reschedule point loops for
   // minimal fusion.
   auto scop =
