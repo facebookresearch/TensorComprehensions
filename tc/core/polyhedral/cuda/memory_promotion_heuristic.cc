@@ -99,36 +99,18 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
 
     // Map band dimensions to threads, in inverse order since the last member
     // iterates over the last subscript and is likely to result in coalescing.
-    // Step over band members that iterate over size-1 arrays subscripts as
-    // they would have been executed by a single thread.
     // If not all available thread ids are used, fix remaining to 1 thread.
-    auto filter = node->elemAs<ScheduleTreeElemFilter>()->filter_;
-    auto filterSets = isl::UnionAsVector<isl::union_set>(filter);
-    size_t t = 0;
-    for (int i = band->nMember() - 1;
-         i >= 0 && t < mscop.numThreads.view.size();
-         --i) {
-      auto skip = std::all_of(
-          filterSets.begin(), filterSets.end(), [&mscop, i](isl::set s) {
-            auto groupId =
-                s.get_space().unwrap().get_tuple_id(isl::dim_type::out);
-            auto decl = mscop.scop().promotedDecl(groupId);
-            return static_cast<size_t>(i) >= decl.sizes.size() ||
-                decl.sizes[i] == 1;
-          });
-      if (skip) {
-        continue;
-      }
-
+    auto nToMap = std::min(band->nMember(), mscop.numThreads.view.size());
+    for (size_t t = 0; t < nToMap; ++t) {
+      auto pos = band->nMember() - 1 - t;
       mapToParameterWithExtent(
           root,
           bandNode,
-          i,
+          pos,
           mapping::ThreadId::makeId(t),
           mscop.numThreads.view[t]);
-      ++t;
     }
-    mscop.mapRemaining<mapping::ThreadId>(bandNode, t);
+    mscop.mapRemaining<mapping::ThreadId>(bandNode, nToMap);
 
     // Unroll if requested.
     if (unroll) {
