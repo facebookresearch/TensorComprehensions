@@ -112,12 +112,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
           filterSets.begin(), filterSets.end(), [&mscop, i](isl::set s) {
             auto groupId =
                 s.get_space().unwrap().get_tuple_id(isl::dim_type::out);
-            if (mscop.scop().promotedDecls().count(groupId) != 1) {
-              std::stringstream ss;
-              ss << "promoted group " << groupId << " has no declaration";
-              throw promotion::PromotionLogicError(ss.str());
-            }
-            auto decl = mscop.scop().promotedDecls().at(groupId);
+            auto decl = mscop.scop().promotedDecl(groupId);
             return static_cast<size_t>(i) >= decl.sizes.size() ||
                 decl.sizes[i] == 1;
           });

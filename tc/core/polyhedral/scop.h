@@ -17,6 +17,7 @@
 
 #include <functional>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -311,6 +312,17 @@ struct Scop {
   const std::unordered_map<isl::id, PromotedDecl, isl::IslIdIslHash>&
   promotedDecls() const {
     return promotedDecls_;
+  }
+
+  // Return the promoted declaration information associated to
+  // the given identifier of a promoted tensor reference group.
+  const PromotedDecl& promotedDecl(isl::id groupId) const {
+    if (promotedDecls().count(groupId) != 1) {
+      std::stringstream ss;
+      ss << "promoted group " << groupId << " has no declaration";
+      throw std::logic_error(ss.str());
+    }
+    return promotedDecls().at(groupId);
   }
 
   const std::vector<std::pair<isl::union_set, PromotionInfo>>&

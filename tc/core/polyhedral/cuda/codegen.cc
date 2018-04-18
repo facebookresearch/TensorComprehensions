@@ -592,8 +592,7 @@ void emitMappedTensorAccess(
     return;
   }
 
-  auto tensorId =
-      context.scop().promotedDecls().at(promotionInfo.groupId).tensorId;
+  auto tensorId = context.scop().promotedDecl(promotionInfo.groupId).tensorId;
 
   // Here and below in comments: D = domain, O = original tensor, P = promoted
   // tensor, S = partial schedule, A = AST loops;
