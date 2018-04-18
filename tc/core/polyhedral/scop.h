@@ -313,6 +313,15 @@ struct Scop {
     return promotedDecls_;
   }
 
+  const PromotedDecl& promotedDecl(isl::id groupId) const {
+    if (promotedDecls().count(groupId) != 1) {
+      std::stringstream ss;
+      ss << "promoted group " << groupId << " has no declaration";
+      throw std::runtime_error(ss.str());
+    }
+    return promotedDecls().at(groupId);
+  }
+
   const std::vector<std::pair<isl::union_set, PromotionInfo>>&
   activePromotions() const {
     return activePromotions_;
