@@ -422,6 +422,28 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   }
   return tensorElements;
 }
+
+/*
+ * "schedule" iterates over the elements of the tensor described by "decl".
+ * Remove the schedule dimensions that correspond to tensor dimensions
+ * of size 1.
+ * Note that this function drops the name of the target space of "schedule",
+ * but this space is irrelevant for the caller.
+ */
+isl::multi_aff dropDummyTensorDimensions(isl::multi_aff schedule, const Scop::PromotedDecl& decl) {
+  auto list = schedule.get_aff_list();
+  auto space = schedule.get_space().domain();
+
+  auto n = list.n();
+  for (int i = n - 1; i >= 0; --i) {
+    if (decl.sizes[i] == 1) {
+      list = list.drop(i, 1);
+    }
+  }
+
+  space = space.from_domain().add_dims(isl::dim_type::out, list.n());
+  return isl::multi_aff(space, list);
+}
 } // namespace
 
 ScheduleTree* insertCopiesUnder(
@@ -449,6 +471,8 @@ ScheduleTree* insertCopiesUnder(
       isl::multi_aff::identity(promotionSpace.range().map_from_set());
   identityCopySchedule =
       identityCopySchedule.pullback(isl::multi_aff::range_map(promotionSpace));
+  auto decl = scop.promotedDecl(groupId);
+  identityCopySchedule = dropDummyTensorDimensions(identityCopySchedule, decl);
   auto readSchedule = isl::multi_union_pw_aff(
       identityCopySchedule.set_tuple_id(isl::dim_type::in, readId));
   auto writeSchedule = isl::multi_union_pw_aff(
