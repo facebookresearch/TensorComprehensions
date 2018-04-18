@@ -157,7 +157,7 @@ detail::ScheduleTree* insertBandBelow(
 // If there is no such node, insert one with universe context first.
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
 
-// In a tree starting at a (relative) "root", insert a sequence node with
+// In a tree starting at "root", insert a sequence node with
 // as only child the node identified by "tree".
 //
 // The tree is modified in place.
