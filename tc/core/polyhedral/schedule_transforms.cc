@@ -588,6 +588,10 @@ void insertExtensionLabelBefore(
   size_t pos;
   auto parent = tree->ancestor(root, 1);
   ScheduleTree* seqTree;
+  if (tree->elemAs<detail::ScheduleTreeElemExtension>()) {
+    tree = tree->child({0});
+    parent = tree;
+  }
   if (tree->elemAs<detail::ScheduleTreeElemSequence>()) {
     seqTree = tree;
     pos = 0;
@@ -610,6 +614,10 @@ void insertExtensionLabelAfter(
   size_t pos;
   auto parent = tree->ancestor(root, 1);
   ScheduleTree* seqTree;
+  if (tree->elemAs<detail::ScheduleTreeElemExtension>()) {
+    tree = tree->child({0});
+    parent = tree;
+  }
   if (tree->elemAs<detail::ScheduleTreeElemSequence>()) {
     seqTree = tree;
     pos = tree->numChildren();

@@ -225,7 +225,8 @@ void insertExtensionLabelAt(
 
 // Insert a zero-dimensional extension statement with the given identifier
 // before node "tree".
-// If "tree" is a sequence node or a grandchild of a sequence node,
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
 // then the new statement is inserted in the right position
 // of that sequence node.
 // Otherwise, a new sequence node is inserted.
@@ -236,7 +237,8 @@ void insertExtensionLabelBefore(
 
 // Insert a zero-dimensional extension statement with the given identifier
 // after node "tree".
-// If "tree" is a sequence node or a grandchild of a sequence node,
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
 // then the new statement is inserted in the right position
 // of that sequence node.
 // Otherwise, a new sequence node is inserted.
