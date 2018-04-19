@@ -453,6 +453,92 @@ detail::ScheduleTree* Scop::obtainOuterBand() {
   return tree;
 }
 
+namespace {
+
+// Check if there is at least one band with a coincident dimension
+// in the tree.
+bool hasAtLeastOneCoincidentLoop(detail::ScheduleTree* tree) {
+  if (auto band = tree->elemAs<ScheduleTreeElemBand>()) {
+    if (find(band->coincident_.begin(), band->coincident_.end(), true) !=
+            band->coincident_.end() &&
+        band->permutable_) {
+      return true;
+    }
+  }
+  auto n = tree->numChildren();
+  if (n == 0) {
+    return false;
+  } else if (n == 1) {
+    return hasAtLeastOneCoincidentLoop(tree->child({0}));
+  } else {
+    for (size_t i = 0; i < n; ++i) {
+      if (hasAtLeastOneCoincidentLoop(tree->child({i}))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Return the outermost coincident band. These are the bands with at least
+// one coincident dimension, that are permutable, and that have no such
+// coincident band as ancestors. Some of these bands are created with zero
+// dimensions to ensure that the union of all children of all outermost
+// coincident bands is equal to the leafs. Also, these created bands are
+// put at the highest possible level of the tree, which also minimize the
+// number of bands inserted.
+
+std::vector<detail::ScheduleTree*> obtainOuterCoincidentBands(
+    detail::ScheduleTree* root,
+    detail::ScheduleTree* tree) {
+  auto nChildren = tree->numChildren();
+
+  // If there is no coincident loop, we create an outer band with no dimensions
+  if (not hasAtLeastOneCoincidentLoop(tree)) {
+    auto domain = root->elemAs<ScheduleTreeElemDomain>();
+    CHECK(domain);
+    auto band = ScheduleTree::makeEmptyBand(root);
+    if (nChildren == 0 || root == tree) {
+      return {setPermutable(insertNodeBelow(tree, std::move(band)))};
+    } else {
+      return {setPermutable(insertNodeAbove(root, tree, std::move(band)))};
+    }
+  }
+
+  // If we find a coincident loop directly, we only have one outer band in tree.
+  while (nChildren == 1) {
+    if (auto band = tree->elemAs<ScheduleTreeElemBand>()) {
+      if (find(band->coincident_.begin(), band->coincident_.end(), true) !=
+              band->coincident_.end() &&
+          band->permutable_) {
+        return {tree};
+      }
+    }
+    tree = tree->child({0});
+    nChildren = tree->numChildren();
+  }
+
+  // If nChidren is null, that means that the current tree is a band with
+  // a coincident member. Otherwise, hasAtLeastOneCoincidentLoop would a
+  // return false
+  if (nChildren == 0) {
+    return {tree};
+  }
+
+  auto children = tree->children();
+  std::vector<detail::ScheduleTree*> outerBands = {};
+  // Get the outer bands from the children, and add it to the
+  // list of outer bands.
+  for (size_t i = 0; i < nChildren; ++i) {
+    auto childOuterBand = obtainOuterCoincidentBands(root, tree->child({i}));
+    outerBands.insert(
+        outerBands.end(), childOuterBand.begin(), childOuterBand.end());
+  }
+  return outerBands;
+}
+
+} // namespace
+
 detail::ScheduleTree* Scop::tileOuterBand(const TilingView& tileSizes) {
   using namespace tc::polyhedral::detail;
   auto band = obtainOuterBand();
@@ -465,6 +551,24 @@ detail::ScheduleTree* Scop::tileOuterBand(const TilingView& tileSizes) {
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After tiling outer:" << std::endl
                                       << *scheduleTreeUPtr;
   return res;
+}
+
+std::vector<detail::ScheduleTree*> Scop::tileOuterCoincidentBands(
+    const TilingView& tileSizes) {
+  using namespace tc::polyhedral::detail;
+  auto bands = obtainOuterCoincidentBands(scheduleRoot(), scheduleRoot());
+  std::vector<size_t> sizes = tileSizes.extractVector();
+  std::vector<detail::ScheduleTree*> tiledBands = {};
+  for (auto band : bands) {
+    auto bandNode = band->elemAs<ScheduleTreeElemBand>();
+    if (bandNode->nMember() < sizes.size()) {
+      sizes.resize(bandNode->nMember());
+    }
+    tiledBands.push_back(bandTile(band, sizes, TileOptions::ShiftPointLoops));
+  }
+  LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After tiling outer:" << std::endl
+                                      << *scheduleTreeUPtr;
+  return tiledBands;
 }
 
 void Scop::reschedule(
@@ -483,8 +587,6 @@ void Scop::reschedule(
   auto newTree = computeSchedule(constraints, schedulerOptions);
   parentTree->detachChild(treePos);
   parentTree->insertChildren(treePos, newTree->detachChildren());
-  LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After rescheduling:" << std::endl
-                                      << *scheduleTreeUPtr;
 }
 
 const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {

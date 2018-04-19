@@ -215,6 +215,10 @@ class MappedScop {
   // Return a pointer to the split off tile.
   detail::ScheduleTree* splitOutReductionTileAndInsertSyncs(
       detail::ScheduleTree* band);
+  // Insert grid synchronization where needed.
+  // They are inserted in every sequence and below every sequential loop
+  // which are above the outer coincident bands.
+  void insertGridSyncs(const std::vector<detail::ScheduleTree*>& outerBands);
   // Map "band" to thread identifiers using as many blockSizes values as outer
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and

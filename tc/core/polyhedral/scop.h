@@ -421,6 +421,13 @@ struct Scop {
   // tile loop band.
   detail::ScheduleTree* tileOuterBand(const TilingView& tiling);
 
+  // Tile the outermost coincident bands. See the obtainOuterCoincidentBands
+  // function to see what these bands correspond to.
+  // Splits the bands into tile loop band and point loop band where point loops
+  // have fixed trop counts specified in "tiling", and returns a pointer to
+  // the tile loop bands.
+  std::vector<detail::ScheduleTree*> tileOuterCoincidentBands(
+      const TilingView& tiling);
   // Reschedule the schedule subtree rooted at "tree" with the
   // given scheduler options.
   void reschedule(

@@ -487,9 +487,10 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
  * Only promote if the tensor elements referenced by the group are reused or
  * accessed in a non-coalesced way.
  */
-void promoteToSharedGreedy(
+size_t promoteToSharedGreedy(
     Scop& scop,
     const Block& block,
+    detail::ScheduleTree* tree,
     size_t depth,
     size_t maxMemory) {
   using namespace tc::polyhedral::detail;
@@ -503,7 +504,7 @@ void promoteToSharedGreedy(
   // 1. Collect all bands with a member located at the given depth in the
   // overall schedule.  Make sure this is the last member of the band by
   // splitting off the subsequent members into a different band.
-  auto bands = bandsContainingScheduleDepth(root, depth);
+  auto bands = bandsContainingScheduleDepth(tree, depth);
   bands = bandsSplitAfterDepth(bands, root, depth);
 
   // 2. Compute full schedule without mapping filters.  The filters would make
@@ -600,20 +601,24 @@ void promoteToSharedGreedy(
     }
     scop.insertSyncsAroundCopies(bandNode);
   }
+  return remainingMemory;
 }
 } // namespace
 
-void promoteGreedilyAtDepth(
+size_t promoteGreedilyAtDepth(
     MappedScop& mscop,
+    detail::ScheduleTree* st,
     size_t depth,
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
-  promoteToSharedGreedy(
-      mscop.scop(), mscop.numThreads, depth, sharedMemorySize);
+  sharedMemorySize = promoteToSharedGreedy(
+      mscop.scop(), mscop.numThreads, st, depth, sharedMemorySize);
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);
+
+  return sharedMemorySize;
 }
 
 /*

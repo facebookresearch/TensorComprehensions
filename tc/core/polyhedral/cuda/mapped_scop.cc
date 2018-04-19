@@ -978,16 +978,24 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // 3. Tile
   TC_CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
-  auto outerBand = scop->tileOuterBand(generic.tiling);
+  std::vector<detail::ScheduleTree*> tiledBands;
+  if (FLAGS_grid_sync) {
+    tiledBands = scop->tileOuterCoincidentBands(generic.tiling);
+  } else {
+    tiledBands = {scop->tileOuterBand(generic.tiling)};
+  }
 
   // 4. Optionally reschedule if point loops need a different strategy than
   // tile loops
-  if (generic.outerScheduleOptions != generic.intraTileScheduleOptions) {
-    scop->reschedule(outerBand->child({0}), generic.intraTileScheduleOptions);
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "After intra-tile rescheduling:" << std::endl
-        << *mappedScop->schedule();
+  for (auto outerBand : tiledBands) {
+    if (generic.outerScheduleOptions != generic.intraTileScheduleOptions) {
+      scop->reschedule(outerBand->child({0}), generic.intraTileScheduleOptions);
+    }
   }
+
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After intra-tile rescheduling:" << std::endl
+      << *mappedScop->schedule();
 
   // 1b. ...or after rescheduling
   if (!generic.proto.fix_parameters_before_scheduling()) {
@@ -998,30 +1006,37 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   mappedScop->insertMappingContext();
 
   // 6. Map to threads
-  if (outerBand->numChildren() > 0) {
-    TC_CHECK_EQ(1u, outerBand->numChildren());
-    // 6.1. Optionally detect reductions while mapping to threads
+  for (auto outerBand : tiledBands) {
+    if (outerBand->numChildren() > 0) {
+      TC_CHECK_EQ(1u, outerBand->numChildren());
 
-    if (generic.proto.match_library_calls()) {
-      mappedScop->detectReductions(outerBand->child({0}));
+      // 6.1. Optionally detect reductions while mapping to threads
+      if (generic.proto.match_library_calls()) {
+        mappedScop->detectReductions(outerBand->child({0}));
+      }
+      auto child = outerBand->child({0});
+      size_t numMappedInnerThreads =
+          mappedScop->mapInnermostBandsToThreads(child);
+      fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
     }
-    auto child = outerBand->child({0});
-    size_t numMappedInnerThreads =
-        mappedScop->mapInnermostBandsToThreads(child);
-    fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "After mapping to threads:" << std::endl
-        << *mappedScop->schedule();
   }
 
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After mapping to threads:" << std::endl
+      << *mappedScop->schedule();
+
   // 7. Map to blocks
-  mappedScop->mapToBlocksAndScaleBand(
-      outerBand, generic.tiling.extractVector());
+  for (auto outerBand : tiledBands) {
+    mappedScop->mapToBlocksAndScaleBand(
+        outerBand, generic.tiling.extractVector());
+  }
+
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
   // 8. Promote to shared memory below the loops mapped to blocks.
-  // This may split the outer band, so find the new outer band after promotion.
+  // This may split the outer band, so find the new outer band after
+  // promotion.
   if (cudaOptions.proto().use_shared_memory()) {
     size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
         ? cudaOptions.proto().max_shared_memory()
@@ -1040,29 +1055,38 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       sharedMemorySize -= reductionMemoryRequirement;
     }
 
-    auto band = outerBand->elemAs<ScheduleTreeElemBand>();
-    LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
-        << "Aborting memory promotion because outer band has 0 members (NYI)";
-    if (band->nMember() > 0 && sharedMemorySize > 0) {
+    if (sharedMemorySize > 0) {
       LOG_IF(
           WARNING,
           cudaOptions.proto().unroll_copy_shared() &&
               !generic.proto.has_unroll())
           << "requested to unroll copies to shared memory without providing the unroll size";
+      bool unroll = cudaOptions.proto().unroll_copy_shared() &&
+          generic.proto.has_unroll();
+      for (auto outerBand : tiledBands) {
+        auto band = outerBand->elemAs<ScheduleTreeElemBand>();
 
-      promoteGreedilyAtDepth(
-          *mappedScop,
-          std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
-          sharedMemorySize,
-          cudaOptions.proto().unroll_copy_shared() &&
-              generic.proto.has_unroll());
+        LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
+            << "Aborting memory promotion for one band because it has 0 members (NYI)";
+        if (band->nMember() == 0) {
+          continue;
+        }
 
-      auto bands = ScheduleTree::collectDFSPreorder(
+        sharedMemorySize = promoteGreedilyAtDepth(
+            *mappedScop,
+            outerBand,
+            std::min(
+                band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
+            sharedMemorySize,
+            cudaOptions.proto().unroll_copy_shared() &&
+                generic.proto.has_unroll());
+
+        /*auto bands = ScheduleTree::collectDFSPreorder(
           scop->scheduleRoot(), ScheduleTreeType::Band);
-      if (bands.size() == 0) { // Sanity check.
-        throw NoBandsException("no bands after promotion");
+          if (bands.size() == 0) { // Sanity check.
+          throw NoBandsException("no bands after promotion");
+          }*/
       }
-      outerBand = bands[0];
     }
   }
 

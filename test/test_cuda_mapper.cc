@@ -671,8 +671,10 @@ def fun() -> (O) {
  * an outer sequence.
  * Check that no synchronizations are inserted, since there is no
  * dependences between threads.
+ *
+ * The test is disabled since it is now possible to map the operation to blocks.
  */
-TEST_F(PolyhedralMapperTest, Copy2) {
+TEST_F(PolyhedralMapperTest, DISABLED_Copy2) {
   auto tc = R"TC(
 def fun(float(N) I) -> (O1, O2) {
     O1(n) =  I(n)
