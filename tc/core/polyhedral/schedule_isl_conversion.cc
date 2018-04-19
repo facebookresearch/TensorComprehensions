@@ -203,6 +203,8 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     return insertBranch(node, st);
   } else if (st->elemAs<ScheduleTreeElemExtension>()) {
     return insertExtension(node, st);
+  } else if (st->elemAs<ScheduleTreeElemThreadSpecificMarker>()) {
+    return insertChild(node, st);
   } else {
     LOG(FATAL) << "NYI: insert type: " << *st;
   }
@@ -329,6 +331,7 @@ isl::space definitionParamSpace(const ScheduleTree* node) {
     case detail::ScheduleTreeType::None:
     case detail::ScheduleTreeType::Set:
     case detail::ScheduleTreeType::Sequence:
+    case detail::ScheduleTreeType::ThreadSpecificMarker:
       break;
   }
   return space;

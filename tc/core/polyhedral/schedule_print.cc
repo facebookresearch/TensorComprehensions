@@ -127,6 +127,8 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
     os << "sequence";
   } else if (nt == detail::ScheduleTreeType::Set) {
     os << "seq";
+  } else if (nt == detail::ScheduleTreeType::ThreadSpecificMarker) {
+    os << "thread_specific";
   } else {
     LOG(FATAL) << "NYI: print type: " << static_cast<int>(nt);
   }
@@ -221,6 +223,13 @@ std::ostream& ScheduleTreeElemSequence::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemSet::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "set()";
+  return os;
+}
+
+std::ostream& ScheduleTreeElemThreadSpecificMarker::write(
+    std::ostream& os) const {
+  WS w;
+  os << w.tab() << "thread_specific()";
   return os;
 }
 

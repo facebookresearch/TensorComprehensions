@@ -264,6 +264,17 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
   return res;
 }
 
+std::unique_ptr<ScheduleTree> ScheduleTree::makeThreadSpecificMarker(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  ScheduleTreeUPtr res(new ScheduleTree(ctx));
+  res->elem_ = std::unique_ptr<ScheduleTreeElemThreadSpecificMarker>(
+      new ScheduleTreeElemThreadSpecificMarker());
+  res->type_ = detail::ScheduleTreeType::ThreadSpecificMarker;
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //                        Collector member functions
 ////////////////////////////////////////////////////////////////////////////////

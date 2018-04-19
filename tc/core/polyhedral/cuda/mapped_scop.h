@@ -162,6 +162,8 @@ class MappedScop {
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and
   // return the number of mapped thread identifiers.
+  // A marker is added to mark the part of the tree that is thread specific
+  // (right underneath the innermost band member mapped to a thread identifier).
   size_t mapToThreads(detail::ScheduleTree* band);
   // Map innermost bands to thread identifiers,
   // inserting synchronization in case of a reduction, and

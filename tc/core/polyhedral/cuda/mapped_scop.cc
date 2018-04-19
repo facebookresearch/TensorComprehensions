@@ -161,6 +161,7 @@ void MappedScop::mapToBlocksAndScaleBand(
  * Given a node in the schedule tree of a mapped scop,
  * insert a mapping filter underneath (if needed) that fixes
  * the remaining thread identifiers starting at "begin" to zero.
+ * Add a marker underneath that marks the subtree that is thread specific.
  */
 void fixThreadsBelow(
     MappedScop& mscop,
@@ -173,6 +174,9 @@ void fixThreadsBelow(
 
   auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
   auto bandTree = insertNodeBelow(tree, std::move(band));
+  auto ctx = tree->ctx_;
+  insertNodeBelow(
+      bandTree, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
   mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
 }
 
@@ -344,6 +348,9 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   if (nCanMap < bandNode->nMember()) {
     bandSplit(scop_->scheduleRoot(), band, nCanMap);
   }
+
+  auto ctx = band->ctx_;
+  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
 
   CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
   CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";

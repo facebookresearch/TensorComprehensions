@@ -113,6 +113,7 @@ std::unique_ptr<ScheduleTreeElemBase> ScheduleTreeElemBase::make(
   ELEM_MAKE_CASE(ScheduleTreeElemMappingFilter)
   ELEM_MAKE_CASE(ScheduleTreeElemSequence)
   ELEM_MAKE_CASE(ScheduleTreeElemSet)
+  ELEM_MAKE_CASE(ScheduleTreeElemThreadSpecificMarker)
 
 #undef ELEM_MAKE_CASE
 

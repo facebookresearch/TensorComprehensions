@@ -65,6 +65,10 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       throw promotion::PromotionLogicError("no copy band");
     }
 
+    auto ctx = node->ctx_;
+    insertNodeBelow(
+        bandNode, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
+
     // Check that we are not mapping to threads below other thread mappings.
     std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> usedThreads;
     for (auto n : node->ancestors(root)) {
