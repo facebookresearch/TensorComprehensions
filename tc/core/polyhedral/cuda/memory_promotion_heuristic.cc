@@ -299,6 +299,21 @@ size_t computeThreadIdxXScheduleDepth(
 }
 
 /*
+ * Return the outermost thread mapping filter among the ancestors of "node",
+ * assuming that there is at least one.
+ */
+const detail::ScheduleTree* findThreadMappingAncestor(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  auto ancestors = node->ancestors(root);
+  ancestors = functional::Filter(isThreadMapping, ancestors);
+  if (ancestors.size() < 1) {
+    throw promotion::PromotionLogicError("missing MappingFilter");
+  }
+  return ancestors[0];
+}
+
+/*
  * Check if a reference group is accessed in a coalesced way.
  *
  * In particular, check if incrementing the schedule dimension mapped to
@@ -595,32 +610,17 @@ void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
     auto markers = findThreadSpecificMarkers(root);
 
     for (auto marker : markers) {
-      // Find out how many threads are actually mapped.  Active domain points
-      // will involve all mapping parameters when we take them below the
-      // mapping.  Skip mapping parameters obviously mapped to 0, because they
-      // do not correspond to band members that should be fixed to obtain
-      // per-thread-group access relations.
-      auto points = activeDomainPoints(root, marker);
       auto partialSched = prefixSchedule(root, marker);
       // Pure affine schedule without (mapping) filters.
       auto partialSchedMupa = prefixScheduleMupa(root, marker);
 
       auto depth = marker->scheduleDepth(root);
-      size_t nMappedThreads = 0;
-      for (unsigned j = 0; j < points.dim(isl::dim_type::param); ++j) {
-        auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
-        for (size_t i = 0; i < mapping::ThreadId::kMaxDim; ++i) {
-          if (id != mapping::ThreadId::makeId(i)) {
-            continue;
-          }
-          if (isl::getParamValIfFixed(points, j) ==
-              isl::val::zero(points.get_ctx())) {
-            continue;
-          }
-          ++nMappedThreads;
-          break;
-        }
-      }
+
+      // Thread mapping filters are inserted immediately above the members
+      // mapped to threads.  The number of intermediate band members
+      // is therefore equal to the number of mapped thread identifiers.
+      auto mapping = findThreadMappingAncestor(root, marker);
+      size_t nMappedThreads = marker->scheduleDepth(mapping);
 
       auto groupMap = TensorReferenceGroup::accessedBySubtree(marker, scop);
       for (auto& tensorGroups : groupMap) {
