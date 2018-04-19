@@ -143,6 +143,23 @@ void assertSemaThrows(const std::string& errcontents, const std::string& text) {
   }
   ASSERT(threw);
 }
+void assertSemaWarns(const std::string& warncontents, const std::string& text) {
+  Parser parser(text);
+  auto p = parser.parseFunction();
+  Sema sem;
+  // Redirect std::cerr to buffer in order to capture warning message.
+  std::stringstream buffer;
+  std::streambuf* old = std::cerr.rdbuf(buffer.rdbuf());
+  sem.checkFunction(p);
+  std::cerr.rdbuf(old);
+  // Match the captured warning message with the expected one.
+  // Empty warncontents denotes no warning should be raised.
+  if (warncontents.empty()) {
+    ASSERT(buffer.str().find("WARNING:") == std::string::npos);
+  } else {
+    ASSERT(buffer.str().find(warncontents) != std::string::npos);
+  }
+}
 TreeRef loadText(const std::string& text) {
   return Sema().checkFunction(Parser(text).parseFunction());
 }
@@ -313,6 +330,57 @@ int main(int argc, char** argv) {
       R"(
     def fun(float(M,N) A) -> (O) {
       O(i) = A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "", // Legal reduction with initialization.
+      R"(
+    def fun(float(M,N) A) -> (O) {
+      O(i) +=! A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "", // Legal reduction that writes to an already initialized output.
+      R"(
+    def fun(float(M,N) A, float(M) B) -> (O) {
+      O(i) = B(i)
+      O(i) *= A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "", // Legal reduction that writes to an already initialized output.
+      R"(
+    def fun(float(M,N) A, float(M,N) B) -> (O) {
+      O(i) max=! A(i,j)
+      O(i) min= B(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "+=! instead of +=",
+      R"(
+    def fun(float(M,N) A) -> (O) {
+      O(i) += A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "*=! instead of *=",
+      R"(
+    def fun(float(M,N) A) -> (O) {
+      O(i) *= A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "max=! instead of max=",
+      R"(
+    def fun(float(M,N) A) -> (O) {
+      O(i) max= A(i,j)
+    }
+  )");
+  assertSemaWarns(
+      "min=! instead of min=",
+      R"(
+    def fun(float(M,N) A) -> (O) {
+      O(i) min= A(i,j)
     }
   )");
 
