@@ -22,16 +22,43 @@
 
 namespace tc {
 /**
- * TcExecutor is a backend-agnostic abstraction that is the result of
- * compilation. When a concrete executor specializes TcExecutor<Backend> it
+ * TcExecutor is a backend-agnostic abstraction that provides the base
+ * functionality for an object returned by compilation to run.
+ * TcExecutor is templated by the Backend type.
+ * When a derived executor inherits from TcExecutor<Backend>, it
  * provides support for running a compiled TC on the particular backend.
  *
- * TcExecutor is templated by the Backend type.
- * For each backend, the specific Backend type lives in
- *   core/backend/backend_tc_executor.h and declares all the required dependent
- *   **concrete** types.
+ * A TcExecutor mixes templating and inheritance:
+ *   1. templating is necessary because we want type-safety with proper
+ *      dependent types (e.g. Backend::CompilationResultType)
+ *   2. inheritance is necessary because executors require specific
+ *      additional information for running on different backends
+ *      (e.g. Grid/Block for CUDA)
+ *   3. virtual functions seem to be more confusing to people so we don't use
+ *      them here. Still derived classes of TcExecutor<Backend> **must**
+ *      implement the following functions (or errors will occur at **all call
+ *      sites**):
+ *
+ * /// This is the "low-latency" mode in which we just propagate raw pointers to
+ * /// data in the address space where kernel is executed.
+ * /// No tensor-related information can be checked so it is the user's
+ * /// responsibility to ensure that shapes and strides match. If the user
+ * /// doesn't then segfault will likely occur.
+ * void uncheckedRun(
+ *     const std::vector<const void*>& inputs,
+ *     const std::vector<void*>& outputs) const;
+ * /// Calls uncheckedRun and profiles the cpu overheal and kernel runtime
+ * /// (microseconds).
+ * /// \returns profiling information (see: tc/core/utils/time.h)
+ * ProfilingInfo profileUnchecked(
+ *     const std::vector<const void*>& inputs,
+ *     const std::vector<void*>& outputs) const;
+ *
+ * As a reminder: for each backend, the specific Backend type lives in
+ *   core/backendname/backendname_backend.h and declares all the required
+ *   dependent **derived** types.
  * For example:
- *   CudaBackend is declared in core/cuda/cuda_tc_executor.h
+ *   CudaBackend is declared in core/cuda/cuda_backend.h
  *
  * struct CudaBackend {
  *   using ExecutorType = CudaTcExecutor;
@@ -44,32 +71,19 @@ namespace tc {
  *   using RTCFunctionType = CudaRTCFunction;
  * };
  *
- * The correspondence is 1 TcExecutor for 1
+ * The correspondence is 1 TcExecutor for 1 compiled
  *   tuple<TC function, input shapes, Backend::MappingOptions>.
- *
- * Backend-specific Executors should specialize TcExecutor<Backend> and
- * implement the uncheckedRun and setRuntimeCompiledFunction.
- *
- * Specializing a TcExecutor<Backend> consists in overriding 2 types of methods:
- * 1. uncheckedRun/profileUnchecked which provides the low-latency path on
- *    void* data
- * 2. setupRuntimeCompiledFunction/clearRuntimeCompiledFunction which takes
- *    the results of compileWithTcMapper to:
- *       a. save backend-specific information required at runtime (e.g. grid and
- *          block sizes for the CUDA backend)
- *       b. create the in-memory object resulting from JIT-compilation that
- *          implements the TC
  */
 template <typename Backend>
 class TcExecutor {
  protected:
   TcExecutor(
-      lang::TreeRef tcDefinition,
-      const std::vector<const DLConstTensor*>& inputs);
+      const std::vector<TensorInfo>& inputsInfo,
+      const std::vector<TensorInfo>& outputsInfo,
+      const tc2halide::HalideComponents& halideComponents,
+      const typename Backend::CompilationResultType& compilationResult);
 
  public:
-  virtual ~TcExecutor();
-
   TcExecutor(TcExecutor&&) = delete;
   TcExecutor& operator=(TcExecutor&&) = delete;
   TcExecutor(const TcExecutor&) = delete;
@@ -86,41 +100,15 @@ class TcExecutor {
       const std::vector<const DLConstTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
-  /// Calls run and profiles the kernel runtime (microseconds).
+  /// Calls run and profiles the cpu overheal and kernel runtime (microseconds).
   /// \returns profiling information (see: tc/core/utils/time.h)
   ProfilingInfo profile(
       const std::vector<const DLConstTensor*>& inputs,
       const std::vector<const DLTensor*>& outputs) const;
 
-  /*****************************************************************************
-   * The following pure virtual methods are the minimal set of required
-   * backend-dependent functions.
-   ****************************************************************************/
-  /// This is the "low-latency" mode in which we just propagate raw pointers to
-  /// data in the address space where kernel is executed.
-  /// No tensor-related information can be checked so it is the user's
-  /// responsibility to ensure that shapes and strides match. If the user
-  /// doesn't then segfault will likely occur.
-  virtual void uncheckedRun(
-      const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const = 0;
-  virtual ProfilingInfo profileUnchecked(
-      const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const = 0;
-
- protected:
-  /// setupRuntimeCompiledFunction takes a compilationResult (returned by
-  /// the specialized TC mapper) and:
-  ///   a. saves backend-specific information required at runtime
-  ///     (e.g. grid and block sizes for the CUDA backend)
-  ///   b. creates the in-memory object resulting from JIT-compilation that
-  ///      implements the TC
-  virtual void setupRuntimeCompiledFunction(
-      const typename Backend::CompilationResultType& compilationResult) = 0;
-
   /// It may be necessary to clear the RTC manually because it can throw and
   /// we can't have that in the RTC destructor.
-  virtual void clearRuntimeCompiledFunction() = 0;
+  void clearRuntimeCompiledFunction();
 
  protected:
   /// Used to check proper metadata when calling run
@@ -130,15 +118,7 @@ class TcExecutor {
 
   /// The following are initialized as a result of compilation with the TcMapper
   std::vector<int> parameters_;
-  std::shared_ptr<typename Backend::RTCFunctionType> rtcFun_;
-
- public:
-  template <typename BackendType>
-  friend std::unique_ptr<typename BackendType::ExecutorType> compile(
-      lang::TreeRef tcDefinition,
-      const std::vector<const DLConstTensor*>& inputs,
-      /* TODO: in the future also pass outputs for stride and alignment info */
-      const typename BackendType::MappingOptionsType& options);
+  std::unique_ptr<typename Backend::RTCFunctionType> rtcFun_;
 };
 } // namespace tc
 
