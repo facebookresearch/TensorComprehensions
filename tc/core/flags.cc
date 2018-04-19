@@ -37,6 +37,7 @@ DEFINE_bool(
     "Print debug spew for the tc_mapper like cuda code, mapping options etc");
 DEFINE_bool(dump_cuda, false, "Print the generated source");
 DEFINE_bool(dump_ptx, false, "Dump the generated PTX");
+DEFINE_bool(grid_sync, true, "Use the grid sync feature.");
 
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");

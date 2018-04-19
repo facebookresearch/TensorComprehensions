@@ -906,7 +906,7 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
 
   std::stringstream code;
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
-  code << code::c::warpSyncFunctions;
+  code << code::c::warpSyncFunctions << code::c::gridSyncFunctions;
   code << std::endl;
   if (useReadOnlyCache) {
     code << code::cuda::ldg;

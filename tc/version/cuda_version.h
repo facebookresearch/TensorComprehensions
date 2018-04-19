@@ -14,22 +14,6 @@
  * limitations under the License.
  */
 #pragma once
-
 namespace tc {
-namespace polyhedral {
-
-//
-// General constants to avoid hardcoding
-//
-constexpr auto kStatementLabel = "S_";
-
-constexpr auto kAstNodeIdPrefix = "__node_";
-
-constexpr auto kReadIdName = "read";
-constexpr auto kWriteIdName = "write";
-constexpr auto kSyncIdPrefix = "_sync_";
-constexpr auto kWarpSyncIdPrefix = "_warpSync_";
-constexpr auto kGridSyncIdPrefix = "_gridSync_";
-
-} // namespace polyhedral
-} // namespace tc
+extern const char* cuda_libdevrt_path;
+}

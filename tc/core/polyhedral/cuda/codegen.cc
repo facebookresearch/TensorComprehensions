@@ -450,6 +450,8 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     context_.ss << "__syncthreads();" << std::endl;
   } else if (context_.scop().isWarpSyncId(stmtId)) {
     context_.ss << "__syncwarp();" << std::endl;
+  } else if (context_.scop().isGridSyncId(stmtId)) {
+    context_.ss << "__syncgrid();" << std::endl;
   } else if (
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);

@@ -45,7 +45,7 @@ target_link_libraries(
   -lLLVM
 
   tc_lang
-  tc_version
+  tc_cuda_version
   tc_proto
 )
 if (WITH_BINDINGS)
@@ -176,6 +176,7 @@ if (WITH_CUDA)
 
     tc_lang
     tc_version
+    tc_cuda_version
     tc_proto
     tc_core
   )

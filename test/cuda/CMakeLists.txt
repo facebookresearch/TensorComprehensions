@@ -12,7 +12,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 ################################################################################
 add_executable(test_basic_gpu test_basic_gpu.cc)
 add_test(test_basic_gpu test_basic_gpu)
-target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBRARIES} pthread )
+target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${CUDA_NVRTC_LIBRARIES} ${GOOGLE_LIBRARIES} pthread tc_cuda_version)
 
 ################################################################################
 # Core GPU library tests
