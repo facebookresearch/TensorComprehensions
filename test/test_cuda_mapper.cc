@@ -483,7 +483,8 @@ def fun() -> (O) {
  * properly, i.e., that a band is inserted above the branching.
  * Use the minimal fusion strategy to ensure the scheduler produces
  * an outer sequence.
- * Also check that synchronization is introduced between the two children.
+ * Check that no synchronizations are inserted, since there is no
+ * dependences between threads.
  */
 TEST_F(PolyhedralMapperTest, Copy2) {
   auto tc = R"TC(
@@ -495,14 +496,14 @@ def fun(float(N) I) -> (O1, O2) {
   auto mappingOptions = DefaultOptions();
   mappingOptions.scheduleFusionStrategy(FusionStrategy::Min);
   auto code = codegenMapped(tc, mappingOptions);
-  auto sync = "__syncthreads()";
   auto loop = "for (int c0 = t0; c0 < N; c0 += 32)";
+  auto blockSync = "__syncthreads();";
   auto pos1 = code.find(loop);
-  auto pos2 = code.find(sync, pos1 + 1);
-  auto pos3 = code.find(loop, pos2 + 1);
+  auto pos2 = code.find(loop, pos1 + 1);
+  auto pos3 = code.find(blockSync);
   EXPECT_TRUE(pos1 != std::string::npos);
   EXPECT_TRUE(pos2 != std::string::npos);
-  EXPECT_TRUE(pos3 != std::string::npos);
+  EXPECT_TRUE(pos3 == std::string::npos);
 }
 
 /*
@@ -638,13 +639,11 @@ def fun(float(M, K) A, float(K, N) B, float(K, N) C) -> (D, E) {
   auto pos3 = code.find(innerLoopIncrement, pos2 + 1);
   auto pos4 = code.find(innerLoopIncrement, pos3 + 1);
   auto pos5 = code.find(innerLoopIncrement, pos4 + 1);
-  auto pos6 = code.find(innerLoopIncrement, pos5 + 1);
   EXPECT_TRUE(pos1 != std::string::npos);
   EXPECT_TRUE(pos2 != std::string::npos);
   EXPECT_TRUE(pos3 != std::string::npos);
   EXPECT_TRUE(pos4 != std::string::npos);
   EXPECT_TRUE(pos5 != std::string::npos);
-  EXPECT_TRUE(pos6 != std::string::npos);
 }
 
 /*
