@@ -316,18 +316,17 @@ bool isCoalesced(
 /*
  * Check if the given "group" can be promoted to registers for the given active
  * domain points under full "schedule" where "nThreads" consecutive dimensions
- * are mapped to threads (the innermost of them being mapped to thread x) and
- * the depth of this mapping can be obtained from threadIdxXScheduleDepthState.
+ * at "depth"
+ * are mapped to threads (the innermost of them being mapped to thread x).
  *
  * In particular, the group's footprint must contain only one element and the
  * same tensor element should never be accessed by two different threads.
  */
 bool isPromotableToRegisterBelowThreads(
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const TensorReferenceGroup& group,
     isl::union_map schedule,
-    size_t nThreads,
-    isl::union_set activePoints) {
+    size_t depth,
+    size_t nThreads) {
   auto originalAccesses = group.originalAccesses();
 
   // Return early if more than one element needs to be stored in registers.
@@ -339,14 +338,6 @@ bool isPromotableToRegisterBelowThreads(
   if (nElements != 1) {
     return false;
   }
-
-  // Since this function is only supposed to be called on groups seen _below_
-  // thread mapping, all refs in the group must all have the same thread-x
-  // depth.
-  auto depth = 1 +
-      computeThreadIdxXScheduleDepth(
-                   threadIdxXScheduleDepthState,
-                   originalAccesses.domain().intersect(activePoints));
 
   auto scheduledAccesses = originalAccesses.apply_domain(schedule);
 
@@ -635,11 +626,7 @@ void promoteToRegistersBelowThreads(
             continue;
           }
           if (!isPromotableToRegisterBelowThreads(
-                  threadIdxXScheduleDepthState,
-                  *group,
-                  fullSched,
-                  nMappedThreads,
-                  points)) {
+                  *group, fullSched, depth, nMappedThreads)) {
             continue;
           }
           if (!hasReuseWithin(*group, partialSchedMupa)) {
