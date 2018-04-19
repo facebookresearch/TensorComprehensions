@@ -682,10 +682,14 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     scop->specializeToContext();
   }
 
-  // 5. Map to threads
+  // 5. Insert mapping context
+  mappedScop->insertMappingContext();
+
+  // 6. Map to threads
   if (outerBand->numChildren() > 0) {
     CHECK_EQ(1u, outerBand->numChildren());
-    // 5.1. Optionally detect reductions while mapping to threads
+    // 6.1. Optionally detect reductions while mapping to threads
+
     if (generic.proto.match_library_calls()) {
       mappedScop->detectReductions(outerBand->child({0}));
     }
@@ -698,13 +702,13 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
         << *mappedScop->schedule();
   }
 
-  // 6. Map to blocks
+  // 7. Map to blocks
   mappedScop->mapToBlocksAndScaleBand(
       outerBand, generic.tiling.extractVector());
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 7. Promote to shared memory below the loops mapped to blocks.
+  // 8. Promote to shared memory below the loops mapped to blocks.
   // This may split the outer band, so find the new outer band after promotion.
   if (cudaOptions.proto().use_shared_memory()) {
     size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
@@ -750,13 +754,11 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
   }
 
-  // 8. Promote to registers below the loops mapped to threads.
+  // 9. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(mappedScop->scop(), -1ull);
   }
 
-  // 9. Insert mapping context
-  mappedScop->insertMappingContext();
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "After outerBlockInnerThread strategy:" << std::endl
       << *mappedScop->schedule();
