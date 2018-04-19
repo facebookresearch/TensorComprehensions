@@ -506,7 +506,7 @@ def fun() -> (O) {
  * properly, i.e., that a band is inserted above the branching.
  * Use the minimal fusion strategy to ensure the scheduler produces
  * an outer sequence.
- * Also check that synchronization is introduced between the two children.
+ * There is no need to check for synchronization, since none are needed.
  */
 TEST_F(PolyhedralMapperTest, Copy2) {
   auto tc = R"TC(
@@ -518,14 +518,11 @@ def fun(float(N) I) -> (O1, O2) {
   auto mappingOptions = DefaultOptions();
   mappingOptions.scheduleFusionStrategy(FusionStrategy::Min);
   auto code = codegenMapped(tc, mappingOptions);
-  auto sync = "__syncthreads()";
   auto loop = "for (int c0 = t0; c0 < N; c0 += 32)";
   auto pos1 = code.find(loop);
-  auto pos2 = code.find(sync, pos1 + 1);
-  auto pos3 = code.find(loop, pos2 + 1);
+  auto pos2 = code.find(loop, pos1 + 1);
   EXPECT_TRUE(pos1 != std::string::npos);
   EXPECT_TRUE(pos2 != std::string::npos);
-  EXPECT_TRUE(pos3 != std::string::npos);
 }
 
 /*
