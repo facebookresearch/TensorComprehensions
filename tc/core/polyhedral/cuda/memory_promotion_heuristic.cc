@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <numeric>
 #include <sstream>
+#include <type_traits>
 
 namespace tc {
 namespace polyhedral {
@@ -126,6 +127,21 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       markUnroll(root, bandNode, mscop.unroll);
     }
   }
+}
+
+/*
+ * Starting from the root, find all thread specific markers.  Use
+ * DFSPreorder to make sure order is specified and consistent for tests.
+ */
+template <typename T>
+std::vector<T> findThreadSpecificMarkers(T root) {
+  using namespace tc::polyhedral::detail;
+  static_assert(
+      std::is_convertible<T, const ScheduleTree*>::value,
+      "expecting ScheduleTree");
+
+  return ScheduleTree::collectDFSPreorder(
+      root, ScheduleTreeType::ThreadSpecificMarker);
 }
 
 /*
@@ -555,51 +571,28 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
-// Assuming the mapping to threads happens in inverse order, i.e. the innermost
-// loop is mapped to thread x, promote below that depth.
-void promoteToRegistersBelowThreads(
-    Scop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    size_t nRegisters) {
+// Promote at the positions of the thread specific markers.
+void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
   using namespace tc::polyhedral::detail;
 
   auto root = scop.scheduleRoot();
 
   auto fullSched = fullSchedule(root);
-  for (const auto& kvp : threadIdxXScheduleDepthState) {
-    auto depth = kvp.second + 1;
-    auto subdomain = kvp.first;
+  {
+    auto markers = findThreadSpecificMarkers(root);
 
-    // Collect all bands where a member is located at the given depth.
-    auto bands = bandsContainingScheduleDepth(root, depth);
-    // We may have no band members mapped to thread x in case when we
-    // force-mapped everything to one thread.
-    if (bands.size() == 0) {
-      continue;
-    }
-
-    // Keep only those bands for which this depth was recorded.
-    std::function<bool(ScheduleTree*)> keepActive =
-        [root, subdomain](const ScheduleTree* tree) {
-          isl::union_set active = activeDomainPoints(root, tree);
-          return !active.intersect(subdomain).is_empty();
-        };
-    bands = functional::Filter(keepActive, bands);
-
-    // Make sure the band ends at thread x depth so we can promote below it.
-    bands = bandsSplitAfterDepth(bands, root, depth);
-
-    for (auto band : bands) {
+    for (auto marker : markers) {
       // Find out how many threads are actually mapped.  Active domain points
       // will involve all mapping parameters when we take them below the
       // mapping.  Skip mapping parameters obviously mapped to 0, because they
       // do not correspond to band members that should be fixed to obtain
       // per-thread-group access relations.
-      auto points = activeDomainPoints(root, band);
-      auto partialSched = partialSchedule(root, band);
+      auto points = activeDomainPoints(root, marker);
+      auto partialSched = prefixSchedule(root, marker);
       // Pure affine schedule without (mapping) filters.
-      auto partialSchedMupa = partialScheduleMupa(root, band);
+      auto partialSchedMupa = prefixScheduleMupa(root, marker);
 
+      auto depth = marker->scheduleDepth(root);
       size_t nMappedThreads = 0;
       for (unsigned j = 0; j < points.dim(isl::dim_type::param); ++j) {
         auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
@@ -616,7 +609,7 @@ void promoteToRegistersBelowThreads(
         }
       }
 
-      auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
+      auto groupMap = TensorReferenceGroup::accessedBySubtree(marker, scop);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
 
@@ -642,7 +635,7 @@ void promoteToRegistersBelowThreads(
               Scop::PromotedDecl::Kind::Register,
               tensorId,
               std::move(group),
-              band,
+              marker,
               partialSched);
         }
       }

@@ -42,9 +42,6 @@ void promoteGreedilyAtDepth(
     std::size_t sharedMemorySize,
     bool unrollCopies);
 
-void promoteToRegistersBelowThreads(
-    Scop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    std::size_t nRegisters);
+void promoteToRegistersBelowThreads(Scop& scop, std::size_t nRegisters);
 } // namespace polyhedral
 } // namespace tc
