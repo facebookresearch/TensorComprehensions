@@ -341,6 +341,10 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   auto nMappedThreads =
       std::min(numThreads.view.size(), static_cast<size_t>(nCanMap));
 
+  if (nCanMap < bandNode->nMember()) {
+    bandSplit(scop_->scheduleRoot(), band, nCanMap);
+  }
+
   CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
   CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";
 
