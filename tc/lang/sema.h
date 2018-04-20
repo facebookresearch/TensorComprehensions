@@ -497,10 +497,9 @@ struct Sema {
         nullptr == lookup(stmt.ident(), false)) {
       ErrorReport err(stmt);
       std::string tk = kindToToken(stmt.assignment()->kind());
-      err << "Reduction without initialization. "
-          << "It reads from the uninitialized " << stmt.ident().name()
-          << " before writing to it.\n"
-          << "Consider using the !-suffixed reduction operator " << tk
+      err << "Reduction without initialization. If " << stmt.ident().name()
+          << " is not pre-initialized before calling the TC function,"
+          << " consider using the !-suffixed reduction operator " << tk
           << "! instead of " << tk;
       warn(err);
     }
