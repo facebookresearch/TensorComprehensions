@@ -124,14 +124,6 @@ void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
   auto filter = makeFixRemainingZeroFilter(domain, ids);
   auto mapping = detail::ScheduleTree::makeMappingFilter(filter, ids);
   insertNodeAbove(root, tree, std::move(mapping));
-
-  for (size_t i = nMapped; i < nToMap; ++i) {
-    if (MappingTypeId::makeId(i) == mapping::ThreadId::x()) {
-      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-          activeDomainPoints(schedule(), tree),
-          tree->scheduleDepth(schedule())));
-    }
-  }
 }
 
 // Uses as many blockSizes elements as outer coincident dimensions in the
@@ -374,11 +366,6 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   for (size_t i = 0; i < nMappedThreads; ++i) {
     auto id = mapping::ThreadId::makeId(i);
     auto dim = nMappedThreads - 1 - i;
-    if (id == mapping::ThreadId::x()) {
-      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-          activeDomainPoints(schedule(), band),
-          band->scheduleDepth(schedule()) + dim));
-    }
     band = map(band, dim, id);
   }
   mapRemaining<mapping::ThreadId>(band, nMappedThreads);

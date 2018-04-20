@@ -178,13 +178,6 @@ class MappedScop {
   const ::tc::Block numThreads;
   const uint64_t unroll;
 
-  // The schedule depth that was mapped to Thread::x for specific parts of the
-  // domain.
-  // XXX: this is a partially redundant state as this information can
-  // potentially be extracted from the schedule tree; however, until we get a
-  // first-class MappingNode, it requires some dirty hacks.
-  ThreadIdxXScheduleDepthState threadIdxXScheduleDepthState;
-
  private:
   // Information about a detected reduction that can potentially
   // be mapped to a library call.

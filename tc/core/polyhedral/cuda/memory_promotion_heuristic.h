@@ -22,9 +22,6 @@
 
 namespace tc {
 namespace polyhedral {
-using ThreadIdxXScheduleDepthState =
-    std::vector<std::pair<isl::union_set, size_t>>;
-
 class MappedScop;
 class Scop;
 
