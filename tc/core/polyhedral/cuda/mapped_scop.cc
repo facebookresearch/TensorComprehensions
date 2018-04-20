@@ -953,6 +953,49 @@ detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
   return child;
 }
 
+namespace {
+// Insert grid synchronizations where needed in st.
+void insertGridSyncsDFS(
+    Scop& scop,
+    const std::vector<detail::ScheduleTree*>& outerBands,
+    detail::ScheduleTree* st) {
+  using namespace polyhedral::detail;
+  // If the root of the schedule tree is an outermost coincident band, there is
+  // no synchronization left.
+  if (std::find(outerBands.begin(), outerBands.end(), st) != outerBands.end()) {
+    return;
+  }
+  auto nChildren = st->numChildren();
+  auto children = st->children();
+  for (size_t i = 0; i < nChildren; ++i) {
+    insertGridSyncsDFS(scop, outerBands, children[i]);
+  }
+
+  // Insert synchronizations in sequences.
+  if (st->elemAs<ScheduleTreeElemSequence>()) {
+    CHECK(nChildren);
+    if (hasOuterSequentialMember(scop.scheduleRoot(), st)) {
+      scop.insertSync(st, nChildren, Scop::SyncLevel::Grid);
+    }
+    for (size_t i = nChildren - 1; i > 0; --i) {
+      scop.insertSync(st, i, Scop::SyncLevel::Grid);
+    }
+  }
+
+  // Insert synchronizations after sequential loops.
+  if (st->elemAs<ScheduleTreeElemBand>()) {
+    scop.insertSyncAfter(st, Scop::SyncLevel::Grid);
+  }
+}
+} // namespace
+
+void MappedScop::insertGridSyncs(
+    const std::vector<detail::ScheduleTree*>& outerBands) {
+  using namespace polyhedral::detail;
+
+  insertGridSyncsDFS(*scop_, outerBands, scop_->scheduleRoot());
+}
+
 std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     std::unique_ptr<Scop>&& scopUPtr,
     const CudaMappingOptions& cudaOptions) {
@@ -975,7 +1018,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // 2. Schedule
   scop = Scop::makeScheduled(*scop, generic.outerScheduleOptions);
 
-  // 3. Tile
+  // 3. Find and Tile outermost coincident bands...
   TC_CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
   std::vector<detail::ScheduleTree*> tiledBands;
@@ -1034,7 +1077,13 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 8. Promote to shared memory below the loops mapped to blocks.
+  // 8. Insert grid synchronization where needed.
+  mappedScop->insertGridSyncs(tiledBands);
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After inserting grid synchronization:" << std::endl
+      << *mappedScop->schedule();
+
+  // 9. Promote to shared memory below the loops mapped to blocks.
   // This may split the outer band, so find the new outer band after
   // promotion.
   if (cudaOptions.proto().use_shared_memory()) {
@@ -1090,7 +1139,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
   }
 
-  // 9. Promote to registers below the loops mapped to threads.
+  // 10. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(*mappedScop, -1ull);
   }
