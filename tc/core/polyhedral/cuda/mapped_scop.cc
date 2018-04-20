@@ -381,12 +381,13 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     }
     band = map(band, dim, id);
   }
+  mapRemaining<mapping::ThreadId>(band, nMappedThreads);
 
   if (isReduction) {
     splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);
   }
 
-  return nMappedThreads;
+  return numThreads.view.size();
 }
 
 namespace {
@@ -475,9 +476,8 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       // because we cannot map parent bands anyway.
       auto nMapped = mapToThreads(st);
       if (nMapped > 0) {
-        mapRemaining<mapping::ThreadId>(st, nMapped);
         markUnroll(scop_->scheduleRoot(), st, unroll);
-        return numThreads.view.size();
+        return nMapped;
       }
     } else if (anyNonCoincidentMember(band)) {
       // If children were mapped to threads, and this band has a non-coincident
