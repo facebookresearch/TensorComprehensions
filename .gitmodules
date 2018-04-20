@@ -11,10 +11,12 @@
 	path = third-party/halide
 	url = https://github.com/halide/Halide.git
 
-# Mainstream branches, we don't modify those
+# Temporary hack
 [submodule "third-party/caffe2"]
 	path = third-party/caffe2
-	url = https://github.com/caffe2/caffe2.git
+	url = https://github.com/skimo-openhub/caffe2.git
+
+# Mainstream branches, we don't modify those
 [submodule "third-party/gflags"]
 	path = third-party/gflags
 	url = https://github.com/gflags/gflags
