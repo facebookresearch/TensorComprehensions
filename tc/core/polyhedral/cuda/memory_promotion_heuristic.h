@@ -37,7 +37,6 @@ class Scop;
 // memory is accessed in a coalesced way.
 void promoteGreedilyAtDepth(
     MappedScop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     std::size_t depth,
     std::size_t sharedMemorySize,
     bool unrollCopies);

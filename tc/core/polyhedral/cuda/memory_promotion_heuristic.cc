@@ -158,6 +158,35 @@ std::vector<T> findThreadSpecificMarkers(T root) {
 }
 
 /*
+ * Return the thread specific markers in the tree rooted at "root"
+ * that are relevant for "node".
+ *
+ * Every branch in the tree has exactly one thread marker.
+ * If "node" appears underneath a thread marker, then return
+ * that single thread marker.
+ * Otherwise, return the (possibly multiple) thread markers
+ * in the subtree rooted at "node".
+ */
+template <typename T>
+std::vector<T> collectBranchMarkers(T root, T node) {
+  using namespace detail;
+  static_assert(
+      std::is_convertible<T, const ScheduleTree*>::value,
+      "expecting ScheduleTree");
+
+  auto filterMarker = [](T tree) {
+    return tree->type_ == ScheduleTreeType::ThreadSpecificMarker;
+  };
+
+  auto ancestors = node->ancestors(root);
+  ancestors = functional::Filter(filterMarker, ancestors);
+  if (ancestors.size() > 0) {
+    return ancestors;
+  }
+  return findThreadSpecificMarkers(node);
+}
+
+/*
  * Transform schedule bands into a union_map.
  * Takes all partial schedules at leaves as MUPAs (without accounting for
  * intermediate non-band nodes), intersects
@@ -277,27 +306,6 @@ isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
   return isl::map(identityMA);
 }
 
-// Obtain the depth of the schedule dimension that was mapped to threadIdx.x
-// for the domain elements identified by "s".  Assumes the depth is the same
-// for all these elements.
-size_t computeThreadIdxXScheduleDepth(
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    isl::union_set s) {
-  std::unordered_set<size_t> depths;
-  for (auto p : threadIdxXScheduleDepthState) {
-    if (!p.first.intersect(s).is_empty()) {
-      depths.insert(p.second);
-    }
-  }
-  if (depths.size() != 1) {
-    std::stringstream ss;
-    ss << "threadIdx.x depth " << (depths.size() == 0 ? "unknown" : "diverged")
-       << " for " << s;
-    throw promotion::PromotionLogicError(ss.str());
-  }
-  return *depths.begin();
-}
-
 /*
  * Return the outermost thread mapping filter among the ancestors of "node",
  * assuming that there is at least one.
@@ -318,42 +326,49 @@ const detail::ScheduleTree* findThreadMappingAncestor(
  *
  * If the reference group is not already accessed in a coalesced way,
  * then the group should be promoted.
+ * If a branch is mapped to a single thread, then the accesses
+ * in that branch are not considered to contribute to the usefulness
+ * of promoting.
+ *
  * The check for coalesced accesses is performed as follows.
  * Check if incrementing the schedule dimension mapped to
  * Thread::x results in the last tensor index being incremented as well.
  * Since accesses in the group may belong to different statements, which may
- * have different loops mapped to Thread::x, perform the check for each basic
- * map in the union of access maps taking into account which dimension is
- * mapped for a particular statement (domain of the basic map).  The group is
+ * have different loops mapped to Thread::x, perform the check for each thread
+ * mapping on the statements active at "node" (either a single ancestor,
+ * or one or more descendants).
+ * The iteration over the spaces is used to handle the case where
+ * one of the subbranches does not access the tensor and
+ * the scheduled accesses are empty.  The group is
  * accessed in a coalesced way if all references in this group are accessed in
  * a coalesced way.
  */
 bool promotionImprovesCoalescing(
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node,
     const TensorReferenceGroup& group,
-    isl::union_map schedule,
-    isl::union_set activePoints) {
+    isl::union_map schedule) {
   auto originalAccesses = group.originalAccesses();
 
-  for (auto accessMap : isl::UnionAsVector<isl::union_map>(originalAccesses)) {
-    for (auto access : accessMap.get_basic_map_list()) {
+  auto markers = collectBranchMarkers(root, node);
+  for (auto marker : markers) {
+    auto mapping = findThreadMappingAncestor(root, marker);
+    size_t nMappedThreads = marker->scheduleDepth(mapping);
+    if (nMappedThreads == 0) {
+      continue;
+    }
+    auto depth = marker->scheduleDepth(root);
+    auto activePoints = activeDomainPoints(root, mapping);
+    auto localAccesses = originalAccesses.intersect_domain(activePoints);
+    auto scheduledAccesses = localAccesses.apply_domain(schedule);
+    for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
+      auto scheduleSpace = access.get_space().domain();
       auto tensorSpace = access.get_space().range();
       auto elementToNext = makeNextElementMap(
           tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
-      auto domainUMap = isl::union_set(isl::set(access.domain()));
-      int threadIdxXDepth = computeThreadIdxXScheduleDepth(
-          threadIdxXScheduleDepthState, domainUMap.intersect(activePoints));
-      auto partialScheduleUMap =
-          schedule.intersect_domain(domainUMap.universe());
-      if (partialScheduleUMap.n_map() != 1) {
-        throw promotion::PromotionLogicError("expected single schedule space");
-      }
-      auto partialSchedule = isl::map::from_union_map(partialScheduleUMap);
-      auto scheduleToNextX = makeNextElementMap(
-          partialSchedule.get_space().range(), threadIdxXDepth);
-      auto scheduledAccess = isl::map(access).apply_domain(partialSchedule);
-      auto accessedByAdjacentX = scheduleToNextX.apply_domain(scheduledAccess)
-                                     .apply_range(scheduledAccess);
+      auto scheduleToNextX = makeNextElementMap(scheduleSpace, depth - 1);
+      auto accessedByAdjacentX =
+          scheduleToNextX.apply_domain(access).apply_range(access);
 
       if (not accessedByAdjacentX.is_subset(elementToNext)) {
         return true;
@@ -467,7 +482,6 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
  */
 void promoteToSharedGreedy(
     Scop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const Block& block,
     size_t depth,
     size_t maxMemory) {
@@ -561,11 +575,7 @@ void promoteToSharedGreedy(
         // Do not promote if the group features no reuse and is accessed in a
         // coalesced way.
         if (!hasReuseWithin(*group, partialSchedMupa) &&
-            !promotionImprovesCoalescing(
-                threadIdxXScheduleDepthState,
-                *group,
-                fullSched,
-                activePoints)) {
+            !promotionImprovesCoalescing(root, bandNode, *group, fullSched)) {
           continue;
         }
 
@@ -586,17 +596,12 @@ void promoteToSharedGreedy(
 
 void promoteGreedilyAtDepth(
     MappedScop& mscop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     size_t depth,
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
   promoteToSharedGreedy(
-      mscop.scop(),
-      threadIdxXScheduleDepthState,
-      mscop.numThreads,
-      depth,
-      sharedMemorySize);
+      mscop.scop(), mscop.numThreads, depth, sharedMemorySize);
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);

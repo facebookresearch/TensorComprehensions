@@ -702,7 +702,6 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
       promoteGreedilyAtDepth(
           *mappedScop,
-          mappedScop->threadIdxXScheduleDepthState,
           std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
