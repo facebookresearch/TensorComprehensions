@@ -114,8 +114,8 @@ struct PolyhedralMapperTest : public ::testing::Test {
     bandScale(band, tileSizes);
 
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    band = mscop->map(band->child({0}), 0, TX);
-    band = mscop->map(band, 1, TY);
+    band = mscop->map(band->child({0}), 1, TX);
+    band = mscop->map(band, 0, TY);
     mscop->insertMappingContext();
     return mscop;
   }
@@ -184,8 +184,8 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
   const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
-    if (M >= t1 + c1 + 1) {
-      C[(t0 + 16 * b0)][(t1 + c1)] = (A[(t0 + 16 * b0)][(t1 + c1)] + B[(t0 + 16 * b0)][(t1 + c1)]);
+    if (M >= t0 + c1 + 1) {
+      C[(t1 + 16 * b0)][(t0 + c1)] = (A[(t1 + 16 * b0)][(t0 + c1)] + B[(t1 + 16 * b0)][(t0 + c1)]);
     }
   }
 }
