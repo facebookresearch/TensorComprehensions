@@ -126,6 +126,18 @@ void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
   insertNodeAbove(root, tree, std::move(mapping));
 }
 
+detail::ScheduleTree* MappedScop::mapBlocksForward(
+    detail::ScheduleTree* band,
+    size_t nToMap) {
+  auto root = scop_->scheduleRoot();
+  for (size_t i = 0; i < nToMap; ++i) {
+    auto id = mapping::BlockId::makeId(i);
+    band = mapToParameterWithExtent(root, band, i, id, numBlocks.view[i]);
+  }
+  mapRemaining<mapping::BlockId>(band, nToMap);
+  return band;
+}
+
 // Uses as many blockSizes elements as outer coincident dimensions in the
 // outermost band
 void MappedScop::mapToBlocksAndScaleBand(
@@ -142,10 +154,7 @@ void MappedScop::mapToBlocksAndScaleBand(
   // and no more than block dimensions to be mapped
   nBlocksToMap = std::min(nBlocksToMap, numBlocks.view.size());
 
-  for (size_t i = 0; i < nBlocksToMap; ++i) {
-    band = map(band, i, mapping::BlockId::makeId(i));
-  }
-  mapRemaining<mapping::BlockId>(band, nBlocksToMap);
+  mapBlocksForward(band, nBlocksToMap);
   bandScale(band, tileSizes);
 }
 

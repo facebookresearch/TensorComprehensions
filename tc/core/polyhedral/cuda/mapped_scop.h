@@ -87,14 +87,15 @@ class MappedScop {
       std::unique_ptr<Scop>&& scopUPtr,
       const CudaMappingOptions& mappingOptions);
 
+  // Map the initial (up to "nToMap") band members of "band"
+  // to successive block identifiers.
+  // This function can only be called once on the entire tree.
+  detail::ScheduleTree* mapBlocksForward(
+      detail::ScheduleTree* band,
+      size_t nToMap);
   // Map a particular "pos"-th dimension in a _band_ node identified by "tree"
-  // to the block or thread dimension.  Ancestors or descendants of "tree" must
-  // not have a dimension already mapped to the same block or thread.
-  inline detail::ScheduleTree*
-  map(detail::ScheduleTree* tree, int pos, const mapping::BlockId& id) {
-    return mapToParameterWithExtent(
-        scop_->scheduleRoot(), tree, pos, id, id.mappingSize(numBlocks));
-  }
+  // to the thread dimension.  Ancestors or descendants of "tree" must
+  // not have a dimension already mapped to the same thread.
   inline detail::ScheduleTree*
   map(detail::ScheduleTree* tree, int pos, const mapping::ThreadId& id) {
     return mapToParameterWithExtent(

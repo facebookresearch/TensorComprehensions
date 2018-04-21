@@ -83,10 +83,10 @@ struct PolyhedralMapperTest : public ::testing::Test {
     // Map to blocks (1 single block here)
     auto mscop = MappedScop::makeMappedScop(
         std::move(scop), Grid{1}, Block{blockSizes[0], blockSizes[1]}, 0);
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    auto band = mscop->map(root->child({0}), 0, BX);
+    auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
+    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
     auto ns = detail::ScheduleTree::collectDFSPostorder(
         root, detail::ScheduleTreeType::Band);
     mscop->map(ns[0], 0, TX);
@@ -110,11 +110,10 @@ struct PolyhedralMapperTest : public ::testing::Test {
         0);
 
     // Map to blocks
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    auto band = mscop->map(root->child({0}), 0, BX);
-    band = mscop->map(band, 1, BY);
+    auto band = mscop->mapBlocksForward(root->child({0}), 2);
     bandScale(band, tileSizes);
 
+    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
     band = mscop->map(band->child({0}), 0, TX);
     band = mscop->map(band, 1, TY);
     mscop->insertMappingContext();
