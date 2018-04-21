@@ -89,7 +89,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
     auto ns = detail::ScheduleTree::collectDFSPostorder(
         root, detail::ScheduleTreeType::Band);
-    mscop->map(ns[0], 0, TX);
+    mscop->map(ns[1], 1, TX);
     mscop->map(ns[1], 0, TY);
     mscop->insertMappingContext();
     return mscop;
@@ -316,11 +316,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
   for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
-        for (int c3 = 0; c3 <= 15; c3 += 1) {
-          O[(c0 + c2)][(c1 + c3)] = 0.000000f;
-          for (int c4 = t0; c4 <= 63; c4 += 32) {
-            O[(c0 + c2)][(c1 + c3)] = (O[(c0 + c2)][(c1 + c3)] + (A[(c0 + c2)][c4]*B[c4][(c1 + c3)]));
-          }
+        O[(c0 + c2)][(t0 + c1)] = 0.000000f;
+        for (int c4 = 0; c4 <= 63; c4 += 1) {
+          O[(c0 + c2)][(t0 + c1)] = (O[(c0 + c2)][(t0 + c1)] + (A[(c0 + c2)][c4]*B[c4][(t0 + c1)]));
         }
       }
     }
@@ -369,7 +367,7 @@ TEST_F(PolyhedralMapperTest, Match1) {
           filter([](isl::union_set f) {
             return f.get_space().dim(isl::dim_type::param) == 3;
           }),
-          filter(mapping_filter(band()))),
+          filter(band())),
       schedule);
   EXPECT_EQ(1u, f.size());
 }
