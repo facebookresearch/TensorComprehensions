@@ -340,7 +340,7 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto res = std::get<0>(mscop->codegen(specializedName));
-  ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64));
+  ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64)) << res;
 }
 
 TEST_F(PolyhedralMapperTest, FilterMerge) {
