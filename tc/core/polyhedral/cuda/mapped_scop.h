@@ -93,14 +93,11 @@ class MappedScop {
   detail::ScheduleTree* mapBlocksForward(
       detail::ScheduleTree* band,
       size_t nToMap);
-  // Map a particular "pos"-th dimension in a _band_ node identified by "tree"
-  // to the thread dimension.  Ancestors or descendants of "tree" must
-  // not have a dimension already mapped to the same thread.
-  inline detail::ScheduleTree*
-  map(detail::ScheduleTree* tree, int pos, const mapping::ThreadId& id) {
-    return mapToParameterWithExtent(
-        scop_->scheduleRoot(), tree, pos, id, id.mappingSize(numThreads));
-  }
+  // Map the final band members of "band"
+  // to successive thread identifiers, with the last member mapped
+  // to thread identifier X.
+  // This function can only be called once in any branch of the tree.
+  detail::ScheduleTree* mapThreadsBackward(detail::ScheduleTree* band);
 
   // Given that "nMapped" identifiers of type "MappingTypeId" have already
   // been mapped, map the remaining ones to zero

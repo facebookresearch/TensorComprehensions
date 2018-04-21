@@ -175,10 +175,7 @@ void fixThreadsBelow(
 
   auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
   auto bandTree = insertNodeBelow(tree, std::move(band));
-  auto ctx = tree->ctx_;
-  insertNodeBelow(
-      bandTree, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
-  mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
+  mscop.mapThreadsBackward(bandTree);
 }
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
@@ -314,6 +311,27 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
   return st->ancestor(root, 2);
 }
 
+detail::ScheduleTree* MappedScop::mapThreadsBackward(
+    detail::ScheduleTree* band) {
+  auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
+  CHECK(bandNode);
+  auto nMember = bandNode->nMember();
+  auto nToMap = std::min(nMember, numThreads.view.size());
+  CHECK_LE(nToMap, 3) << "mapping to too many threads";
+
+  auto ctx = band->ctx_;
+  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
+
+  auto root = scop_->scheduleRoot();
+  for (size_t i = 0; i < nToMap; ++i) {
+    auto id = mapping::ThreadId::makeId(i);
+    auto pos = nMember - 1 - i;
+    band = mapToParameterWithExtent(root, band, pos, id, numThreads.view[i]);
+  }
+  mapRemaining<mapping::ThreadId>(band, nToMap);
+  return band;
+}
+
 size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   using namespace tc::polyhedral::detail;
 
@@ -364,20 +382,9 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
   }
 
-  auto ctx = band->ctx_;
-  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
-
   CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
-  CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";
 
-  // Map the coincident dimensions to threads starting from the innermost and
-  // from thread x.
-  for (size_t i = 0; i < nMappedThreads; ++i) {
-    auto id = mapping::ThreadId::makeId(i);
-    auto dim = nMappedThreads - 1 - i;
-    band = map(band, dim, id);
-  }
-  mapRemaining<mapping::ThreadId>(band, nMappedThreads);
+  mapThreadsBackward(band);
 
   if (isReduction) {
     splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);

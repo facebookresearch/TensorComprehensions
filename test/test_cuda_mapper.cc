@@ -86,11 +86,9 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
     auto ns = detail::ScheduleTree::collectDFSPostorder(
         root, detail::ScheduleTreeType::Band);
-    mscop->map(ns[1], 1, TX);
-    mscop->map(ns[1], 0, TY);
+    mscop->mapThreadsBackward(ns[1]);
     mscop->insertMappingContext();
     return mscop;
   }
@@ -113,9 +111,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto band = mscop->mapBlocksForward(root->child({0}), 2);
     bandScale(band, tileSizes);
 
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    band = mscop->map(band->child({0}), 1, TX);
-    band = mscop->map(band, 0, TY);
+    band = mscop->mapThreadsBackward(band->child({0}));
     mscop->insertMappingContext();
     return mscop;
   }
