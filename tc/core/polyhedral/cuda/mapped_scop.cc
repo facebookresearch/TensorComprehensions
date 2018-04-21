@@ -171,34 +171,9 @@ void fixThreadsBelowFilter(
     return;
   }
 
-  std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> ids;
-  for (size_t i = begin; i < end; ++i) {
-    ids.insert(mapping::ThreadId::makeId(i));
-  }
-  auto root = mscop.schedule();
-  auto domain = activeDomainPoints(root, filterTree);
-  auto mappingFilter = makeFixRemainingZeroFilter(domain, ids);
-  auto filter = filterTree->elemAs<detail::ScheduleTreeElemFilter>();
-  CHECK(filter) << "Not a filter: " << *filter;
-  // Active domain points will contain spaces for different statements
-  // When inserting below a leaf filter, this would break the tightening
-  // invariant that leaf mapping filters have a single space.
-  // So we intersect with the universe set of the filter to only keep the
-  // space for the legitimate statement.
-  mappingFilter = mappingFilter & filter->filter_.universe();
-  auto mapping = detail::ScheduleTree::makeMappingFilter(mappingFilter, ids);
-  insertNodeBelow(filterTree, std::move(mapping));
-
-  for (size_t i = begin; i < end; ++i) {
-    if (mapping::ThreadId::makeId(i) == mapping::ThreadId::x()) {
-      // Mapping happened below filterTree, so we need points active for its
-      // children.  After insertion, filterTree is guaranteed to have at least
-      // one child.
-      mscop.threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-          activeDomainPoints(mscop.schedule(), filterTree->child({0})),
-          filterTree->scheduleDepth(mscop.schedule())));
-    }
-  }
+  auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
+  auto bandTree = insertNodeBelow(filterTree, std::move(band));
+  mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
 }
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
