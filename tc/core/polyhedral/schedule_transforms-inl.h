@@ -62,15 +62,7 @@ inline detail::ScheduleTree* mapToParameterWithExtent(
 
   // Introduce the "mapping" parameter after checking it is not already present
   // in the schedule space.
-  auto space = band->mupa_.get_space();
-  int idPos = space.find_dim_by_id(isl::dim_type::param, id);
-  if (idPos != -1) {
-    for (auto upa : isl::MUPA(band->mupa_)) {
-      for (auto pa : upa) {
-        CHECK(not pa.pa.involves_dims(isl::dim_type::param, pos, 1));
-      }
-    }
-  }
+  CHECK(not band->mupa_.involves_param(id));
 
   // Create mapping filter by equating the newly introduced
   // parameter "id" to the "pos"-th schedule dimension modulo its extent.

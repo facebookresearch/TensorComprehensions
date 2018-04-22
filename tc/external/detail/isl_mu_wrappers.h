@@ -84,51 +84,6 @@ namespace isl {
 // multi_aff is a vector-valued function, but just a plain aff is a
 // scalar-valued multivariate function plus parameters everywhere.
 
-// Use the following API as follows:
-//   isl::MUPA M(mupa);
-//   cout << "MUPA: " << M.mupa << endl;
-//   cout << "UPA: " << M[0].upa << endl;
-//   cout << "PA: " << M[0][0].pa << endl;
-//   cout << "PA[0] set: " << M[0][0][0].first << endl;
-//   cout << "PA[0] aff: " << M[0][0][0].second << endl;
-//
-
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct PA : std::vector<std::pair<isl::set, isl::aff>> {
-  explicit PA(isl::pw_aff pa_) : pa(pa_) {
-    this->reserve(pa.n_piece());
-    auto f = [&](isl::set s, isl::aff a) {
-      this->push_back(std::make_pair(s, a));
-    };
-    pa.foreach_piece(f);
-  }
-  isl::pw_aff pa;
-};
-
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct UPA : std::vector<PA> {
-  explicit UPA(isl::union_pw_aff upa_) : upa(upa_) {
-    std::vector<PA> res;
-    auto f = [&](isl::pw_aff pa) { this->push_back(PA(pa)); };
-    upa.foreach_pw_aff(f);
-  }
-  PA extract(isl::space s) const {
-    return PA(upa.extract_pw_aff(s));
-  }
-  isl::union_pw_aff upa;
-};
-
-/* WARNING: this does not allow inplace modifications .. ugh */
-struct MUPA : std::vector<UPA> {
-  explicit MUPA(isl::multi_union_pw_aff mupa_) : mupa(mupa_) {
-    this->reserve(mupa.dim(isl::dim_type::set));
-    for (size_t i = 0; i < mupa.dim(isl::dim_type::set); ++i) {
-      this->push_back(UPA(mupa.get_union_pw_aff(i)));
-    }
-  }
-  isl::multi_union_pw_aff mupa;
-};
-
 template <typename T, isl::dim_type DT>
 struct DimIds : public std::vector<isl::id> {
   DimIds(T s) {
