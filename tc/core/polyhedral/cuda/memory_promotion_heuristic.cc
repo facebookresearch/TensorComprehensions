@@ -271,7 +271,7 @@ size_t computeThreadIdxXScheduleDepth(
  *
  * In particular, check if incrementing the schedule dimension mapped to
  * Thread::x results in the last tensor index being incremented as well.
- * Since accesses in the group may belong to different statements, which are
+ * Since accesses in the group may belong to different statements, which may
  * have different loops mapped to Thread::x, perform the check for each basic
  * map in the union of access maps taking into account which dimension is
  * mapped for a particular statement (domain of the basic map).  The group is

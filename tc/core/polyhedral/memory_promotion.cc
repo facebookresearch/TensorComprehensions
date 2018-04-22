@@ -497,14 +497,14 @@ ScheduleTree* insertCopiesUnder(
       isl::set::universe(promotionSpace.domain().unwrap().domain());
   auto arrayId =
       promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
-  auto approximattedRead =
+  auto approximatedRead =
       isl::map(
           scheduleUniverse,
           group.approximateFootprint().set_tuple_id(arrayId).intersect(
               tensorElements))
           .wrap();
-  approximattedRead = isl::map(approximattedRead, promotedFootprint).wrap();
-  auto readExtension = extension.intersect_range(approximattedRead)
+  approximatedRead = isl::map(approximatedRead, promotedFootprint).wrap();
+  auto readExtension = extension.intersect_range(approximatedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
   auto writtenElements =
       isl::map(

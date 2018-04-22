@@ -368,7 +368,7 @@ bool refersToUndefinedParameters(
     return false;
   }
 
-  // If space uses some parameters that are not avaialbe in paramSpace,
+  // If space uses some parameters that are not available in paramSpace,
   // they will be introduced into paramSpace, making its dimension larger.
   auto definedParams = paramSpace.dim(isl::dim_type::param);
   paramSpace = paramSpace.align_params(space);
