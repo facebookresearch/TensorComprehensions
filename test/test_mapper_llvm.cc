@@ -210,7 +210,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
   at::Tensor I = at::CPU(at::kFloat).rand({NN, C, H, W});
   at::Tensor W1 = at::CPU(at::kFloat).rand({O, C, KH, KW});
   at::Tensor B = at::CPU(at::kFloat).rand({O});
-  at::Tensor expected = at::conv2d(I, W1, at::IntList{KH, KW}, B);
+  at::Tensor expected = at::conv2d(I, W1, B);
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);

@@ -40,9 +40,9 @@ bool checkRtol(
     double machinePrecision = std::numeric_limits<float>::epsilon()) {
   double maxValue = 0.0;
   for (auto& tensor : inputs) {
-    maxValue = fmax(tensor.abs().max().toFloat(), maxValue);
+    maxValue = fmax(tensor.abs().max().toCFloat(), maxValue);
   }
-  auto maxDiff = diff.abs().max().toFloat();
+  auto maxDiff = diff.abs().max().toCFloat();
   if (maxDiff >= nOperations * machinePrecision * maxValue) {
     std::stringstream ss;
     ss << "Error at relative precision: " << machinePrecision

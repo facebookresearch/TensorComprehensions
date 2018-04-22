@@ -220,8 +220,8 @@ function install_glog() {
 }
 
 function install_aten() {
-  mkdir -p ${TC_DIR}/third-party/ATen/build || exit 1
-  cd       ${TC_DIR}/third-party/ATen/build || exit 1
+  mkdir -p ${TC_DIR}/third-party/pytorch/aten/build || exit 1
+  cd       ${TC_DIR}/third-party/pytorch/aten/build || exit 1
 
   if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${INSTALL_PREFIX}/include/ATen" ]; then
 
@@ -234,18 +234,18 @@ function install_aten() {
     fi
 
     # ATen errors out when using many threads for building - use 1 core for now
-    if should_rebuild ${TC_DIR}/third-party/ATen ${TC_DIR}/third-party/.aten_build_cache; then
+    if should_rebuild ${TC_DIR}/third-party/pytorch/aten ${TC_DIR}/third-party/.aten_build_cache; then
       echo "Installing ATen"
 
       if should_reconfigure .. .build_cache; then
         echo "Reconfiguring ATen"
         export PYTORCH_PYTHON=${PYTHON}
-        ${CMAKE_VERSION} ../aten -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DHAS_C11_ATOMICS=OFF -DNO_CUDA=${ATEN_NO_CUDA}
+        ${CMAKE_VERSION} .. -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DHAS_C11_ATOMICS=OFF -DNO_CUDA=${ATEN_NO_CUDA}
       fi
       make -j $CORES -s || exit 1
 
       set_cache .. .build_cache
-      set_bcache ${TC_DIR}/third-party/ATen ${TC_DIR}/third-party/.aten_build_cache
+      set_bcache ${TC_DIR}/third-party/pytorch/aten ${TC_DIR}/third-party/.aten_build_cache
     fi
 
     make install -j $CORES -s || exit 1
@@ -369,6 +369,7 @@ function install_tc_python() {
     else
       if [[ $(conda --version | wc -c) -ne 0 ]]; then
           echo "Found conda, going to install Python packages"
+          conda install -y mkl-include
           cd ${TC_DIR}
           export CONDA_PYTHON=$(which python3)
           echo "CONDA_PYTHON: ${CONDA_PYTHON}"

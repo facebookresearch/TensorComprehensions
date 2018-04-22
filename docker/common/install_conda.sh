@@ -18,7 +18,8 @@ popd
 
 export PATH=/opt/conda/bin:$PATH
 
-/opt/conda/bin/conda install numpy decorator six future cmake pyyaml
+/opt/conda/bin/conda install numpy decorator six future cmake pyyaml mkl-include typing
+/opt/conda/bin/conda install -yc conda-forge pytest
 
 which conda
 conda --version

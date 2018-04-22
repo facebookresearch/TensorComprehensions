@@ -23,9 +23,6 @@
 [submodule "third-party/glog"]
 	path = third-party/glog
 	url = https://github.com/google/glog.git
-[submodule "third-party/ATen"]
-	path = third-party/ATen
-	url = https://github.com/zdevito/aten.git
 [submodule "third-party/dlpack"]
 	path = third-party/dlpack
 	url = https://github.com/dmlc/dlpack.git
@@ -35,3 +32,6 @@
 [submodule "third-party/pybind11"]
  	path = third-party/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "third-party/pytorch"]
+	path = third-party/pytorch
+	url = https://github.com/pytorch/pytorch.git
