@@ -158,13 +158,13 @@ void MappedScop::mapToBlocksAndScaleBand(
 }
 
 /*
- * Given a filter node in the schedule tree of a mapped scop,
- * insert another filter underneath (if needed) that fixes
+ * Given a node in the schedule tree of a mapped scop,
+ * insert a mapping filter underneath (if needed) that fixes
  * the remaining thread identifiers starting at "begin" to zero.
  */
-void fixThreadsBelowFilter(
+void fixThreadsBelow(
     MappedScop& mscop,
-    detail::ScheduleTree* filterTree,
+    detail::ScheduleTree* tree,
     size_t begin) {
   size_t end = mscop.numThreads.view.size();
   if (begin == end) {
@@ -172,7 +172,7 @@ void fixThreadsBelowFilter(
   }
 
   auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
-  auto bandTree = insertNodeBelow(filterTree, std::move(band));
+  auto bandTree = insertNodeBelow(tree, std::move(band));
   mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
 }
 
@@ -426,7 +426,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
     auto needSync = st->elemAs<detail::ScheduleTreeElemSequence>() && n > 0;
     if (n > 0) {
       for (size_t i = 0; i < nChildren; ++i) {
-        fixThreadsBelowFilter(*this, children[i], nInner[i]);
+        fixThreadsBelow(*this, children[i], nInner[i]);
       }
     }
     if (needSync) {
