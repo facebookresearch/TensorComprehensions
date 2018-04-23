@@ -34,7 +34,7 @@ message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
 
 add_subdirectory(third-party/pybind11)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DIR=\"\\\"$ENV{TC_DIR}\\\"\" ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DIR=\"\\\"${TC_DIR}\\\"\" ")
 
 set(LLVM_DIR ${CLANG_PREFIX}/lib/cmake/llvm)
 message(STATUS "Looking for LLVM in ${LLVM_DIR}")
