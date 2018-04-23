@@ -637,7 +637,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     auto child = outerBand->child({0});
     size_t numMappedInnerThreads =
         mappedScop->mapInnermostBandsToThreads(child);
-    mappedScop->mapRemaining<mapping::ThreadId>(child, numMappedInnerThreads);
+    fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
         << "After mapping to threads:" << std::endl
         << *mappedScop->schedule();
