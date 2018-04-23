@@ -285,6 +285,9 @@ struct ScheduleTree {
       isl::multi_union_pw_aff mupa,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
+  // Return a zero-dimensional band for use in a tree with the given root.
+  static ScheduleTreeUPtr makeEmptyBand(const ScheduleTree* root);
+
   static ScheduleTreeUPtr makeDomain(
       isl::union_set domain,
       std::vector<ScheduleTreeUPtr>&& children = {});
