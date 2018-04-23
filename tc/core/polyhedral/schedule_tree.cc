@@ -84,6 +84,9 @@ vector<size_t> positionRelativeToSubtree(
 vector<const ScheduleTree*> constAncestorsInSubTree(
     const ScheduleTree* relativeRoot,
     const ScheduleTree* target) {
+  if (relativeRoot == target) {
+    return vector<const ScheduleTree*>();
+  }
   vector<size_t> cp(positionRelativeToSubtree(relativeRoot, target));
   if (cp.size() == 0) {
     // Special case, this must be the root

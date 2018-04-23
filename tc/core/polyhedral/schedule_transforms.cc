@@ -111,9 +111,6 @@ isl::union_set activeDomainPoints(
   CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
-  if (root == node) {
-    return domain;
-  }
 
   for (auto anc : node->ancestors(root)) {
     if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
