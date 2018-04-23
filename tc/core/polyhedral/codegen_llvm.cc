@@ -33,8 +33,6 @@
 
 #include "Halide.h"
 
-#include "isl/ast.h"
-
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
 #include "tc/core/halide2isl.h"
@@ -83,12 +81,12 @@ llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
 }
 
 int64_t IslExprToSInt(isl::ast_expr e) {
-  CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_int);
-  return toSInt(isl::manage(isl_ast_expr_get_val(e.get())));
+  auto intExpr = e.as<isl::ast_expr_int>();
+  CHECK(intExpr);
+  return toSInt(intExpr.get_val());
 }
 
-int64_t islIdToInt(isl::ast_expr e, isl::set context) {
-  CHECK(isl_ast_expr_get_type(e.get()) == isl_ast_expr_type::isl_ast_expr_id);
+int64_t islIdToInt(isl::ast_expr_id e, isl::set context) {
   auto space = context.get_space();
   isl::aff param(isl::aff::param_on_domain_space(space, e.get_id()));
   auto p = context.sample_point();
@@ -127,22 +125,21 @@ class IslAstExprInterpeter {
   IslAstExprInterpeter(isl::set context) : context_(context){};
 
   int64_t interpret(isl::ast_expr e) {
-    switch (isl_ast_expr_get_type(e.get())) {
-      case isl_ast_expr_type::isl_ast_expr_int:
-        return IslExprToSInt(e);
-      case isl_ast_expr_type::isl_ast_expr_id:
-        return islIdToInt(e, context_);
-      case isl_ast_expr_type::isl_ast_expr_op:
-        return interpretOp(e);
-      default:
-        CHECK(false) << "NYI";
-        return 0; // avoid warning
+    if (auto intExpr = e.as<isl::ast_expr_int>()) {
+      return IslExprToSInt(intExpr);
+    } else if (auto idExpr = e.as<isl::ast_expr_id>()) {
+      return islIdToInt(idExpr, context_);
+    } else if (auto opExpr = e.as<isl::ast_expr_op>()) {
+      return interpretOp(opExpr);
+    } else {
+      CHECK(false) << "NYI";
+      return 0; // avoid warning
     }
   };
 
  private:
-  int64_t interpretOp(isl::ast_expr e) {
-    switch (e.get_op_n_arg()) {
+  int64_t interpretOp(isl::ast_expr_op e) {
+    switch (e.get_n_arg()) {
       case 1:
         return interpretUnaryOp(e);
       case 2:
@@ -153,28 +150,26 @@ class IslAstExprInterpeter {
     }
   }
 
-  int64_t interpretBinaryOp(isl::ast_expr e) {
-    auto left = interpret(e.get_op_arg(0));
-    auto right = interpret(e.get_op_arg(1));
-    switch (e.get_op_type()) {
-      case isl::ast_op_type::add:
-        return left + right;
-      case isl::ast_op_type::sub:
-        return left - right;
-      default:
-        CHECK(false) << "NYI: " << e;
-        return 0; // avoid warning
+  int64_t interpretBinaryOp(isl::ast_expr_op e) {
+    auto left = interpret(e.get_arg(0));
+    auto right = interpret(e.get_arg(1));
+    if (e.as<isl::ast_op_add>()) {
+      return left + right;
+    } else if (e.as<isl::ast_op_sub>()) {
+      return left - right;
+    } else {
+      CHECK(false) << "NYI: " << e;
+      return 0; // avoid warning
     }
   }
 
-  int64_t interpretUnaryOp(isl::ast_expr e) {
-    auto val = interpret(e.get_op_arg(0));
-    switch (e.get_op_type()) {
-      case isl::ast_op_type::minus:
-        return -val;
-      default:
-        CHECK(false) << "NYI";
-        return 0; // avoid warning
+  int64_t interpretUnaryOp(isl::ast_expr_op e) {
+    auto val = interpret(e.get_arg(0));
+    if (e.as<isl::ast_op_minus>()) {
+      return -val;
+    } else {
+      CHECK(false) << "NYI";
+      return 0; // avoid warning
     }
   }
 };
@@ -301,16 +296,13 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 };
 
 llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
-  switch (isl_ast_expr_get_type(expr.get())) {
-    case isl_ast_expr_type::isl_ast_expr_id:
-      return sym_get(expr.get_id().get_name());
-    case isl_ast_expr_type::isl_ast_expr_int: {
-      auto val = isl::manage(isl_ast_expr_get_val(expr.get()));
-      return getLLVMConstantSignedInt64(toSInt(val));
-    }
-    default:
-      LOG(FATAL) << "NYI";
-      return nullptr;
+  if (auto idExpr = expr.as<isl::ast_expr_id>()) {
+    return sym_get(idExpr.get_id().get_name());
+  } else if (auto intExpr = expr.as<isl::ast_expr_int>()) {
+    return getLLVMConstantSignedInt64(toSInt(intExpr.get_val()));
+  } else {
+    LOG(FATAL) << "NYI";
+    return nullptr;
   }
 }
 
@@ -483,7 +475,7 @@ class LLVMCodegen {
     halide_cg.get_builder().CreateBr(headerBB);
 
     llvm::PHINode* phi = nullptr;
-    auto iterator = node.get_iterator().get_id();
+    auto iterator = node.get_iterator().as<isl::ast_expr_id>().get_id();
 
     // Loop Header
     {
@@ -494,30 +486,25 @@ class LLVMCodegen {
       halide_cg.sym_push(iterator.get_name(), phi);
       phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
 
-      auto cond_expr = node.get_cond();
-      CHECK(
-          cond_expr.get_op_type() == isl::ast_op_type::lt or
-          cond_expr.get_op_type() == isl::ast_op_type::le)
+      auto cond_expr = node.get_cond().as<isl::ast_expr_op>();
+      CHECK(cond_expr.as<isl::ast_op_lt>() or cond_expr.as<isl::ast_op_le>())
           << "I only know how to codegen lt and le";
-      auto condLHS = cond_expr.get_op_arg(0);
-      CHECK(
-          isl_ast_expr_get_type(condLHS.get()) ==
-          isl_ast_expr_type::isl_ast_expr_id);
+      auto condLHS = cond_expr.get_arg(0).as<isl::ast_expr_id>();
+      CHECK(condLHS);
       CHECK_EQ(condLHS.get_id(), iterator);
 
       IslAstExprInterpeter i(scop_.globalParameterContext);
-      auto condRHSVal = i.interpret(cond_expr.get_op_arg(1));
+      auto condRHSVal = i.interpret(cond_expr.get_arg(1));
 
       auto cond = [&]() {
         auto constant = getLLVMConstantSignedInt64(condRHSVal);
-        switch (cond_expr.get_op_type()) {
-          case isl::ast_op_type::lt:
-            return halide_cg.get_builder().CreateICmpSLT(phi, constant);
-          case isl::ast_op_type::le:
-            return halide_cg.get_builder().CreateICmpSLE(phi, constant);
-          default:
-            CHECK(false) << "NYI";
-            return static_cast<llvm::Value*>(nullptr); // avoid warning
+        if (cond_expr.as<isl::ast_op_lt>()) {
+          return halide_cg.get_builder().CreateICmpSLT(phi, constant);
+        } else if (cond_expr.as<isl::ast_op_le>()) {
+          return halide_cg.get_builder().CreateICmpSLE(phi, constant);
+        } else {
+          CHECK(false) << "NYI";
+          return static_cast<llvm::Value*>(nullptr); // avoid warning
         }
       }();
       halide_cg.get_builder().CreateCondBr(cond, loopBodyBB, loopExitBB);
@@ -572,8 +559,8 @@ class LLVMCodegen {
   }
 
   llvm::BasicBlock* emitStmt(isl::ast_node_user node) {
-    isl::ast_expr usrExp = node.get_expr();
-    auto id = usrExp.get_op_arg(0).get_id();
+    isl::ast_expr_op usrExp = node.get_expr().as<isl::ast_expr_op>();
+    auto id = usrExp.get_arg(0).as<isl::ast_expr_id>().get_id();
     auto provide = scop_.halide.statements.at(id);
     auto op = provide.as<Halide::Internal::Provide>();
     CHECK(op) << "Expected a Provide node: " << provide << '\n';
@@ -632,11 +619,11 @@ IslCodegenRes codegenISL(const Scop& scop) {
            StmtSubscriptExprMapType& stmtSubscripts) -> isl::ast_node {
       auto user = node.as<isl::ast_node_user>();
       CHECK(user);
-      auto expr = user.get_expr();
+      auto expr = user.get_expr().as<isl::ast_expr_op>();
       auto schedule = build.get_schedule();
       auto scheduleMap = isl::map::from_union_map(schedule);
 
-      auto stmtId = expr.get_op_arg(0).get_id();
+      auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
       CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
       auto iterators = scop.halide.iterators.at(stmtId);
