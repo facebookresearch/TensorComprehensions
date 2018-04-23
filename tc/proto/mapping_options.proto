@@ -70,6 +70,21 @@ message CudaMappingOptionsProto {
   optional uint64 max_shared_memory = 7;
   // Use the readonly cache (i.e. emit __ldg loads)
   required bool use_readonly_cache = 8;
+  // Maximum number of blocks per streaming multiprocessor to use. If not
+  // provided, the number of blocks per sm on the current active device will
+  // be used.
+  optional uint64 max_blocks_per_sm = 9;
+  // Maximum number of threads per streaming multiprocessor to use. If not
+  // provided, the number of threads per sm on the current active device will
+  // be used.
+  optional uint64 max_threads_per_sm = 10;
+  // Maximum number of shared memory per streaming multiprocessor to use, in
+  // bytes. If not provided, all shared memory available on a sm on the current
+  // active device will be used.
+  optional uint64 max_shared_memory_per_sm = 11;
+  // The number of multiprocessors that can be used. If not provided, all
+  // multiprocessors will be used.
+  optional uint64 nb_of_sm = 12;
 }
 
 message CpuMappingOptionsProto {
