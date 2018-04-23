@@ -155,10 +155,6 @@ endif()
 ################################################################################
 
 # Halide
-if(NOT HALIDE_PREFIX)
-  message(FATAL_ERROR "-DHALIDE_PREFIX=... required")
-endif()
-message(STATUS "HALIDE_PREFIX: ${HALIDE_PREFIX}")
 message(STATUS "Finding Halide")
 find_path(HALIDE_INCLUDE_DIR NAMES Halide.h)
 message(STATUS "HALIDE_INCLUDE_DIRS: ${HALIDE_INCLUDE_DIR}")
