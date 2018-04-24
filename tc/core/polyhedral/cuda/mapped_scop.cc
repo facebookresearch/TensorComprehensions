@@ -108,24 +108,6 @@ const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
 }
 } // namespace
 
-template <typename MappingTypeId>
-void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
-  size_t nToMap = mappingSize<MappingTypeId>(this).view.size();
-  if (nMapped >= nToMap) {
-    return;
-  }
-
-  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> ids;
-  for (size_t i = nMapped; i < nToMap; ++i) {
-    ids.insert(MappingTypeId::makeId(i));
-  }
-  auto root = scop_->scheduleRoot();
-  auto domain = activeDomainPoints(root, tree);
-  auto filter = makeFixRemainingZeroFilter(domain, ids);
-  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, ids);
-  insertNodeAbove(root, tree, std::move(mapping));
-}
-
 // Map the elements in "list" to successive blocks or thread identifiers,
 // with the first element mapped to identifier X.  The extents are obtained
 // from the initial elements of numBlocks or numThreads.  The identifiers
@@ -166,10 +148,17 @@ detail::ScheduleTree* MappedScop::map(
     idSet.emplace(id);
   }
 
+  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> unmapped;
+  for (size_t i = nToMap; i < extent.size(); ++i) {
+    auto id = MappingTypeId::makeId(i);
+    unmapped.emplace(id);
+    idSet.emplace(id);
+  }
+  filter = filter.intersect(makeFixRemainingZeroFilter(domain, unmapped));
+
   auto mapping = detail::ScheduleTree::makeMappingFilter(filter, idSet);
   tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
 
-  mapRemaining<MappingTypeId>(tree, nToMap);
   return tree;
 }
 

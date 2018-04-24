@@ -99,12 +99,6 @@ class MappedScop {
   // This function can only be called once in any branch of the tree.
   detail::ScheduleTree* mapThreadsBackward(detail::ScheduleTree* band);
 
-  // Given that "nMapped" identifiers of type "MappingTypeId" have already
-  // been mapped, map the remaining ones to zero
-  // for all statement instances.
-  template <typename MappingTypeId>
-  void mapRemaining(detail::ScheduleTree* tree, size_t nMapped);
-
   // Fix the values of the specified parameters in the context
   // to the corresponding specified values.
   template <typename T>
