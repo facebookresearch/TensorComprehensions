@@ -201,37 +201,6 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
 }
 
 /*
- * Insert map constraints that equate first "nDims" input dimensions to newly
- * introduced parameters.
- */
-isl::map fixOuterInputDimsAsParameters(isl::map map, unsigned nDims) {
-  if (nDims < 0 || nDims > map.dim(isl::dim_type::in)) {
-    std::stringstream ss;
-    ss << nDims << "  is out of [0, " << map.dim(isl::dim_type::in)
-       << ") range";
-    throw promotion::OutOfRangeException(ss.str());
-  }
-
-  auto fixedMap = map;
-  auto localSpace = isl::local_space(map.get_space().domain());
-  auto nParams = map.dim(isl::dim_type::param);
-  localSpace = localSpace.add_dims(isl::dim_type::param, nDims);
-  for (unsigned i = 0; i < nDims; ++i) {
-    localSpace = localSpace.set_dim_name(
-        isl::dim_type::param,
-        nParams + i,
-        "__tcFixerParam" + std::to_string(i));
-  }
-  for (unsigned i = 0; i < nDims; ++i) {
-    auto left = isl::aff(localSpace, isl::dim_type::param, nParams + i);
-    auto right = isl::aff(localSpace, isl::dim_type::set, i);
-    auto dom = isl::aff_set(left) == right;
-    fixedMap = fixedMap.intersect_domain(dom);
-  }
-  return fixedMap;
-}
-
-/*
  * Check if a reference group features reuse within the "outer" schedule.
  * In particular, check that for some given point in the outer schedule and
  * some given group element, there is more than one statement instance
@@ -339,19 +308,25 @@ bool promotionImprovesCoalescing(
 }
 
 /*
- * Check if the given "group" can be promoted to registers for the given active
- * domain points under full "schedule" where "nThreads" consecutive dimensions
- * at "depth"
- * are mapped to threads (the innermost of them being mapped to thread x).
+ * Check if the given "group" can be promoted to registers for the given
+ * mapping to thread identifiers and within the given outer schedule.
  *
  * In particular, the group's footprint must contain only one element and the
- * same tensor element should never be accessed by two different threads.
+ * same tensor element should never be accessed by two different threads
+ * within the same iteration of the outer schedule.
+ * The second test is performed by checking that there is only a single
+ * thread associated to a given pair of tensor element and outer schedule
+ * iteration.
+ * Note that the test for a single thread is performed by looking
+ * at the range of "thread".  This range may be larger than the number
+ * of threads, such that multiple instances may get mapped to the same thread.
+ * Requiring different such instances is therefore slightly more conservative
+ * than strictly needed.
  */
 bool isPromotableToRegisterBelowThreads(
     const TensorReferenceGroup& group,
-    isl::union_map schedule,
-    size_t depth,
-    size_t nThreads) {
+    isl::multi_union_pw_aff outer,
+    isl::multi_union_pw_aff thread) {
   auto originalAccesses = group.originalAccesses();
 
   // Return early if more than one element needs to be stored in registers.
@@ -364,28 +339,11 @@ bool isPromotableToRegisterBelowThreads(
     return false;
   }
 
-  auto scheduledAccesses = originalAccesses.apply_domain(schedule);
+  auto map = isl::union_map::from(outer);
+  map = map.range_product(group.originalAccesses());
+  map = map.apply_domain(isl::union_map::from(thread));
 
-  // Scheduled accesses contain maps from schedule dimensions to tensor
-  // subscripts.  Compute the relation between the schedule dimensions
-  // mapped to threads and tensor subscripts by first removing dimensions
-  // following the one mapped to thread x (last one assuming inverse mapping
-  // order), then by equating all dimensions not mapped to threads to
-  // parameters.  Promotion to registers is only allowed if the resulting
-  // relation is injective, i.e. the same tensor element is never accessed by
-  // more than one thread.  Note that our current check is overly conservative
-  // because different values of schedule dimension may get mapped to the same
-  // thread, in which case they could access the same tensor element.
-  for (auto sa : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
-    sa = sa.project_out(
-        isl::dim_type::in, depth, sa.dim(isl::dim_type::in) - depth);
-    sa = fixOuterInputDimsAsParameters(sa, depth - nThreads);
-    if (!sa.is_injective()) {
-      return false;
-    }
-  }
-
-  return true;
+  return map.is_injective();
 }
 
 /*
@@ -573,22 +531,16 @@ void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
 
   auto root = scop.scheduleRoot();
 
-  auto fullSched = fullSchedule(root);
   {
     auto markers = findThreadSpecificMarkers(root);
 
     for (auto marker : markers) {
       auto partialSched = prefixSchedule(root, marker);
       // Pure affine schedule without (mapping) filters.
-      auto partialSchedMupa = prefixScheduleMupa(root, marker);
-
-      auto depth = marker->scheduleDepth(root);
-
-      // Thread mapping filters are inserted immediately above the members
-      // mapped to threads.  The number of intermediate band members
-      // is therefore equal to the number of mapped thread identifiers.
       auto mapping = findThreadMappingAncestor(root, marker);
-      size_t nMappedThreads = marker->scheduleDepth(mapping);
+      auto prefixSchedMupa = prefixScheduleMupa(root, mapping);
+      auto mapSchedMupa = infixScheduleMupa(root, mapping, marker);
+      auto partialSchedMupa = prefixSchedMupa.flat_range_product(mapSchedMupa);
 
       auto groupMap = TensorReferenceGroup::accessedBySubtree(marker, scop);
       for (auto& tensorGroups : groupMap) {
@@ -603,7 +555,7 @@ void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
             continue;
           }
           if (!isPromotableToRegisterBelowThreads(
-                  *group, fullSched, depth, nMappedThreads)) {
+                  *group, prefixSchedMupa, mapSchedMupa)) {
             continue;
           }
           if (!hasReuseWithin(*group, partialSchedMupa)) {
