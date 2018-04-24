@@ -60,18 +60,6 @@ std::ostream& operator<<(
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const MappingOptions& options) {
-  OstreamBoolalphaScope scope(os);
-  tc::MappingOptionsAsCpp cpp(options);
-  os << cpp;
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const MappingOptionsView& view) {
-  os << MappingOptions(view);
-  return os;
-}
-
 MappingOptionsView& MappingOptionsView::tile(
     const std::string& commaSeparatedSizes) {
   return tile(parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes));

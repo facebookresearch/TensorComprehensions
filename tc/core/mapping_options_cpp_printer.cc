@@ -19,6 +19,8 @@
 
 namespace tc {
 
+MappingOptionsCppPrinter::~MappingOptionsCppPrinter() = default;
+
 MappingOptionsCppPrinter& MappingOptionsCppPrinter::printSchedulerOptions(
     const SchedulerOptionsView& schedulerOptions,
     const std::string& prefix) {
@@ -28,38 +30,28 @@ MappingOptionsCppPrinter& MappingOptionsCppPrinter::printSchedulerOptions(
       "tc::FusionStrategy::" + FusionStrategy_Name(proto.fusion_strategy()));
   printBooleanOption(prefix + "AllowSkewing", proto.allow_skewing());
   printBooleanOption(prefix + "PositiveOrthant", proto.positive_orthant());
-
   return *this;
 }
 
-MappingOptionsCppPrinter& operator<<(
-    MappingOptionsCppPrinter& prn,
-    const std::string& str) {
-  prn.printString(str);
-  return prn;
-}
-
-MappingOptionsCppPrinter& operator<<(
-    MappingOptionsCppPrinter& prn,
+MappingOptionsCppPrinter& MappingOptionsCppPrinter::print(
     const MappingOptions& options) {
-  prn.printString("tc::MappingOptions::makeNaiveMappingOptions()")
+  printString("tc::MappingOptions::makeNaiveMappingOptions()")
       .printSchedulerOptions(
           options.view.outerScheduleOptions, "outerSchedule");
   if (options.view.proto.has_intra_tile_schedule_options()) {
-    prn.printSchedulerOptions(
+    printSchedulerOptions(
         options.view.intraTileScheduleOptions, "intraTileSchedule");
   }
   if (options.view.proto.has_tiling()) {
-    prn.printListOption("tile", options.view.tiling.extractVector());
+    printListOption("tile", options.view.tiling.extractVector());
   }
   if (options.view.proto.has_unroll()) {
-    prn.printValueOption("unroll", options.view.proto.unroll());
+    printValueOption("unroll", options.view.proto.unroll());
   }
-  prn.printBooleanOption(
+  printBooleanOption(
       "tileImperfectlyNested", options.view.proto.tile_imperfectly_nested());
-  prn.printBooleanOption(
+  printBooleanOption(
       "matchLibraryCalls", options.view.proto.match_library_calls());
-  prn.endStmt();
-  return prn;
+  return *this;
 }
 } // namespace tc

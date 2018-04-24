@@ -38,6 +38,8 @@ class CudaMappingOptionsCppPrinter : public MappingOptionsCppPrinter {
   CudaMappingOptionsCppPrinter(std::ostream& out, size_t ws = 0)
       : MappingOptionsCppPrinter(out, ws) {}
 
+  ~CudaMappingOptionsCppPrinter() = default;
+
   friend CudaMappingOptionsCppPrinter& operator<<(
       CudaMappingOptionsCppPrinter& prn,
       const CudaMappingOptions& options);

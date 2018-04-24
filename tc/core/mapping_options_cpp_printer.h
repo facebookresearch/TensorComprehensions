@@ -37,13 +37,7 @@ class MappingOptionsCppPrinter {
   MappingOptionsCppPrinter(std::ostream& out, size_t ws = 0)
       : out_(out), ws_(ws) {}
 
-  friend MappingOptionsCppPrinter& operator<<(
-      MappingOptionsCppPrinter& prn,
-      const std::string& str);
-
-  friend MappingOptionsCppPrinter& operator<<(
-      MappingOptionsCppPrinter& prn,
-      const MappingOptions& options);
+  virtual ~MappingOptionsCppPrinter() = 0;
 
  protected:
   inline MappingOptionsCppPrinter& tab();
@@ -71,18 +65,12 @@ class MappingOptionsCppPrinter {
       const SchedulerOptionsView& schedulerOptions,
       const std::string& prefix);
 
+  MappingOptionsCppPrinter& print(const MappingOptions& options);
+
   std::ostream& out_;
   size_t ws_;
   bool lineContinuation_ = false;
 };
-
-inline std::ostream& operator<<(
-    std::ostream& out,
-    const MappingOptionsAsCpp& mo) {
-  auto prn = MappingOptionsCppPrinter(out, mo.indent);
-  prn << mo.options;
-  return out;
-}
 
 MappingOptionsCppPrinter& MappingOptionsCppPrinter::tab() {
   for (size_t i = 0; i < ws_; ++i) {
