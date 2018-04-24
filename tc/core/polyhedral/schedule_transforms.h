@@ -113,7 +113,7 @@ detail::ScheduleTree* bandScale(
     detail::ScheduleTree* tree,
     const std::vector<size_t>& scales);
 
-// Update the top-level conext node by intersecting it with "context".  The
+// Update the top-level context node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
 // If there is no such node, insert one with universe context first.
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
