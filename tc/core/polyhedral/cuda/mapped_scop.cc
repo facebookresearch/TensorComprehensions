@@ -109,7 +109,8 @@ void MappedScop::mapRemaining(
   auto root = scop_->scheduleRoot();
   auto domain = activeDomainPoints(root, tree);
   auto filter = makeFixRemainingZeroFilter(domain, ids);
-  insertMappingFilterAbove(root, tree, filter, ids);
+  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, ids);
+  insertNodeAbove(root, tree, std::move(mapping));
 
   for (size_t i = nMapped; i < nToMap; ++i) {
     if (MappingTypeId::makeId(i) == mapping::ThreadId::x()) {
@@ -171,8 +172,9 @@ void fixThreadsBelowFilter(
   // invariant that leaf mapping filters have a single space.
   // So we intersect with the universe set of the filter to only keep the
   // space for the legitimate statement.
-  insertMappingFilterBelow(
-      filterTree, mappingFilter & filter->filter_.universe(), ids);
+  mappingFilter = mappingFilter & filter->filter_.universe();
+  auto mapping = detail::ScheduleTree::makeMappingFilter(mappingFilter, ids);
+  insertNodeBelow(filterTree, std::move(mapping));
 
   for (size_t i = begin; i < end; ++i) {
     if (mapping::ThreadId::makeId(i) == mapping::ThreadId::x()) {

@@ -462,26 +462,6 @@ isl::multi_union_pw_aff partialScheduleMupa(
   return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
 }
 
-ScheduleTree* insertBandAbove(
-    ScheduleTree* root,
-    ScheduleTree* tree,
-    isl::multi_union_pw_aff mupa) {
-  auto parent = tree->ancestor(root, 1);
-  auto childPos = tree->positionInParent(parent);
-  auto child = parent->detachChild(childPos);
-  parent->insertChild(childPos, ScheduleTree::makeBand(mupa, std::move(child)));
-  return parent->child({childPos});
-}
-
-ScheduleTree* insertBandBelow(
-    detail::ScheduleTree* tree,
-    isl::multi_union_pw_aff mupa) {
-  auto numChildren = tree->numChildren();
-  CHECK_LE(numChildren, 1u);
-  tree->appendChild(ScheduleTree::makeBand(mupa, tree->detachChildren()));
-  return tree->child({0});
-}
-
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
   if (!matchOne(tc::polyhedral::domain(tc::polyhedral::context(any())), root)) {
     root->appendChild(ScheduleTree::makeContext(

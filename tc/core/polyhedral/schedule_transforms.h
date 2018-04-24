@@ -131,27 +131,6 @@ detail::ScheduleTree* mapToParameterWithExtent(
     MappingIdType id,
     size_t extent);
 
-// In a tree starting at a (relative) "root", insert a band node with the
-// given partial schedule above the node identified by "tree".
-//
-// The tree is modified in place.
-// Return a non-owning pointer to the inserted band node
-// for call chaining purposes.
-detail::ScheduleTree* insertBandAbove(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* tree,
-    isl::multi_union_pw_aff mupa);
-
-// Insert a band node with the given partial schedule below node "tree",
-// which is assumed to have at most one child.
-//
-// The tree is modified in place.
-// Return a non-owning pointer to the inserted band node
-// for call chaining purposes.
-detail::ScheduleTree* insertBandBelow(
-    detail::ScheduleTree* tree,
-    isl::multi_union_pw_aff mupa);
-
 // Update the top-level conext node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
 // If there is no such node, insert one with universe context first.
@@ -178,31 +157,26 @@ detail::ScheduleTree* insertExtensionAbove(
     detail::ScheduleTree* tree,
     isl::union_map extension);
 
-// In a tree starting at a (relative) "root", insert a mapping filter node
-// with the given filter above the node identified by "tree".
+// In a tree starting at a (relative) "root", insert the given node
+// above the node identified by "tree".
 //
 // The tree is modified in place.
-// Return a non-owning pointer to the inserted filter node
+// Return a non-owning pointer to the inserted node
 // for call chaining purposes.
-template <typename MappingIdType>
-inline detail::ScheduleTree* insertMappingFilterAbove(
+inline detail::ScheduleTree* insertNodeAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-        mappingIds);
+    ScheduleTreeUPtr&& node);
 
-// Insert a mapping filter node below node "tree", which is assumed to have at
-// most one child. The underlying isl::union_set filter is constructed from
-// the arguments.
+// Insert the given node below node "tree", which is assumed to have at
+// most one child.
 //
 // The tree is modified in place.
-template <typename MappingIdType>
-inline void insertMappingFilterBelow(
+// Return a non-owning pointer to the inserted node
+// for call chaining purposes.
+inline detail::ScheduleTree* insertNodeBelow(
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-        mappingIds);
+    ScheduleTreeUPtr&& node);
 
 // Given a sequence node in the schedule tree, insert
 // a zero-dimensional extension statement with the given identifier
