@@ -106,53 +106,6 @@ template <>
 const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
   return mscop->numThreads;
 }
-
-// Map the affine functions in "list" to the _new_ parameters
-// identified by ids[i] and limited by 0 <= ids[i] < extent[i].  The
-// parameters must not be present in the space of partial schedules in "list"
-// and extents must be non-zero.  The mapping corresponds to inserting a filter
-// node with condition 'list % extent = ids'.
-// The number of elements in "list" and "ids" needs to be the same,
-// but "extent" is allowed to have extra elements, in which case
-// only the initial elements are used.
-// The mapping is inserted above "tree".
-//
-// Returns a pointer to the updated node (below the inserted filter)
-// for call chaining purposes.
-template <typename MappingIdType>
-detail::ScheduleTree* mapToParametersWithExtent(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* tree,
-    isl::union_pw_aff_list list,
-    const std::vector<MappingIdType>& ids,
-    const CudaDimView& extent) {
-  CHECK_EQ(ids.size(), list.n());
-  CHECK_LE(list.n(), extent.size()) << "dimension overflow";
-
-  auto domain = activeDomainPoints(root, tree).universe();
-  auto filter = domain;
-
-  std::unordered_set<MappingIdType, typename MappingIdType::Hash> idSet;
-  for (size_t i = 0; i < ids.size(); ++i) {
-    auto id = ids[i];
-    auto upa = list.get(i);
-    // Introduce the "mapping" parameter after checking it is not already
-    // present in the schedule space.
-    CHECK(not upa.involves_param(id));
-    CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
-
-    // Create mapping filter by equating the newly introduced
-    // parameter ids[i] to the "i"-th affine function modulo its extent.
-    upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
-    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
-    filter = filter.intersect(upa.zero_union_set());
-
-    idSet.emplace(id);
-  }
-
-  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, idSet);
-  return insertNodeAbove(root, tree, std::move(mapping))->child({0});
-}
 } // namespace
 
 template <typename MappingTypeId>
@@ -173,22 +126,62 @@ void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
   insertNodeAbove(root, tree, std::move(mapping));
 }
 
+// Map the elements in "list" to successive blocks or thread identifiers,
+// with the first element mapped to identifier X.  The extents are obtained
+// from the initial elements of numBlocks or numThreads.  The identifiers
+// must not be present in the space of the partial schedules in "list" and
+// extents must be non-zero.  The mapping corresponds to inserting a filter
+// node with condition 'list % extent = ids'.
+// The mapping is inserted above "tree".
+//
+// Return a pointer to the updated node (below the inserted filter)
+// for call chaining purposes.
+template <typename MappingTypeId>
+detail::ScheduleTree* MappedScop::map(
+    detail::ScheduleTree* tree,
+    isl::union_pw_aff_list list) {
+  size_t nToMap = list.n();
+  const auto& extent = mappingSize<MappingTypeId>(this).view;
+  CHECK_LE(nToMap, extent.size()) << "dimension overflow";
+
+  auto root = scop_->scheduleRoot();
+  auto domain = activeDomainPoints(root, tree).universe();
+  auto filter = domain;
+
+  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> idSet;
+  for (size_t i = 0; i < nToMap; ++i) {
+    auto id = MappingTypeId::makeId(i);
+    auto upa = list.get(i);
+    // Introduce the "mapping" parameter after checking it is not already
+    // present in the schedule space.
+    CHECK(not upa.involves_param(id));
+    CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
+
+    // Create mapping filter by equating the newly introduced
+    // parameter ids[i] to the "i"-th affine function modulo its extent.
+    upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
+    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
+    filter = filter.intersect(upa.zero_union_set());
+
+    idSet.emplace(id);
+  }
+
+  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, idSet);
+  tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
+
+  mapRemaining<MappingTypeId>(tree, nToMap);
+  return tree;
+}
+
 detail::ScheduleTree* MappedScop::mapBlocksForward(
     detail::ScheduleTree* band,
     size_t nToMap) {
   auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
   CHECK(bandNode) << "expected a band, got " << *band;
 
-  auto root = scop_->scheduleRoot();
-  std::vector<mapping::BlockId> mapped;
-  for (size_t i = 0; i < nToMap; ++i) {
-    mapped.emplace_back(mapping::BlockId::makeId(i));
-  }
   auto list = bandNode->mupa_.get_union_pw_aff_list();
   list = list.drop(nToMap, list.n() - nToMap);
-  band = mapToParametersWithExtent(root, band, list, mapped, numBlocks.view);
-  mapRemaining<mapping::BlockId>(band, nToMap);
-  return band;
+  return map<mapping::BlockId>(band, list);
 }
 
 // Uses as many blockSizes elements as outer coincident dimensions in the
@@ -375,16 +368,9 @@ detail::ScheduleTree* MappedScop::mapThreadsBackward(
   auto ctx = band->ctx_;
   insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
 
-  auto root = scop_->scheduleRoot();
-  std::vector<mapping::ThreadId> mapped;
-  for (size_t i = 0; i < nToMap; ++i) {
-    mapped.emplace_back(mapping::ThreadId::makeId(i));
-  }
   auto list = bandNode->mupa_.get_union_pw_aff_list().reverse();
   list = list.drop(nToMap, list.n() - nToMap);
-  band = mapToParametersWithExtent(root, band, list, mapped, numThreads.view);
-  mapRemaining<mapping::ThreadId>(band, nToMap);
-  return band;
+  return map<mapping::ThreadId>(band, list);
 }
 
 size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
