@@ -115,7 +115,7 @@ TEST_F(Sum4D, CodeOuterBand) {
       "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7] = _C_0[c4][c5][c6][c7];";
   auto sync = "__syncthreads()";
 
-  auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0});
+  auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0});
   // Order of copies may be arbitrary, but syncs must be inserted before and
   // after
   for (auto d : declarations) {
@@ -162,7 +162,7 @@ TEST_F(Sum4D, CodeAboveThreadMapping) {
       "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7] = _C_0[c4][c5][c6][c7];";
   auto sync = "__syncthreads()";
 
-  auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0});
+  auto code = emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0});
 
   // Order of copies may be arbitrary, but syncs must be inserted before and
   // after
@@ -204,8 +204,8 @@ TEST_F(Sum4D, CodeInnerBand) {
       "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3] = _C_0[0][0][0][0];";
   auto sync = "__syncthreads()";
 
-  auto code = emitCode(
-      {256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0, 0, 0, 0, 0});
+  auto code =
+      emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0, 0, 0});
   // Order of copies may be arbitrary, but syncs must be inserted before and
   // after
   for (auto d : declarations) {
