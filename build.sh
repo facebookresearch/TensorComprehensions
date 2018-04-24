@@ -275,7 +275,7 @@ function install_caffe2() {
       CMAKE_ARGS+=("-DCUDA_ARCH_NAME='Maxwell'")
     fi
 
-    if [[ $(which ccache | wc -c) -ne 0 ]]; then
+    if [[ -L ${CCACHE_WRAPPER_DIR}/nvcc && $($(readlink ${CCACHE_WRAPPER_DIR}/nvcc) --version | grep ccache | wc -c) -ne 0 ]]; then
       CMAKE_ARGS+=("-DCUDA_NVCC_EXECUTABLE=${CCACHE_WRAPPER_DIR}/nvcc")
     fi
 
