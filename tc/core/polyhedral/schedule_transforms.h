@@ -260,9 +260,17 @@ isl::multi_union_pw_aff partialScheduleMupa(
 
 // Get the set of domain points active at the given node.  A domain
 // point is active if it was not filtered away on the path from the
-// root to the node.  The root must be a domain element, otherwise no
-// elements would be considered active.
+// root to the node excluded. The root must be a domain element,
+// otherwise no elements would be considered active.
 isl::union_set activeDomainPoints(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node);
+
+// Get the set of domain points active at the given node.  A domain
+// point is active if it was not filtered away on the path from the
+// root to the node included. The root must be a domain element,
+// otherwise no elements would be considered active.
+isl::union_set activeDomainPointsInclusive(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 

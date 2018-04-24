@@ -67,6 +67,7 @@ struct Scop {
     res->halide = scop.halide;
     res->reads = scop.reads;
     res->writes = scop.writes;
+    res->dependences = scop.dependences;
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
@@ -189,16 +190,26 @@ struct Scop {
       detail::ScheduleTree* redPoint,
       isl::id updateId);
 
+  // The different level of synchronization.
+  enum class SyncLevel : int { None = 0, Warp = 1, Block = 2 };
+
   // Given a sequence node in the schedule tree, insert
   // synchronization before the child at position "pos".
   // If "pos" is equal to the number of children, then
   // the synchronization is added after the last child.
-  void insertSync(detail::ScheduleTree* seqNode, size_t pos);
+  void insertSync(
+      detail::ScheduleTree* seqNode,
+      size_t pos,
+      SyncLevel level = SyncLevel::Block) {
+    insertExtensionLabelAt(scheduleRoot(), seqNode, pos, makeSyncId(level));
+  }
 
   // Insert synchronization after the given subtree,
   // creating a sequence node if needed.
-  void insertSyncAfter(detail::ScheduleTree* tree) {
-    insertExtensionLabelAfter(scheduleRoot(), tree, makeSyncId());
+  void insertSyncAfter(
+      detail::ScheduleTree* tree,
+      SyncLevel level = SyncLevel::Block) {
+    insertExtensionLabelAfter(scheduleRoot(), tree, makeSyncId(level));
   }
 
   size_t reductionUID() const {
@@ -209,24 +220,62 @@ struct Scop {
     static size_t count = 0;
     return count++;
   }
+  size_t warpSyncUID() const {
+    static size_t count = 0;
+    return count++;
+  }
+
+  // Make the synchronization id corresponding to the synchronization level.
+  // The level should not be None.
+  isl::id makeSyncId(SyncLevel level) {
+    switch (level) {
+      case SyncLevel::Warp:
+        return makeSyncId();
+        break;
+      case SyncLevel::Block:
+        return makeSyncId();
+        break;
+      default:
+        CHECK(level != SyncLevel::None);
+        return isl::id();
+    }
+  }
 
   isl::id makeSyncId() const {
     auto ctx = domain().get_ctx();
     return isl::id(ctx, std::string(kSyncIdPrefix) + std::to_string(syncUID()));
   }
 
-  static bool isSyncId(isl::id id) {
+  isl::id makeWarpSyncId() const {
+    auto ctx = domain().get_ctx();
+    return isl::id(
+        ctx, std::string(kWarpSyncIdPrefix) + std::to_string(warpSyncUID()));
+  }
+
+  // Check if the id has a name with the expected prefix, followed by a long
+  // integer.
+  static bool isIdWithExpectedPrefix(
+      isl::id id,
+      const std::string& expectedPrefix) {
     auto name = id.get_name();
-    if (name.find(kSyncIdPrefix) != 0) {
+    if (name.find(expectedPrefix) != 0) {
       return false;
     }
-    name = name.substr(std::string(kSyncIdPrefix).size());
+    name = name.substr(expectedPrefix.size());
     char* end;
     std::strtol(name.c_str(), &end, 10);
     if (name.c_str() + name.size() != end) {
       return false;
     }
     return true;
+  }
+
+  static bool isSyncId(isl::id id) {
+    return isIdWithExpectedPrefix(id, kSyncIdPrefix);
+  }
+
+  static bool isWarpSyncId(isl::id id) {
+    return isIdWithExpectedPrefix(id, kWarpSyncIdPrefix);
   }
 
   static isl::id makeRefId(isl::ctx ctx) {
@@ -408,6 +457,11 @@ struct Scop {
       const SchedulerOptionsView& schedulerOptions);
 
  public:
+  // Do the simplest possible dependence analysis.
+  // Compute all RAW, WAR, and WAW dependences, and save them in dependences.
+  void computeAllDependences();
+
+ public:
   // Halide stuff
   struct {
     std::vector<Halide::Internal::Parameter> params;
@@ -444,6 +498,9 @@ struct Scop {
 
   isl::union_map reads;
   isl::union_map writes;
+
+  // RAW, WAR, and WAW dependences
+  isl::union_map dependences;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise
