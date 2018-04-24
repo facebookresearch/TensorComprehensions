@@ -589,6 +589,16 @@ as long as the pieces are recombined (e.g., through an interactive rebase)
 into logical units when the feature is ready for merging.
 Force-pushing in PR branches is fine.
 
+Each commit should have a proper commit message.
+A commit message consists of a one-line summary, followed by an empty line and
+the main body with more details focusing on the motivation of the change.
+Both the one-line summary and the lines in the main body
+should not exceed 80 characters.
+The commit message should contain all the information that is needed
+to understand the change within the git repository.
+The main body can only be omitted if the motivation is completely obvious
+from the one-line summary for an independent observer.
+
 Coding Conventions for writing Tensor Comprehensions
 ====================================================
 
