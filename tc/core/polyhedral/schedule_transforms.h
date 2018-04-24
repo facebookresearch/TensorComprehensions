@@ -114,23 +114,6 @@ detail::ScheduleTree* bandScale(
     detail::ScheduleTree* tree,
     const std::vector<size_t>& scales);
 
-// Map "pos"-th schedule dimension of the band node identified by "tree" to a
-// _new_ parameter identified by "id" and limited by 0 <= id < extent.  The
-// parameter must not be present in the space of partial schedule of "tree" and
-// extent must be non-zero.  The mapping corresponds to inserting a filter
-// node with condition 'dim % extent = id' where dim is "pos"-th
-// schedule dimension.
-//
-// Returns a pointer to the updated band (below the inserted filter)
-// for call chaining purposes.
-template <typename MappingIdType>
-detail::ScheduleTree* mapToParameterWithExtent(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* tree,
-    size_t pos,
-    MappingIdType id,
-    size_t extent);
-
 // Update the top-level conext node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
 // If there is no such node, insert one with universe context first.
