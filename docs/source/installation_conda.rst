@@ -200,6 +200,40 @@ Now, you need to install TC from source. For installing TC from source, checkout
 .. note::
     Please also make sure that you don't have gflags or glog in your system path. Those might conflict with the TC gflags/glog.
 
+Optional: Building TC with PyTorch master
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you are interested in using PyTorch master with TC, there are two options:
+
+- Install PyTorch nightly conda package (these packages are built for PyTorch master every day) OR
+- Install PyTorch from source
+
+For the above two options, the :code:`Install TC` instructions would be as below:
+
+**1. Using PyTorch nightly**:
+
+.. code-block:: bash
+
+    $ conda create -y --name tc-build-conda python=3.6 && source activate tc-build-conda
+    $ conda install -y pyyaml mkl-include
+    $ conda install -yc conda-forge pytest
+    $ conda install -y pytorch-nightly -c pytorch
+    $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
+    $ cd TensorComprehensions && git submodule update --init --recursive
+    $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX WITH_CAFFE2=OFF CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
+
+**1. With PyTorch install from source**:
+
+.. code-block:: bash
+
+    $ conda create -y --name tc-build-conda python=3.6 && source activate tc-build-conda
+    $ cd $HOME && git clone --recursive https://github.com/pytorch/pytorch && cd pytorch && git submodule update --init --recursive
+    $ conda install numpy pyyaml mkl mkl-include setuptools cmake cffi typing
+    $ python setup.py install
+    $ cd $HOME && git clone https://github.com/facebookresearch/TensorComprehensions.git --recursive
+    $ cd TensorComprehensions && git submodule update --init --recursive
+    $ BUILD_TYPE=Release INSTALL_PREFIX=$CONDA_PREFIX WITH_CAFFE2=OFF CLANG_PREFIX=$(llvm-config --prefix) ./build.sh --all
+
 
 Step 8: Verify TC installation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
