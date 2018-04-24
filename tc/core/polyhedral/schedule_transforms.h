@@ -264,6 +264,18 @@ isl::union_map prefixSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
+// Return the concatenation of all band node partial schedules
+// from "relativeRoot" (inclusive) to "tree" (exclusive)
+// within a tree rooted at "root".
+// If there are no intermediate band nodes, then return a zero-dimensional
+// function on the universe domain of the schedule tree.
+// Note that this function does not take into account
+// any intermediate filter nodes.
+isl::multi_union_pw_aff infixScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* relativeRoot,
+    const detail::ScheduleTree* tree);
+
 // Return the concatenation of all outer band node partial schedules.
 // If there are no outer band nodes, then return a zero-dimensional
 // function on the universe domain of the schedule tree.

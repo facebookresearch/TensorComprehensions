@@ -450,8 +450,9 @@ ostream& operator<<(ostream& os, const vector<Args...>& v) {
 }
 } // namespace
 
-isl::multi_union_pw_aff prefixScheduleMupa(
+isl::multi_union_pw_aff infixScheduleMupa(
     const ScheduleTree* root,
+    const ScheduleTree* relativeRoot,
     const ScheduleTree* tree) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
   CHECK(domainElem);
@@ -461,13 +462,19 @@ isl::multi_union_pw_aff prefixScheduleMupa(
   // Work around bug in isl.
   prefix = prefix.intersect_domain(domain);
   prefix = foldl(
-      filterType<ScheduleTreeElemBand>(tree->ancestors(root)),
+      filterType<ScheduleTreeElemBand>(tree->ancestors(relativeRoot)),
       [](const ScheduleTree* st, isl::multi_union_pw_aff prefix) {
         auto mupa = st->elemAs<ScheduleTreeElemBand>()->mupa_;
         return prefix.flat_range_product(mupa);
       },
       prefix);
   return prefix;
+}
+
+isl::multi_union_pw_aff prefixScheduleMupa(
+    const ScheduleTree* root,
+    const ScheduleTree* tree) {
+  return infixScheduleMupa(root, root, tree);
 }
 
 isl::multi_union_pw_aff partialScheduleMupa(
