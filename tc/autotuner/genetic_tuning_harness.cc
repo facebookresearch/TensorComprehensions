@@ -408,7 +408,11 @@ void GeneticTunerHarness::doGpuWork(
       } else {
         runtimes.reserve(kReducedBenchmarkIterations);
         for (size_t i = 0; i < kReducedBenchmarkIterations; ++i) {
-          runtimes.push_back(engine.run(handle, inputs, outputs, true));
+          if (FLAGS_tuner_gen_profiled_run) {
+            runtimes.push_back(engine.profile(handle, inputs, outputs).runtime);
+          } else {
+            runtimes.push_back(engine.run(handle, inputs, outputs, true));
+          }
         }
         engine.clear(handle);
       }

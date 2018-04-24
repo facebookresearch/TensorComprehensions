@@ -30,6 +30,9 @@ DECLARE_bool(debug_cuda);
 DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
 
+DECLARE_bool(cuda_profile_verbose);
+DECLARE_bool(cuda_profile_verbose_events);
+
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);
@@ -51,6 +54,7 @@ DECLARE_string(tuner_rng_restore);
 DECLARE_bool(tuner_gen_restore_from_proto);
 DECLARE_uint32(tuner_gen_restore_number);
 DECLARE_bool(tuner_gen_log_generations);
+DECLARE_bool(tuner_gen_profiled_run);
 DECLARE_uint64(tuner_min_launch_total_threads);
 DECLARE_uint32(tuner_save_best_candidates_count);
 

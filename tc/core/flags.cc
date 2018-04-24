@@ -37,6 +37,9 @@ DEFINE_bool(
     "Print debug spew for the tc_mapper like cuda code, mapping options etc");
 DEFINE_bool(dump_cuda, false, "Print the generated cudaSource");
 
+DEFINE_bool(cuda_profile_verbose, false, "Verbose profiling");
+DEFINE_bool(cuda_profile_verbose_events, false, "Verbose event profiling");
+
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
 DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
@@ -97,6 +100,10 @@ DEFINE_bool(
     tuner_gen_log_generations,
     false,
     "Log each generation's runtimes.");
+DEFINE_bool(
+    tuner_gen_profiled_run,
+    false,
+    "Collect performance metrics during tuning.");
 DEFINE_uint64(
     tuner_min_launch_total_threads,
     64,

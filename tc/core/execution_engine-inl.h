@@ -114,6 +114,68 @@ size_t ExecutionEngine<ExecutorType>::compile(
   return handle;
 }
 
+template <typename ExecutorType>
+std::unique_ptr<ExecutorType> ExecutionEngine<ExecutorType>::borrowExecutor(
+    size_t handle) {
+  std::unique_ptr<ExecutorType> executorUPtr(nullptr);
+  {
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
+    std::swap(executorUPtr, executors_[handle]);
+  }
+  return std::move(executorUPtr);
+}
+
+namespace {
+template <typename T>
+struct MaybeVoid {
+  template <typename F>
+  void getValue(const F& f) {
+    value = f();
+  }
+
+  T get() {
+    return value;
+  }
+
+  T value;
+};
+
+template <>
+struct MaybeVoid<void> {
+  template <typename F>
+  void getValue(const F& f) {
+    f();
+  }
+
+  void get() {}
+};
+
+} // namespace
+
+template <typename ExecutorType>
+template <typename R>
+R ExecutionEngine<ExecutorType>::execute(
+    size_t handle,
+    std::unique_ptr<ExecutorType>& executor,
+    std::function<R(ExecutorType&)> func) {
+  CHECK(executor);
+  CHECK(executor->hasRuntimeCompiledFunction());
+  MaybeVoid<R> res;
+  try {
+    // Must catch and swap to avoid exception in destructor!
+    res.getValue([&]() { return func(*executor); });
+  } catch (std::exception& e) {
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
+    std::swap(executor, executors_[handle]);
+    throw;
+  }
+  {
+    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
+    std::swap(executor, executors_[handle]);
+  }
+  return res.get();
+}
+
 // Steal the executor instance and give it back under lock.
 // Run outside of lock on owning ExecutorType.
 template <typename ExecutorType>
@@ -123,36 +185,41 @@ Duration ExecutionEngine<ExecutorType>::run(
     const std::vector<DLTensor*>& outputs,
     bool profile,
     std::function<bool(const ExecutorType*)> pruningFunction) {
-  std::unique_ptr<ExecutorType> executorUPtr(nullptr);
-  {
-    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-    std::swap(executorUPtr, executors_[handle]);
-  }
+  auto executorUPtr = borrowExecutor(handle);
 
   // It turns out someone else may already be running this configuration in
   // some unexpected cases: there is no guarantee of no-redundancy in
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
-  Duration res(Duration::max());
   if (executorUPtr) {
     if (pruningFunction(static_cast<ExecutorType*>(executorUPtr.get()))) {
       return Duration::max();
     }
-    CHECK(executorUPtr->hasRuntimeCompiledFunction());
-    try {
-      // Must catch and swap to avoid exception in destructor!
-      res = executorUPtr->run(inputs, outputs, profile);
-    } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(executorUPtr, executors_[handle]);
-      throw;
-    }
-    {
-      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(executorUPtr, executors_[handle]);
-    }
+    return execute<Duration>(handle, executorUPtr, [&](ExecutorType& exec) {
+      return exec.run(inputs, outputs, profile);
+    });
   }
-  return res;
+  return Duration::max();
+}
+
+// Steal the executor instance and give it back under lock.
+// Run outside of lock on owning ExecutorType.
+template <typename ExecutorType>
+typename ExecutorType::ProfilingInfoType ExecutionEngine<ExecutorType>::profile(
+    size_t handle,
+    const std::vector<const DLTensor*>& inputs,
+    const std::vector<DLTensor*>& outputs) {
+  auto executorUPtr = borrowExecutor(handle);
+
+  using Ptype = typename ExecutorType::ProfilingInfoType;
+  if (executorUPtr) {
+    return execute<Ptype>(handle, executorUPtr, [&](ExecutorType& exec) {
+      return exec.profile(inputs, outputs);
+    });
+  }
+  Ptype pInfo;
+  pInfo.runtime = Duration::max();
+  return pInfo;
 }
 
 // Steal ExecutorType and give it back under lock
@@ -162,30 +229,16 @@ void ExecutionEngine<ExecutorType>::uncheckedRun(
     size_t handle,
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) {
-  std::unique_ptr<ExecutorType> executorUPtr(nullptr);
-  {
-    std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-    std::swap(executorUPtr, executors_[handle]);
-  }
+  auto executorUPtr = borrowExecutor(handle);
 
   // It turns out someone else may already be running this configuration in
   // some unexpected cases: there is no guarantee of no-redundancy in
   // compilation options. In that case, we swapped 2 nullptrs and we just
   // exit.
   if (executorUPtr) {
-    CHECK(executorUPtr->hasRuntimeCompiledFunction());
-    try {
-      // Must catch and swap to avoid exception in destructor!
-      executorUPtr->uncheckedRun(inputs, outputs);
-    } catch (std::exception& e) {
-      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(executorUPtr, executors_[handle]);
-      throw;
-    }
-    {
-      std::lock_guard<std::mutex> lg(tcExecutorMutex_);
-      std::swap(executorUPtr, executors_[handle]);
-    }
+    execute<void>(handle, executorUPtr, [&](ExecutorType& exec) {
+      return exec.uncheckedRun(inputs, outputs);
+    });
   }
 }
 
