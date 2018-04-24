@@ -22,6 +22,7 @@
 #include "tc/external/isl.h"
 
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/external/isl.h"
 
 using namespace std;

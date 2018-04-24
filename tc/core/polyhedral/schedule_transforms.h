@@ -136,7 +136,7 @@ detail::ScheduleTree* mapToParameterWithExtent(
 // If there is no such node, insert one with universe context first.
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
 
-// In a tree starting at a (relative) "root", insert a sequence node with
+// In a tree starting at "root", insert a sequence node with
 // as only child the node identified by "tree".
 //
 // The tree is modified in place.
@@ -146,14 +146,22 @@ detail::ScheduleTree* insertSequenceAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree);
 
-// In a tree starting at a (relative) "root", insert an extension node with the
+// In a tree starting at "root", insert a sequence node underneath "tree".
+// "tree" is assumed to have at most one child.
+//
+// The tree is modified in place.
+void insertSequenceBelow(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* tree);
+
+// In a tree starting at a "relativeRoot", insert an extension node with the
 // given extension above the node identified by "tree".
 //
 // The tree is modified in place.
 // Return a non-owning pointer to the inserted extension node
 // for call chaining purposes.
 detail::ScheduleTree* insertExtensionAbove(
-    detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
     detail::ScheduleTree* tree,
     isl::union_map extension);
 
@@ -178,6 +186,36 @@ inline detail::ScheduleTree* insertNodeBelow(
     detail::ScheduleTree* tree,
     ScheduleTreeUPtr&& node);
 
+// Insert an extension with the given extension map and extension filter node
+// before node "tree".
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
+// then the new statement is inserted in the right position
+// of that sequence node.
+// Otherwise, a new sequence node is inserted.
+// The modification is performed within the subtree at "relativeRoot".
+void insertExtensionBefore(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
+    detail::ScheduleTree* tree,
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode);
+
+// Insert an extension with the given extension map and extension filter node
+// after node "tree".
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
+// then the new statement is inserted in the right position
+// of that sequence node.
+// Otherwise, a new sequence node is inserted.
+// The modification is performed within the subtree at "relativeRoot".
+void insertExtensionAfter(
+    const detail::ScheduleTree* root,
+    detail::ScheduleTree* relativeRoot,
+    detail::ScheduleTree* tree,
+    isl::union_map extension,
+    ScheduleTreeUPtr&& filterNode);
+
 // Given a sequence node in the schedule tree, insert
 // a zero-dimensional extension statement with the given identifier
 // before the child at position "pos".
@@ -191,7 +229,8 @@ void insertExtensionLabelAt(
 
 // Insert a zero-dimensional extension statement with the given identifier
 // before node "tree".
-// If "tree" is a sequence node or a grandchild of a sequence node,
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
 // then the new statement is inserted in the right position
 // of that sequence node.
 // Otherwise, a new sequence node is inserted.
@@ -202,7 +241,8 @@ void insertExtensionLabelBefore(
 
 // Insert a zero-dimensional extension statement with the given identifier
 // after node "tree".
-// If "tree" is a sequence node or a grandchild of a sequence node,
+// If "tree" is a sequence node, an extension node with a sequence child,
+// or a grandchild of a sequence node,
 // then the new statement is inserted in the right position
 // of that sequence node.
 // Otherwise, a new sequence node is inserted.
@@ -263,6 +303,14 @@ isl::multi_union_pw_aff partialScheduleMupa(
 // root to the node.  The root must be a domain element, otherwise no
 // elements would be considered active.
 isl::union_set activeDomainPoints(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node);
+
+// Get the set of domain points active below the given node.  A domain
+// point is active if it was not filtered away on the path from the
+// root to the node.  The root must be a domain element, otherwise no
+// elements would be considered active.
+isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 

@@ -262,6 +262,7 @@ struct ScheduleTree {
   // Returns the ancestors up to relativeRoot in a vector. The first element
   // of the result is relativeRoot, the last element of the result is the
   // father of the "this" ScheduleTree.
+  // If relativeRoot is equal to "this" ScheduleTree, then the result is empty.
   std::vector<ScheduleTree*> ancestors(ScheduleTree* relativeRoot);
   std::vector<const ScheduleTree*> ancestors(
       const ScheduleTree* relativeRoot) const;
@@ -514,10 +515,6 @@ struct ScheduleTree {
 };
 
 } // namespace detail
-
-isl::union_set activeDomainPoints(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
 } // namespace polyhedral
 } // namespace tc
 

@@ -391,34 +391,6 @@ TensorReferenceGroup::referenceIds() const {
 }
 
 namespace {
-bool hasCopyExtensionSingleChild(const ScheduleTree* tree) {
-  if (tree->numChildren() != 1) {
-    return false;
-  }
-
-  auto extensionNode =
-      tree->child({0})->elemAs<detail::ScheduleTreeElemExtension>();
-  if (!extensionNode) {
-    return false;
-  }
-
-  if ((tree->child({0})->numChildren() != 1) &&
-      (tree->child({0, 0})->elemAs<detail::ScheduleTreeElemSequence>())) {
-    return false;
-  }
-
-  for (auto e : isl::UnionAsVector<isl::union_map>(extensionNode->extension_)) {
-    if (!e.has_tuple_name(isl::dim_type::out)) {
-      return false;
-    }
-    if (e.get_tuple_name(isl::dim_type::out) != kReadIdName &&
-        e.get_tuple_name(isl::dim_type::out) != kWriteIdName) {
-      return false;
-    }
-  }
-  return true;
-}
-
 // Construct the set containing all tensor elements.
 //
 // Find the Halide image corresponding to the given tensorId.  Transform its
@@ -524,48 +496,26 @@ ScheduleTree* insertCopiesUnder(
   bool reads = !group.scopedReads().is_empty();
   bool writes = !group.scopedWrites().is_empty();
 
-  if (hasCopyExtensionSingleChild(tree)) {
-    auto extensionNode = tree->child({0});
-    auto sequenceNode = tree->child({0, 0});
-
-    auto& ext =
-        extensionNode->elemAs<detail::ScheduleTreeElemExtension>()->extension_;
-    if (reads) {
-      ext = ext.unite(isl::union_map(readExtension));
-      sequenceNode->insertChild(0, std::move(readFilterNode));
-    }
-    if (writes) {
-      ext = ext.unite(isl::union_map(writeExtension));
-      sequenceNode->appendChild(std::move(writeFilterNode));
-    }
-    return tree;
+  if (tree->numChildren() == 0) {
+    // The point underneath a leaf node cannot be referenced,
+    // so insert a dummy sequence first.  It will be extended
+    // with the reads and/or writes.
+    insertSequenceBelow(root, tree);
   }
 
-  auto mainCompFilter = activeDomainPoints(root, tree).universe();
-  auto mainCompFilterNode =
-      ScheduleTree::makeFilter(mainCompFilter, tree->detachChildren());
-
-  // XXX: I don't really like the syntax-imposed impossibility to create a
-  // sequence node with no children.
-  auto sequenceNode = ScheduleTree::makeSequence(
-      reads ? std::move(readFilterNode) : std::move(mainCompFilterNode));
   if (reads) {
-    sequenceNode->appendChild(std::move(mainCompFilterNode));
+    insertExtensionBefore(
+        root, tree, tree->child({0}), readExtension, std::move(readFilterNode));
   }
   if (writes) {
-    sequenceNode->appendChild(std::move(writeFilterNode));
+    insertExtensionAfter(
+        root,
+        tree,
+        tree->child({0}),
+        writeExtension,
+        std::move(writeFilterNode));
   }
 
-  auto extensionUmap = isl::union_map::empty(promotionSpace.params());
-  if (reads) {
-    extensionUmap = extensionUmap.unite(readExtension);
-  }
-  if (writes) {
-    extensionUmap = extensionUmap.unite(writeExtension);
-  }
-  auto extensionNode =
-      ScheduleTree::makeExtension(extensionUmap, std::move(sequenceNode));
-  tree->appendChild(std::move(extensionNode));
   return tree;
 }
 } // namespace polyhedral
