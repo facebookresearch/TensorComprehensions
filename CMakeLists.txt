@@ -199,12 +199,12 @@ execute_process(COMMAND "python" "-c"
     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
 message(STATUS "PYTHON site packages: \n${PYTHON_SITE_PACKAGES}")
 
-# if PyTorch is installed, we get libATen.so.1 from there, otherwise build it
+# if PyTorch is installed, we get libATen.so from there, otherwise build it
 if (__torch_install EQUAL 0)
   message(STATUS "TORCH INSTALLED, linking to ATen from PyTorch")
   set(ATEN_INCLUDE_DIR "${PYTHON_SITE_PACKAGES}/torch/lib/include")
   include_directories(${ATEN_INCLUDE_DIR})
-  find_library(ATEN_LIBRARIES NAMES libATen.so.1 PATHS ${PYTHON_SITE_PACKAGES}/torch/lib)
+  find_library(ATEN_LIBRARIES NAMES libATen.so PATHS ${PYTHON_SITE_PACKAGES}/torch/lib)
   link_directories("${PYTHON_SITE_PACKAGES}/../../")
   message(STATUS "Found ATen.so file: ${ATEN_LIBRARIES}")
 else()

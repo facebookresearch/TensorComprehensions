@@ -10,8 +10,6 @@ ENV DEBIAN_FRONTEND noninteractive
 # PyTorch conda install
 ARG CUDA_VERSION
 ARG CUDNN_VERSION
-ADD ./common/install_cuda.sh install_cuda.sh
-RUN bash ./install_cuda.sh && rm install_cuda.sh
 ENV LD_LIBRARY_PATH /usr/local/cuda/lib64:/usr/local/cuda/targets/x86_64-linux/lib/stubs/:$LD_LIBRARY_PATH
 ENV PATH /usr/local/cuda/bin:/usr/local/bin:$PATH
 

@@ -69,7 +69,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
       tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
   handle = atCompl.compile("convolution", inputs1, mappingOptions);
   atCompl.run("convolution", inputs1, outputs1, handle);
-  at::Tensor expected = at::conv2d(I, W1, at::IntList({KH, KW}), B);
+  at::Tensor expected = at::conv2d(I, W1, B);
   at::Tensor diff1 = outputs1[1].sub(expected);
   checkRtol(diff1, inputs1, C * KH * KW, 1e-6);
 }

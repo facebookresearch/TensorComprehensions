@@ -400,7 +400,7 @@ void ProductionModel::runMLP1(
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 1e-6;
     std::cout << "Checking expected output relative precision @" << prec;
-    auto O1 = I.mm(W1).add(B1).clamp(0);
+    auto O1 = I.mm(W1).add(B1).clamp_min(0);
     at::Tensor diff = outputs[0].sub(O1);
     checkRtol(diff, inputs, M + 1, prec);
     return true;
@@ -463,11 +463,11 @@ void ProductionModel::runMLP3(
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 3e-7;
     std::cout << "Checking expected output relative precision @" << prec;
-    auto O2 = I.mm(W2.t()).add(B2).clamp(0);
+    auto O2 = I.mm(W2.t()).add(B2).clamp_min(0);
     checkRtol(outputs[0].sub(O2), inputs, N + 1, prec);
-    auto O3 = O2.mm(W3.t()).add(B3).clamp(0);
+    auto O3 = O2.mm(W3.t()).add(B3).clamp_min(0);
     checkRtol(outputs[1].sub(O3), inputs, N * O + 2, prec);
-    auto O4 = O3.mm(W4.t()).add(B4).clamp(0);
+    auto O4 = O3.mm(W4.t()).add(B4).clamp_min(0);
     checkRtol(outputs[2].sub(O4), inputs, N * O * P + 3, prec);
     return true;
   };
@@ -849,8 +849,8 @@ TEST_F(ProductionModel, ATenMLP1Reference) {
   at::Tensor B1 = at::CUDA(at::kFloat).rand({N});
 
   Reference(
-      [&]() { return I.mm(W1).add(B1).clamp(0); },
-      [&](at::Tensor& res) { mm_out(res, I, W1).add(B1).clamp(0); });
+      [&]() { return I.mm(W1).add(B1).clamp_min(0); },
+      [&](at::Tensor& res) { mm_out(res, I, W1).add(B1).clamp_min(0); });
 }
 
 TEST_F(ProductionModel, C2MLP1Reference) {
@@ -959,18 +959,18 @@ TEST_F(ProductionModel, ATenMLP3Reference) {
 
   Reference(
       [&]() {
-        auto O2 = I.mm(W2.t()).add(B2).clamp(0);
-        auto O3 = O2.mm(W3.t()).add(B3).clamp(0);
-        auto O4 = O3.mm(W4.t()).add(B4).clamp(0);
+        auto O2 = I.mm(W2.t()).add(B2).clamp_min(0);
+        auto O3 = O2.mm(W3.t()).add(B3).clamp_min(0);
+        auto O4 = O3.mm(W4.t()).add(B4).clamp_min(0);
         return std::vector<at::Tensor>{O2, O3, O4};
       },
       [&](std::vector<at::Tensor>& res) {
         auto& O2 = res[0];
         auto& O3 = res[1];
         auto& O4 = res[2];
-        mm_out(O2, I, W2.t()).add(B2).clamp(0);
-        mm_out(O3, O2, W3.t()).add(B3).clamp(0);
-        mm_out(O4, O3, W4.t()).add(B4).clamp(0);
+        mm_out(O2, I, W2.t()).add(B2).clamp_min(0);
+        mm_out(O3, O2, W3.t()).add(B3).clamp_min(0);
+        mm_out(O4, O3, W4.t()).add(B4).clamp_min(0);
       });
 }
 

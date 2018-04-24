@@ -339,8 +339,7 @@ TEST_F(GroupConvolution, ATenGroupConvolutionReference) {
           auto input_g = subtensor(I1, 1, G, g);
           auto weight_g = subtensor(W2, 0, G, g);
           auto bias_g = subtensor(B1, 0, G, g);
-          outputs[g] =
-              at::conv2d(input_g, weight_g, at::IntList({KH, KW}), bias_g);
+          outputs[g] = at::conv2d(input_g, weight_g, bias_g);
         }
         // now its time to concatenate the output tensors
         auto output = outputs[0].type().tensor();
