@@ -275,7 +275,7 @@ function install_caffe2() {
       CMAKE_ARGS+=("-DCUDA_ARCH_NAME='Maxwell'")
     fi
 
-    if [[ $(which ccache | wc -c) -ne 0 ]]; then
+    if [[ -L ${CCACHE_WRAPPER_DIR}/nvcc && $($(readlink ${CCACHE_WRAPPER_DIR}/nvcc) --version | grep ccache | wc -c) -ne 0 ]]; then
       CMAKE_ARGS+=("-DCUDA_NVCC_EXECUTABLE=${CCACHE_WRAPPER_DIR}/nvcc")
     fi
 
@@ -467,7 +467,7 @@ function install_halide() {
 }
 
 if ! test -z $gflags || ! test -z $all; then
-  if [[ $(find $CONDA_PREFIX -name libgflags.so) ]]; then
+  if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libgflags.so) ]]; then
       echo "gflags found"
   else
       echo "no files found"
@@ -476,7 +476,7 @@ if ! test -z $gflags || ! test -z $all; then
 fi
 
 if ! test -z $glog || ! test -z $all; then
-    if [[ $(find $CONDA_PREFIX -name libglog.so) ]]; then
+    if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libglog.so) ]]; then
         echo "glog found"
     else
         echo "no files found"
@@ -494,7 +494,7 @@ fi
 
 if ! test -z $caffe2 || ! test -z $all ; then
     if [ "$WITH_CAFFE2" == "ON" ]; then
-        if [[ $(find $CONDA_PREFIX -name libcaffe2_gpu.so) ]]; then
+        if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libcaffe2_gpu.so) ]]; then
             echo "caffe2 found"
         else
             echo "no files found"
@@ -504,7 +504,7 @@ if ! test -z $caffe2 || ! test -z $all ; then
 fi
 
 if ! test -z $isl || ! test -z $all; then
-    if [[ $(find $CONDA_PREFIX -name libisl.so) ]]; then
+    if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libisl.so) ]]; then
         echo "isl found"
     else
         echo "no files found"
@@ -517,7 +517,7 @@ if ! test -z $dlpack || ! test -z $all; then
 fi
 
 if ! test -z $halide || ! test -z $all; then
-    if [[ $(find $CONDA_PREFIX -name libHalide.so) ]]; then
+    if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libHalide.so) ]]; then
         echo "Halide found"
     else
         echo "no files found"
