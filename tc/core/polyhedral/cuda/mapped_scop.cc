@@ -147,13 +147,13 @@ void MappedScop::mapToBlocksAndScaleBand(
 /*
  * Given a filter node in the schedule tree of a mapped scop,
  * insert another filter underneath (if needed) that fixes
- * the thread identifiers in the range [begin, end) to zero.
+ * the remaining thread identifiers starting at "begin" to zero.
  */
 void fixThreadsBelowFilter(
     MappedScop& mscop,
     detail::ScheduleTree* filterTree,
-    size_t begin,
-    size_t end) {
+    size_t begin) {
+  size_t end = mscop.numThreads.view.size();
   if (begin == end) {
     return;
   }
@@ -413,10 +413,9 @@ bool hasOuterSequentialMember(
 // If any separation is needed for mapping reductions to full blocks,
 // then do so first.
 //
-// If "st" has multiple children, then make sure they are mapped
-// to the same number of thread identifiers by fixing those
-// that are originally mapped to fewer identifiers to value zero
-// for the remaining thread identifiers.
+// If "st" has multiple children and if any of those children
+// is mapped to threads, then make sure the other children
+// are also mapped to threads, by fixing the thread identifiers to value zero.
 // If, moreover, "st" is a sequence node and at least one of its
 // children is mapped to threads, then introduce synchronization
 // before and after children that are mapped to threads.
@@ -424,10 +423,6 @@ bool hasOuterSequentialMember(
 // the next iteration of the first child if there may be such
 // a next iteration that is not already covered by synchronization
 // on an outer node.
-// If any synchronization is introduced, then the mapping
-// to threads needs to be completed to all thread ids
-// because the synchronization needs to be introduced outside
-// any mapping to threads.
 size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
   if (needReductionSeparation(st)) {
     st = separateReduction(st);
@@ -441,11 +436,10 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
   auto n = nChildren > 0 ? *std::max_element(nInner.begin(), nInner.end()) : 0;
   if (nChildren > 1) {
     auto needSync = st->elemAs<detail::ScheduleTreeElemSequence>() && n > 0;
-    if (needSync) {
-      n = numThreads.view.size();
-    }
-    for (size_t i = 0; i < nChildren; ++i) {
-      fixThreadsBelowFilter(*this, children[i], nInner[i], n);
+    if (n > 0) {
+      for (size_t i = 0; i < nChildren; ++i) {
+        fixThreadsBelowFilter(*this, children[i], nInner[i]);
+      }
     }
     if (needSync) {
       auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), st);
