@@ -32,6 +32,23 @@
 namespace tc {
 namespace polyhedral {
 namespace {
+
+/*
+ * Is "tree" a mapping filter that maps a thread identifier?
+ */
+bool isThreadMapping(const detail::ScheduleTree* tree) {
+  using namespace detail;
+
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+    for (auto id : filterNode->mappingIds) {
+      if (id.isThreadId()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Map global<->shared copy bands to threads, starting from the innermost
 // loop as it iterates over the last subscript and will result in coalescing.
 void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
@@ -73,14 +90,10 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     // Check that we are not mapping to threads below other thread mappings.
     std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> usedThreads;
     for (auto n : node->ancestors(root)) {
-      if (auto filterNode = n->elemAs<ScheduleTreeElemMappingFilter>()) {
-        for (auto id : filterNode->mappingIds) {
-          if (id.isThreadId()) {
-            throw promotion::PromotionBelowThreadsException(
-                "attempted to map memory copies to threads below "
-                "another thread mapping");
-          }
-        }
+      if (isThreadMapping(n)) {
+        throw promotion::PromotionBelowThreadsException(
+            "attempted to map memory copies to threads below "
+            "another thread mapping");
       }
     }
 
