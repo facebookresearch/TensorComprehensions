@@ -49,7 +49,7 @@ class TcOp : public Operator<Context> {
         OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =
         OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
-    profile_ = OperatorBase::GetSingleArgument<bool>("profile", false);
+    checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     compiled_ = false;
     handle_ = 0;
     ArgumentHelper args(operator_def);
@@ -122,9 +122,8 @@ class TcOp : public Operator<Context> {
       compiled_ = true;
     }
 
-    if (profile_) {
-      executionEngine_->run(
-          handle_, inputDLTensors_, outputDLTensors_, profile_);
+    if (checkSizes_) {
+      executionEngine_->run(handle_, inputDLTensors_, outputDLTensors_);
     } else {
       executionEngine_->uncheckedRun(handle_, inputVoidPtrs_, outputVoidPtrs_);
     }
@@ -137,7 +136,7 @@ class TcOp : public Operator<Context> {
   std::string gradTc_;
   std::string tcName_;
   std::string gradTcName_;
-  bool profile_;
+  bool checkSizes_;
   bool compiled_;
   size_t handle_;
   std::vector<const void*> inputVoidPtrs_;
