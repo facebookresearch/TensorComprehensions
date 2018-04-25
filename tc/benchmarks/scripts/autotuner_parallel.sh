@@ -13,8 +13,8 @@ export TUNER_GPUS=${TUNER_GPUS:="0,1"}
 export GPU_NAME=$(nvidia-smi -L | head -n 1 | cut -d'(' -f 1 | cut -d':' -f 2 | sed "s/ //g")
 
 export TC_PREFIX=$(git rev-parse --show-toplevel)
-export PREFIX=${TC_PREFIX}/benchmarks/results_$(date +%m%d%y)/${GPU_NAME}
-export LOG_DIR=${TC_PREFIX}/benchmarks/results_$(date +%m%d%y)/${GPU_NAME}/logs/${SLURM_ARRAY_JOB_ID}-${SLURM_ARRAY_TASK_ID}
+export PREFIX=${TC_PREFIX}/tc/benchmarks/results_$(date +%m%d%y)/${GPU_NAME}
+export LOG_DIR=${TC_PREFIX}/tc/benchmarks/results_$(date +%m%d%y)/${GPU_NAME}/logs/${SLURM_ARRAY_JOB_ID}-${SLURM_ARRAY_TASK_ID}
 
 mkdir -p ${LOG_DIR}
 mkdir -p ${LOG_DIR}/autotuner
