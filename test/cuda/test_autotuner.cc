@@ -203,6 +203,48 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
   benchmarkKernelOptions(TC, name, inputs, bestOptions);
 }
 
+// see https://github.com/facebookresearch/TensorComprehensions/issues/207
+TEST_F(ATenCompilationUnitTest, DISABLED_FunctionBackwards) {
+  at::Tensor I = at::CUDA(at::kFloat).ones({32, 656, 32, 32});
+  at::Tensor S = at::CUDA(at::kFloat).ones({656});
+  at::Tensor R = at::CUDA(at::kInt).ones({92, 9});
+  at::Tensor R2 = at::CUDA(at::kInt).ones({656});
+  at::Tensor grad = at::CUDA(at::kFloat).ones({32, 92, 32, 32});
+  std::vector<at::Tensor> inputs = {I, S, R, R2, grad};
+  std::vector<at::Tensor> outputs;
+
+  static constexpr auto TC = R"TC(
+def function_grad(float(N,C,H,W) I, float(C) S, int32(L,A) R, int32(C) R2, float(N,L,H,W) output_grad) -> (I_grad, S_grad, R_grad, R2_grad){
+  I_grad(n,c,h,w) = S(c) * output_grad(n,R2(c),h,w)  where c in 0:C
+  S_grad(c) +=! I(n,c,h,w) * output_grad(n,R2(c),h,w)  where c in 0:C
+  R_grad(l,a) = 0 where l in 0:L, a in 0:A
+  R2_grad(c) = 0 where c in 0:C
+}
+  )TC";
+
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+                     .outerScheduleFusionStrategy(tc::FusionStrategy::Min)
+                     .outerScheduleAllowSkewing(false)
+                     .outerSchedulePositiveOrthant(true)
+                     .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+                     .intraTileScheduleAllowSkewing(false)
+                     .intraTileSchedulePositiveOrthant(true)
+                     .tile(21, 2, 328, 21)
+                     .mapToThreads(164)
+                     .mapToBlocks(3)
+                     .unroll(8)
+                     .tileImperfectlyNested(false)
+                     .useSharedMemory(true)
+                     .usePrivateMemory(false)
+                     .unrollCopyShared(true)
+                     .matchLibraryCalls(false);
+  auto name = "function_grad";
+
+  std::string cacheFilename = "";
+  auto bestOptions =
+      autotune(cacheFilename, TC, name, inputs, options, {options});
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
