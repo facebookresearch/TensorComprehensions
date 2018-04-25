@@ -37,6 +37,7 @@ struct CudaCompilationResult {
   std::vector<long> parameters;
   Grid grid;
   Block block;
+  bool useGridSync;
 };
 
 /**

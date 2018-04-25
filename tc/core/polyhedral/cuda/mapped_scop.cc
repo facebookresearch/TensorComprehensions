@@ -882,6 +882,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
       std::move(scop),
       grid,
       block,
+      mappedScop.useGridSync,
       mappedScop.unroll,
       mappedScop.useReadOnlyCache);
   res->insertMappingContext();
@@ -898,7 +899,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 // Before generating code, make a copy of the scop and insert
 // the context of the original scop as top-level
 // context node in schedule tree.
-std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
+std::tuple<std::string, tc::Grid, tc::Block, bool> MappedScop::codegen(
     const std::string& specializedName) const {
   validate(schedule());
 
@@ -922,7 +923,8 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   return std::make_tuple(
       code.str(),
       mappedScopForCodegen->numBlocks,
-      mappedScopForCodegen->numThreads);
+      mappedScopForCodegen->numThreads,
+      mappedScopForCodegen->useGridSync);
 }
 
 // Split out a single reduction tile (in the directions other than
@@ -1001,11 +1003,53 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     const CudaMappingOptions& cudaOptions) {
   using namespace polyhedral::detail;
 
+  // Query the relevant cuda device information
+  auto nbBlocks = 1;
+  for (size_t i = 0; i < cudaOptions.grid.size(); i++) {
+    nbBlocks *= cudaOptions.grid[i];
+  }
+  auto nbThreads = 1;
+  for (size_t i = 0; i < cudaOptions.block.size(); i++) {
+    nbThreads *= cudaOptions.block[i];
+  }
+  size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
+      ? cudaOptions.proto().max_shared_memory()
+      : querySharedMemorySize();
+  size_t maxBlocksPerSM = cudaOptions.proto().has_max_blocks_per_sm()
+      ? cudaOptions.proto().max_blocks_per_sm()
+      : queryBlocksPerSM();
+  size_t maxThreadsPerSM = cudaOptions.proto().has_max_threads_per_sm()
+      ? cudaOptions.proto().max_threads_per_sm()
+      : queryThreadsPerSM();
+  size_t sharedMemorySizePerSM =
+      cudaOptions.proto().has_max_shared_memory_per_sm()
+      ? cudaOptions.proto().max_shared_memory_per_sm()
+      : querySharedMemorySizePerSM();
+  size_t nbOfSM = cudaOptions.proto().has_nb_of_sm()
+      ? cudaOptions.proto().nb_of_sm()
+      : queryNbOfSM();
+  auto blocksPerSM = nbOfSM == 0 ? 0 : ((nbBlocks + nbOfSM - 1) / nbOfSM);
+  auto threadsPerSM = nbThreads * blocksPerSM;
+
+  bool useGridSync = FLAGS_grid_sync;
+  if (useGridSync) {
+    useGridSync &= nbOfSM * maxBlocksPerSM >= nbBlocks;
+    useGridSync &= maxThreadsPerSM > threadsPerSM;
+  }
+
+  if (useGridSync) {
+    LOG(WARNING) << "Use grid sync" << std::endl;
+  }
+  if (FLAGS_grid_sync && !useGridSync) {
+    LOG(WARNING) << "Can't use grid sync" << std::endl;
+  }
+
   const auto& generic = cudaOptions.generic;
   auto mappedScop = std::unique_ptr<MappedScop>(new MappedScop(
       std::move(scopUPtr),
       ::tc::Grid(cudaOptions.grid),
       ::tc::Block(cudaOptions.block),
+      useGridSync,
       generic.proto.unroll(),
       cudaOptions.proto().use_readonly_cache()));
   auto& scop = mappedScop->scop_;
@@ -1022,8 +1066,10 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   TC_CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
   std::vector<detail::ScheduleTree*> tiledBands;
-  if (FLAGS_grid_sync) {
+  if (useGridSync) {
     tiledBands = scop->tileOuterCoincidentBands(generic.tiling);
+    sharedMemorySize =
+        std::min(sharedMemorySize, sharedMemorySizePerSM / blocksPerSM);
   } else {
     tiledBands = {scop->tileOuterBand(generic.tiling)};
   }
@@ -1087,9 +1133,6 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // This may split the outer band, so find the new outer band after
   // promotion.
   if (cudaOptions.proto().use_shared_memory()) {
-    size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
-        ? cudaOptions.proto().max_shared_memory()
-        : querySharedMemorySize();
     // If reductions found, their synchronization requires an opaque cache in
     // shared memory.  Subtract 4k from available shared memory for each
     // reduction found, this is hack based on each thread of max 1024 in the

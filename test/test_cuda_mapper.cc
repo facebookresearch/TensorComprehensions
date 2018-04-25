@@ -90,6 +90,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         std::move(scop),
         Grid{1},
         Block{blockSizes[0], blockSizes[1]},
+        false,
         0,
         false);
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
@@ -113,6 +114,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         std::move(scop),
         Grid{gridSizes[0], gridSizes[1]},
         Block{blockSizes[0], blockSizes[1]},
+        false,
         0,
         false);
 

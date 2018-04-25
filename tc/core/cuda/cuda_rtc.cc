@@ -51,7 +51,8 @@ void CudaRTCFunction::clear() {
 
 std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
     const std::string& name,
-    const std::string& source) {
+    const std::string& source,
+    bool useGridSync) {
   std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
   res->specializedName = name;
   res->cleared_ = false;
@@ -89,7 +90,7 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
                                       "-DNVRTC_CUB=1",
                                       cudaHome.c_str(),
                                       cubHome.c_str()};
-  if (FLAGS_grid_sync) {
+  if (useGridSync) {
     nvrtcts.push_back("--relocatable-device-code=true");
   }
   if (FLAGS_debug_cuda) {
@@ -136,6 +137,7 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, 3>& a) {
 Duration CudaRTCFunction::Launch(
     const std::array<size_t, 3>& grid,
     const std::array<size_t, 3>& block,
+    bool useGridSync,
     unsigned int shared_mem,
     cudaStream_t stream,
     std::vector<long> params,
@@ -147,7 +149,7 @@ Duration CudaRTCFunction::Launch(
   if (perGpuModule_.count(dev) == 0) {
     CUmodule module;
     CUfunction function;
-    if (FLAGS_grid_sync) {
+    if (useGridSync) {
       CUlinkState linkState;
       TC_CUDA_DRIVERAPI_ENFORCE(cuLinkCreate(0, 0, 0, &linkState));
       TC_CUDA_DRIVERAPI_ENFORCE(cuLinkAddFile(
@@ -198,7 +200,7 @@ Duration CudaRTCFunction::Launch(
   unsigned int by = block[1];
   unsigned int bz = block[2];
   auto launch = [&]() {
-    if (FLAGS_grid_sync) {
+    if (useGridSync) {
       TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchCooperativeKernel(
           perGpuKernel_.at(dev),
           gx,
