@@ -115,8 +115,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
           mscop.numThreads.view[t]);
       ++t;
     }
-    mscop.mapRemaining<mapping::ThreadId>(
-        bandNode, t, mscop.numThreads.view.size());
+    mscop.mapRemaining<mapping::ThreadId>(bandNode, t);
 
     // Unroll if requested.
     if (unroll) {

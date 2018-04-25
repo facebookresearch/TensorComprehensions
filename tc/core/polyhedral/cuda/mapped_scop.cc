@@ -91,13 +91,26 @@ isl::union_set makeFixRemainingZeroFilter(
 bool anyNonCoincidentMember(const detail::ScheduleTreeElemBand* band) {
   return band->nOuterCoincident() < band->nMember();
 }
+
+/*
+ * Return a reference to the mapping sizes
+ * for the mapping of type "MappingTypeId".
+ */
+template <typename MappingTypeId>
+const CudaDim& mappingSize(const MappedScop* mscop);
+template <>
+const CudaDim& mappingSize<mapping::BlockId>(const MappedScop* mscop) {
+  return mscop->numBlocks;
+}
+template <>
+const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
+  return mscop->numThreads;
+}
 } // namespace
 
 template <typename MappingTypeId>
-void MappedScop::mapRemaining(
-    detail::ScheduleTree* tree,
-    size_t nMapped,
-    size_t nToMap) {
+void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
+  size_t nToMap = mappingSize<MappingTypeId>(this).view.size();
   if (nMapped >= nToMap) {
     return;
   }
@@ -140,7 +153,7 @@ void MappedScop::mapToBlocksAndScaleBand(
   for (size_t i = 0; i < nBlocksToMap; ++i) {
     band = map(band, i, mapping::BlockId::makeId(i));
   }
-  mapRemaining<mapping::BlockId>(band, nBlocksToMap, numBlocks.view.size());
+  mapRemaining<mapping::BlockId>(band, nBlocksToMap);
   bandScale(band, tileSizes);
 }
 
@@ -462,7 +475,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       // because we cannot map parent bands anyway.
       auto nMapped = mapToThreads(st);
       if (nMapped > 0) {
-        mapRemaining<mapping::ThreadId>(st, nMapped, numThreads.view.size());
+        mapRemaining<mapping::ThreadId>(st, nMapped);
         markUnroll(scop_->scheduleRoot(), st, unroll);
         return numThreads.view.size();
       }
@@ -645,8 +658,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     auto child = outerBand->child({0});
     size_t numMappedInnerThreads =
         mappedScop->mapInnermostBandsToThreads(child);
-    mappedScop->mapRemaining<mapping::ThreadId>(
-        child, numMappedInnerThreads, mappedScop->numThreads.view.size());
+    mappedScop->mapRemaining<mapping::ThreadId>(child, numMappedInnerThreads);
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
         << "After mapping to threads:" << std::endl
         << *mappedScop->schedule();
