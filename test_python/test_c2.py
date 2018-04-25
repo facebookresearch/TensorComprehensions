@@ -17,8 +17,9 @@ import unittest, os
 import numpy as np
 import hypothesis.strategies as st
 import caffe2.python.hypothesis_test_util as hu
+import tensor_comprehensions as tc
 
-from hypothesis import given
+from hypothesis import given, settings
 from caffe2.python import core, dyndep
 
 
@@ -28,6 +29,11 @@ if CONDA_PREFIX:
 else:
     dyndep.InitOpsLibrary("@/tc/tc:tc_c2")
 
+MATMUL_LANG = """
+def matmul(float(M,N) A, float(N,K) B) -> (output) {
+output(i, j) +=! A(i, kk) * B(kk, j)
+}
+"""
 
 class TestCaffe2(hu.HypothesisTestCase):
     @given(n=st.integers(1, 128),
@@ -38,14 +44,6 @@ class TestCaffe2(hu.HypothesisTestCase):
     def test_matmul(self, n, m, k, seed, gc, dc):
         np.random.seed(seed)
 
-        tc_forward = """
-        def matmul(float(M,N) A, float(N,K) B) -> (output) {
-          output(i, j) +=! A(i, kk) * B(kk, j)
-        }
-        """
-
-        # TODO: (prigoyal) serialize the options
-        # options = Options("mlp")
         X = np.random.rand(m, k).astype(np.float32)
         W = np.random.rand(k, n).astype(np.float32)
 
@@ -54,7 +52,7 @@ class TestCaffe2(hu.HypothesisTestCase):
 
         op = core.CreateOperator(
             "TcOp", ["X", "Y"], "out",
-            tcDef=tc_forward,
+            tcDef=MATMUL_LANG,
             tcName="matmul",
         )
 
@@ -65,6 +63,42 @@ class TestCaffe2(hu.HypothesisTestCase):
             reference=ref,
         )
 
+    @given(n=st.integers(1, 128),
+           m=st.integers(1, 128),
+           k=st.integers(1, 128),
+           seed=st.integers(min_value=0, max_value=2**32 - 1),
+           **hu.gcs_gpu_only)
+    @settings(max_examples=2)
+    def test_matmul_tune_and_run(self, n, m, k, seed, gc, dc):
+        matmul = tc.define(MATMUL_LANG, name="matmul")
+
+        mapping_options = matmul.autotune(
+            (n, k), (k, m),
+            generations=1,
+            threads=32,
+            pop_size=2,
+            tuner_min_launch_total_threads=1,
+        )
+
+        X = np.random.rand(m, k).astype(np.float32)
+        W = np.random.rand(k, n).astype(np.float32)
+
+        def ref(X, W):
+            return [np.dot(X, W)]
+
+        op = core.CreateOperator(
+            "TcOp", ["X", "Y"], "out",
+            tcDef=MATMUL_LANG,
+            tcName="matmul",
+            mappingOptions=mapping_options.serialize(),
+        )
+
+        self.assertReferenceChecks(
+            device_option=gc,
+            op=op,
+            inputs=[X, W],
+            reference=ref,
+        )
 
 if __name__ == '__main__':
     unittest.main()
