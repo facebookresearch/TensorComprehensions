@@ -490,6 +490,20 @@ struct Sema {
       }
     }
 
+    // After checking rhs and before creating lhs, we check if it is a reduction
+    // without initialization (i.e., reduction operator without "!" suffix, and
+    // lhs not defined previously).
+    if (isUninitializedReductionOperation(stmt.assignment()) &&
+        nullptr == lookup(stmt.ident(), false)) {
+      ErrorReport err(stmt);
+      std::string tk = kindToToken(stmt.assignment()->kind());
+      err << "Reduction without initialization. If " << stmt.ident().name()
+          << " is not pre-initialized before calling the TC function,"
+          << " consider using the !-suffixed reduction operator " << tk
+          << "! instead of " << tk;
+      warn(err);
+    }
+
     auto type = TensorType::create(
         stmt.range(),
         scalar_type,
@@ -543,6 +557,17 @@ struct Sema {
     let_env.clear();
 
     return result;
+  }
+  static bool isUninitializedReductionOperation(TreeRef assignment) {
+    switch (assignment->kind()) {
+      case TK_PLUS_EQ:
+      case TK_TIMES_EQ:
+      case TK_MIN_EQ:
+      case TK_MAX_EQ:
+        return true;
+      default:
+        return false;
+    }
   }
   bool isNotInplace(TreeRef assignment) {
     switch (assignment->kind()) {
