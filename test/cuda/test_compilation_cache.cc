@@ -28,384 +28,6 @@
 
 #include "test_harness_aten_cuda.h"
 
-class CudaCacheTest : public ::testing::Test {
- protected:
-  void SetUp() {
-    tc::CudaCache::enableCache();
-    ASSERT_TRUE(tc::CudaCache::cacheEnabled());
-    tc::CudaCache::getCache()->clear();
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0u);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
-
-    inputs.resize(3);
-    for (auto& input : inputs) {
-      input.ndim = 2;
-      input.shape = new int64_t[2];
-      input.shape[0] = 5;
-      input.shape[1] = 6;
-      input.strides = nullptr;
-    }
-    inputs[1].ndim = 0;
-    inputs[2].ndim = 0;
-  }
-
-  void TearDown() {
-    tc::CudaCache::disableCache();
-    ASSERT_FALSE(tc::CudaCache::cacheEnabled());
-    for (auto& input : inputs) {
-      delete[] input.shape;
-    }
-  }
-  std::vector<DLTensor> inputs;
-
-  std::vector<const DLTensor*> InputPtrs() const {
-    std::vector<const DLTensor*> ptrs;
-    for (const auto& input : inputs) {
-      ptrs.push_back(&input);
-    }
-    return ptrs;
-  }
-};
-
-TEST_F(CudaCacheTest, EntrySameKeyDifferentValue) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "ker000",
-      {0, 0, 1},
-      tc::Grid(std::vector<size_t>{1, 1, 1}),
-      tc::Block(std::vector<size_t>{1, 1, 1}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  ASSERT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-          "kernel0",
-          "ker000",
-          {0, 0, 1},
-          tc::Grid(std::vector<size_t>{2, 1, 1}),
-          tc::Block(std::vector<size_t>{1, 2, 1}),
-          options,
-          inputPtrs,
-          outputPtrs,
-          "source1",
-          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
-      tc::CacheEntrySameKeyDifferentValue);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
-}
-
-TEST_F(CudaCacheTest, DifferentIDs) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "ker000",
-      {0, 0, 1},
-      tc::Grid(std::vector<size_t>{1, 1, 1}),
-      tc::Block(std::vector<size_t>{1, 1, 1}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel1",
-      "ker111",
-      {1, 1, 0},
-      tc::Grid(std::vector<size_t>{2, 1, 1}),
-      tc::Block(std::vector<size_t>{1, 2, 1}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  auto ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel0", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source0");
-  ASSERT_EQ(ret->grid, tc::Grid({1, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 1, 1}));
-  ASSERT_EQ(ret->specializedName, "ker000");
-  {
-    auto params = std::vector<int>{0, 0, 1};
-    ASSERT_EQ(ret->parameters, params);
-  }
-
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel1", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source1");
-  ASSERT_EQ(ret->grid, tc::Grid({2, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 2, 1}));
-  ASSERT_EQ(ret->specializedName, "ker111");
-  {
-    auto params = std::vector<int>{1, 1, 0};
-    ASSERT_EQ(ret->parameters, params);
-  }
-
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel2", options, inputPtrs, outputPtrs);
-  ASSERT_FALSE(ret);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
-}
-
-TEST_F(CudaCacheTest, DifferentOptions) {
-  auto options0 = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options0,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  auto options1 = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 2, 1}}),
-      options1,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  auto ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options0, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source0");
-  ASSERT_EQ(ret->grid, tc::Grid({1, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 1, 1}));
-
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options1, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source1");
-  ASSERT_EQ(ret->grid, tc::Grid({2, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 2, 1}));
-
-  auto options2 = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options2, inputPtrs, outputPtrs);
-  ASSERT_FALSE(ret);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
-}
-
-TEST_F(CudaCacheTest, DifferentInputs) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  auto s = inputs[0].shape[0];
-  inputs[0].shape[0] = 42;
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 2, 1}}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  inputs[0].shape[0] = s;
-  auto ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source0");
-  ASSERT_EQ(ret->grid, tc::Grid({1, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 1, 1}));
-
-  inputs[0].shape[0] = 42;
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source1");
-  ASSERT_EQ(ret->grid, tc::Grid({2, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 2, 1}));
-
-  inputs[0].shape[0] = 44;
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel", options, inputPtrs, outputPtrs);
-  ASSERT_FALSE(ret);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
-}
-
-TEST_F(CudaCacheTest, DoubleInsertion) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-          "kernel",
-          "",
-          {},
-          tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-          tc::Block(std::vector<size_t>{{1, 1, 1}}),
-          options,
-          inputPtrs,
-          outputPtrs,
-          "source1",
-          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
-      tc::CacheEntrySameKeyDifferentValue);
-
-  EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-          "kernel",
-          "",
-          {},
-          tc::Grid(std::vector<size_t>{{2, 1, 1}}),
-          tc::Block(std::vector<size_t>{{1, 1, 1}}),
-          options,
-          inputPtrs,
-          outputPtrs,
-          "source0",
-          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
-      tc::CacheEntrySameKeyDifferentValue);
-
-  EXPECT_THROW(
-      tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-          "kernel",
-          "",
-          {},
-          tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-          tc::Block(std::vector<size_t>{{1, 2, 1}}),
-          options,
-          inputPtrs,
-          outputPtrs,
-          "source0",
-          tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr())),
-      tc::CacheEntrySameKeyDifferentValue);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 1u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
-}
-
-TEST_F(CudaCacheTest, Serialization) {
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  auto inputPtrs = InputPtrs();
-  auto outputPtrs = InputPtrs();
-
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel1",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{2, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 2, 1}}),
-      options,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  auto buf = tc::CudaCache::getCache()->toProtobuf();
-
-  tc::CudaCache::loadCacheFromProtobuf(buf);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
-
-  auto ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel0", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source0");
-  ASSERT_EQ(ret->grid, tc::Grid({1, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 1, 1}));
-
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel1", options, inputPtrs, outputPtrs);
-  ASSERT_TRUE(ret);
-  ASSERT_EQ(ret->source, "source1");
-  ASSERT_EQ(ret->grid, tc::Grid({2, 1, 1}));
-  ASSERT_EQ(ret->block, tc::Block({1, 2, 1}));
-
-  ret = tc::CudaCache::getCache()->retrieveKernel(
-      "kernel2", options, inputPtrs, outputPtrs);
-  ASSERT_FALSE(ret);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 3);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
-}
-
 class OptionsCacheTest : public ::testing::Test {
  protected:
   void SetUp() {
@@ -816,219 +438,6 @@ TEST_F(OptionsCacheTest, Serialization) {
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 }
 
-TEST(
-    CudaAndOptionsCacheInteraction,
-    RemoveFromCudaCacheEntriesNotInOptionsCache) {
-  tc::OptionsCache::enableCache();
-  tc::OptionsCache::getCache()->clear();
-  tc::CudaCache::enableCache();
-  tc::CudaCache::getCache()->clear();
-
-  auto options0 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({1});
-  auto options1 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({2});
-  auto options2 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({3});
-  auto options3 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({4});
-  auto options4 =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions().mapToBlocks({5});
-
-  std::vector<DLTensor> inputs;
-  inputs.resize(3);
-  for (auto& input : inputs) {
-    input.ndim = 2;
-    input.shape = new int64_t[2];
-    input.shape[0] = 5;
-    input.shape[1] = 6;
-    input.strides = nullptr;
-  }
-  inputs[1].ndim = 0;
-  inputs[2].ndim = 0;
-
-  tc::ScopeGuard g([&]() {
-    for (auto& input : inputs) {
-      delete[] input.shape;
-    }
-  });
-
-  auto toPtrs = [&]() {
-    std::vector<const DLTensor*> ptrs;
-    for (const auto& input : inputs) {
-      ptrs.push_back(&input);
-    }
-    return ptrs;
-  };
-
-  auto inputPtrs = toPtrs();
-  auto outputPtrs = toPtrs();
-
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options0, inputPtrs, outputPtrs, std::chrono::microseconds(3));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options0,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options1, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options1,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel0", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel0",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options2,
-      inputPtrs,
-      outputPtrs,
-      "source2",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options2, inputPtrs, outputPtrs, std::chrono::microseconds(4));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel1",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options2,
-      inputPtrs,
-      outputPtrs,
-      "source2",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel1", options3, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel1",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options3,
-      inputPtrs,
-      outputPtrs,
-      "source3",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel2", options4, inputPtrs, outputPtrs, std::chrono::microseconds(5));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel2",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options4,
-      inputPtrs,
-      outputPtrs,
-      "source4",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options0, inputPtrs, outputPtrs, std::chrono::microseconds(2));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel3",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options0,
-      inputPtrs,
-      outputPtrs,
-      "source0",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options1, inputPtrs, outputPtrs, std::chrono::microseconds(6));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel3",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options1,
-      inputPtrs,
-      outputPtrs,
-      "source1",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options3, inputPtrs, outputPtrs, std::chrono::microseconds(5));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel3",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options3,
-      inputPtrs,
-      outputPtrs,
-      "source3",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  tc::OptionsCache::getCache()->recordRuntime(
-      "kernel3", options4, inputPtrs, outputPtrs, std::chrono::microseconds(1));
-  tc::CudaCache::getCache()->cacheKernel(tc::CudaCachedEntry(
-      "kernel3",
-      "",
-      {},
-      tc::Grid(std::vector<size_t>{{1, 1, 1}}),
-      tc::Block(std::vector<size_t>{{1, 1, 1}}),
-      options4,
-      inputPtrs,
-      outputPtrs,
-      "source4",
-      tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-
-  tc::OptionsCache::getCache()->keepOnlyBestCandidates(1);
-  tc::removeFromCudaCacheEntriesNotInOptionsCache(
-      *tc::CudaCache::getCache(), *tc::OptionsCache::getCache());
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
-
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel0", options0, inputPtrs, outputPtrs));
-  ASSERT_TRUE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel0", options1, inputPtrs, outputPtrs));
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel0", options2, inputPtrs, outputPtrs));
-
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel1", options2, inputPtrs, outputPtrs));
-  ASSERT_TRUE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel1", options3, inputPtrs, outputPtrs));
-
-  ASSERT_TRUE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel2", options4, inputPtrs, outputPtrs));
-
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel3", options0, inputPtrs, outputPtrs));
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel3", options1, inputPtrs, outputPtrs));
-  ASSERT_FALSE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel3", options3, inputPtrs, outputPtrs));
-  ASSERT_TRUE(tc::CudaCache::getCache()->retrieveKernel(
-      "kernel3", options4, inputPtrs, outputPtrs));
-}
-
 /*
  *class FCReluTester {
  * public:
@@ -1130,14 +539,6 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
 class CompilationCacheTest : public ::testing::Test {
  protected:
   void SetUp() {
-    tc::CudaCache::enableCache();
-    ASSERT_TRUE(tc::CudaCache::cacheEnabled());
-    tc::CudaCache::getCache()->clear();
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 0u);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
-
     tc::OptionsCache::enableCache();
     ASSERT_TRUE(tc::OptionsCache::cacheEnabled());
     tc::OptionsCache::getCache()->clear();
@@ -1147,22 +548,9 @@ class CompilationCacheTest : public ::testing::Test {
     ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 
-    tc::ManualCudaCache::enableCache();
-    ASSERT_TRUE(tc::ManualCudaCache::cacheEnabled());
-    tc::ManualCudaCache::getCache()->clear();
-    ASSERT_EQ(tc::ManualCudaCache::getCache()->size(), 0u);
-    ASSERT_EQ(tc::ManualCudaCache::getCache()->numberAttemptedRetrievals, 0);
-    ASSERT_EQ(tc::ManualCudaCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::ManualCudaCache::getCache()->numberCacheAttemps, 0);
-
     // test0.Run();
     test1.Run();
     test2.Run();
-
-    ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 2);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-    ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
 
     ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
     ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
@@ -1172,8 +560,6 @@ class CompilationCacheTest : public ::testing::Test {
   }
 
   void TearDown() {
-    tc::CudaCache::disableCache();
-    ASSERT_FALSE(tc::CudaCache::cacheEnabled());
     tc::OptionsCache::disableCache();
     ASSERT_FALSE(tc::OptionsCache::cacheEnabled());
   }
@@ -1192,11 +578,6 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccess) {
 
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
   test2.Run();
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
 
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
@@ -1227,11 +608,6 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 2);
-
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
@@ -1248,11 +624,6 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCache) {
 
   ConvolutionTester test2{2, 1, 1, 2, 2, 1, 1};
   test2.Run();
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
@@ -1279,11 +650,6 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
   // fut0.get();
   fut1.get();
   fut2.get();
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
@@ -1313,11 +679,6 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
                 .mapToBlocks(1, 1)
                 .unroll(1);
   test2.Run(options);
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
 
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
@@ -1358,11 +719,6 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
   fut1.get();
   fut2.get();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 4u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 4);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 4);
-
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 4u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
@@ -1372,18 +728,9 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
 
 TEST_F(CompilationCacheTest, Serialization) {
   {
-    auto buf = tc::CudaCache::getCache()->toProtobuf();
-    tc::CudaCache::loadCacheFromProtobuf(buf);
-  }
-  {
     auto buf = tc::OptionsCache::getCache()->toProtobuf();
     tc::OptionsCache::loadCacheFromProtobuf(buf);
   }
-
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 0);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
 
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
@@ -1402,11 +749,6 @@ TEST_F(CompilationCacheTest, Serialization) {
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
   test2.Run();
 
-  ASSERT_EQ(tc::CudaCache::getCache()->size(), 2u);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberAttemptedRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberSuccessfulRetrievals, 2);
-  ASSERT_EQ(tc::CudaCache::getCache()->numberCacheAttemps, 0);
-
   ASSERT_EQ(tc::OptionsCache::getCache()->size(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->totalSize(), 2u);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
@@ -1420,7 +762,6 @@ def add(float(N) A, float(N) B) -> (output) {
     output(n) = A(n) + B(n)
 })";
 
-  tc::ManualCudaCache::enableCache();
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(tc);
   std::vector<at::Tensor> outputs;
@@ -1441,20 +782,6 @@ __global__ void add100(float* __restrict__ output, const float* __restrict__ A, 
 }
 }
 )CUDA";
-  {
-    std::vector<const DLTensor*> outputs{tensorsPair.first[0]};
-
-    tc::ManualCudaCache::getCache()->cacheKernel(tc::ManualCudaCachedEntry(
-        "add",
-        "add100",
-        {},
-        tc::Grid(std::vector<size_t>{1, 1, 1}),
-        tc::Block(std::vector<size_t>{100, 1, 1}),
-        tensorsPair.first,
-        outputs,
-        cudaSource,
-        tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-  }
 
   auto handle = atCompl.compile("add", inputs, options);
   atCompl.run("add", inputs, outputs, handle, false);

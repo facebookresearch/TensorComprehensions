@@ -347,13 +347,6 @@ class TcCompilationUnit(object):
         handle = self.compile(name, inputs, **kwargs)
         return self.run(handle, name, inputs, **kwargs)
 
-    def manual_cuda_injection(
-        self, name, injected_kernel_name, cuda_code, inputs, grid, block
-    ):
-        self.cu.inject_cuda(
-            name, injected_kernel_name, cuda_code, inputs, grid, block
-        )
-
 
 ###############################################################################
 # User Facing Proxy object
@@ -422,16 +415,6 @@ class TcUnit(object):
                  from file cache + '_backward'. For the backward, separate filename
                  is not accepted for now.
 
-            grid (int, 3D list):
-                If :attr:`inject_kernel` is `True`, then user
-                needs to specify the kernel grid options for running it. TC
-                will simply use those options and will not add any optimizations
-
-            block (int, 3D list):
-                If :attr:`inject_kernel` is `True`, then user
-                needs to specify the kernel `block` options for running it. TC
-                will simply use those options and will not add any optimizations
-
             reorder_function (optional):
                 If :attr:`training` is set to true in :attr:`define` call,
                 then TC infers the inputs for backward layer for compilation
@@ -477,13 +460,6 @@ class TcUnit(object):
                 kwargs["type"] = "forward"
                 input_tensors = unpack_variables(list(inputs))
 
-                if "inject_kernel" in kwargs and "cuda_code" in kwargs:
-                    assert "grid" in kwargs and "block" in kwargs, \
-                        "For manual cuda injection, please specify the grid and block settings"
-                    self.cu.manual_cuda_injection(
-                        name, kwargs["inject_kernel"], kwargs["cuda_code"],
-                        input_tensors, kwargs["grid"], kwargs["block"]
-                    )
                 handle_forward = self.cu.compile(name, input_tensors, **kwargs)
                 tc_info["forward_name"], tc_info["handle_forward"] = name, handle_forward
 
@@ -641,15 +617,6 @@ def define(lang, **kwargs_define):
             if your TC uses scalars, for example strides in convolutions,
             you should format the string with the scalar values. For that,
             pass the python dictionary containing scalar name and its value.
-
-        inject_kernel (string, optional):
-            If you want to manually inject an external CUDA code
-            for a TC definition,  set :attr:`inject_kernel` to the name
-            of your kernel you want to inject.
-
-        cuda_code (string, optional):
-            If you want to manually inject an external CUDA code for a TC definition,
-            then set :attr:`cuda_code` to the CUDA code string you want to inject.
 
     Returns:
         TC layer that you can run by passing the tensors. If :attr:`training` is True,

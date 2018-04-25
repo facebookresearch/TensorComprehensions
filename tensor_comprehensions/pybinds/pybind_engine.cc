@@ -26,7 +26,6 @@
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -107,36 +106,6 @@ PYBIND11_MODULE(tc, m) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
             std::vector<at::Tensor> atOutputs = getATenTensors(outputs, dlpack);
             instance.uncheckedRun(atInputs, atOutputs, handle);
-          })
-      .def(
-          "inject_cuda",
-          [dlpack](
-              ATenCudaCompilationUnit& instance,
-              const std::string& name,
-              const std::string& injectedKernelName,
-              const std::string& cudaSource,
-              py::list& inputs,
-              std::vector<uint64_t> grid,
-              std::vector<uint64_t> block) {
-            tc::ManualCudaCache::enableCache();
-            tc::CudaMappingOptions options =
-                tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            auto tensorsPair = tc::toConstDlpackTensors(atInputs);
-            tc::ScopeGuard g(
-                [&]() { tc::deleteDlmTensors(tensorsPair.second); });
-            auto outTensorInfo = instance.inferOutputTensorInfo(name, atInputs);
-            tc::ManualCudaCache::getCache()->cacheKernel(
-                tc::ManualCudaCachedEntry(
-                    name,
-                    injectedKernelName,
-                    {},
-                    tc::Grid(grid),
-                    tc::Block(block),
-                    tensorsPair.first,
-                    outTensorInfo,
-                    cudaSource,
-                    tc::CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
           });
 }
 

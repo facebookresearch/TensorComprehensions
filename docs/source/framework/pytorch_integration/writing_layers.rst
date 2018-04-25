@@ -219,48 +219,6 @@ adopt whatever feels more convenient.
     inp = torch.ones(1, 1, 4, 4).cuda()
     out = avgpool(inp)
 
-
-Manually injecting external CUDA code
--------------------------------------
-
-If you have an external efficient CUDA code that you want to use rather than
-the CUDA code that TC generates, you can inject your code easily. For this,
-you need to create a string which has the CUDA code you want to inject and you
-need to pass the name of the kernel and the CUDA code string to the :code:`tc.define`
-call. For example:
-
-.. code-block:: python
-
-    import tensor_comprehensions as tc
-    import torch
-    lang = """
-    def add(float(N) A, float(N) B) -> (output) {
-        output(n) = A(n) + B(n)
-    }
-    """
-
-    cuda_code = """
-    extern "C"{
-    __global__ void my_add(float* __restrict__ output, const float* __restrict__ A, const float* __restrict B)
-    {
-        int t = threadIdx.x;
-        output[t] = A[t] + B[t];
-    }
-    }
-    """
-
-    add = tc.define(lang, name="add", inject_kernel="my_add", cuda_code=cuda_code)
-    a, b = torch.randn(100).cuda(), torch.randn(100).cuda()
-    out = add(a, b, grid=[1, 1, 1], block=[100, 1, 1])
-
-.. note::
-
-    In such cases, please note that TC doesn't modify the injected CUDA kernel. It will
-    simply run the kernel injected as is and TC will also not guarantee the performance
-    of the kernel. User needs to specify the :code:`grid` and :code:`block` values
-    when running the layer and TC will simply use those settings.
-
-
 Built-in Functions
 ------------------
 

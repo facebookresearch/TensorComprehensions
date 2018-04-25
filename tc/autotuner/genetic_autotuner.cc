@@ -43,10 +43,8 @@ namespace {
 
 void enableOrLoadCache(const std::string& filename) {
   tc::OptionsCache::enableCache();
-  tc::CudaCache::enableCache();
   if (!filename.empty()) {
     tc::OptionsCache::loadCacheFromProtobuf(tc::makeOptionsFilename(filename));
-    tc::CudaCache::loadCacheFromProtobuf(tc::makeCudaFilename(filename));
   }
 }
 } // namespace
@@ -62,9 +60,6 @@ void GeneticAutotuner::storeCaches(const std::string& filename) {
     tc::OptionsCache::dumpCacheToProtobuf(tc::makeOptionsFilename(filename));
 
     tc::OptionsCache::getCache()->keepOnlyBestCandidates(1);
-    tc::removeFromCudaCacheEntriesNotInOptionsCache(
-        *tc::CudaCache::getCache(), *tc::OptionsCache::getCache());
-    tc::CudaCache::dumpCacheToProtobuf(tc::makeCudaFilename(filename));
   }
 }
 

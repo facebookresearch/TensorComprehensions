@@ -25,48 +25,29 @@
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
 
-using OutputsAndCode = std::pair<std::vector<at::Tensor>, std::string>;
-
 ///////////////////////////////////////////////////////////////////////////////
 // Base unit test class
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType, typename CacheType>
+template <typename TcExecutorType>
 struct TcMapperTest : public ::testing::Test {
   uint32_t M = 165, N = 197, K = 227;
   int B = 100, D = 1000;
   int C1 = 512, C2 = 8, C3 = 2, H = 28, W = 28;
 
   template <typename CheckFunction>
-  OutputsAndCode Check(
+  std::vector<at::Tensor> Check(
       const std::string& tc,
       const std::string& name,
       const typename TcExecutorType::MappingOptionsType& mappingOptions,
       const std::vector<at::Tensor> inputs,
       CheckFunction checkFun) {
-    CacheType::enableCache();
-
     std::vector<at::Tensor> outputs;
     tc::ATenCompilationUnit<TcExecutorType> atCompl;
     atCompl.define(tc);
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);
     checkFun(inputs, outputs);
-
-    auto inputDLTensorsPair = tc::toConstDlpackTensors(inputs);
-    auto outputDLTensorsPair = tc::toConstDlpackTensors(outputs);
-    tc::ScopeGuard sg([&]() {
-      tc::deleteDlmTensors(inputDLTensorsPair.second);
-      tc::deleteDlmTensors(outputDLTensorsPair.second);
-    });
-    // Check that cache insertion worked properly (with canonicalized TC)
-    auto cached = CacheType::getCache()->retrieveKernel(
-        lang::canonicalTc(tc),
-        mappingOptions,
-        inputDLTensorsPair.first,
-        outputDLTensorsPair.first);
-    EXPECT_FALSE(cached == nullptr);
-
-    return std::make_pair(std::move(outputs), std::move(cached->source));
+    return std::move(outputs);
   }
 };
 
@@ -74,13 +55,12 @@ struct TcMapperTest : public ::testing::Test {
 // 1-D reduction
 //   C +=! A(r_m)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType, typename CacheType>
-struct TcMapper1DReductionTest
-    : public TcMapperTest<TcExecutorType, CacheType> {
-  using TcMapperTest<TcExecutorType, CacheType>::Check;
-  using TcMapperTest<TcExecutorType, CacheType>::M;
+template <typename TcExecutorType>
+struct TcMapper1DReductionTest : public TcMapperTest<TcExecutorType> {
+  using TcMapperTest<TcExecutorType>::Check;
+  using TcMapperTest<TcExecutorType>::M;
 
-  OutputsAndCode Check(
+  std::vector<at::Tensor> Check(
       at::Tensor A,
       const typename TcExecutorType::MappingOptionsType& mappingOptions,
       uint32_t version = 0) {
@@ -128,14 +108,13 @@ def sum1D(float(M) A) -> (C) {
 // 2-D reduction
 //   C(m) +=! A(m, r_n)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType, typename CacheType>
-struct TcMapper2DReductionTest
-    : public TcMapperTest<TcExecutorType, CacheType> {
-  using TcMapperTest<TcExecutorType, CacheType>::Check;
-  using TcMapperTest<TcExecutorType, CacheType>::M;
-  using TcMapperTest<TcExecutorType, CacheType>::N;
+template <typename TcExecutorType>
+struct TcMapper2DReductionTest : public TcMapperTest<TcExecutorType> {
+  using TcMapperTest<TcExecutorType>::Check;
+  using TcMapperTest<TcExecutorType>::M;
+  using TcMapperTest<TcExecutorType>::N;
 
-  OutputsAndCode Check(
+  std::vector<at::Tensor> Check(
       at::Tensor A,
       const typename TcExecutorType::MappingOptionsType& mappingOptions,
       bool skipCheck = false) {
@@ -163,14 +142,14 @@ def sum2D(float(M, N) A) -> (C) {
 // Matmul tests
 //   C(m, n) +=! A(m, r_k) * B(r_k, n)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType, typename CacheType>
-struct TcMapperMatmulTest : public TcMapperTest<TcExecutorType, CacheType> {
-  using TcMapperTest<TcExecutorType, CacheType>::Check;
-  using TcMapperTest<TcExecutorType, CacheType>::K;
-  using TcMapperTest<TcExecutorType, CacheType>::M;
-  using TcMapperTest<TcExecutorType, CacheType>::N;
+template <typename TcExecutorType>
+struct TcMapperMatmulTest : public TcMapperTest<TcExecutorType> {
+  using TcMapperTest<TcExecutorType>::Check;
+  using TcMapperTest<TcExecutorType>::K;
+  using TcMapperTest<TcExecutorType>::M;
+  using TcMapperTest<TcExecutorType>::N;
 
-  OutputsAndCode Check(
+  std::vector<at::Tensor> Check(
       at::Tensor A,
       at::Tensor B,
       const typename TcExecutorType::MappingOptionsType& mappingOptions) {
@@ -195,15 +174,14 @@ def matmul(float(M, K) A, float(K, N) B) -> (C) {
 // Batch Matmul tests
 //   Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
 ///////////////////////////////////////////////////////////////////////////////
-template <typename TcExecutorType, typename CacheType>
-struct TcMapperBatchMatmulTest
-    : public TcMapperTest<TcExecutorType, CacheType> {
-  using TcMapperTest<TcExecutorType, CacheType>::Check;
-  using TcMapperTest<TcExecutorType, CacheType>::K;
-  using TcMapperTest<TcExecutorType, CacheType>::M;
-  using TcMapperTest<TcExecutorType, CacheType>::N;
+template <typename TcExecutorType>
+struct TcMapperBatchMatmulTest : public TcMapperTest<TcExecutorType> {
+  using TcMapperTest<TcExecutorType>::Check;
+  using TcMapperTest<TcExecutorType>::K;
+  using TcMapperTest<TcExecutorType>::M;
+  using TcMapperTest<TcExecutorType>::N;
 
-  OutputsAndCode Check(
+  std::vector<at::Tensor> Check(
       at::Tensor A,
       at::Tensor B,
       const typename TcExecutorType::MappingOptionsType& mappingOptions) {

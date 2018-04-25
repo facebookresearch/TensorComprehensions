@@ -52,59 +52,8 @@ void CudaTcExecutor::compile(const tc::CudaMappingOptions& options) {
         "CudaTcExecutor::compile cannot be called multiple tines."};
   }
   executionInfo_.options = options.toProtobufSerializedString();
-
-  auto cachedOp = [&]() -> std::unique_ptr<CudaCacheRetrievalResult> {
-    if (ManualCudaCache::cacheEnabled()) {
-      auto rr = ManualCudaCache::getCache()->retrieveKernel(
-          cacheKeyId_,
-          extractRawPtrs(executionInfo_.inputsInfo),
-          extractRawPtrs(executionInfo_.outputsInfo));
-      if (rr) {
-        return rr;
-      }
-    }
-
-    if (not CudaCache::cacheEnabled()) {
-      return nullptr;
-    }
-    CHECK_NE(executionInfo_.options, "")
-        << "options string is empty, are you trying compile "
-        << "a dummy CudaTcExecutor?";
-    return CudaCache::getCache()->retrieveKernel(
-        cacheKeyId_,
-        options,
-        extractRawPtrs(executionInfo_.inputsInfo),
-        extractRawPtrs(executionInfo_.outputsInfo));
-  }();
-
-  if (cachedOp) {
-    cudaSource = cachedOp->source;
-    grid = cachedOp->grid;
-    block = cachedOp->block;
-    executionInfo_.kernelParams = cachedOp->parameters;
-    kernelSpecializedName = cachedOp->specializedName;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "generatedCuda: " << cudaSource;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved grid: " << grid;
-    LOG_IF(INFO, FLAGS_debug_tc_mapper) << "retrieved block: " << block;
-  } else {
-    compileWithTcMapper();
-    cudaSource = appendOptionsAndGitHash(cudaSource, options);
-    if (CudaCache::cacheEnabled()) {
-      LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original grid: " << grid;
-      LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original block: " << block;
-      CudaCache::getCache()->cacheKernel(CudaCachedEntry(
-          cacheKeyId_,
-          kernelSpecializedName,
-          executionInfo_.kernelParams,
-          grid,
-          block,
-          options,
-          extractRawPtrs(executionInfo_.inputsInfo),
-          extractRawPtrs(executionInfo_.outputsInfo),
-          cudaSource,
-          CudaGPUInfo::GPUInfo().GetCudaDeviceStr()));
-    }
-  }
+  compileWithTcMapper();
+  cudaSource = appendOptionsAndGitHash(cudaSource, options);
 
   rtcFun = nullptr; // force unloading in case we
   // NVRTC the same name / input with different options.
