@@ -151,6 +151,15 @@ struct Parser {
   TreeRef parseExpList() {
     return parseList('(', ',', ')', [&](int i) { return parseExp(); });
   }
+  TreeRef parseOptionalExpList() {
+    TreeRef list = nullptr;
+    if (L.cur().kind == '(') {
+      list = parseExpList();
+    } else {
+      list = List::create(L.cur().range, {});
+    }
+    return list;
+  }
   TreeRef parseIdentList() {
     return parseList('(', ',', ')', [&](int i) { return parseIdent(); });
   }
@@ -226,7 +235,7 @@ struct Parser {
   }
   TreeRef parseStmt() {
     auto ident = parseIdent();
-    TreeRef list = parseOptionalIdentList();
+    TreeRef list = parseOptionalExpList();
     auto assign = parseAssignment();
     auto rhs = parseExp();
     TreeRef equivalent_statement = parseEquivalent();

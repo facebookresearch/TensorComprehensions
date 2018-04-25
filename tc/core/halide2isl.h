@@ -70,7 +70,7 @@ struct ScheduleTreeAndAccesses {
   /// Union maps describing the reads and writes done. Uses the ids in
   /// the schedule tree to denote the containing Stmt, and tags each
   /// access with a unique reference id of the form __tc_ref_N.
-  isl::union_map reads, writes;
+  isl::union_map reads, mayWrites, mustWrites;
 
   /// The correspondence between from Call and Provide nodes and the
   /// reference ids in the reads and writes maps.

@@ -60,8 +60,9 @@ std::ostream& operator<<(std::ostream& s, const Param& p) {
 }
 
 std::ostream& operator<<(std::ostream& s, const Comprehension& comp) {
-  s << comp.ident() << "(" << comp.indices() << ") "
-    << kindToToken(comp.assignment()->kind()) << " ";
+  s << comp.ident() << "(";
+  showList(s, comp.indices(), showExpr);
+  s << ") " << kindToToken(comp.assignment()->kind()) << " ";
   showExpr(s, comp.rhs());
   if (!comp.whereClauses().empty())
     throw std::runtime_error("Printing of where clauses is not supported yet");

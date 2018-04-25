@@ -32,8 +32,14 @@ namespace c {
 
 constexpr auto types = R"C(
 // Halide type handling
-typedef int int32;
-typedef long int64;
+typedef signed char int8;
+typedef unsigned char uint8;
+typedef signed short int16;
+typedef unsigned short uint16;
+typedef signed int int32;
+typedef unsigned int uint32;
+typedef signed long int64;
+typedef unsigned long uint64;
 typedef float float32;
 typedef double float64;
 )C";
@@ -81,16 +87,16 @@ float fmodf ( float  x, float  y );
 //float frexpf ( float  x, int* nptr );
 float hypotf ( float  x, float  y );
 //int ilogbf ( float  x );
-//__RETURN_TYPE 	isfinite ( float  a );
-//__RETURN_TYPE 	isinf ( float  a );
-//__RETURN_TYPE 	isnan ( float  a );
+//__RETURN_TYPE        isfinite ( float  a );
+//__RETURN_TYPE        isinf ( float  a );
+//__RETURN_TYPE        isnan ( float  a );
 float j0f ( float  x );
 float j1f ( float  x );
 //float jnf ( int  n, float  x );
 //float ldexpf ( float  x, int  exp );
 float lgammaf ( float  x );
-//long long int 	llrintf ( float  x );
-//long long int 	llroundf ( float  x );
+//long long int        llrintf ( float  x );
+//long long int        llroundf ( float  x );
 float log10f ( float  x );
 float log1pf ( float  x );
 float log2f ( float  x );
@@ -120,7 +126,7 @@ float roundf ( float  x );
 float rsqrtf ( float  x );
 //float scalblnf ( float  x, long int  n );
 //float scalbnf ( float  x, int  n );
-//__RETURN_TYPE 	signbit ( float  a );
+//__RETURN_TYPE         signbit ( float  a );
 //void sincosf ( float  x, float* sptr, float* cptr );
 //void sincospif ( float  x, float* sptr, float* cptr );
 float sinf ( float  x );

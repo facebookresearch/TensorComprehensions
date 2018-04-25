@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <tuple>
 #include <unordered_set>
 
 #include "tc/core/constants.h"
@@ -238,7 +239,20 @@ isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable) {
   return context;
 }
 
-isl::map extractAccess(
+// Extract a tagged affine access relation from Halide IR.
+// The relation is tagged with a unique identifier, i.e. it lives in the space
+//   [D[...] -> __tc_ref_#[]] -> A[]
+// where # is a unique sequential number, D is the statement identifier
+// extracted from "domain" and A is the tensor identifier constructed from
+// "tensor".  "accesses" map is updated to keep track of the Halide IR nodes in
+// which a particular reference # appeared.
+// Returns the access relation and a flag indicating whether this relation is
+// exact or not.  The relation is overapproximated (that is, not exact) if it
+// represents a non-affine access, for example, an access with indirection such
+// as O(Index(i)) = 42.  In such overapproximated access relation, dimensions
+// that correspond to affine subscripts are still exact while those that
+// correspond to non-affine subscripts are not constrained.
+std::pair<isl::map, bool> extractAccess(
     isl::set domain,
     const IRNode* op,
     const std::string& tensor,
@@ -267,6 +281,7 @@ isl::map extractAccess(
   isl::map map =
       isl::map::universe(domainSpace.map_from_domain_and_range(rangeSpace));
 
+  bool exact = true;
   for (size_t i = 0; i < args.size(); i++) {
     // Then add one equality constraint per dimension to encode the
     // point in the allocation actually read/written for each point in
@@ -278,15 +293,17 @@ isl::map extractAccess(
         isl::pw_aff(isl::local_space(rangeSpace), isl::dim_type::set, i);
     // ... equals the coordinate accessed as a function of the domain.
     auto domainPoint = halide2isl::makeIslAffFromExpr(domainSpace, args[i]);
-    if (!domainPoint.is_null()) {
+    if (!domainPoint) {
+      exact = false;
+    } else {
       map = map.intersect(isl::pw_aff(domainPoint).eq_map(rangePoint));
     }
   }
 
-  return map;
+  return std::make_pair(map, exact);
 }
 
-std::pair<isl::union_map, isl::union_map>
+std::tuple<isl::union_map, isl::union_map, isl::union_map>
 extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
   class FindAccesses : public IRGraphVisitor {
     using IRGraphVisitor::visit;
@@ -294,31 +311,46 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
     void visit(const Call* op) override {
       IRGraphVisitor::visit(op);
       if (op->call_type == Call::Halide || op->call_type == Call::Image) {
-        reads = reads.unite(
-            extractAccess(domain, op, op->name, op->args, accesses));
+        // Read relations can be safely overapproximated.
+        isl::map read;
+        std::tie(read, std::ignore) =
+            extractAccess(domain, op, op->name, op->args, accesses);
+        reads = reads.unite(read);
       }
     }
 
     void visit(const Provide* op) override {
       IRGraphVisitor::visit(op);
-      writes =
-          writes.unite(extractAccess(domain, op, op->name, op->args, accesses));
+
+      // If the write access relation is not exact, we consider that any
+      // element _may_ be written by the statement.  If it is exact, then we
+      // can guarantee that all the elements specified by the relation _must_
+      // be written and any previously stored value will be killed.
+      isl::map write;
+      bool exact;
+      std::tie(write, exact) =
+          extractAccess(domain, op, op->name, op->args, accesses);
+      if (exact) {
+        mustWrites = mustWrites.unite(write);
+      }
+      mayWrites = mayWrites.unite(write);
     }
 
     const isl::set& domain;
     AccessMap* accesses;
 
    public:
-    isl::union_map reads, writes;
+    isl::union_map reads, mayWrites, mustWrites;
 
     FindAccesses(const isl::set& domain, AccessMap* accesses)
         : domain(domain),
           accesses(accesses),
           reads(isl::union_map::empty(domain.get_space())),
-          writes(isl::union_map::empty(domain.get_space())) {}
+          mayWrites(isl::union_map::empty(domain.get_space())),
+          mustWrites(isl::union_map::empty(domain.get_space())) {}
   } finder(domain, accesses);
   s.accept(&finder);
-  return {finder.reads, finder.writes};
+  return std::make_tuple(finder.reads, finder.mayWrites, finder.mustWrites);
 }
 
 /*
@@ -343,7 +375,8 @@ isl::schedule makeScheduleTreeHelper(
     isl::set set,
     std::vector<std::string>& outer,
     isl::union_map* reads,
-    isl::union_map* writes,
+    isl::union_map* mayWrites,
+    isl::union_map* mustWrites,
     AccessMap* accesses,
     StatementMap* statements,
     IteratorMap* iterators) {
@@ -389,7 +422,8 @@ isl::schedule makeScheduleTreeHelper(
         set,
         outerNext,
         reads,
-        writes,
+        mayWrites,
+        mustWrites,
         accesses,
         statements,
         iterators);
@@ -422,7 +456,15 @@ isl::schedule makeScheduleTreeHelper(
     std::vector<isl::schedule> schedules;
     for (Stmt s : stmts) {
       schedules.push_back(makeScheduleTreeHelper(
-          s, set, outer, reads, writes, accesses, statements, iterators));
+          s,
+          set,
+          outer,
+          reads,
+          mayWrites,
+          mustWrites,
+          accesses,
+          statements,
+          iterators));
     }
     schedule = schedules[0].sequence(schedules[1]);
 
@@ -437,23 +479,25 @@ isl::schedule makeScheduleTreeHelper(
     isl::set domain = set.set_tuple_id(id);
     schedule = isl::schedule::from_domain(domain);
 
-    isl::union_map newReads, newWrites;
-    std::tie(newReads, newWrites) =
+    isl::union_map newReads, newMayWrites, newMustWrites;
+    std::tie(newReads, newMayWrites, newMustWrites) =
         halide2isl::extractAccesses(domain, op, accesses);
 
     *reads = reads->unite(newReads);
-    *writes = writes->unite(newWrites);
+    *mayWrites = mayWrites->unite(newMayWrites);
+    *mustWrites = mustWrites->unite(newMustWrites);
 
   } else {
     LOG(FATAL) << "Unhandled Halide stmt: " << s;
   }
   return schedule;
-};
+}
 
 ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   ScheduleTreeAndAccesses result;
 
-  result.writes = result.reads = isl::union_map::empty(paramSpace);
+  result.mayWrites = result.mustWrites = result.reads =
+      isl::union_map::empty(paramSpace);
 
   // Walk the IR building a schedule tree
   std::vector<std::string> outer;
@@ -462,7 +506,8 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
       isl::set::universe(paramSpace),
       outer,
       &result.reads,
-      &result.writes,
+      &result.mayWrites,
+      &result.mustWrites,
       &result.accesses,
       &result.statements,
       &result.iterators);

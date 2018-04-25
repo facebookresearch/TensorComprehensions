@@ -145,6 +145,25 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
       outputs);
 }
 
+TEST_F(ATenCompilationUnitTest, Concat2) {
+  at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
+  at::Tensor b = at::CUDA(at::kFloat).rand({32, 16});
+  std::vector<at::Tensor> inputs = {a, b};
+  std::vector<at::Tensor> outputs;
+
+  Check(
+      R"(
+def concat(float(M, N) A, float(M, N) B) -> (O1) {
+    O1(n, 0, m) = A(m, n)
+    O1(n, 1, m) = B(m, n)
+}
+    )",
+      "concat",
+      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      inputs,
+      outputs);
+}
+
 TEST_F(ATenCompilationUnitTest, Indexing) {
   at::Tensor a = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor b = at::CUDA(at::kInt).ones({2});
