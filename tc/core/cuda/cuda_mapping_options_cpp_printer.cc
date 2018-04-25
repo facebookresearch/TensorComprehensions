@@ -22,9 +22,7 @@ namespace tc {
 CudaMappingOptionsCppPrinter& operator<<(
     CudaMappingOptionsCppPrinter& prn,
     const CudaMappingOptions& cudaOptions) {
-  std::stringstream ss;
-  ss << cudaOptions.generic;
-  prn.printString(ss.str());
+  prn.print(cudaOptions.generic);
   prn.printListOption("mapToThreads", cudaOptions.block.extractVector());
   prn.printListOption("mapToBlocks", cudaOptions.grid.extractVector());
   prn.printBooleanOption(
