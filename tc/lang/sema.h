@@ -437,17 +437,35 @@ struct Sema {
       return checkRangeConstraint(RangeConstraint(ref));
     }
   }
+
+ private:
+  // Traverse the list of trees, recursively descending into arguments of APPLY
+  // and ACCESS subtrees and into all subtrees of different types (mostly
+  // expressions), and collect names and types of IDENT subtrees in
+  // "index_env".  Expects to be called on the indices of the LHS tensor.
+  template <typename Collection>
+  void registerLHSIndices(const Collection& treeRefs) {
+    for (const auto& treeRef : treeRefs) {
+      if (treeRef->kind() == TK_IDENT) {
+        std::string idx = Ident(treeRef).name();
+        auto typ = indexType(treeRef);
+        insert(index_env, Ident(treeRef), typ, true);
+      } else if (treeRef->kind() == TK_APPLY) {
+        registerLHSIndices(Apply(treeRef).arguments());
+      } else if (treeRef->kind() == TK_ACCESS) {
+        registerLHSIndices(Access(treeRef).arguments());
+      } else {
+        registerLHSIndices(treeRef->trees());
+      }
+    }
+  }
+
+ public:
   TreeRef checkStmt(TreeRef stmt_) {
     auto stmt = Comprehension(stmt_);
 
     // register index variables (non-reductions)
-    for (const auto& index : stmt.indices()) {
-      if (index->kind() == TK_IDENT) {
-        std::string idx = Ident(index).name();
-        auto typ = indexType(index);
-        insert(index_env, Ident(index), typ, true);
-      }
-    }
+    registerLHSIndices(stmt.indices());
 
     // make dimension variables for each dimension of the output tensor
     std::string name = stmt.ident().name();
@@ -464,6 +482,7 @@ struct Sema {
 
     // where clauses are checked _before_ the rhs because they
     // introduce let bindings that are in scope for the rhs
+    //
     auto where_clauses_ = stmt.whereClauses().map(
         [&](TreeRef rc) { return checkWhereClause(rc); });
 

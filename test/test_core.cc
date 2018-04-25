@@ -346,6 +346,19 @@ def gather(int32(N) A, int32(N) B) -> (O) {
   CHECK_EQ(scop->mustWrites, scop->mayWrites);
 }
 
+TEST_F(TC2Isl, Computed) {
+  string tc = R"TC(
+def gather(int32(N) A, int32(N) B) -> (O) {
+    O(i - 2) = A(i) + B(i)
+}
+)TC";
+  auto scop = MakeScop(tc);
+  CHECK(!scop->mustWrites.is_empty())
+      << "expected non-empty must-writes for gather, got\n"
+      << scop->mustWrites;
+  CHECK_EQ(scop->mustWrites, scop->mayWrites);
+}
+
 // FIXME: range inference seems unaware of indirections on the LHS
 TEST_F(TC2Isl, DISABLED_MustWritesSubsetMayWrites) {
   string tc = R"TC(
