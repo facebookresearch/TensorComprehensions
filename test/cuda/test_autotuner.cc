@@ -178,6 +178,62 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
   benchmarkKernelOptions(TC, name, inputs, bestOptions);
 }
 
+TEST_F(ATenCompilationUnitTest, BatchNorm) {
+  static constexpr uint32_t N = 32, C = 4, H = 56, W = 56;
+  at::Tensor I = at::CUDA(at::kFloat).rand({N, C, H, W});
+  at::Tensor rMeanIn = at::CUDA(at::kFloat).rand({C});
+  at::Tensor rVarIn = at::CUDA(at::kFloat).rand({C});
+  std::vector<at::Tensor> inputs = {I, rMeanIn, rVarIn};
+
+  // This may not be correct
+  static constexpr auto TC = R"TC(
+  def batchnorm(float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn) -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut) {
+    mean(c) +=! I(nn, c, hh, ww)
+    mean(c)  = mean(c) / (N * H * W)
+    rMeanOut(c) = (1 - 0.2) * rMeanIn(c) + 0.2 * mean(c)
+    centered(n, c, h, w) =        I(n, c, h, w) - rMeanOut(c)
+    variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
+    expectedVariance(c) +=! (variance(n, c, h, w) + 0.001) / (N * H * W)
+    rVarOut(c) = rsqrt((1 - 0.2) * rVarIn(c) + 0.2 * expectedVariance(c))
+    O(n, c, h, w) = centered(n, c, h, w) / rVarOut(c)
+    normalizedOut(n, c, h, w) = O(n, c, h, w)
+  }
+)TC";
+
+  auto name = "batchnorm";
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+
+  std::string cacheFilename = "";
+  auto bestOptions =
+      autotune(cacheFilename, TC, name, inputs, options, {options});
+}
+
+TEST_F(ATenCompilationUnitTest, GroupConvolution) {
+  uint32_t N = 32, G = 32, C = 16, F = 16;
+  uint32_t W = 14, H = 14, KW = 3, KH = 3;
+  at::Tensor I = at::CUDA(at::kFloat).rand({N, G, C, H, W});
+  at::Tensor W1 = at::CUDA(at::kFloat).rand({G, F, C, KH, KW});
+  at::Tensor B = at::CUDA(at::kFloat).rand({G, F});
+  std::vector<at::Tensor> inputs = {I, W1, B};
+
+  static constexpr auto TC = R"(
+def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
+-> (O)
+{
+    O(n, g, f, h, w) +=!
+        I(n, g, r_c, h + r_kh, w + r_kw) * W1(g, f, r_c, r_kh, r_kw)
+    O(n, g, f, h, w)  = O(n, g, f, h, w) + B(g, f)
+}
+)";
+
+  auto name = "group_convolution";
+  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+
+  std::string cacheFilename = "";
+  auto bestOptions =
+      autotune(cacheFilename, TC, name, inputs, options, {options});
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
