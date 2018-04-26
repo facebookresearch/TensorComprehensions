@@ -110,17 +110,6 @@ void GeneticTunerHarness::stopAfterCurrentGeneration() {
 
 namespace {
 
-std::vector<size_t> filterHigherThan(
-    const std::vector<size_t>& v,
-    size_t limit) {
-  std::vector<size_t> newV;
-  std::copy_if(
-      v.begin(), v.end(), std::back_inserter(newV), [limit](size_t val) {
-        return val <= limit;
-      });
-  return newV;
-}
-
 void removeDuplicates(std::vector<size_t>& v) {
   std::sort(v.begin(), v.end());
   v.erase(std::unique(v.begin(), v.end()), v.end());
@@ -159,7 +148,6 @@ size_t largestDim(const std::vector<const DLTensor*>& inputs) {
 void GeneticTunerHarness::setupTuningParameters() {
   CHECK_GT(kInputs_.size(), 0u);
   auto range = inputDivisorsAndPowers2(kInputs_.begin()->second);
-  auto rangeUpTo64 = filterHigherThan(range, 64);
 
   // 0 is a valid tiling annotation and signals no tiling of that dimension
   // 0 is not a valid block / grid annotation
