@@ -337,22 +337,6 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
   ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64)) << res;
 }
 
-TEST_F(PolyhedralMapperTest, FilterMerge) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
-  auto schedule = scop->scheduleRoot();
-
-  // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  auto& globalParameterContext =
-      const_cast<isl::set&>(scop->globalParameterContext);
-  globalParameterContext = globalParameterContext.intersect(context);
-  scop->domain() = scop->domain().intersect(globalParameterContext);
-
-  auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
-  mergeConsecutiveMappingFilters(schedule, schedule->child({0}));
-  mscop->codegen(specializedName);
-}
-
 TEST_F(PolyhedralMapperTest, Match1) {
   auto scop = PrepareAndJoinBands(makeMatmulTc());
   auto schedule = scop->scheduleRoot();

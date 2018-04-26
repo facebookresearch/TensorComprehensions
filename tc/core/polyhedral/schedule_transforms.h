@@ -297,15 +297,6 @@ isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
-////////////////////////////////////////////////////////////////////////////////
-// Experimental
-////////////////////////////////////////////////////////////////////////////////
-// Mapping filters are introduced one mapping dimension at a time.
-// This merges consecutive filters.
-detail::ScheduleTree* mergeConsecutiveMappingFilters(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* node);
-
 } // namespace polyhedral
 } // namespace tc
 

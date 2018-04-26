@@ -754,52 +754,5 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
   parent->insertChild(childPos, std::move(seq));
 }
 
-detail::ScheduleTree* mergeConsecutiveMappingFilters(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* node) {
-  CHECK(
-      root->elemAs<ScheduleTreeElemDomain>() ||
-      root->elemAs<ScheduleTreeElemExtension>());
-  bool changed = true;
-  while (changed) {
-    changed = false;
-    auto filterNodes = detail::ScheduleTree::collect(
-        node, detail::ScheduleTreeType::MappingFilter);
-
-    for (auto f : filterNodes) {
-      auto p = f->ancestor(root, 1);
-      auto parentFilter = p->elemAs<ScheduleTreeElemMappingFilter>();
-      if (!parentFilter) {
-        continue;
-      }
-      auto filter = f->elemAs<ScheduleTreeElemMappingFilter>();
-      auto merged = parentFilter->filter_ & filter->filter_;
-      // We can only merge filters that have the same number of tuples
-      if (merged.n_set() != parentFilter->filter_.n_set() ||
-          merged.n_set() != filter->filter_.n_set()) {
-        continue;
-      }
-      p->elemAs<ScheduleTreeElemMappingFilter>()->filter_ = merged;
-      // const cast to replace in place rather than construct a new
-      // ScheduleTree object (which would not be more functional-style anyway)
-      auto& ids = const_cast<std::unordered_set<
-          mapping::MappingId,
-          typename mapping::MappingId::Hash>&>(
-          p->elemAs<ScheduleTreeElemMappingFilter>()->mappingIds);
-      for (auto id : filter->mappingIds) {
-        CHECK_EQ(0u, ids.count(id))
-            << "Error when merging filters\n"
-            << *f << "\nand\n"
-            << *p << "\nid: " << id << " mapped in both!";
-        ids.insert(id);
-      }
-      p->replaceChild(f->positionInParent(p), f->detachChild(0));
-      changed = true;
-      break;
-    }
-  }
-  return node;
-}
-
 } // namespace polyhedral
 } // namespace tc
