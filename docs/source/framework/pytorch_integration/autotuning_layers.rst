@@ -219,7 +219,7 @@ For example:
 tc.decode
 ---------
 
-When you save the autotuner cache, two files are created ending in :code:`.cuda/.options`.
+When you save the autotuner cache, one file is created ending in :code:`.options`.
 The :code:`.options` file contains the encoded kernel options. If you are curious
 about what those options look like, you can decode the options by calling :code:`tc.decode`
 

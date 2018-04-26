@@ -105,7 +105,7 @@ class TestAutotuner(unittest.TestCase):
     def test_autotuner_cachefile_load(self):
         lang = MATMUL_LANG
         cache_file = "{}/matmul_100_400_500".format(PATH_PREFIX)    # use argparse if input from command line
-        assert os.path.isfile("{}.cuda".format(cache_file)), "looks like the cache_file doesn't exist"
+        assert os.path.isfile("{}.options".format(cache_file)), "looks like the cache_file doesn't exist"
 
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
