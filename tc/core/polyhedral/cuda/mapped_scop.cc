@@ -124,14 +124,6 @@ void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
   auto filter = makeFixRemainingZeroFilter(domain, ids);
   auto mapping = detail::ScheduleTree::makeMappingFilter(filter, ids);
   insertNodeAbove(root, tree, std::move(mapping));
-
-  for (size_t i = nMapped; i < nToMap; ++i) {
-    if (MappingTypeId::makeId(i) == mapping::ThreadId::x()) {
-      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-          activeDomainPoints(schedule(), tree),
-          tree->scheduleDepth(schedule())));
-    }
-  }
 }
 
 // Uses as many blockSizes elements as outer coincident dimensions in the
@@ -161,6 +153,7 @@ void MappedScop::mapToBlocksAndScaleBand(
  * Given a node in the schedule tree of a mapped scop,
  * insert a mapping filter underneath (if needed) that fixes
  * the remaining thread identifiers starting at "begin" to zero.
+ * Add a marker underneath that marks the subtree that is thread specific.
  */
 void fixThreadsBelow(
     MappedScop& mscop,
@@ -173,6 +166,9 @@ void fixThreadsBelow(
 
   auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
   auto bandTree = insertNodeBelow(tree, std::move(band));
+  auto ctx = tree->ctx_;
+  insertNodeBelow(
+      bandTree, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
   mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
 }
 
@@ -338,8 +334,29 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     return 0;
   }
 
-  auto nMappedThreads =
-      std::min(numThreads.view.size(), static_cast<size_t>(nCanMap));
+  auto nMappedThreads = nCanMap;
+  if (nMappedThreads > numThreads.view.size()) {
+    // Split band such that mapping filters get inserted
+    // right above the first member mapped to a thread identifier.
+    nMappedThreads = numThreads.view.size();
+    bandSplit(scop_->scheduleRoot(), band, nCanMap - nMappedThreads);
+    auto child = band->child({0});
+    if (isReduction) {
+      // Update reductionBandUpdates_ such that splitOutReductionAndInsertSyncs
+      // can find the information it needs.
+      reductionBandUpdates_.emplace(child, reductionBandUpdates_.at(band));
+      reductionBandUpdates_.erase(band);
+    }
+    band = child;
+    bandNode = band->elemAs<ScheduleTreeElemBand>();
+  }
+
+  if (nMappedThreads < bandNode->nMember()) {
+    bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
+  }
+
+  auto ctx = band->ctx_;
+  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
 
   CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
   CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";
@@ -348,20 +365,16 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   // from thread x.
   for (size_t i = 0; i < nMappedThreads; ++i) {
     auto id = mapping::ThreadId::makeId(i);
-    auto dim = nCanMap - 1 - i;
-    if (id == mapping::ThreadId::x()) {
-      threadIdxXScheduleDepthState.emplace_back(std::make_pair(
-          activeDomainPoints(schedule(), band),
-          band->scheduleDepth(schedule()) + dim));
-    }
+    auto dim = nMappedThreads - 1 - i;
     band = map(band, dim, id);
   }
+  mapRemaining<mapping::ThreadId>(band, nMappedThreads);
 
   if (isReduction) {
-    splitOutReductionAndInsertSyncs(band, nCanMap - 1);
+    splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);
   }
 
-  return nMappedThreads;
+  return numThreads.view.size();
 }
 
 namespace {
@@ -450,9 +463,8 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       // because we cannot map parent bands anyway.
       auto nMapped = mapToThreads(st);
       if (nMapped > 0) {
-        mapRemaining<mapping::ThreadId>(st, nMapped);
         markUnroll(scop_->scheduleRoot(), st, unroll);
-        return numThreads.view.size();
+        return nMapped;
       }
     } else if (anyNonCoincidentMember(band)) {
       // If children were mapped to threads, and this band has a non-coincident
@@ -633,7 +645,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     auto child = outerBand->child({0});
     size_t numMappedInnerThreads =
         mappedScop->mapInnermostBandsToThreads(child);
-    mappedScop->mapRemaining<mapping::ThreadId>(child, numMappedInnerThreads);
+    fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
         << "After mapping to threads:" << std::endl
         << *mappedScop->schedule();
@@ -677,7 +689,6 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
       promoteGreedilyAtDepth(
           *mappedScop,
-          mappedScop->threadIdxXScheduleDepthState,
           std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
@@ -694,8 +705,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
   // 8. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
-    promoteToRegistersBelowThreads(
-        mappedScop->scop(), mappedScop->threadIdxXScheduleDepthState, -1ull);
+    promoteToRegistersBelowThreads(mappedScop->scop(), -1ull);
   }
 
   // 9. Insert mapping context

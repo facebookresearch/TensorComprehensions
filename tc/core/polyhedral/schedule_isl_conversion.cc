@@ -51,6 +51,7 @@ constexpr std::initializer_list<detail::ScheduleTreeType>
 
 namespace {
 
+isl::schedule_node insertChild(isl::schedule_node node, const ScheduleTree* st);
 isl::schedule_node extendChild(isl::schedule_node node, const ScheduleTree* st);
 
 /*
@@ -202,6 +203,8 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     return insertBranch(node, st);
   } else if (st->elemAs<ScheduleTreeElemExtension>()) {
     return insertExtension(node, st);
+  } else if (st->elemAs<ScheduleTreeElemThreadSpecificMarker>()) {
+    return insertChild(node, st);
   } else {
     LOG(FATAL) << "NYI: insert type: " << *st;
   }
@@ -210,17 +213,27 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
 
 /*
  * Recursively add nodes corresponding to the descendants of "st"
- * underneath "node".
+ * at "node".
  * If "st" does not have any children, then no descendants need to be added.
  */
-isl::schedule_node extendChild(
+isl::schedule_node insertChild(
     isl::schedule_node node,
     const ScheduleTree* st) {
   if (st->numChildren() == 0) {
     return node;
   }
 
-  return insert(node.child(0), st->child({0})).parent();
+  return insert(node, st->child({0}));
+}
+
+/*
+ * Recursively add nodes corresponding to the descendants of "st"
+ * underneath "node".
+ */
+isl::schedule_node extendChild(
+    isl::schedule_node node,
+    const ScheduleTree* st) {
+  return insertChild(node.child(0), st).parent();
 }
 } // namespace
 
@@ -318,6 +331,7 @@ isl::space definitionParamSpace(const ScheduleTree* node) {
     case detail::ScheduleTreeType::None:
     case detail::ScheduleTreeType::Set:
     case detail::ScheduleTreeType::Sequence:
+    case detail::ScheduleTreeType::ThreadSpecificMarker:
       break;
   }
   return space;

@@ -27,10 +27,28 @@
 #include <algorithm>
 #include <numeric>
 #include <sstream>
+#include <type_traits>
 
 namespace tc {
 namespace polyhedral {
 namespace {
+
+/*
+ * Is "tree" a mapping filter that maps a thread identifier?
+ */
+bool isThreadMapping(const detail::ScheduleTree* tree) {
+  using namespace detail;
+
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+    for (auto id : filterNode->mappingIds) {
+      if (id.isThreadId()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 // Map global<->shared copy bands to threads, starting from the innermost
 // loop as it iterates over the last subscript and will result in coalescing.
 void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
@@ -65,17 +83,17 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       throw promotion::PromotionLogicError("no copy band");
     }
 
+    auto ctx = node->ctx_;
+    insertNodeBelow(
+        bandNode, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
+
     // Check that we are not mapping to threads below other thread mappings.
     std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> usedThreads;
     for (auto n : node->ancestors(root)) {
-      if (auto filterNode = n->elemAs<ScheduleTreeElemMappingFilter>()) {
-        for (auto id : filterNode->mappingIds) {
-          if (id.isThreadId()) {
-            throw promotion::PromotionBelowThreadsException(
-                "attempted to map memory copies to threads below "
-                "another thread mapping");
-          }
-        }
+      if (isThreadMapping(n)) {
+        throw promotion::PromotionBelowThreadsException(
+            "attempted to map memory copies to threads below "
+            "another thread mapping");
       }
     }
 
@@ -122,6 +140,50 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       markUnroll(root, bandNode, mscop.unroll);
     }
   }
+}
+
+/*
+ * Starting from the root, find all thread specific markers.  Use
+ * DFSPreorder to make sure order is specified and consistent for tests.
+ */
+template <typename T>
+std::vector<T> findThreadSpecificMarkers(T root) {
+  using namespace tc::polyhedral::detail;
+  static_assert(
+      std::is_convertible<T, const ScheduleTree*>::value,
+      "expecting ScheduleTree");
+
+  return ScheduleTree::collectDFSPreorder(
+      root, ScheduleTreeType::ThreadSpecificMarker);
+}
+
+/*
+ * Return the thread specific markers in the tree rooted at "root"
+ * that are relevant for "node".
+ *
+ * Every branch in the tree has exactly one thread marker.
+ * If "node" appears underneath a thread marker, then return
+ * that single thread marker.
+ * Otherwise, return the (possibly multiple) thread markers
+ * in the subtree rooted at "node".
+ */
+template <typename T>
+std::vector<T> collectBranchMarkers(T root, T node) {
+  using namespace detail;
+  static_assert(
+      std::is_convertible<T, const ScheduleTree*>::value,
+      "expecting ScheduleTree");
+
+  auto filterMarker = [](T tree) {
+    return tree->type_ == ScheduleTreeType::ThreadSpecificMarker;
+  };
+
+  auto ancestors = node->ancestors(root);
+  ancestors = functional::Filter(filterMarker, ancestors);
+  if (ancestors.size() > 0) {
+    return ancestors;
+  }
+  return findThreadSpecificMarkers(node);
 }
 
 /*
@@ -244,72 +306,76 @@ isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
   return isl::map(identityMA);
 }
 
-// Obtain the depth of the schedule dimension that was mapped to threadIdx.x
-// for the domain elements identified by "s".  Assumes the depth is the same
-// for all these elements.
-size_t computeThreadIdxXScheduleDepth(
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    isl::union_set s) {
-  std::unordered_set<size_t> depths;
-  for (auto p : threadIdxXScheduleDepthState) {
-    if (!p.first.intersect(s).is_empty()) {
-      depths.insert(p.second);
-    }
+/*
+ * Return the outermost thread mapping filter among the ancestors of "node",
+ * assuming that there is at least one.
+ */
+const detail::ScheduleTree* findThreadMappingAncestor(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  auto ancestors = node->ancestors(root);
+  ancestors = functional::Filter(isThreadMapping, ancestors);
+  if (ancestors.size() < 1) {
+    throw promotion::PromotionLogicError("missing MappingFilter");
   }
-  if (depths.size() != 1) {
-    std::stringstream ss;
-    ss << "threadIdx.x depth " << (depths.size() == 0 ? "unknown" : "diverged")
-       << " for " << s;
-    throw promotion::PromotionLogicError(ss.str());
-  }
-  return *depths.begin();
+  return ancestors[0];
 }
 
 /*
- * Check if a reference group is accessed in a coalesced way.
+ * Should this reference group be promoted for the purpose of coalescing?
  *
- * In particular, check if incrementing the schedule dimension mapped to
+ * If the reference group is not already accessed in a coalesced way,
+ * then the group should be promoted.
+ * If a branch is mapped to a single thread, then the accesses
+ * in that branch are not considered to contribute to the usefulness
+ * of promoting.
+ *
+ * The check for coalesced accesses is performed as follows.
+ * Check if incrementing the schedule dimension mapped to
  * Thread::x results in the last tensor index being incremented as well.
  * Since accesses in the group may belong to different statements, which may
- * have different loops mapped to Thread::x, perform the check for each basic
- * map in the union of access maps taking into account which dimension is
- * mapped for a particular statement (domain of the basic map).  The group is
+ * have different loops mapped to Thread::x, perform the check for each thread
+ * mapping on the statements active at "node" (either a single ancestor,
+ * or one or more descendants).
+ * The iteration over the spaces is used to handle the case where
+ * one of the subbranches does not access the tensor and
+ * the scheduled accesses are empty.  The group is
  * accessed in a coalesced way if all references in this group are accessed in
  * a coalesced way.
  */
-bool isCoalesced(
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
+bool promotionImprovesCoalescing(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node,
     const TensorReferenceGroup& group,
-    isl::union_map schedule,
-    isl::union_set activePoints) {
+    isl::union_map schedule) {
   auto originalAccesses = group.originalAccesses();
 
-  for (auto accessMap : isl::UnionAsVector<isl::union_map>(originalAccesses)) {
-    for (auto access : accessMap.get_basic_map_list()) {
+  auto markers = collectBranchMarkers(root, node);
+  for (auto marker : markers) {
+    auto mapping = findThreadMappingAncestor(root, marker);
+    size_t nMappedThreads = marker->scheduleDepth(mapping);
+    if (nMappedThreads == 0) {
+      continue;
+    }
+    auto depth = marker->scheduleDepth(root);
+    auto activePoints = activeDomainPoints(root, mapping);
+    auto localAccesses = originalAccesses.intersect_domain(activePoints);
+    auto scheduledAccesses = localAccesses.apply_domain(schedule);
+    for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
+      auto scheduleSpace = access.get_space().domain();
       auto tensorSpace = access.get_space().range();
       auto elementToNext = makeNextElementMap(
           tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
-      auto domainUMap = isl::union_set(isl::set(access.domain()));
-      int threadIdxXDepth = computeThreadIdxXScheduleDepth(
-          threadIdxXScheduleDepthState, domainUMap.intersect(activePoints));
-      auto partialScheduleUMap =
-          schedule.intersect_domain(domainUMap.universe());
-      if (partialScheduleUMap.n_map() != 1) {
-        throw promotion::PromotionLogicError("expected single schedule space");
-      }
-      auto partialSchedule = isl::map::from_union_map(partialScheduleUMap);
-      auto scheduleToNextX = makeNextElementMap(
-          partialSchedule.get_space().range(), threadIdxXDepth);
-      auto scheduledAccess = isl::map(access).apply_domain(partialSchedule);
-      auto accessedByAdjacentX = scheduleToNextX.apply_domain(scheduledAccess)
-                                     .apply_range(scheduledAccess);
+      auto scheduleToNextX = makeNextElementMap(scheduleSpace, depth - 1);
+      auto accessedByAdjacentX =
+          scheduleToNextX.apply_domain(access).apply_range(access);
 
       if (not accessedByAdjacentX.is_subset(elementToNext)) {
-        return false;
+        return true;
       }
     }
   }
-  return true;
+  return false;
 }
 
 /*
@@ -416,7 +482,6 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
  */
 void promoteToSharedGreedy(
     Scop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const Block& block,
     size_t depth,
     size_t maxMemory) {
@@ -510,11 +575,7 @@ void promoteToSharedGreedy(
         // Do not promote if the group features no reuse and is accessed in a
         // coalesced way.
         if (!hasReuseWithin(*group, partialSchedMupa) &&
-            isCoalesced(
-                threadIdxXScheduleDepthState,
-                *group,
-                fullSched,
-                activePoints)) {
+            !promotionImprovesCoalescing(root, bandNode, *group, fullSched)) {
           continue;
         }
 
@@ -535,84 +596,41 @@ void promoteToSharedGreedy(
 
 void promoteGreedilyAtDepth(
     MappedScop& mscop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     size_t depth,
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
   promoteToSharedGreedy(
-      mscop.scop(),
-      threadIdxXScheduleDepthState,
-      mscop.numThreads,
-      depth,
-      sharedMemorySize);
+      mscop.scop(), mscop.numThreads, depth, sharedMemorySize);
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
-// Assuming the mapping to threads happens in inverse order, i.e. the innermost
-// loop is mapped to thread x, promote below that depth.
-void promoteToRegistersBelowThreads(
-    Scop& scop,
-    const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
-    size_t nRegisters) {
+// Promote at the positions of the thread specific markers.
+void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
   using namespace tc::polyhedral::detail;
 
   auto root = scop.scheduleRoot();
 
   auto fullSched = fullSchedule(root);
-  for (const auto& kvp : threadIdxXScheduleDepthState) {
-    auto depth = kvp.second + 1;
-    auto subdomain = kvp.first;
+  {
+    auto markers = findThreadSpecificMarkers(root);
 
-    // Collect all bands where a member is located at the given depth.
-    auto bands = bandsContainingScheduleDepth(root, depth);
-    // We may have no band members mapped to thread x in case when we
-    // force-mapped everything to one thread.
-    if (bands.size() == 0) {
-      continue;
-    }
-
-    // Keep only those bands for which this depth was recorded.
-    std::function<bool(ScheduleTree*)> keepActive =
-        [root, subdomain](const ScheduleTree* tree) {
-          isl::union_set active = activeDomainPoints(root, tree);
-          return !active.intersect(subdomain).is_empty();
-        };
-    bands = functional::Filter(keepActive, bands);
-
-    // Make sure the band ends at thread x depth so we can promote below it.
-    bands = bandsSplitAfterDepth(bands, root, depth);
-
-    for (auto band : bands) {
-      // Find out how many threads are actually mapped.  Active domain points
-      // will involve all mapping parameters when we take them below the
-      // mapping.  Skip mapping parameters obviously mapped to 0, because they
-      // do not correspond to band members that should be fixed to obtain
-      // per-thread-group access relations.
-      auto points = activeDomainPoints(root, band);
-      auto partialSched = partialSchedule(root, band);
+    for (auto marker : markers) {
+      auto partialSched = prefixSchedule(root, marker);
       // Pure affine schedule without (mapping) filters.
-      auto partialSchedMupa = partialScheduleMupa(root, band);
+      auto partialSchedMupa = prefixScheduleMupa(root, marker);
 
-      size_t nMappedThreads = 0;
-      for (unsigned j = 0; j < points.dim(isl::dim_type::param); ++j) {
-        auto id = points.get_space().get_dim_id(isl::dim_type::param, j);
-        for (size_t i = 0; i < mapping::ThreadId::kMaxDim; ++i) {
-          if (id != mapping::ThreadId::makeId(i)) {
-            continue;
-          }
-          if (isl::getParamValIfFixed(points, j) ==
-              isl::val::zero(points.get_ctx())) {
-            continue;
-          }
-          ++nMappedThreads;
-          break;
-        }
-      }
+      auto depth = marker->scheduleDepth(root);
 
-      auto groupMap = TensorReferenceGroup::accessedBySubtree(band, scop);
+      // Thread mapping filters are inserted immediately above the members
+      // mapped to threads.  The number of intermediate band members
+      // is therefore equal to the number of mapped thread identifiers.
+      auto mapping = findThreadMappingAncestor(root, marker);
+      size_t nMappedThreads = marker->scheduleDepth(mapping);
+
+      auto groupMap = TensorReferenceGroup::accessedBySubtree(marker, scop);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
 
@@ -638,7 +656,7 @@ void promoteToRegistersBelowThreads(
               Scop::PromotedDecl::Kind::Register,
               tensorId,
               std::move(group),
-              band,
+              marker,
               partialSched);
         }
       }

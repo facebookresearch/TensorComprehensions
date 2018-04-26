@@ -38,6 +38,7 @@ enum class ScheduleTreeType {
   Sequence,
   Set,
   MappingFilter,
+  ThreadSpecificMarker,
   Any,
 };
 
@@ -277,6 +278,30 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // For each member, should the corresponding loop in the generated code
   // be (fully) unrolled?
   std::vector<bool> unroll_;
+};
+
+/*
+ * A node of type ThreadSpecificMarker marks part of a schedule tree
+ * that is specific to a thread.  That is, the marker appears right
+ * underneath the innermost band member mapped to threads.
+ */
+struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTreeElemBase {
+  static constexpr std::initializer_list<detail::ScheduleTreeType>
+      NodeDerivedTypes{detail::ScheduleTreeType::None};
+  static constexpr detail::ScheduleTreeType NodeType =
+      detail::ScheduleTreeType::ThreadSpecificMarker;
+  explicit ScheduleTreeElemThreadSpecificMarker() {}
+  virtual ~ScheduleTreeElemThreadSpecificMarker() override {}
+  bool operator==(const ScheduleTreeElemThreadSpecificMarker& other) const {
+    return true;
+  }
+  bool operator!=(const ScheduleTreeElemThreadSpecificMarker& other) const {
+    return !(*this == other);
+  }
+  virtual std::ostream& write(std::ostream& os) const override;
+  virtual detail::ScheduleTreeType type() const override {
+    return NodeType;
+  }
 };
 
 bool elemEquals(

@@ -162,6 +162,8 @@ class MappedScop {
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and
   // return the number of mapped thread identifiers.
+  // A marker is added to mark the part of the tree that is thread specific
+  // (right underneath the innermost band member mapped to a thread identifier).
   size_t mapToThreads(detail::ScheduleTree* band);
   // Map innermost bands to thread identifiers,
   // inserting synchronization in case of a reduction, and
@@ -175,13 +177,6 @@ class MappedScop {
   const ::tc::Grid numBlocks;
   const ::tc::Block numThreads;
   const uint64_t unroll;
-
-  // The schedule depth that was mapped to Thread::x for specific parts of the
-  // domain.
-  // XXX: this is a partially redundant state as this information can
-  // potentially be extracted from the schedule tree; however, until we get a
-  // first-class MappingNode, it requires some dirty hacks.
-  ThreadIdxXScheduleDepthState threadIdxXScheduleDepthState;
 
  private:
   // Information about a detected reduction that can potentially

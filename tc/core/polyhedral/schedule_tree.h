@@ -311,6 +311,10 @@ struct ScheduleTree {
       isl::union_map extension,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
+  static ScheduleTreeUPtr makeThreadSpecificMarker(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   template <typename... Args>
   static ScheduleTreeUPtr makeBand(
       isl::multi_union_pw_aff mupa,

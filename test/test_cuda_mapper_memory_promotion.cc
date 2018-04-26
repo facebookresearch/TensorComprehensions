@@ -204,8 +204,8 @@ TEST_F(Sum4D, CodeInnerBand) {
       "C[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3] = _C_0[0][0][0][0];";
   auto sync = "__syncthreads()";
 
-  auto code =
-      emitCode({256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0, 0, 0, 0});
+  auto code = emitCode(
+      {256, 128, 192, 224}, {16, 16, 16, 16}, {0, 0, 0, 0, 0, 0, 0, 0});
   // Order of copies may be arbitrary, but syncs must be inserted before and
   // after
   for (auto d : declarations) {
@@ -387,12 +387,7 @@ def fun(float(N, M) A) -> (B, C) {
       size_t maxSharedMemory) {
     auto mscop = prepareScop(
         tc, {{"N", problemSize1}, {"M", problemSize2}}, {tileSize1, tileSize2});
-    promoteGreedilyAtDepth(
-        *mscop,
-        mscop->threadIdxXScheduleDepthState,
-        depth,
-        maxSharedMemory,
-        false);
+    promoteGreedilyAtDepth(*mscop, depth, maxSharedMemory, false);
     return mscop;
   }
 };
