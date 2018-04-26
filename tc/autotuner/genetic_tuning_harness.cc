@@ -172,8 +172,7 @@ void GeneticTunerHarness::setupTuningParameters() {
   configuration.blockParams.setRange(range, "b");
   configuration.gridParams.setRange(range, "g");
 
-  configuration.unrollFactor =
-      RangeParameter({1, 2, 4, 8, 16, 32, 64, 128, 256}, "unroll");
+  configuration.unrollFactor = RangeParameter({1, 2, 4, 8, 16, 32}, "unroll");
 }
 
 CudaMappingOptions GeneticTunerHarness::makeOptions(
