@@ -21,7 +21,6 @@
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/canonicalize.h"
@@ -33,15 +32,11 @@
 
 using namespace std;
 
-using TcCudaMapperTest = TcMapperTest<tc::CudaTcExecutor, tc::CudaCache>;
-using TcCudaMapper1DReductionTest =
-    TcMapper1DReductionTest<tc::CudaTcExecutor, tc::CudaCache>;
-using TcCudaMapper2DReductionTest =
-    TcMapper2DReductionTest<tc::CudaTcExecutor, tc::CudaCache>;
-using TcCudaMapperMatmulTest =
-    TcMapperMatmulTest<tc::CudaTcExecutor, tc::CudaCache>;
-using TcCudaMapperBatchMatmulTest =
-    TcMapperBatchMatmulTest<tc::CudaTcExecutor, tc::CudaCache>;
+using TcCudaMapperTest = TcMapperTest<tc::CudaTcExecutor>;
+using TcCudaMapper1DReductionTest = TcMapper1DReductionTest<tc::CudaTcExecutor>;
+using TcCudaMapper2DReductionTest = TcMapper2DReductionTest<tc::CudaTcExecutor>;
+using TcCudaMapperMatmulTest = TcMapperMatmulTest<tc::CudaTcExecutor>;
+using TcCudaMapperBatchMatmulTest = TcMapperBatchMatmulTest<tc::CudaTcExecutor>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // 1-D reduction
@@ -105,7 +100,7 @@ struct TcCudaMapper2DReductionStressTest : public TcCudaMapper2DReductionTest {
   using TcCudaMapper2DReductionTest::M;
   using TcCudaMapper2DReductionTest::N;
 
-  OutputsAndCode
+  std::vector<at::Tensor>
   Check(size_t tix, size_t tiy, bool skipCheck = false, bool ones = false) {
     M = tiy;
     N = tix;
@@ -122,19 +117,7 @@ struct TcCudaMapper2DReductionStressTest : public TcCudaMapper2DReductionTest {
 
 TEST_F(TcCudaMapper2DReductionStressTest, ThreadIdy1) {
   for (int i : {1, 2, 4, 7, 8, 11, 15, 17, 24, 32, 35, 42, 64, 128, 130}) {
-    auto res = Check(i, 1);
-    if (i > 1) {
-      std::string expected = std::string("__tc::CubReduceAlongX<") +
-          std::to_string(i) + std::string(",1,1,__tc::ReductionOp::Sum>");
-      ASSERT_NE(std::string::npos, res.second.find(expected))
-          << "In resulting code:\n"
-          << res.second << "\ncould not find: " << expected;
-    } else {
-      std::string expected = "__tc::CubReduceAlongX<";
-      ASSERT_EQ(std::string::npos, res.second.find(expected))
-          << "In resulting code:\n"
-          << res.second << "\nfound unexpected: " << expected;
-    }
+    Check(i, 1);
   }
 }
 

@@ -16,33 +16,6 @@ message TensorInfoProto {
   required DLDataTypeProto dtype = 4;
 }
 
-message CudaCacheEntryProto {
-  required string id = 1;
-  required CudaMappingOptionsProto kernel_options = 2;
-  repeated TensorInfoProto inputs = 3;
-  repeated TensorInfoProto outputs = 4;
-  required string device_str = 5;
-  required string git_version = 6;
-
-  required string cuda_source = 7;
-  required string specialized_name = 8;
-  repeated sint32 parameters = 9;
-  required CudaDimProto grid_dims = 10;
-  required CudaDimProto block_dims = 11;
-}
-
-message ManualCudaCacheEntryProto {
-  required string id = 1;
-  repeated TensorInfoProto inputs = 2;
-  repeated TensorInfoProto outputs = 3;
-  required string device_str = 4;
-  required string git_version = 5;
-
-  required string cuda_source = 6;
-  repeated uint64 grid_dims = 7;
-  repeated uint64 block_dims = 8;
-}
-
 message OptionsCacheValuesProto{
   required CudaMappingOptionsProto kernel_options = 1;
   repeated uint64 recorded_runtimes = 2;
@@ -56,15 +29,6 @@ message OptionsCacheEntryProto {
   required string git_version = 5;
 
   repeated OptionsCacheValuesProto values = 6;
-}
-
-
-message CudaCacheProto {
-  repeated CudaCacheEntryProto entries = 1;
-}
-
-message ManualCudaCacheProto {
-  repeated ManualCudaCacheEntryProto entries = 1;
 }
 
 message OptionsCacheProto {

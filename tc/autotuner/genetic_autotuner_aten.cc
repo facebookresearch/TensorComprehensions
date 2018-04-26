@@ -21,7 +21,6 @@
 #include <thread>
 
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"

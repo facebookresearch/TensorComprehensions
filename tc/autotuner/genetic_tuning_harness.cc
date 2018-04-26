@@ -27,7 +27,6 @@
 #include "tc/autotuner/utils/printer.h"
 #include "tc/autotuner/utils/utils.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/execution_engine.h"

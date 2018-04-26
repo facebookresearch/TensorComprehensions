@@ -82,8 +82,6 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
 })";
 
 void EnableCaches() {
-  tc::CudaCache::enableCache();
-  tc::CudaCache::getCache()->clear();
   tc::OptionsCache::enableCache();
   tc::OptionsCache::getCache()->clear();
 }

@@ -260,8 +260,6 @@ struct Benchmark : public ::testing::Test {
 
     tc::OptionsCache::enableCache();
     tc::OptionsCache::loadCacheFromProtobuf(cacheFilename + ".options");
-    tc::CudaCache::enableCache();
-    tc::CudaCache::loadCacheFromProtobuf(tc::makeCudaFilename(cacheFilename));
     tc::FLAGS_tuner_gen_restore_number = 1;
 
     tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
