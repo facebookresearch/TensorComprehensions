@@ -314,9 +314,12 @@ const detail::ScheduleTree* findThreadMappingAncestor(
 }
 
 /*
- * Check if a reference group is accessed in a coalesced way.
+ * Should this reference group be promoted for the purpose of coalescing?
  *
- * In particular, check if incrementing the schedule dimension mapped to
+ * If the reference group is not already accessed in a coalesced way,
+ * then the group should be promoted.
+ * The check for coalesced accesses is performed as follows.
+ * Check if incrementing the schedule dimension mapped to
  * Thread::x results in the last tensor index being incremented as well.
  * Since accesses in the group may belong to different statements, which may
  * have different loops mapped to Thread::x, perform the check for each basic
@@ -325,7 +328,7 @@ const detail::ScheduleTree* findThreadMappingAncestor(
  * accessed in a coalesced way if all references in this group are accessed in
  * a coalesced way.
  */
-bool isCoalesced(
+bool promotionImprovesCoalescing(
     const ThreadIdxXScheduleDepthState& threadIdxXScheduleDepthState,
     const TensorReferenceGroup& group,
     isl::union_map schedule,
@@ -353,11 +356,11 @@ bool isCoalesced(
                                      .apply_range(scheduledAccess);
 
       if (not accessedByAdjacentX.is_subset(elementToNext)) {
-        return false;
+        return true;
       }
     }
   }
-  return true;
+  return false;
 }
 
 /*
@@ -558,7 +561,7 @@ void promoteToSharedGreedy(
         // Do not promote if the group features no reuse and is accessed in a
         // coalesced way.
         if (!hasReuseWithin(*group, partialSchedMupa) &&
-            isCoalesced(
+            !promotionImprovesCoalescing(
                 threadIdxXScheduleDepthState,
                 *group,
                 fullSched,
