@@ -208,6 +208,14 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
   return res;
 }
 
+ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
+  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  CHECK(domain);
+  auto space = domain->domain_.get_space().set_from_params();
+  auto zero = isl::multi_union_pw_aff::zero(space);
+  return ScheduleTree::makeBand(zero);
+}
+
 std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
     isl::union_set domain,
     std::vector<ScheduleTreeUPtr>&& children) {

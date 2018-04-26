@@ -488,11 +488,7 @@ detail::ScheduleTree* obtainOuterBand(detail::ScheduleTree* root) {
       continue;
     }
 
-    auto domain = root->elemAs<ScheduleTreeElemDomain>();
-    CHECK(domain);
-    auto space = domain->domain_.get_space().set_from_params();
-    auto zero = isl::multi_union_pw_aff::zero(space);
-    auto band = ScheduleTree::makeBand(zero);
+    auto band = ScheduleTree::makeEmptyBand(root);
     if (n == 0) {
       return setPermutable(insertNodeBelow(tree, std::move(band)));
     } else {

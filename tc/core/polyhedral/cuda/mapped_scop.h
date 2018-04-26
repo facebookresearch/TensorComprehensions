@@ -102,10 +102,10 @@ class MappedScop {
   }
 
   // Given that "nMapped" identifiers of type "MappingTypeId" have already
-  // been mapped, map the remaining ones (up to "nToMap") to zero
+  // been mapped, map the remaining ones to zero
   // for all statement instances.
   template <typename MappingTypeId>
-  void mapRemaining(detail::ScheduleTree* tree, size_t nMapped, size_t nToMap);
+  void mapRemaining(detail::ScheduleTree* tree, size_t nMapped);
 
   // Fix the values of the specified parameters in the context
   // to the corresponding specified values.
@@ -155,13 +155,16 @@ class MappedScop {
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.
   detail::ScheduleTree* separateReduction(detail::ScheduleTree* band);
-  // Split out reduction bands and insert reduction synchronizations.
-  void splitOutReductionsAndInsertSyncs();
+  // Split out reduction member at position "dim" in "band" and
+  // insert reduction synchronizations.
+  void splitOutReductionAndInsertSyncs(detail::ScheduleTree* band, int dim);
   // Map "band" to thread identifiers using as many blockSizes values as outer
-  // coincident dimensions, unroll band members that execute at most "unroll"
-  // instances and return the number of mapped thread identifiers.
+  // coincident dimensions (plus reduction dimension, if any),
+  // insert synchronization in case of a reduction, and
+  // return the number of mapped thread identifiers.
   size_t mapToThreads(detail::ScheduleTree* band);
-  // Map innermost bands to thread identifiers and
+  // Map innermost bands to thread identifiers,
+  // inserting synchronization in case of a reduction, and
   // return the number of mapped thread identifiers.
   size_t mapInnermostBandsToThreads(detail::ScheduleTree* st);
 
@@ -184,14 +187,11 @@ class MappedScop {
   // Information about a detected reduction that can potentially
   // be mapped to a library call.
   struct Reduction {
-    Reduction(std::vector<isl::id> ids, size_t index)
-        : ids(ids), separated(false), reductionDim(index) {}
+    Reduction(std::vector<isl::id> ids) : ids(ids), separated(false) {}
     // The statement identifiers of the reduction update statements.
     std::vector<isl::id> ids;
     // Has the reduction been separated out as a full block?
     bool separated;
-    // Index of the band member in which the reduction was detected.
-    size_t reductionDim;
   };
   // Map isolated innermost reduction band members to information
   // about the detected reduction.
