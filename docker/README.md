@@ -78,7 +78,7 @@ git submodule update --init --recursive
 # build TC
 conda install -y mkl-include pyyaml
 conda install -yc conda-forge pytest
-conda install -y pytorch-nightly=2018.04.17 -c pytorch # OR  conda install -y pytorch-nightly=2018.04.17 cuda90 -c pytorch
+conda install -y pytorch -c pytorch # OR  conda install -y pytorch cuda90 -c pytorch
 CORES=$(nproc) WITH_CAFFE2=ON CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
 # Test the TC build is fine
 ./test.sh

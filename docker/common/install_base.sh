@@ -34,11 +34,15 @@ apt-get install -y --no-install-recommends \
 apt-get clean
 rm -rf /var/lib/apt/lists/*
 # setup gcc
-add-apt-repository ppa:ubuntu-toolchain-r/test
-apt-get update
-apt-get install -y --no-install-recommends libcilkrts5 gcc-$GCC_VERSION g++-$GCC_VERSION
-update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 50
-update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION 50
+if [[ "$GCC_VERSION" == 4.9 ]]; then
+  add-apt-repository ppa:ubuntu-toolchain-r/test
+  apt-get update
+  apt-get install -y --no-install-recommends libcilkrts5 gcc-$GCC_VERSION g++-$GCC_VERSION
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$GCC_VERSION 50
+  update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-$GCC_VERSION 50
+else
+  apt-get install -y --no-install-recommends libcilkrts5 gcc g++
+fi
 
 # Install ccache from source. Needs 3.4 or later for ccbin support
 # Needs specific branch to work with nvcc (ccache/ccache#145)
