@@ -49,7 +49,9 @@ class TcOp : public Operator<Context> {
         OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =
         OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
-    profile_ = OperatorBase::GetSingleArgument<bool>("profile", false);
+    checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
+    compiled_ = false;
+    handle_ = 0;
     ArgumentHelper args(operator_def);
     if (args.HasArgument("mappingOptions")) {
       cudaMappingOptions_ = tc::CudaMappingOptions(
@@ -95,38 +97,37 @@ class TcOp : public Operator<Context> {
   }
 
   virtual bool RunOnDevice() override {
-    // first, given the TC, define it in the executionEngine_
-    executionEngine_->define(tc_);
-
-    // now, given the input tensors, convert them to dlpack tensors so that
-    // we can call the compile command
-    std::vector<::tc::dlutils::DLTensorUPtr> inTensorUPtrs;
-    std::vector<const DLTensor*> inputDLTensors;
-    for (int idx = 0; idx < this->InputSize(); ++idx) {
-      auto dims = this->Input(idx).dims();
-      inTensorUPtrs.emplace_back(
-          dlpack::makeConstDLTensor(this->Input(idx), dims));
-      inputDLTensors.push_back(inTensorUPtrs.back().get());
+    if (!compiled_) {
+      // first, given the TC, define it in the executionEngine_
+      executionEngine_->define(tc_);
+      for (int idx = 0; idx < this->InputSize(); ++idx) {
+        auto dims = this->Input(idx).dims();
+        inTensorUPtrs_.emplace_back(
+            dlpack::makeConstDLTensor(this->Input(idx), dims));
+        inputDLTensors_.push_back(inTensorUPtrs_[idx].get());
+        inputVoidPtrs_.push_back(inputDLTensors_[idx]->data);
+      }
+      auto outTensorInfo =
+          executionEngine_->inferOutputTensorInfo(tcName_, inputDLTensors_);
+      prepareOutputs(outTensorInfo);
+      for (int idx = 0; idx < OutputSize(); ++idx) {
+        outTensorUPtrs_.emplace_back(dlpack::makeDLTensor(Output(idx)));
+        outputDLTensors_.push_back(outTensorUPtrs_[idx].get());
+        outputVoidPtrs_.push_back(outputDLTensors_[idx]->data);
+      }
+      handle_ = executionEngine_->compile(
+          tcName_,
+          inputDLTensors_,
+          cudaMappingOptions_.toProtobufSerializedString());
+      compiled_ = true;
     }
 
-    auto outTensorInfo =
-        executionEngine_->inferOutputTensorInfo(tcName_, inputDLTensors);
-    prepareOutputs(outTensorInfo);
-
-    // now create the outputDLTensors
-    std::vector<::tc::dlutils::DLTensorUPtr> outTensorUPtrs;
-    std::vector<DLTensor*> outputDLTensors;
-    for (int i = 0; i < OutputSize(); ++i) {
-      outTensorUPtrs.emplace_back(dlpack::makeDLTensor(Output(i)));
-      outputDLTensors.push_back(outTensorUPtrs.back().get());
+    if (checkSizes_) {
+      executionEngine_->run(handle_, inputDLTensors_, outputDLTensors_);
+    } else {
+      executionEngine_->uncheckedRun(handle_, inputVoidPtrs_, outputVoidPtrs_);
     }
 
-    // compile and run
-    auto handle = executionEngine_->compile(
-        tcName_,
-        inputDLTensors,
-        cudaMappingOptions_.toProtobufSerializedString());
-    executionEngine_->run(handle, inputDLTensors, outputDLTensors, profile_);
     return true;
   }
 
@@ -135,7 +136,15 @@ class TcOp : public Operator<Context> {
   std::string gradTc_;
   std::string tcName_;
   std::string gradTcName_;
-  bool profile_;
+  bool checkSizes_;
+  bool compiled_;
+  size_t handle_;
+  std::vector<const void*> inputVoidPtrs_;
+  std::vector<void*> outputVoidPtrs_;
+  std::vector<const DLTensor*> inputDLTensors_;
+  std::vector<DLTensor*> outputDLTensors_;
+  std::vector<::tc::dlutils::DLTensorUPtr> inTensorUPtrs_;
+  std::vector<::tc::dlutils::DLTensorUPtr> outTensorUPtrs_;
   tc::CudaMappingOptions cudaMappingOptions_;
   tc::CudaMappingOptions gradCudaMappingOptions_;
 
