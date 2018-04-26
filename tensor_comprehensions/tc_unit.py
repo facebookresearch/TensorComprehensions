@@ -66,7 +66,7 @@ class SetDebugFlags(object):
 def check_cache_file_exists(cache_file):
     # for autotuning, we save two files: .cuda and .options, we will check that
     # these two files exists for the validity of cache
-    if os.path.exists(cache_file + ".options") and os.path.exists(cache_file + ".cuda"):
+    if os.path.exists(cache_file + ".options"):
         return True
     return False
 
@@ -254,7 +254,7 @@ class TcAutotuner(object):
                 cache_file = "/tmp/{}_{}".format(hash_key, str(uuid.uuid4()))
             elif isinstance(kwargs["cache"], str):
                 cache_file = kwargs["cache"]
-            logger.info('Autotuning cache will be saved to: {}.cuda/options'.format(cache_file))
+            logger.info('Autotuning cache will be saved to: {}.options'.format(cache_file))
         else:
             logger.warning("Autotuning results won't be cached. 'cache' option is not set")
 
@@ -297,7 +297,7 @@ class TcAutotuner(object):
 
         if cache_file:
             cache_file = cache_file + "_backward"
-            logger.info('Backwards autotuning cache will be saved to: {}.cuda/options'.format(cache_file))
+            logger.info('Backwards autotuning cache will be saved to: {}.options'.format(cache_file))
         kwargs["type"] = "backward"
         options = get_options_from_kwargs_and_tuner_cache(backward_name, cache_file, options_cache, *inputs, **kwargs)
         backward_best_options = self.tune_and_store(
