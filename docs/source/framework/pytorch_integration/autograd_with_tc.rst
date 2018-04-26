@@ -114,8 +114,8 @@ Let's see how to cache options to file when we tune a training layer.
      out = convolution(I, W)
      out[0].sum().backward()
 
-You will find two cache files created: :code:`convolution_train.cuda/options` has
-options for the forward layer and :code:`convolution_train_backward.cuda/options` file
+You will find a cache file created: :code:`convolution_train.options` has
+options for the forward layer and :code:`convolution_train_backward.options` file
 has options for the grad layer.
 
 Reordering grad outputs

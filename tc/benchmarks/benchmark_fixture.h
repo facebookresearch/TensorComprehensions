@@ -255,8 +255,7 @@ struct Benchmark : public ::testing::Test {
         return true;
       }) {
     std::cout << "Validating proto from: "
-              << tc::makeOptionsFilename(cacheFilename) << "and "
-              << tc::makeCudaFilename(cacheFilename) << std::endl;
+              << tc::makeOptionsFilename(cacheFilename) << std::endl;
 
     tc::OptionsCache::enableCache();
     tc::OptionsCache::loadCacheFromProtobuf(cacheFilename + ".options");

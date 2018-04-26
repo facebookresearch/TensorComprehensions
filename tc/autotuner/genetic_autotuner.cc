@@ -53,8 +53,7 @@ void GeneticAutotuner::storeCaches(const std::string& filename) {
   if (filename.empty()) {
     std::cout << "No filepath provided, not saving cache" << std::endl;
   } else {
-    std::cout << "Dumping cache to " << filename << ".cuda/options"
-              << std::endl;
+    std::cout << "Dumping cache to " << filename << ".options" << std::endl;
     tc::OptionsCache::getCache()->keepOnlyBestCandidates(
         tc::FLAGS_tuner_save_best_candidates_count);
     tc::OptionsCache::dumpCacheToProtobuf(tc::makeOptionsFilename(filename));
@@ -69,7 +68,7 @@ std::vector<CudaMappingOptions> GeneticAutotuner::load(
     const std::vector<const DLTensor*>& inputs,
     const size_t numCandidates) {
   std::cout << "Loading proto from: " << tc::makeOptionsFilename(cacheFileName)
-            << " and " << tc::makeCudaFilename(cacheFileName) << std::endl;
+            << std::endl;
   enableOrLoadCache(cacheFileName);
   tc::FLAGS_tuner_gen_restore_number =
       std::min(numCandidates, size_t(FLAGS_tuner_gen_pop_size) - 1);
@@ -141,7 +140,7 @@ llvm::Optional<CudaMappingOptions> GeneticAutotuner::tune(
       tuner.run(FLAGS_tuner_gen_generations);
     } catch (const std::exception& e) {
       std::cerr << "Exception during autotuning: " << e.what()
-                << "\n dumping cache to " << cacheFileName << ".cuda/options"
+                << "\n dumping cache to " << cacheFileName << ".options"
                 << std::endl;
       storeCaches(cacheFileName);
       tunerThreadEx = std::current_exception();

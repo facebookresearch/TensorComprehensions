@@ -101,7 +101,4 @@ inline std::string makeOptionsFilename(const std::string& filename) {
   return filename + ".options";
 }
 
-inline std::string makeCudaFilename(const std::string& filename) {
-  return filename + ".cuda";
-}
 } // namespace tc
