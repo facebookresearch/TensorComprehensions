@@ -458,6 +458,8 @@ isl::multi_union_pw_aff prefixScheduleMupa(
   auto domain = domainElem->domain_.universe();
   auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
   auto prefix = isl::multi_union_pw_aff(domain, zero);
+  // Work around bug in isl.
+  prefix = prefix.intersect_domain(domain);
   prefix = foldl(
       filterType<ScheduleTreeElemBand>(tree->ancestors(root)),
       [](const ScheduleTree* st, isl::multi_union_pw_aff prefix) {
