@@ -710,6 +710,49 @@ TEST_F(PolyhedralMapperTest, ReductionMM2D) {
   EXPECT_TRUE(code.find("C[(t1 + c0)][(t0 + c1)] = (C") != std::string::npos);
 }
 
+/*
+ * Check that a subscript with affine and non-affine parts is handled by the
+ * Halide to isl conversion, in particular that the conversion does not crash.
+ */
+TEST_F(PolyhedralMapperTest, NonAffineBoundLHSInBinOp) {
+  string tc = R"TC(
+def shiftedLut(float(E, D) LUT, int32(B, L) I) -> (O) {
+  O(i, j) +=! LUT(I(i, k) + 1, j)
+}
+)TC";
+  // This triggers tc2halide conversion and should not throw.
+  Prepare(tc);
+}
+
+/*
+ * Check that a subscript with affine and non-affine parts is handled by the
+ * Halide to isl conversion, in particular that the conversion does not crash.
+ */
+TEST_F(PolyhedralMapperTest, NonAffineBoundRHSInBinOp) {
+  string tc = R"TC(
+def shiftedLut(float(E, D) LUT, int32(B, L) I) -> (O) {
+  O(i, j) +=! LUT(1 + j + I(i, k), j)
+}
+)TC";
+  // This triggers tc2halide conversion and should not throw.
+  Prepare(tc);
+}
+
+/*
+ * Check that a subscript with affine and non-affine parts is handled by the
+ * Halide to isl conversion, in particular that the conversion does not crash.
+ */
+TEST_F(PolyhedralMapperTest, PerforatedConvolution) {
+  string tc = R"TC(
+def perforatedConvolution(float(N, C, H, W) input, float(M, C, KH, KW) weights,
+                          int32(N, L) index) -> (output) {
+  output(n, m, l) +=! input(n, c, index(n, l) + kh, index(n, l) + kw) * weights(m, c, kh, kw) where l in 0:L
+ }
+)TC";
+  // This triggers tc2halide conversion and should not throw.
+  Prepare(tc);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

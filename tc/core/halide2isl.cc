@@ -117,23 +117,29 @@ concatAffs(isl::space space, T op, bool allowMin, bool allowMax) {
 /*
  * Convert Halide binary expression "op" into an isl affine function by
  * converting its LHS and RHS into affs and combining them with "combine"
- * into a single expression.  LHS and RHS are expected to only produce a single
- * expression.
+ * into a single expression.  LHS and RHS are expected to only produce at most
+ * one expression.  If either of them produces zero expressions, meaning the
+ * bound is not affine, return an empty vector.  Otherwise return a vector with
+ * a single expression that is the result of applying LHS.combine(RHS).
  * This is intended for use with operations other than Min/Max that do not
  * commute nicely in bounds, for example
  *   x < a + max(b,c)  NOT <=>  x < a + b AND x < a + c for negative values.
  */
 template <typename T>
-inline isl::aff combineSingleAffs(
+inline std::vector<isl::aff> combineSingleAffs(
     isl::space space,
     T op,
     isl::aff (isl::aff::*combine)(isl::aff) const) {
   auto left = makeIslAffBoundsFromExpr(space, op->a, false, false);
   auto right = makeIslAffBoundsFromExpr(space, op->b, false, false);
-  CHECK_EQ(left.size(), 1u);
-  CHECK_EQ(right.size(), 1u);
+  CHECK_LE(left.size(), 1u);
+  CHECK_LE(right.size(), 1u);
 
-  return (left[0].*combine)(right[0]);
+  if (left.size() == 0 || right.size() == 0) {
+    return {};
+  }
+
+  return {(left[0].*combine)(right[0])};
 }
 
 } // end namespace
@@ -183,13 +189,13 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
   } else if (maxOp != nullptr && allowMax) {
     return concatAffs(space, maxOp, allowMin, allowMax);
   } else if (const Add* op = e.as<Add>()) {
-    return {combineSingleAffs(space, op, &isl::aff::add)};
+    return combineSingleAffs(space, op, &isl::aff::add);
   } else if (const Sub* op = e.as<Sub>()) {
-    return {combineSingleAffs(space, op, &isl::aff::sub)};
+    return combineSingleAffs(space, op, &isl::aff::sub);
   } else if (const Mul* op = e.as<Mul>()) {
-    return {combineSingleAffs(space, op, &isl::aff::mul)};
+    return combineSingleAffs(space, op, &isl::aff::mul);
   } else if (const Div* op = e.as<Div>()) {
-    return {combineSingleAffs(space, op, &isl::aff::div)};
+    return combineSingleAffs(space, op, &isl::aff::div);
   } else if (const Mod* op = e.as<Mod>()) {
     std::vector<isl::aff> result;
     // We cannot span multiple constraints if a modulo operation is involved.
