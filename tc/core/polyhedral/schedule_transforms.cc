@@ -463,9 +463,9 @@ isl::multi_union_pw_aff infixScheduleMupa(
   prefix = prefix.intersect_domain(domain);
   prefix = foldl(
       filterType<ScheduleTreeElemBand>(tree->ancestors(relativeRoot)),
-      [](const ScheduleTree* st, isl::multi_union_pw_aff prefix) {
+      [](const ScheduleTree* st, isl::multi_union_pw_aff pref) {
         auto mupa = st->elemAs<ScheduleTreeElemBand>()->mupa_;
-        return prefix.flat_range_product(mupa);
+        return pref.flat_range_product(mupa);
       },
       prefix);
   return prefix;

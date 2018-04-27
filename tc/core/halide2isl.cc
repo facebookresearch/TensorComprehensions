@@ -402,12 +402,12 @@ isl::schedule makeScheduleTreeHelper(
     // this loop var at the same index.
     isl::multi_union_pw_aff mupa;
     body.get_domain().foreach_set([&](isl::set s) {
-      isl::aff loopVar(
+      isl::aff newLoopVar(
           isl::local_space(s.get_space()), isl::dim_type::set, thisLoopIdx);
       if (mupa) {
-        mupa = mupa.union_add(isl::union_pw_aff(isl::pw_aff(loopVar)));
+        mupa = mupa.union_add(isl::union_pw_aff(isl::pw_aff(newLoopVar)));
       } else {
-        mupa = isl::union_pw_aff(isl::pw_aff(loopVar));
+        mupa = isl::union_pw_aff(isl::pw_aff(newLoopVar));
       }
     });
 
@@ -420,9 +420,9 @@ isl::schedule makeScheduleTreeHelper(
     // Build a schedule tree for both members of the block and
     // combine them in a sequence.
     std::vector<isl::schedule> schedules;
-    for (Stmt s : stmts) {
+    for (Stmt stmt : stmts) {
       schedules.push_back(makeScheduleTreeHelper(
-          s, set, outer, reads, writes, accesses, statements, iterators));
+          stmt, set, outer, reads, writes, accesses, statements, iterators));
     }
     schedule = schedules[0].sequence(schedules[1]);
 
