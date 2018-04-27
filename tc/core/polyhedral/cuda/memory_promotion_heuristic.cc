@@ -83,10 +83,6 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       throw promotion::PromotionLogicError("no copy band");
     }
 
-    auto ctx = node->ctx_;
-    insertNodeBelow(
-        bandNode, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
-
     // Check that we are not mapping to threads below other thread mappings.
     std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> usedThreads;
     for (auto n : node->ancestors(root)) {
@@ -97,20 +93,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
       }
     }
 
-    // Map band dimensions to threads, in inverse order since the last member
-    // iterates over the last subscript and is likely to result in coalescing.
-    // If not all available thread ids are used, fix remaining to 1 thread.
-    auto nToMap = std::min(band->nMember(), mscop.numThreads.view.size());
-    for (size_t t = 0; t < nToMap; ++t) {
-      auto pos = band->nMember() - 1 - t;
-      mapToParameterWithExtent(
-          root,
-          bandNode,
-          pos,
-          mapping::ThreadId::makeId(t),
-          mscop.numThreads.view[t]);
-    }
-    mscop.mapRemaining<mapping::ThreadId>(bandNode, nToMap);
+    mscop.mapThreadsBackward(bandNode);
 
     // Unroll if requested.
     if (unroll) {

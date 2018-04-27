@@ -87,25 +87,17 @@ class MappedScop {
       std::unique_ptr<Scop>&& scopUPtr,
       const CudaMappingOptions& mappingOptions);
 
-  // Map a particular "pos"-th dimension in a _band_ node identified by "tree"
-  // to the block or thread dimension.  Ancestors or descendants of "tree" must
-  // not have a dimension already mapped to the same block or thread.
-  inline detail::ScheduleTree*
-  map(detail::ScheduleTree* tree, int pos, const mapping::BlockId& id) {
-    return mapToParameterWithExtent(
-        scop_->scheduleRoot(), tree, pos, id, id.mappingSize(numBlocks));
-  }
-  inline detail::ScheduleTree*
-  map(detail::ScheduleTree* tree, int pos, const mapping::ThreadId& id) {
-    return mapToParameterWithExtent(
-        scop_->scheduleRoot(), tree, pos, id, id.mappingSize(numThreads));
-  }
-
-  // Given that "nMapped" identifiers of type "MappingTypeId" have already
-  // been mapped, map the remaining ones to zero
-  // for all statement instances.
-  template <typename MappingTypeId>
-  void mapRemaining(detail::ScheduleTree* tree, size_t nMapped);
+  // Map the initial (up to "nToMap") band members of "band"
+  // to successive block identifiers.
+  // This function can only be called once on the entire tree.
+  detail::ScheduleTree* mapBlocksForward(
+      detail::ScheduleTree* band,
+      size_t nToMap);
+  // Map the final band members of "band"
+  // to successive thread identifiers, with the last member mapped
+  // to thread identifier X.
+  // This function can only be called once in any branch of the tree.
+  detail::ScheduleTree* mapThreadsBackward(detail::ScheduleTree* band);
 
   // Fix the values of the specified parameters in the context
   // to the corresponding specified values.
@@ -136,6 +128,14 @@ class MappedScop {
   }
 
  private:
+  // Map the elements in "list" to successive blocks or thread identifiers,
+  // with the first element mapped to identifier X.
+  // Return a pointer to the updated node (below the inserted filter)
+  // for call chaining purposes.
+  template <typename MappingTypeId>
+  detail::ScheduleTree* map(
+      detail::ScheduleTree* tree,
+      isl::union_pw_aff_list list);
   // Map "band" to block identifiers and then scale
   // the band members by "tileSizes".
   void mapToBlocksAndScaleBand(

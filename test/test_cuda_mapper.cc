@@ -83,14 +83,12 @@ struct PolyhedralMapperTest : public ::testing::Test {
     // Map to blocks (1 single block here)
     auto mscop = MappedScop::makeMappedScop(
         std::move(scop), Grid{1}, Block{blockSizes[0], blockSizes[1]}, 0);
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    auto band = mscop->map(root->child({0}), 0, BX);
+    auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
     auto ns = detail::ScheduleTree::collectDFSPostorder(
         root, detail::ScheduleTreeType::Band);
-    mscop->map(ns[0], 0, TX);
-    mscop->map(ns[1], 0, TY);
+    mscop->mapThreadsBackward(ns[1]);
     mscop->insertMappingContext();
     return mscop;
   }
@@ -110,13 +108,10 @@ struct PolyhedralMapperTest : public ::testing::Test {
         0);
 
     // Map to blocks
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    auto band = mscop->map(root->child({0}), 0, BX);
-    band = mscop->map(band, 1, BY);
+    auto band = mscop->mapBlocksForward(root->child({0}), 2);
     bandScale(band, tileSizes);
 
-    band = mscop->map(band->child({0}), 0, TX);
-    band = mscop->map(band, 1, TY);
+    band = mscop->mapThreadsBackward(band->child({0}));
     mscop->insertMappingContext();
     return mscop;
   }
@@ -185,8 +180,8 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
   const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
-    if (M >= t1 + c1 + 1) {
-      C[(t0 + 16 * b0)][(t1 + c1)] = (A[(t0 + 16 * b0)][(t1 + c1)] + B[(t0 + 16 * b0)][(t1 + c1)]);
+    if (M >= t0 + c1 + 1) {
+      C[(t1 + 16 * b0)][(t0 + c1)] = (A[(t1 + 16 * b0)][(t0 + c1)] + B[(t1 + 16 * b0)][(t0 + c1)]);
     }
   }
 }
@@ -317,11 +312,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
   for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
-        for (int c3 = 0; c3 <= 15; c3 += 1) {
-          O[(c0 + c2)][(c1 + c3)] = 0.000000f;
-          for (int c4 = t0; c4 <= 63; c4 += 32) {
-            O[(c0 + c2)][(c1 + c3)] = (O[(c0 + c2)][(c1 + c3)] + (A[(c0 + c2)][c4]*B[c4][(c1 + c3)]));
-          }
+        O[(c0 + c2)][(t0 + c1)] = 0.000000f;
+        for (int c4 = 0; c4 <= 63; c4 += 1) {
+          O[(c0 + c2)][(t0 + c1)] = (O[(c0 + c2)][(t0 + c1)] + (A[(c0 + c2)][c4]*B[c4][(t0 + c1)]));
         }
       }
     }
@@ -341,23 +334,7 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto res = std::get<0>(mscop->codegen(specializedName));
-  ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64));
-}
-
-TEST_F(PolyhedralMapperTest, FilterMerge) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
-  auto schedule = scop->scheduleRoot();
-
-  // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  auto& globalParameterContext =
-      const_cast<isl::set&>(scop->globalParameterContext);
-  globalParameterContext = globalParameterContext.intersect(context);
-  scop->domain() = scop->domain().intersect(globalParameterContext);
-
-  auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
-  mergeConsecutiveMappingFilters(schedule, schedule->child({0}));
-  mscop->codegen(specializedName);
+  ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64)) << res;
 }
 
 TEST_F(PolyhedralMapperTest, Match1) {
@@ -370,7 +347,7 @@ TEST_F(PolyhedralMapperTest, Match1) {
           filter([](isl::union_set f) {
             return f.get_space().dim(isl::dim_type::param) == 3;
           }),
-          filter(mapping_filter(band()))),
+          filter(band())),
       schedule);
   EXPECT_EQ(1u, f.size());
 }

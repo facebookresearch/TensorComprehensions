@@ -108,22 +108,69 @@ const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
 }
 } // namespace
 
+// Map the elements in "list" to successive blocks or thread identifiers,
+// with the first element mapped to identifier X.  The extents are obtained
+// from the initial elements of numBlocks or numThreads.  The identifiers
+// must not be present in the space of the partial schedules in "list" and
+// extents must be non-zero.  The mapping corresponds to inserting a filter
+// node with condition 'list % extent = ids'.
+// The mapping is inserted above "tree".
+//
+// Return a pointer to the updated node (below the inserted filter)
+// for call chaining purposes.
 template <typename MappingTypeId>
-void MappedScop::mapRemaining(detail::ScheduleTree* tree, size_t nMapped) {
-  size_t nToMap = mappingSize<MappingTypeId>(this).view.size();
-  if (nMapped >= nToMap) {
-    return;
+detail::ScheduleTree* MappedScop::map(
+    detail::ScheduleTree* tree,
+    isl::union_pw_aff_list list) {
+  size_t nToMap = list.n();
+  const auto& extent = mappingSize<MappingTypeId>(this).view;
+  CHECK_LE(nToMap, extent.size()) << "dimension overflow";
+
+  auto root = scop_->scheduleRoot();
+  auto domain = activeDomainPoints(root, tree).universe();
+  auto filter = domain;
+
+  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> idSet;
+  for (size_t i = 0; i < nToMap; ++i) {
+    auto id = MappingTypeId::makeId(i);
+    auto upa = list.get(i);
+    // Introduce the "mapping" parameter after checking it is not already
+    // present in the schedule space.
+    CHECK(not upa.involves_param(id));
+    CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
+
+    // Create mapping filter by equating the newly introduced
+    // parameter ids[i] to the "i"-th affine function modulo its extent.
+    upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
+    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
+    filter = filter.intersect(upa.zero_union_set());
+
+    idSet.emplace(id);
   }
 
-  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> ids;
-  for (size_t i = nMapped; i < nToMap; ++i) {
-    ids.insert(MappingTypeId::makeId(i));
+  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> unmapped;
+  for (size_t i = nToMap; i < extent.size(); ++i) {
+    auto id = MappingTypeId::makeId(i);
+    unmapped.emplace(id);
+    idSet.emplace(id);
   }
-  auto root = scop_->scheduleRoot();
-  auto domain = activeDomainPoints(root, tree);
-  auto filter = makeFixRemainingZeroFilter(domain, ids);
-  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, ids);
-  insertNodeAbove(root, tree, std::move(mapping));
+  filter = filter.intersect(makeFixRemainingZeroFilter(domain, unmapped));
+
+  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, idSet);
+  tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
+
+  return tree;
+}
+
+detail::ScheduleTree* MappedScop::mapBlocksForward(
+    detail::ScheduleTree* band,
+    size_t nToMap) {
+  auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
+  CHECK(bandNode) << "expected a band, got " << *band;
+
+  auto list = bandNode->mupa_.get_union_pw_aff_list();
+  list = list.drop(nToMap, list.n() - nToMap);
+  return map<mapping::BlockId>(band, list);
 }
 
 // Uses as many blockSizes elements as outer coincident dimensions in the
@@ -142,10 +189,7 @@ void MappedScop::mapToBlocksAndScaleBand(
   // and no more than block dimensions to be mapped
   nBlocksToMap = std::min(nBlocksToMap, numBlocks.view.size());
 
-  for (size_t i = 0; i < nBlocksToMap; ++i) {
-    band = map(band, i, mapping::BlockId::makeId(i));
-  }
-  mapRemaining<mapping::BlockId>(band, nBlocksToMap);
+  mapBlocksForward(band, nBlocksToMap);
   bandScale(band, tileSizes);
 }
 
@@ -166,10 +210,7 @@ void fixThreadsBelow(
 
   auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
   auto bandTree = insertNodeBelow(tree, std::move(band));
-  auto ctx = tree->ctx_;
-  insertNodeBelow(
-      bandTree, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
-  mscop.mapRemaining<mapping::ThreadId>(bandTree, begin);
+  mscop.mapThreadsBackward(bandTree);
 }
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
@@ -305,6 +346,22 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
   return st->ancestor(root, 2);
 }
 
+detail::ScheduleTree* MappedScop::mapThreadsBackward(
+    detail::ScheduleTree* band) {
+  auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
+  CHECK(bandNode);
+  auto nMember = bandNode->nMember();
+  auto nToMap = std::min(nMember, numThreads.view.size());
+  CHECK_LE(nToMap, 3) << "mapping to too many threads";
+
+  auto ctx = band->ctx_;
+  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
+
+  auto list = bandNode->mupa_.get_union_pw_aff_list().reverse();
+  list = list.drop(nToMap, list.n() - nToMap);
+  return map<mapping::ThreadId>(band, list);
+}
+
 size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   using namespace tc::polyhedral::detail;
 
@@ -355,20 +412,9 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
   }
 
-  auto ctx = band->ctx_;
-  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
-
   CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
-  CHECK_LE(nMappedThreads, 3) << "mapping to too many threads";
 
-  // Map the coincident dimensions to threads starting from the innermost and
-  // from thread x.
-  for (size_t i = 0; i < nMappedThreads; ++i) {
-    auto id = mapping::ThreadId::makeId(i);
-    auto dim = nMappedThreads - 1 - i;
-    band = map(band, dim, id);
-  }
-  mapRemaining<mapping::ThreadId>(band, nMappedThreads);
+  mapThreadsBackward(band);
 
   if (isReduction) {
     splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);

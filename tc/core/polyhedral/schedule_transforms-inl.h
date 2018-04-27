@@ -39,35 +39,5 @@ inline detail::ScheduleTree* insertNodeBelow(
   tree->appendChild(std::move(node));
   return tree->child({0});
 }
-
-template <typename MappingIdType>
-inline detail::ScheduleTree* mapToParameterWithExtent(
-    detail::ScheduleTree* root,
-    detail::ScheduleTree* tree,
-    size_t pos,
-    MappingIdType id,
-    size_t extent) {
-  auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
-  CHECK(band) << "expected a band, got " << *tree;
-  CHECK_GE(pos, 0u) << "dimension underflow";
-  CHECK_LT(pos, band->nMember()) << "dimension overflow";
-  CHECK_NE(extent, 0u) << "NYI: mapping to 0";
-
-  auto domain = activeDomainPoints(root, tree).universe();
-
-  // Introduce the "mapping" parameter after checking it is not already present
-  // in the schedule space.
-  CHECK(not band->mupa_.involves_param(id));
-
-  // Create mapping filter by equating the newly introduced
-  // parameter "id" to the "pos"-th schedule dimension modulo its extent.
-  auto upa =
-      band->mupa_.get_union_pw_aff(pos).mod_val(isl::val(tree->ctx_, extent));
-  upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
-  auto filter = upa.zero_union_set();
-  auto mapping =
-      detail::ScheduleTree::makeMappingFilter<MappingIdType>(filter, {id});
-  return insertNodeAbove(root, tree, std::move(mapping))->child({0});
-}
 } // namespace polyhedral
 } // namespace tc
