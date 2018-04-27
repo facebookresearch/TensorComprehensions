@@ -94,7 +94,16 @@ jobs:
       - save_cache:
           key: v1-halide-{{ checksum ".git/modules/third-party/halide/HEAD" }}-{{ checksum "build.sh" }}-{{ checksum ".circleci/config.yml" }}-{{ arch }}-1404
           paths:
-            - third-party-install/include/Halide
+            - third-party-install/include/HalideBuffer.h
+            - third-party-install/include/Halide.h
+            - third-party-install/include/HalideRuntimeCuda.h
+            - third-party-install/include/HalideRuntime.h
+            - third-party-install/include/HalideRuntimeHexagonHost.h
+            - third-party-install/include/HalideRuntimeMetal.h
+            - third-party-install/include/HalideRuntimeOpenCL.h
+            - third-party-install/include/HalideRuntimeOpenGLCompute.h
+            - third-party-install/include/HalideRuntimeOpenGL.h
+            - third-party-install/include/HalideRuntimeQurt.h
             - third-party-install/lib/libHalide.so
             - third-party-install/lib/libHalide.a
 
@@ -204,7 +213,16 @@ jobs:
       - save_cache:
           key: v1-halide-{{ checksum ".git/modules/third-party/halide/HEAD" }}-{{ checksum "build.sh" }}-{{ checksum ".circleci/config.yml" }}-{{ arch }}-1604
           paths:
-            - third-party-install/include/Halide
+            - third-party-install/include/HalideBuffer.h
+            - third-party-install/include/Halide.h
+            - third-party-install/include/HalideRuntimeCuda.h
+            - third-party-install/include/HalideRuntime.h
+            - third-party-install/include/HalideRuntimeHexagonHost.h
+            - third-party-install/include/HalideRuntimeMetal.h
+            - third-party-install/include/HalideRuntimeOpenCL.h
+            - third-party-install/include/HalideRuntimeOpenGLCompute.h
+            - third-party-install/include/HalideRuntimeOpenGL.h
+            - third-party-install/include/HalideRuntimeQurt.h
             - third-party-install/lib/libHalide.so
             - third-party-install/lib/libHalide.a
 
