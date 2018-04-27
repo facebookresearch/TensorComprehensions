@@ -79,7 +79,7 @@ GeneticTunerHarness::GeneticTunerHarness(
           config.fixParameters(fixedParams);
           return config;
         });
-    tuner_ = make_unique<GeneticSearch>(
+    tuner_ = tc::make_unique<GeneticSearch>(
         configs,
         kMaxPopulationSize,
         kCrossOverRate,
