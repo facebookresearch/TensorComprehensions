@@ -47,7 +47,7 @@ struct TcMapperTest : public ::testing::Test {
     auto handle = atCompl.compile(name, inputs, mappingOptions);
     atCompl.run(name, inputs, outputs, handle);
     checkFun(inputs, outputs);
-    return std::move(outputs);
+    return outputs;
   }
 };
 
