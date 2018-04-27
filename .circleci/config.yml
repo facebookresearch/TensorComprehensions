@@ -137,7 +137,7 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-aten-{{ checksum ".git/modules/third-party/ATen/HEAD" }}-{{ checksum "build.sh" }}-{{ checksum ".circleci/config.yml" }}-{{ arch }}-1604
+            - v1-aten-{{ checksum ".git/modules/third-party/pytorch/HEAD" }}-{{ checksum "build.sh" }}-{{ checksum ".circleci/config.yml" }}-{{ arch }}-1604
 
       - restore_cache:
           keys:
