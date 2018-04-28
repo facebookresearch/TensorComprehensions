@@ -230,7 +230,7 @@ TuningConfiguration GeneticSearch::crossover(
     }
   };
 
-  for (size_t i = 0; i < kMutateIterations; ++i) {
+  for (size_t iter = 0; iter < kMutateIterations; ++iter) {
     TuningConfiguration child{a};
     auto params = child.collectParameters();
     for (size_t i = 0; i < params.size(); ++i) {

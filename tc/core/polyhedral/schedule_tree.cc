@@ -326,9 +326,7 @@ vector<const ScheduleTree*> ScheduleTree::collectDFSPostorder(
 vector<const ScheduleTree*> ScheduleTree::collectDFSPostorder(
     const ScheduleTree* tree,
     detail::ScheduleTreeType type) {
-  auto filterType = [type](const ScheduleTree* tree) {
-    return tree->type_ == type;
-  };
+  auto filterType = [type](const ScheduleTree* t) { return t->type_ == type; };
   return functional::Filter(filterType, collectDFSPostorder(tree));
 }
 
@@ -345,9 +343,7 @@ vector<const ScheduleTree*> ScheduleTree::collectDFSPreorder(
 vector<const ScheduleTree*> ScheduleTree::collectDFSPreorder(
     const ScheduleTree* tree,
     detail::ScheduleTreeType type) {
-  auto filterType = [type](const ScheduleTree* tree) {
-    return tree->type_ == type;
-  };
+  auto filterType = [type](const ScheduleTree* t) { return t->type_ == type; };
   return functional::Filter(filterType, collectDFSPreorder(tree));
 }
 

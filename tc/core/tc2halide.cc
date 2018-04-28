@@ -724,11 +724,11 @@ void translateComprehension(
 
   if (added_implicit_initialization) {
     // Also reorder reduction initializations to the TC convention
-    vector<Var> lhs = func.args();
+    vector<Var> funcArgs = func.args();
     loop_nest.clear();
-    while (!lhs.empty()) {
-      loop_nest.push_back(lhs.back());
-      lhs.pop_back();
+    while (!funcArgs.empty()) {
+      loop_nest.push_back(funcArgs.back());
+      funcArgs.pop_back();
     }
     func.reorder(loop_nest);
   }
