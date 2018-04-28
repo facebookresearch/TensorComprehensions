@@ -272,32 +272,6 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   insertSyncsAroundCopies(tree);
 }
 
-namespace {
-typedef std::unordered_map<isl::id, long, isl::IslIdIslHash> IslParamValueMap;
-
-// Extract the fixed values of the parameters from the given (context) set.
-IslParamValueMap extractParamValueMap(isl::set set) {
-  CHECK(set.is_singleton()) << "set must be singleton to extract fixed values";
-
-  auto ctx = set.get_ctx();
-  auto longMax = isl::val(ctx, std::numeric_limits<long>::max());
-  auto p = set.sample_point();
-  auto space = p.get_space();
-
-  IslParamValueMap paramValueMap;
-  int i = 0;
-  for (auto id : isl::DimIds<isl::space, isl::dim_type::param>(space)) {
-    auto val = p.get_coordinate_val(isl::dim_type::param, i);
-    CHECK_EQ(val.get_den_si(), 1) << "fractional parameters unsupported";
-    CHECK(val.le(longMax)) << "parameter value overflows long";
-    paramValueMap[id] = val.get_num_si();
-    ++i;
-  }
-
-  return paramValueMap;
-}
-} // namespace
-
 // Compute the values of parameters based on the effective sizes of the
 // tensors provided as arguments and their parametric expressions stored in
 // Halide InputImage.  We only know input sizes, output sizes are inferred.
@@ -325,24 +299,24 @@ isl::set Scop::makeContextFromInputs(
 }
 
 std::vector<long> Scop::getParameterValues(isl::set context) const {
-  IslParamValueMap pvm = extractParamValueMap(context);
+  auto ctx = context.get_ctx();
+  auto longMax = isl::val(ctx, std::numeric_limits<long>::max());
+  auto space = context.get_space();
+  auto p = context.sample_point();
+  CHECK(context.is_equal(p));
 
   // Scop holds a vector of Variables.
   // Iterate over parameters in order, checking if the
-  // ParamValueMap contains an id whose name corresponds to that
+  // context contains a parameter whose name corresponds to that
   // Variable and push respective parameter values.
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
-    size_t previousSize = paramValues.size();
-    for (auto p : pvm) {
-      isl::id id = p.first;
-      if (id.get_name() == param.name()) {
-        paramValues.push_back(p.second);
-      }
-    }
-    CHECK_EQ(previousSize + 1, paramValues.size())
-        << "parameter " << param.name() << " is not present in the context "
-        << context << "; mind identical names in Halide.";
+    isl::id id(ctx, param.name());
+    CHECK(context.involves_param(id));
+    auto val = isl::aff::param_on_domain_space(space, id).eval(p);
+    CHECK(val.is_int()) << "fractional parameters unsupported";
+    CHECK(val.le(longMax)) << "parameter value overflows long";
+    paramValues.push_back(val.get_num_si());
   }
   return paramValues;
 }
