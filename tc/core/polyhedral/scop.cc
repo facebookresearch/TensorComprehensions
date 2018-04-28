@@ -327,9 +327,9 @@ isl::set Scop::makeContextFromInputs(
 std::vector<long> Scop::getParameterValues(isl::set context) const {
   IslParamValueMap pvm = extractParamValueMap(context);
 
-  // Scop holds a vector of Variables, which also appear as user pointers
-  // of the ids.  Iterate over parameters in order, checking if the
-  // ParamValueMap contains an id whose user pointer corresponds to a
+  // Scop holds a vector of Variables.
+  // Iterate over parameters in order, checking if the
+  // ParamValueMap contains an id whose name corresponds to that
   // Variable and push respective parameter values.
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
