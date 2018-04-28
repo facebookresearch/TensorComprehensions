@@ -263,9 +263,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     EXPECT_EQ(groups.size(), 3u);
 
     USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    isl::space blockSpace = isl::space(ctx, 2);
-    blockSpace = blockSpace.set_dim_id(isl::dim_type::param, 0, BX)
-                     .set_dim_id(isl::dim_type::param, 1, BY);
+    isl::space blockSpace = isl::space(ctx, 0);
     isl::set blockZero =
         isl::makeSpecializationSet<int>(blockSpace, {{BX, 0}, {BY, 0}});
 
