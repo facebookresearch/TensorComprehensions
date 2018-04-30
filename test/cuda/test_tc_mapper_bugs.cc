@@ -74,8 +74,7 @@ def tensordot_naive(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O)
     // If running cuda-gdb only run on test code, not reference: things are
     // slow in this mode
     if (!FLAGS_debug_cuda) {
-      auto mappingOptions =
-          tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+      auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
       tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("tensordot_naive", inputs, mappingOptions);
@@ -111,7 +110,7 @@ def tensordot_naive(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O)
 };
 
 TEST_F(TensorDot_32_512_8_2_28_28, BaseCorrect) {
-  auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeConvolutionMappingOptions();
   Init();
   Check(options);
 }
@@ -120,7 +119,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, BaseCorrect) {
 TEST_F(TensorDot_32_512_8_2_28_28, ReductionUnroll) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -151,7 +150,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, ReductionUnroll) {
 TEST_F(TensorDot_32_512_8_2_28_28, Reduction1) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -177,7 +176,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, Reduction1) {
 TEST_F(TensorDot_32_512_8_2_28_28, Reduction2) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -203,7 +202,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, Reduction2) {
 TEST_F(TensorDot_32_512_8_2_28_28, Reduction3) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -229,7 +228,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, Reduction3) {
 TEST_F(TensorDot_32_512_8_2_28_28, FormerSharedIllegalAddress) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -251,7 +250,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, FormerSharedIllegalAddress) {
 TEST_F(TensorDot_32_512_8_2_28_28, NoUnroll) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -274,7 +273,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, NoUnroll) {
 // statement.  Tightening was choking on such empty filters.
 TEST_F(TensorDot_32_512_8_2_28_28, EmptyLeaf) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Min)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -298,7 +297,7 @@ TEST_F(TensorDot_32_512_8_2_28_28, EmptyLeaf) {
 TEST_F(TensorDot_32_512_8_2_28_28, FormerIllegalAccess) {
   Init();
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -352,8 +351,7 @@ def group_convolution_naive(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W_, float(G,F
     // If running cuda-gdb only run on test code, not reference: things are
     // slow in this mode
     if (!FLAGS_debug_cuda) {
-      auto mappingOptions =
-          tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+      auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
       tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle =
@@ -393,7 +391,7 @@ def group_convolution_naive(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W_, float(G,F
 
 TEST_F(GroupConvolution_32_32_4_4_56_56_3_3, FormerSharedIllegalAddress) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -418,7 +416,7 @@ TEST_F(
     GroupConvolution_32_32_4_4_56_56_3_3,
     FakeIslSchedulerUnableToCarryDependences) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -467,8 +465,7 @@ def _C3_naive(float(B,WX) I, float(WY, WX) W) -> (C3) {
     // If running cuda-gdb only run on test code, not reference: things are
     // slow in this mode
     if (!FLAGS_debug_cuda) {
-      auto mappingOptions =
-          tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+      auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
       tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("_C3_naive", inputs, mappingOptions);
@@ -506,7 +503,7 @@ def _C3_naive(float(B,WX) I, float(WY, WX) W) -> (C3) {
 // with shared memory.
 TEST_F(C3_128_1000_1024, InvalidPtx) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -527,7 +524,7 @@ TEST_F(C3_128_1000_1024, InvalidPtx) {
 
 TEST_F(C3_128_1000_1024, IllegalAccess) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -583,8 +580,7 @@ def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
     // If running cuda-gdb only run on test code, not reference: things are
     // slow in this mode
     if (!FLAGS_debug_cuda) {
-      auto mappingOptions =
-          tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+      auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
       tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
       atCompl.define(TC);
       auto handle = atCompl.compile("tmm_naive", inputs, mappingOptions);
@@ -620,7 +616,7 @@ def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
 // For this one we need to relax the precision to 1e-6
 TEST_F(TMM_128_1024_1024, TooStrictPrecisionAfterTuner) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -642,7 +638,7 @@ TEST_F(TMM_128_1024_1024, TooStrictPrecisionAfterTuner) {
 // This exercises a former MappingFilter leaf with a union_set of > 1 spaces
 TEST_F(TMM_128_1024_1024, Tightening) {
   Init();
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -676,7 +672,7 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
     O(t, b, c) =  centered(t, b, c) / rsqrt(var(t, b))
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -718,7 +714,7 @@ def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
 }
 )TC");
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -753,7 +749,7 @@ def graph2(float(N, C, H, W) I, float(N, C, R, T) J, float(KH, KW) W1) -> (O, Ou
     Out(c0, c1)     +=! I(n, c0,        h,        w) *  O(   n,   c1, h, w)
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
   tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   atCompl.define(TC);
@@ -783,7 +779,7 @@ TEST(Convolution, NestedExpressions) {
   std::vector<at::Tensor> outputs;
   tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
   cu.define(TC);
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto handle = cu.compile(convolution, inputs, options);
   cu.run(convolution, inputs, outputs, handle);
   auto B = outputs[0];

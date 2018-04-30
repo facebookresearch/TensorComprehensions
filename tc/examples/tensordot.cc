@@ -50,7 +50,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
   at::Tensor I1 = at::CUDA(at::kFloat).rand({16, 16, 2, 17, 25});
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
-  auto naiveOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto naiveOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
       FLAGS_proto_path, "tensordot", {I0, I1}, naiveOptions);

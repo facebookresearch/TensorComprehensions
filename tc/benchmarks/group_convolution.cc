@@ -176,7 +176,7 @@ TEST_F(GroupConvolution, GroupConvolution) {
   // If num threads is too small just get some better default
   auto threads = (W >= 10) ? std::vector<size_t>{W / 4, H / 2}
                            : std::vector<size_t>{4, 8, 4};
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .tile(1, 1, 1)
                      .mapToThreads(threads)
                      .mapToBlocks({32, 32})
@@ -199,7 +199,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .useSharedMemory(true)
           .usePrivateMemory(true)
           .unrollCopyShared(true)
@@ -225,7 +225,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -257,7 +257,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -288,7 +288,7 @@ TEST_F(
   uint32_t H = 28;
   uint32_t KW = 3;
   uint32_t KH = 3;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)

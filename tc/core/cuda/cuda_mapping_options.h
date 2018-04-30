@@ -145,7 +145,7 @@ class Grid : public CudaDim {
 class CudaMappingOptions {
  private:
   inline CudaMappingOptions();
-  static CudaMappingOptions makeUnmappedCudaMappingOptions();
+  static CudaMappingOptions makeUnmappedMappingOptions();
 
  public:
   /// Construct a deep copy of the options.
@@ -201,12 +201,12 @@ class CudaMappingOptions {
 
   /// Static constructors for predefined strategies.
   ///@{
-  static CudaMappingOptions makeNaiveCudaMappingOptions();
-  static CudaMappingOptions makeSingleThreadCudaMappingOptions();
-  static CudaMappingOptions makePointwiseCudaMappingOptions();
-  static CudaMappingOptions makeMlpCudaMappingOptions();
-  static CudaMappingOptions makeConvolutionCudaMappingOptions();
-  static CudaMappingOptions makeGroupConvolutionCudaMappingOptions();
+  static CudaMappingOptions makeNaiveMappingOptions();
+  static CudaMappingOptions makeSingleThreadMappingOptions();
+  static CudaMappingOptions makePointwiseMappingOptions();
+  static CudaMappingOptions makeMlpMappingOptions();
+  static CudaMappingOptions makeConvolutionMappingOptions();
+  static CudaMappingOptions makeGroupConvolutionMappingOptions();
   ///@}
 
   const CudaMappingOptionsProto& proto() const {

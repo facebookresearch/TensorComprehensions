@@ -116,7 +116,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul) {
   auto N = FLAGS_N;
   auto M = FLAGS_M;
   auto K = FLAGS_K;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .tile(1)
                      .mapToThreads({128})
                      .mapToBlocks({B})
@@ -131,7 +131,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul_P100_autotuned_B_500_K_26_M_72_N_26) {
   uint32_t K = 26;
   uint32_t M = 72;
   uint32_t N = 26;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)

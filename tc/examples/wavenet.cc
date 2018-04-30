@@ -104,7 +104,7 @@ def wavenet2layers(
   at::Tensor skip_bias1 = at::CUDA(at::kFloat).rand({256});
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
-  auto naiveOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto naiveOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   std::vector<at::Tensor> tensors = {weight0,
                                      bias0,

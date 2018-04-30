@@ -62,7 +62,7 @@ def softmax(float(N, D) I) -> (O, tmp) {
 }
     )",
       "softmax",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -83,7 +83,7 @@ def softmax(float(N, D) I) -> (O, tmp) {
 }
     )",
       "softmax",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -102,7 +102,7 @@ def softmax(float(N, D) I) -> (O, expsum, maxVal) {
 }
     )",
       "softmax",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -122,7 +122,7 @@ def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
 }
     )",
       "softmax",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -140,7 +140,7 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
 }
     )",
       "concat",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -158,7 +158,7 @@ def indexing(float(H, W) input, int32(L) index) -> (output) {
 }
     )",
       "indexing",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       outputs);
 }
@@ -176,7 +176,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
 }
     )",
       "matmul",
-      tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
+      tc::CudaMappingOptions::makeMlpMappingOptions(),
       inputs,
       outputs);
 
@@ -199,7 +199,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
 }
     )",
       "matmul",
-      tc::CudaMappingOptions::makeMlpCudaMappingOptions(),
+      tc::CudaMappingOptions::makeMlpMappingOptions(),
       inputs,
       outputs);
 
@@ -226,7 +226,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
 }
     )",
       "convolution",
-      tc::CudaMappingOptions::makeConvolutionCudaMappingOptions(),
+      tc::CudaMappingOptions::makeConvolutionMappingOptions(),
       inputs,
       outputs);
 
@@ -258,7 +258,7 @@ def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
   Check(
       tcStr,
       "convolutionStrided",
-      tc::CudaMappingOptions::makeConvolutionCudaMappingOptions(),
+      tc::CudaMappingOptions::makeConvolutionMappingOptions(),
       inputs,
       outputs);
 
@@ -283,7 +283,7 @@ def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
 }
     )",
       "cast",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       {a, b},
       outputs);
   auto r = outputs[0].sub(at::CUDA(at::kInt).ones({2, 4}) + 4).max().toCFloat();

@@ -63,7 +63,7 @@ class MapperMemoryPromotion2DHelper : public TestMapper {
       std::unordered_map<std::string, size_t> problemSizes,
       std::vector<size_t> tileSizes) {
     auto mappingOptions =
-        CudaMappingOptions::makeNaiveCudaMappingOptions()
+        CudaMappingOptions::makeNaiveMappingOptions()
             .tile(tileSizes) // passing more tiling values triggers a check...
             .useSharedMemory(false) // do not auto-promote
             .usePrivateMemory(false);
@@ -83,7 +83,7 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
 }
 )TC";
 
-    auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
+    auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
                               .tile(tileSizes)
                               .useSharedMemory(false) // do not autopromote
                               .usePrivateMemory(false);
@@ -458,7 +458,7 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
-  auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(32, 32, 32)
                             .useSharedMemory(false)
                             .usePrivateMemory(true);
@@ -489,7 +489,7 @@ TEST_F(MatMulBias, RegisterPromotion) {
 }
 
 TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
-  auto mappingOptions = CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(32, 32, 32)
                             .maxSharedMemory(32768)
                             .useSharedMemory(true)

@@ -44,13 +44,13 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
  protected:
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makePointwiseCudaMappingOptions()
+        tc::CudaMappingOptions::makePointwiseMappingOptions()
             .tile(4, 8, 8)
             .mapToThreads({32, 4, 4})
             .mapToBlocks({100, 100, 100})
             .unroll(128);
     this->gradCudaMappingOptions_ =
-        tc::CudaMappingOptions::makePointwiseCudaMappingOptions();
+        tc::CudaMappingOptions::makePointwiseMappingOptions();
   }
 };
 } // namespace caffe2
