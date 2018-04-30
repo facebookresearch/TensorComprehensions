@@ -593,7 +593,7 @@ Each commit should have a proper commit message.
 A commit message consists of a one-line summary, followed by an empty line and
 the main body with more details focusing on the motivation of the change.
 Both the one-line summary and the lines in the main body
-should not exceed 80 characters.
+should not exceed 72 characters.
 The commit message should contain all the information that is needed
 to understand the change within the git repository.
 The main body can only be omitted if the motivation is completely obvious
