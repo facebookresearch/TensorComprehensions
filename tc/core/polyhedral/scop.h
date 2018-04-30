@@ -22,14 +22,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include <dlpack/dlpack.h>
-
 #include "tc/core/constants.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
+#include "tc/core/tensor.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -143,7 +142,7 @@ struct Scop {
   // halide ImageParams.  We only know input sizes, output sizes are inferred.
   // Result is an isl set directly usable as context.
   isl::set makeContextFromInputs(
-      const std::vector<const DLTensor*>& inputs) const;
+      const std::vector<const DLConstTensor*>& inputs) const;
 
   // Fix the values of the specified parameters in the context
   // to the corresponding specified values.

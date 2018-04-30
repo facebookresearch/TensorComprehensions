@@ -19,60 +19,71 @@
 #include <string>
 #include <vector>
 
-#include <ATen/ATen.h>
-#include <ATen/DLConvertor.h>
-
-#include "tc/aten/utils.h"
-#include "tc/core/execution_engine.h"
-#include "tc/lang/parser.h"
+#include "tc/aten/aten.h"
+#include "tc/core/utils/time.h"
 
 namespace tc {
-/// This provides the basic interface for writing ATen style tensor operations
-/// based on Tensor Comprehensions.
+namespace aten {
+/// Given a TC string with multiple functions defined and a TC function name
+/// entryPoint, this runs inference, applied to the specified input shapes.
+/// This is used for manual processing of output metadata on the ATen user
+/// side.
+/// \returns the (contiguous) output tensor shapes as a metadata-owning
+/// DLTensorUPtr.
+std::vector<DLTensorUPtr> inferOutputTensorInfo(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::vector<at::Tensor>& inputs);
 
-template <typename ExecutorType>
-class ATenCompilationUnit {
- public:
-  explicit ATenCompilationUnit();
+/// Given a TC string with multiple functions defined and a TC function name
+/// entryPoint, this runs inference, applied to the specified input shapes and
+/// allocates fresh new output tensors.
+/// If one wants inplace/resize behavior, one can implement it using
+/// inferOutputTensorInfo.
+/// \returns the (contiguous) output tensors with properly inferred sizes.
+std::vector<at::Tensor> prepareOutputs(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::vector<at::Tensor>& inputs);
 
-  /// Define a database from input TC language where language can have many
-  /// tc strings. This database is used to run any TC just by its name
-  /// by passing it to the run function.
-  void define(const std::string& language);
+/// Given a TC string with multiple functions defined and a TC function name
+/// entryPoint, compile the TC for the specified input shapes with the
+/// prescribed options.
+/// \returns an Executor for the specified backend with an underlying
+/// JIT-compiled callable function.
+template <typename Backend>
+std::unique_ptr<typename Backend::ExecutorType> compile(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::vector<at::Tensor>& inputs,
+    const typename Backend::MappingOptionsType& options);
 
-  /// Given a TC name, compile the TC
-  // TODO: Pass struct to allow autotuning
-  size_t compile(
-      const std::string& name,
-      const std::vector<at::Tensor>& inputs,
-      const typename ExecutorType::MappingOptionsType& options);
+/// Given an executor resulting from compiling a TC, run the TC and fill the
+/// outputs vector with the results.
+template <typename Executor>
+void run(
+    const Executor& executor,
+    const std::vector<at::Tensor>& inputs,
+    std::vector<at::Tensor>& outputs);
 
-  /// Get the output Tensor info
-  std::vector<const DLTensor*> inferOutputTensorInfo(
-      const std::string& name,
-      const std::vector<at::Tensor>& inputs);
+/// Given an executor resulting from compiling a TC, run the TC and fill the
+/// outputs vector with the results.
+/// \returns ProfilingInfo (cpuOverhead + kernelRuntime) in microseconds.
+template <typename Executor>
+ProfilingInfo profile(
+    const Executor& executor,
+    const std::vector<at::Tensor>& inputs,
+    std::vector<at::Tensor>& outputs);
 
-  /// Given a TC name, run the TC and fill the outputs vector the results if
-  /// profile is set it returns the runtime in nanoseconds.
-  /// Compilation must have already occured.
-  Duration run(
-      const std::string& name,
-      const std::vector<at::Tensor>& inputs,
-      std::vector<at::Tensor>& outputs,
-      size_t handle,
-      bool profile = false);
-
-  /// This is the "low-latency" mode in which we just propagate ATen tensors
-  /// Sizes are not checked and it is the user's responsibility to ensure that
-  /// they match. If the user doesn't then segfault will likely occur.
-  void uncheckedRun(
-      const std::vector<at::Tensor>& inputs,
-      std::vector<at::Tensor>& outputs,
-      size_t handle);
-
- private:
-  std::unique_ptr<ExecutionEngine<ExecutorType>> executionEngine_;
-};
+/// This is the "low-latency" mode in which we just propagate ATen tensors
+/// Sizes are not checked and it is the user's responsibility to ensure that
+/// they match. If the user doesn't then segfault will likely occur.
+template <typename Executor>
+void uncheckedRun(
+    const Executor& executor,
+    const std::vector<at::Tensor>& inputs,
+    std::vector<at::Tensor>& outputs);
+} // namespace aten
 } // namespace tc
 
 #include "tc/aten/aten_compiler-inl.h"

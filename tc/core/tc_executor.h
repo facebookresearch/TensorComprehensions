@@ -15,133 +15,111 @@
  */
 #pragma once
 
-#include <limits>
-#include <string>
-
-#include <dlpack/dlpack.h>
-
-#include "tc/core/halide_utils.h"
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 #include "tc/core/utils/time.h"
-
-#include "tc/lang/canonicalize.h"
+#include "tc/lang/tree.h"
 
 namespace tc {
-
-using namespace dlutils;
-
+/**
+ * TcExecutor is a backend-agnostic abstraction that provides the base
+ * functionality for an object returned by compilation to run.
+ * TcExecutor is templated by the Backend type.
+ * When a derived executor inherits from TcExecutor<Backend>, it
+ * provides support for running a compiled TC on the particular backend.
+ *
+ * A TcExecutor mixes templating and inheritance:
+ *   1. templating is necessary because we want type-safety with proper
+ *      dependent types (e.g. Backend::CompilationResultType)
+ *   2. inheritance is necessary because executors require specific
+ *      additional information for running on different backends
+ *      (e.g. Grid/Block for CUDA)
+ *   3. virtual functions seem to be more confusing to people so we don't use
+ *      them here. Still derived classes of TcExecutor<Backend> **must**
+ *      implement the following functions (or errors will occur at **all call
+ *      sites**):
+ *
+ * /// This is the "low-latency" mode in which we just propagate raw pointers to
+ * /// data in the address space where kernel is executed.
+ * /// No tensor-related information can be checked so it is the user's
+ * /// responsibility to ensure that shapes and strides match. If the user
+ * /// doesn't then segfault will likely occur.
+ * void uncheckedRun(
+ *     const std::vector<const void*>& inputs,
+ *     const std::vector<void*>& outputs) const;
+ * /// Calls uncheckedRun and profiles the cpu overhead and kernel runtime
+ * /// (microseconds).
+ * /// \returns profiling information (see: tc/core/utils/time.h)
+ * ProfilingInfo profileUnchecked(
+ *     const std::vector<const void*>& inputs,
+ *     const std::vector<void*>& outputs) const;
+ *
+ * As a reminder: for each backend, the specific Backend type lives in
+ *   core/backendname/backendname_backend.h and declares all the required
+ *   dependent **derived** types.
+ * For example:
+ *   CudaBackend is declared in core/cuda/cuda_backend.h
+ *
+ * struct CudaBackend {
+ *   using ExecutorType = CudaTcExecutor;
+ *   using MappingOptionsType = CudaMappingOptions;
+ *   using CompilationResultType = CudaCompilationResult;
+ *   using RTCFunctionType = CudaRTCFunction;
+ * };
+ *
+ * The correspondence is 1 TcExecutor for 1 compiled
+ *   tuple<TC function, input shapes, Backend::MappingOptions>.
+ */
+template <typename Backend>
 class TcExecutor {
- public:
+ protected:
   TcExecutor(
-      std::string id,
-      const std::vector<const DLTensor*>& inputsInfo,
-      const std::string& options,
-      lang::TreeRef tcDefinition);
+      const std::vector<TensorInfo>& inputsInfo,
+      const std::vector<TensorInfo>& outputsInfo,
+      const tc2halide::HalideComponents& halideComponents,
+      const typename Backend::CompilationResultType& compilationResult);
 
-  virtual ~TcExecutor();
-
+ public:
   TcExecutor(TcExecutor&&) = delete;
   TcExecutor& operator=(TcExecutor&&) = delete;
   TcExecutor(const TcExecutor&) = delete;
   TcExecutor& operator=(const TcExecutor&) = delete;
 
-  // Given a Tc and a list of input tensors that match the definition in the
-  // Tc in positional order, this generates the output tensor infos issued
-  // from forward inference.
-  // The typical flow is to infer output sizes, allocate/resize them within
-  // you favorite ML framework / tensor library and then call compile.
-  std::vector<const DLTensor*> inferOutputTensorInfo();
+  /// Run can be called multiple times given a compilation, inputs are allowed
+  /// to change in that their data pointer is allowed to change.
+  /// Sizes and strides must remain constant otherwise this is an error.
+  /// The only thing that is allowed to change across runs is the input
+  /// and output pointers base address.
+  /// It is the caller's responsibility to ensure proper non-aliasing (or
+  /// advanced aliasing) properties of the input and output tensors.
+  void run(
+      const std::vector<const DLConstTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs) const;
 
-  // Can only be called once with specific kernel options.  Input sizes are
-  // set up as constructor argument and output sizes are inferred.
-  //
-  // If you need another kernel for another Tc or another inputs, outputs,
-  // options then just instantiate another TcExecutor.
-  // This is because for the time being we fully specialize all the sizes and
-  // strides at runtime.
-  virtual void compile(const std::string& options) = 0;
+  /// Calls run and profiles the cpu overhead and kernel runtime (microseconds).
+  /// \returns profiling information (see: tc/core/utils/time.h)
+  ProfilingInfo profile(
+      const std::vector<const DLConstTensor*>& inputs,
+      const std::vector<const DLTensor*>& outputs) const;
 
-  // Run can be called multiple times given a compilation, inputs are allowed
-  // to change in that their data pointer is allowed to change.
-  // Sizes and strides must remain constant otherwise this is an error
-  // The only thing that is allowed to change across runs is the input
-  // and output pointers base address.
-  // It is the caller's responsibility to ensure proper non-aliasing (or
-  // advanced aliasing) properties of the input and output tensors.
-  // if profile is set the kernel runtime (nanoseconds) is returned
-  virtual Duration run(
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<DLTensor*>& outputs,
-      bool profile = false) const = 0;
+  /// It may be necessary to clear the RTC manually because it can throw and
+  /// we can't have that in the RTC destructor.
+  void clearRuntimeCompiledFunction();
 
-  // This is the "low-latency" mode in which we just propagate raw pointers to
-  // data in the address space where kernel is executed.
-  // No tensor-related information can be checked so it is the user's
-  // responsibility to ensure that shapes and strides match. If the user
-  // doesn't then segfault will likely occur.
-  virtual void uncheckedRun(
-      const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const = 0;
-
-  // Interact with the runtime compiled objects
-  virtual bool hasRuntimeCompiledFunction() = 0;
-  virtual void clearRuntimeCompiledFunction() = 0;
-
-  std::string identifier;
-  std::vector<dlutils::DLTensorUPtr> inputsInfo;
-  std::string options;
+ public:
+  // For inspection purposes
+  const std::string compiledSource;
 
  protected:
-  void checkSizesAndStridesAreCompliant(
-      const DLTensor* actual,
-      const DLTensor* expected,
-      const lang::Param& dbg) const;
-
-  template <typename T>
-  void checkSizesAndStridesAreCompliant(
-      const std::vector<T*>& dlTensors,
-      const std::vector<DLTensorUPtr>& tensorInfos,
-      const lang::ListView<lang::Param>& dbgInfo) const;
-
-  void checkInputsCompliant(
-      const std::vector<const DLTensor*>& inputsInfo) const;
-
-  // This data structure contains the basic information that a TcExecutor
-  // needs to run a compiled kernel.
-  // This information corresponds to information required to:
-  // 1. build the kernel signature (kernelName/kernelParams)
-  // 2. retrieve the mapped kernel from cache (kernelName, options, input,
-  //    output)
-  // 3. actually run the kernel (supporting input, output tensors)
-  struct {
-    std::string kernelName;
-    std::vector<dlutils::DLTensorUPtr> inputsInfo;
-    std::vector<dlutils::DLTensorUPtr> outputsInfo;
-    std::vector<int> kernelParams;
-    std::string options;
-  } executionInfo_;
-
+  /// Used to check proper metadata when calling run
+  std::vector<TensorInfo> inputsInfo_;
+  std::vector<TensorInfo> outputsInfo_;
   tc2halide::HalideComponents halideComponents_;
-  lang::TreeRef tcTree_;
-  lang::CanonicalTcString cacheKeyId_;
+
+  /// The following are initialized as a result of compilation with the TcMapper
+  std::vector<int> parameters_;
+  std::unique_ptr<typename Backend::RTCFunctionType> rtcFun_;
 };
-
-// templating to match both const and non-const DLTensor pointers
-template <typename T>
-void TcExecutor::checkSizesAndStridesAreCompliant(
-    const std::vector<T*>& dlTensors,
-    const std::vector<DLTensorUPtr>& tensorInfos,
-    const lang::ListView<lang::Param>& dbgInfo) const {
-  if (tensorInfos.size() != dlTensors.size()) {
-    throw lang::ErrorReport(dbgInfo)
-        << "expected " << tensorInfos.size() << " values but found "
-        << dlTensors.size();
-  }
-  for (size_t i = 0; i < tensorInfos.size(); ++i) {
-    checkSizesAndStridesAreCompliant(
-        dlTensors[i], tensorInfos[i].get(), dbgInfo[i]);
-  }
-}
-
 } // namespace tc
+
+#include "tc/core/tc_executor-inl.h"

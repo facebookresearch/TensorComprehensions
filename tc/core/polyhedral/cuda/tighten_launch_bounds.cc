@@ -126,12 +126,12 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
   // Corner case: take the min with the current size to avoid degenerate
   // range in the unbounded case.
   return std::make_pair(
-      tc::Grid({std::min(max(BX), BX.mappingSize(grid)),
-                std::min(max(BY), BY.mappingSize(grid)),
-                std::min(max(BZ), BZ.mappingSize(grid))}),
-      tc::Block({std::min(max(TX), TX.mappingSize(block)),
-                 std::min(max(TY), TY.mappingSize(block)),
-                 std::min(max(TZ), TZ.mappingSize(block))}));
+      tc::Grid({std::min(max(BX), mappingSize(BX, grid)),
+                std::min(max(BY), mappingSize(BY, grid)),
+                std::min(max(BZ), mappingSize(BZ, grid))}),
+      tc::Block({std::min(max(TX), mappingSize(TX, block)),
+                 std::min(max(TY), mappingSize(TY, block)),
+                 std::min(max(TZ), mappingSize(TZ, block))}));
 }
 } // namespace polyhedral
 } // namespace tc

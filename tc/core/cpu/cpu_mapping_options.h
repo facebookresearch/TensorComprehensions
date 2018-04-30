@@ -22,15 +22,65 @@
 namespace tc {
 
 class CpuMappingOptions {
+ private:
+  inline CpuMappingOptions();
+  static inline CpuMappingOptions makeUnmappedMappingOptions();
+
  public:
-  CpuMappingOptions();
+  /// Construct a deep copy of the options.
+  inline CpuMappingOptions(const CpuMappingOptions& options);
+  inline explicit CpuMappingOptions(const CpuMappingOptionsProto& buf);
+  inline CpuMappingOptions& operator=(const CpuMappingOptions& options);
+
+  /// Compare with another message.
+  inline bool operator==(const CpuMappingOptions& options) const;
+  inline bool operator!=(const CpuMappingOptions& options) const;
 
   /// Construct from a serialized protocol buffer message.
   inline explicit CpuMappingOptions(const std::string& str);
 
-  inline bool operator==(const CpuMappingOptions& options);
-
   inline std::string toProtobufSerializedString() const;
+
+  /// Set mappings
+  inline CpuMappingOptions& genericMappingOptions(
+      const MappingOptions& options);
+  ///@}
+
+  /// Static constructors for predefined strategies.
+  ///@{
+  static inline CpuMappingOptions makeNaiveMappingOptions();
+  // static CpuMappingOptions makeSingleThreadMappingOptions();
+  // static CpuMappingOptions makePointwiseMappingOptions();
+  // static CpuMappingOptions makeMlpMappingOptions();
+  // static CpuMappingOptions makeConvolutionMappingOptions();
+  // static CpuMappingOptions makeGroupConvolutionMappingOptions();
+  ///@}
+
+  const CpuMappingOptionsProto& proto() const {
+    return ownedProto_;
+  }
+
+#define FORWARD_FUN(FUN_NAME)                        \
+  template <typename... Args>                        \
+  inline CpuMappingOptions& FUN_NAME(Args... args) { \
+    generic.FUN_NAME(args...);                       \
+    return *this;                                    \
+  }
+
+  FORWARD_FUN(tile);
+  FORWARD_FUN(unroll);
+  FORWARD_FUN(fixParametersBeforeScheduling);
+  FORWARD_FUN(tileImperfectlyNested);
+  FORWARD_FUN(matchLibraryCalls);
+  FORWARD_FUN(scheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleAllowSkewing);
+  FORWARD_FUN(outerSchedulePositiveOrthant);
+  FORWARD_FUN(intraTileScheduleFusionStrategy);
+  FORWARD_FUN(intraTileScheduleAllowSkewing);
+  FORWARD_FUN(intraTileSchedulePositiveOrthant);
+
+#undef FORWARD_FUN
 
  private:
   CpuMappingOptionsProto ownedProto_;

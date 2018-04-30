@@ -279,7 +279,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
 //
 // TODO(ntv)
 isl::set Scop::makeContextFromInputs(
-    const std::vector<const DLTensor*>& inputs) const {
+    const std::vector<const DLConstTensor*>& inputs) const {
   CHECK_EQ(halide.inputs.size(), inputs.size());
 
   auto paramSpace = domain().get_space().params();

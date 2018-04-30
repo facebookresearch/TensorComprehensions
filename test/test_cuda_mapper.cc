@@ -28,8 +28,8 @@
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
-#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -69,7 +69,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
   }
 
   static CudaMappingOptions DefaultOptions() {
-    return CudaMappingOptions::makeNaiveCudaMappingOptions();
+    return CudaMappingOptions::makeNaiveMappingOptions();
   }
 
   std::unique_ptr<MappedScop> TileAndMapThreads(
@@ -86,8 +86,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
-    auto ns = detail::ScheduleTree::collectDFSPostorder(
-        root, detail::ScheduleTreeType::Band);
+    auto ns = ScheduleTree::collectDFSPostorder(root, ScheduleTreeType::Band);
     mscop->mapThreadsBackward(ns[1]);
     mscop->insertMappingContext();
     return mscop;
@@ -131,7 +130,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
       auto islNode = toIslSchedule(schedule2.get()).get_root().child(0);
       auto mv = isl::makeMultiVal(
           schedule2->child({0})
-              ->elemAs<detail::ScheduleTreeElemBand>()
+              ->elemAs<ScheduleTreeElemBand>()
               ->mupa_.get_space(),
           tileSizes);
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
@@ -444,7 +443,7 @@ TEST_F(PolyhedralMapperTest, Unroll2D) {
 }
 
 /*
- * Map 1D code to 2D grid (set up by makeNaiveCudaMappingOptions()) and
+ * Map 1D code to 2D grid (set up by makeNaiveMappingOptions()) and
  * check that the code is pinned to one particular value of
  * block identifier b1 and thread identifier t1.
  */
@@ -459,8 +458,8 @@ def fun(float(N) I) -> (O) {
       std::move(scop), DefaultOptions());
   auto codeAndLaunchBounds = mscop->codegen(specializedName);
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  EXPECT_EQ(1u, BY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
-  EXPECT_EQ(1u, TY.mappingSize(std::get<1>(codeAndLaunchBounds).view));
+  EXPECT_EQ(1u, mappingSize(BY, std::get<1>(codeAndLaunchBounds).view));
+  EXPECT_EQ(1u, mappingSize(TY, std::get<1>(codeAndLaunchBounds).view));
 }
 
 /*
@@ -569,7 +568,6 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiledBand =
       ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling.view));
 
-  using detail::ScheduleTreeElemBand;
   ASSERT_TRUE(maxMinOuterBand->elemAs<ScheduleTreeElemBand>());
   ASSERT_TRUE(maxMaxOuterBand->elemAs<ScheduleTreeElemBand>());
   ASSERT_TRUE(tiledBand->elemAs<ScheduleTreeElemBand>());

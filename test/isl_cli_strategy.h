@@ -78,7 +78,7 @@ tc::CudaMappingOptions makeBaseCliStrategy() {
   tc::FusionStrategy fs;
   CHECK(tc::FusionStrategy_Parse(DEFAULT_FUSION_STRATEGY, &fs));
   CudaMappingOptions options =
-      CudaMappingOptions::makeNaiveCudaMappingOptions()
+      CudaMappingOptions::makeNaiveMappingOptions()
           .mapToThreads(DEFAULT_BLOCK)
           .mapToBlocks(DEFAULT_GRID)
           .useSharedMemory(DEFAULT_USE_SHARED_MEMORY)

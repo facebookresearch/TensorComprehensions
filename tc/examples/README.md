@@ -31,11 +31,11 @@ Loading proto from: /tmp/batchmatmul_cache_B_500_K_26_M_72_N_26.options and /tmp
 
 
 Also when running manually, the number of CPU compilation threads and GPUs used for evaluation can be controlled via gflags
-```--tuner_threads``` and ```--tuner_gpus```
+```--tuner_threads``` and ```--tuner_devices```
 
 For instance, on a 4 GPU system with 20 threads:
 ```
-./build/examples/example_batchmatmul --disable_version_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=10 --tuner_threads=20 --tuner_gpus="0,1,2,3"
+./build/examples/example_batchmatmul --disable_version_checks=true --autotune=true --tuner_gen_generations=10 --tuner_gen_pop_size=10 --tuner_threads=20 --tuner_devices="0,1,2,3"
 ```
 
 # Running the autotuner with provided scripts

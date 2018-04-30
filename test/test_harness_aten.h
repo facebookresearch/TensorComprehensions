@@ -21,7 +21,7 @@
 #include <string>
 #include <vector>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 struct PrecisionException : public std::runtime_error {
   PrecisionException(const std::string& s) : std::runtime_error(s) {}

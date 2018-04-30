@@ -19,4 +19,9 @@
 
 namespace tc {
 using Duration = std::chrono::high_resolution_clock::duration;
+
+struct ProfilingInfo {
+  Duration cpuOverhead;
+  Duration kernelRuntime;
+};
 } // namespace tc

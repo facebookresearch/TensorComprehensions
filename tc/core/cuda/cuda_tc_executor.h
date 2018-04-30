@@ -18,100 +18,49 @@
 #include <string>
 #include <vector>
 
-#include <dlpack/dlpack.h>
-
+#include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/cuda/cuda_rtc.h"
-#include "tc/core/halide_utils.h"
-#include "tc/core/polyhedral/scop.h"
 #include "tc/core/tc_executor.h"
-#include "tc/core/utils/dlpack.h"
-#include "tc/lang/parser.h"
+#include "tc/core/tensor.h"
 
 namespace tc {
-
-class CudaTcExecutor : public ::tc::TcExecutor {
+class CudaTcExecutor : public TcExecutor<CudaBackend> {
  public:
-  using MappingOptionsType = CudaMappingOptions;
-
   CudaTcExecutor(
-      std::string id,
-      const std::vector<const DLTensor*>& inputsInfo,
-      const std::string& options,
-      lang::TreeRef tcDefinition)
-      : TcExecutor(id, inputsInfo, options, tcDefinition) {}
+      const std::vector<TensorInfo>& inputsInfo,
+      const std::vector<TensorInfo>& outputsInfo,
+      const tc2halide::HalideComponents& halideComponents,
+      const typename CudaBackend::CompilationResultType& compilationResult);
 
-  ~CudaTcExecutor() {}
-
-  CudaTcExecutor(CudaTcExecutor&&) = delete;
-  CudaTcExecutor& operator=(CudaTcExecutor&&) = delete;
-  CudaTcExecutor(const CudaTcExecutor&) = delete;
-  CudaTcExecutor& operator=(const CudaTcExecutor&) = delete;
-
-  // Can only be called once with specific kernel options.  Input sizes are
-  // set up as constructor argument and output sizes are inferred.
-  //
-  // If you need another kernel for another Tc or another inputs, outputs,
-  // options then just instantiate another CudaTcExecutor.
-  // This is because for the time being we fully specialize all the sizes and
-  // strides at runtime.
-  // @{
-  void compile(const std::string& options) override {
-    compile(CudaMappingOptions(options));
-  }
-  void compile(const tc::CudaMappingOptions& options);
-  // @}
-
-  // Run can be called multiple times given a compilation, inputs are allowed
-  // to change in that their data pointer is allowed to change.
-  // Sizes and strides must remain constant otherwise this is an error
-  // The only thing that is allowed to change across runs is the input
-  // and output pointers base address.
-  // It is the caller's responsibility to ensure proper non-aliasing (or
-  // advanced aliasing) properties of the input and output tensors.
-  // if profile is set the kernel runtime (nanoseconds) is returned
-  Duration run(
-      const std::vector<const DLTensor*>& inputs,
-      const std::vector<DLTensor*>& outputs,
-      bool profile = false) const;
-
-  // This is the "low-latency" mode in which we just propagate raw pointers to
-  // data in GPU address space.
-  // No tensor-related information can be checked so it is the user's
-  // responsibility to ensure that shapes and strides match. If the user
-  // doesn't then segfault will likely occur.
+  /// This is the "low-latency" mode in which we just propagate raw pointers to
+  /// data in the address space where kernel is executed.
+  /// No tensor-related information can be checked so it is the user's
+  /// responsibility to ensure that shapes and strides match. If the user
+  /// doesn't then segfault will likely occur.
   void uncheckedRun(
       const std::vector<const void*>& inputs,
       const std::vector<void*>& outputs) const;
 
-  bool hasRuntimeCompiledFunction() override {
-    return rtcFun.get() != nullptr;
+  /// Calls uncheckedRun and profiles the cpu overhead and kernel runtime
+  /// (microseconds).
+  /// \returns profiling information (see: tc/core/utils/time.h)
+  ProfilingInfo profileUnchecked(
+      const std::vector<const void*>& inputs,
+      const std::vector<void*>& outputs) const;
+
+  // GPU-specific results of compilation
+  const Grid& grid() {
+    return grid_;
   }
 
-  // It is necessary to clear the RTC manually because it can throw and we
-  // can't have that in the destructor.
-  void clearRuntimeCompiledFunction() override {
-    if (!hasRuntimeCompiledFunction()) {
-      return;
-    }
-    rtcFun->clear();
-  }
-
-  std::string kernelName() const {
-    return executionInfo_.kernelName;
+  // GPU-specific results of compilation
+  const Block& block() {
+    return block_;
   }
 
  private:
-  void compileWithTcMapper();
-
- public:
-  std::string kernelSpecializedName;
-  std::string cudaSource;
-  Grid grid{{0, 0, 0}};
-  Block block{{0, 0, 0}};
-
- protected:
-  std::shared_ptr<CudaRTCFunction> rtcFun;
+  // GPU-specific results of compilation
+  Grid grid_;
+  Block block_;
 };
-
 } // namespace tc

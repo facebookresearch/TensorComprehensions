@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/mapping_options.h"
 
 #include <fstream>
 #include <iomanip>

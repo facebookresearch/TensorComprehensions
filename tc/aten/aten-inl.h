@@ -20,36 +20,31 @@
 
 #include <ATen/ATen.h>
 #include <ATen/DLConvertor.h>
+
+#include "tc/core/tensor.h"
+
 namespace tc {
-namespace {
-inline std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
-toDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
+namespace aten {
+inline std::vector<DLTensorUPtr> makeDLTensors(
+    const std::vector<at::Tensor>& tensors) {
+  std::vector<DLTensorUPtr> dlTensors;
   for (auto tensor : tensors) {
     auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
+    dlTensors.push_back(makeDLTensor(&(dlMTensor->dl_tensor)));
+    dlMTensor->deleter(dlMTensor);
   }
-  return make_pair(dlTensors, dlMTensors);
+  return dlTensors;
 }
 
-inline std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
-toConstDlpackTensors(const std::vector<at::Tensor>& tensors) {
-  std::vector<const DLTensor*> dlTensors;
-  std::vector<DLManagedTensor*> dlMTensors;
+inline std::vector<DLConstTensorUPtr> toDLConstTensors(
+    const std::vector<at::Tensor>& tensors) {
+  std::vector<DLConstTensorUPtr> dlTensors;
   for (auto tensor : tensors) {
     auto dlMTensor = at::toDLPack(tensor);
-    dlTensors.push_back(&(dlMTensor->dl_tensor));
-    dlMTensors.push_back(dlMTensor);
+    dlTensors.push_back(makeDLConstTensor(&(dlMTensor->dl_tensor)));
+    dlMTensor->deleter(dlMTensor);
   }
-  return make_pair(dlTensors, dlMTensors);
+  return dlTensors;
 }
-
-inline void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors) {
-  for (auto& tensor : tensors) {
-    tensor->deleter(tensor);
-  }
-}
-} // namespace
+} // namespace aten
 } // namespace tc

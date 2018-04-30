@@ -27,7 +27,7 @@
 #include "tc/core/halide_utils.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 #include "tc/external/isl.h"
 #include "tc/lang/error_report.h"
 #include "tc/library/copy.h"
@@ -36,7 +36,26 @@
 using namespace std;
 
 using namespace tc;
-using namespace tc::dlutils;
+
+TEST(PrintDLTensor, Default) {
+  auto p = tc::detail::makeDLTensor<DLTensor, int>(
+      getCPUDLContext(), DLDataType{DLDataTypeCode::kDLInt, 8, 1}, {3, 4, 5});
+  auto expected = R"STR(DLTensor@0:
+shape: 3
+shape: 4
+shape: 5
+strides: 20
+strides: 5
+strides: 1
+alignment: 0
+dtype {
+  code: 0
+  bits: 8
+  lanes: 1
+}
+)STR";
+  ASSERT_EQ(expected, toString(*p));
+}
 
 struct GenericHalideCoreTest : public ::testing::Test {
   void CheckC(const std::string& tc, const std::vector<std::string>& expected) {
@@ -144,14 +163,13 @@ using namespace isl::with_exceptions;
 
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}
-  void Check(const string& tc, const std::vector<long>& inputSizes) {
-    auto ctx = getCPUDLContext();
-    DLDataType dtype;
-    dtype.code = kDLFloat;
-    dtype.bits = 32;
-    dtype.lanes = 1;
-    auto UPtr = makeDLTensorWithSizes(ctx, dtype, inputSizes);
-    std::vector<const DLTensor*> inputs{UPtr.get()};
+  void Check(const string& tc, const std::vector<int64_t>& inputSizes) {
+    TensorInfo ti(
+        DLDataType{kDLFloat, 32, 1},
+        0,
+        inputSizes,
+        makeStridesFromSizes(inputSizes));
+    DLConstTensorUPtr in = makeDLConstTensor(ti);
 
     // Must reuse the same ctx or memleaks ensue!
     tc2halide::HalideComponents comps =
@@ -160,7 +178,7 @@ struct TC2Isl : public ::testing::Test {
         polyhedral::Scop::makeScop(isl::with_exceptions::globalIslCtx(), comps);
     polyhedral::detail::validateSchedule(scop->scheduleRoot());
     // Just check no crashes
-    auto outputs = inferOutputTensorInfo(comps, inputs);
+    auto outputs = inferOutputTensorInfo(comps, {in.get()});
     // Check schedule construction equality
     auto scheduleHalide = polyhedral::detail::fromIslSchedule(
         polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());

@@ -21,7 +21,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
@@ -34,9 +34,11 @@
 namespace tc {
 namespace python {
 
+#if 0
+
 namespace py = pybind11;
 
-using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
+using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaBackend>;
 
 PYBIND11_MODULE(tc, m) {
   m.def("set_logtostderr", [](bool logtostderr) {
@@ -88,10 +90,10 @@ PYBIND11_MODULE(tc, m) {
               py::list& inputs,
               py::list& outputs,
               size_t handle) {
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<at::Tensor> atOutputs = getATenTensors(outputs, dlpack);
-            instance.run(name, atInputs, atOutputs, handle);
-            if (py::len(outputs) == 0) {
+            std::vector<at::Tensor> atInputs = getATenTensors(inputs,
+            dlpack); std::vector<at::Tensor> atOutputs =
+            getATenTensors(outputs, dlpack); instance.run(name, atInputs,
+            atOutputs, handle); if (py::len(outputs) == 0) {
               convertToPyObjects(atOutputs, dlpack, outputs);
             }
           })
@@ -103,11 +105,14 @@ PYBIND11_MODULE(tc, m) {
               py::list& outputs,
               size_t handle) {
             CHECK_LT(0, outputs.size());
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<at::Tensor> atOutputs = getATenTensors(outputs, dlpack);
-            instance.uncheckedRun(atInputs, atOutputs, handle);
+            std::vector<at::Tensor> atInputs = getATenTensors(inputs,
+            dlpack); std::vector<at::Tensor> atOutputs =
+            getATenTensors(outputs, dlpack); instance.uncheckedRun(atInputs,
+            atOutputs, handle);
           });
 }
+
+#endif
 
 } // namespace python
 } // namespace tc

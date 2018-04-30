@@ -29,12 +29,42 @@ CpuMappingOptions::CpuMappingOptions(const std::string& str)
   CHECK(parsed) << "could not parse protobuf string";
 }
 
-bool CpuMappingOptions::operator==(const CpuMappingOptions& options) {
+CpuMappingOptions::CpuMappingOptions(const CpuMappingOptions& options)
+    : ownedProto_(options.ownedProto_),
+      generic(*ownedProto_.mutable_generic_mapping_options()) {}
+
+CpuMappingOptions::CpuMappingOptions(const CpuMappingOptionsProto& buf)
+    : ownedProto_(buf),
+      generic(*ownedProto_.mutable_generic_mapping_options()) {}
+
+CpuMappingOptions& CpuMappingOptions::operator=(
+    const CpuMappingOptions& options) {
+  ownedProto_ = options.ownedProto_; // views already point to the proper place
+  return *this;
+}
+
+bool CpuMappingOptions::operator==(const CpuMappingOptions& options) const {
   return generic == options.generic;
 }
 
 std::string CpuMappingOptions::toProtobufSerializedString() const {
   return ownedProto_.SerializeAsString();
+}
+
+CpuMappingOptions& CpuMappingOptions::genericMappingOptions(
+    const MappingOptions& options) {
+  *(ownedProto_.mutable_generic_mapping_options()) = options.view.proto;
+  return *this;
+}
+
+CpuMappingOptions CpuMappingOptions::makeUnmappedMappingOptions() {
+  CpuMappingOptions mo;
+  mo.genericMappingOptions(MappingOptions::makeUnmappedMappingOptions());
+  return mo;
+}
+
+CpuMappingOptions CpuMappingOptions::makeNaiveMappingOptions() {
+  return makeUnmappedMappingOptions().tile(32, 32, 32).unroll(1);
 }
 
 } // namespace tc

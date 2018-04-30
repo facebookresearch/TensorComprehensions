@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
@@ -31,33 +31,32 @@
 #include "test_harness_aten_cuda.h"
 
 TEST(ATenCompilationCacheTest, Matmul) {
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
   auto tc = R"(
 def matmul(float(M,K) A, float(K,N) B) -> (output) {
     output(m, n) +=! A(m, r_k) * B(r_k, n)
 }
   )";
 
-  atCompl.define(tc);
-
   // test matmul
   LOG(INFO) << "Testing 1st matmul";
   at::Tensor a = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
-  std::vector<at::Tensor> outputs;
 
-  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
-  auto handle = atCompl.compile("matmul", inputs, mappingOptions);
-  atCompl.run("matmul", inputs, outputs, handle);
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpMappingOptions();
+  auto pExecutor =
+      tc::aten::compile<tc::CudaBackend>(tc, "matmul", inputs, mappingOptions);
+  auto outputs = tc::aten::prepareOutputs(tc, "matmul", inputs);
+  tc::aten::run(*pExecutor, inputs, outputs);
   at::Tensor diff = outputs[0].sub(a.mm(b));
   checkRtol(diff, inputs, 4);
 
   // running matmul again to hit cache
   LOG(INFO) << "Testing 1st matmul again";
-  std::vector<at::Tensor> outputs1;
-  handle = atCompl.compile("matmul", inputs, mappingOptions);
-  atCompl.run("matmul", inputs, outputs1, handle);
+  auto outputs1 = tc::aten::prepareOutputs(tc, "matmul", inputs);
+  pExecutor =
+      tc::aten::compile<tc::CudaBackend>(tc, "matmul", inputs, mappingOptions);
+  tc::aten::run(*pExecutor, inputs, outputs1);
   diff = outputs1[0].sub(a.mm(b));
   checkRtol(diff, inputs, 4); // reduction size is dimension of n
 
@@ -66,18 +65,20 @@ def matmul(float(M,K) A, float(K,N) B) -> (output) {
   at::Tensor a2 = at::CUDA(at::kFloat).rand({4, 8});
   at::Tensor b2 = at::CUDA(at::kFloat).rand({8, 7});
   inputs = {a2, b2};
-  std::vector<at::Tensor> outputs2;
-  handle = atCompl.compile("matmul", inputs, mappingOptions);
-  atCompl.run("matmul", inputs, outputs2, handle);
+  auto outputs2 = tc::aten::prepareOutputs(tc, "matmul", inputs);
+  pExecutor =
+      tc::aten::compile<tc::CudaBackend>(tc, "matmul", inputs, mappingOptions);
+  tc::aten::run(*pExecutor, inputs, outputs2);
   diff = outputs2[0].sub(a2.mm(b2));
   checkRtol(diff, inputs, 8); // reduction size is dimension of n
 
   // run the first cached matmul again
   LOG(INFO) << "Testing 1st cached matmul again";
   inputs = {a, b};
-  std::vector<at::Tensor> outputs3;
-  handle = atCompl.compile("matmul", inputs, mappingOptions);
-  atCompl.run("matmul", inputs, outputs3, handle);
+  auto outputs3 = tc::aten::prepareOutputs(tc, "matmul", inputs);
+  pExecutor =
+      tc::aten::compile<tc::CudaBackend>(tc, "matmul", inputs, mappingOptions);
+  tc::aten::run(*pExecutor, inputs, outputs3);
   diff = outputs3[0].sub(a.mm(b));
   checkRtol(diff, inputs, 4); // reduction size is dimension of n
 }

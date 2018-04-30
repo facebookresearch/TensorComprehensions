@@ -17,7 +17,7 @@
 #include <iostream>
 #include <string>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
@@ -32,18 +32,18 @@
 
 using namespace std;
 
-using TcCudaMapperTest = TcMapperTest<tc::CudaTcExecutor>;
-using TcCudaMapper1DReductionTest = TcMapper1DReductionTest<tc::CudaTcExecutor>;
-using TcCudaMapper2DReductionTest = TcMapper2DReductionTest<tc::CudaTcExecutor>;
-using TcCudaMapperMatmulTest = TcMapperMatmulTest<tc::CudaTcExecutor>;
-using TcCudaMapperBatchMatmulTest = TcMapperBatchMatmulTest<tc::CudaTcExecutor>;
+using TcCudaMapperTest = TcMapperTest<tc::CudaBackend>;
+using TcCudaMapper1DReductionTest = TcMapper1DReductionTest<tc::CudaBackend>;
+using TcCudaMapper2DReductionTest = TcMapper2DReductionTest<tc::CudaBackend>;
+using TcCudaMapperMatmulTest = TcMapperMatmulTest<tc::CudaBackend>;
+using TcCudaMapperBatchMatmulTest = TcMapperBatchMatmulTest<tc::CudaBackend>;
 
 ///////////////////////////////////////////////////////////////////////////////
 // 1-D reduction
 //   C +=! A(r_m)
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(TcCudaMapper1DReductionTest, DISABLED_Reduction1Dv0) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(0)
                             .mapToBlocks({})
                             .mapToThreads({16});
@@ -52,7 +52,7 @@ TEST_F(TcCudaMapper1DReductionTest, DISABLED_Reduction1Dv0) {
 }
 
 TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv1) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
@@ -61,7 +61,7 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv1) {
 }
 
 TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv2) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
@@ -70,7 +70,7 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv2) {
 }
 
 TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv3) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(0)
                             .mapToBlocks({1})
                             .mapToThreads({16});
@@ -83,7 +83,7 @@ TEST_F(TcCudaMapper1DReductionTest, Reduction1Dv3) {
 //   C(m) +=! A(m, r_n)
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(TcCudaMapper2DReductionTest, Reduction2D1) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(32, 32)
                             .mapToBlocks({1, 1})
                             .mapToThreads({32})
@@ -100,11 +100,11 @@ struct TcCudaMapper2DReductionStressTest : public TcCudaMapper2DReductionTest {
   using TcCudaMapper2DReductionTest::M;
   using TcCudaMapper2DReductionTest::N;
 
-  std::vector<at::Tensor>
+  OutputsAndCode
   Check(size_t tix, size_t tiy, bool skipCheck = false, bool ones = false) {
     M = tiy;
     N = tix;
-    auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+    auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                               .tile(tiy, tix)
                               .mapToBlocks({1})
                               .mapToThreads({tix, tiy})
@@ -117,7 +117,19 @@ struct TcCudaMapper2DReductionStressTest : public TcCudaMapper2DReductionTest {
 
 TEST_F(TcCudaMapper2DReductionStressTest, ThreadIdy1) {
   for (int i : {1, 2, 4, 7, 8, 11, 15, 17, 24, 32, 35, 42, 64, 128, 130}) {
-    Check(i, 1);
+    auto res = Check(i, 1);
+    if (i > 1) {
+      std::string expected = std::string("__tc::CubReduceAlongX<") +
+          std::to_string(i) + std::string(",1,1,__tc::ReductionOp::Sum>");
+      ASSERT_NE(std::string::npos, res.second.find(expected))
+          << "In resulting code:\n"
+          << res.second << "\ncould not find: " << expected;
+    } else {
+      std::string expected = "__tc::CubReduceAlongX<";
+      ASSERT_EQ(std::string::npos, res.second.find(expected))
+          << "In resulting code:\n"
+          << res.second << "\nfound unexpected: " << expected;
+    }
   }
 }
 
@@ -167,7 +179,7 @@ TEST_F(TcCudaMapper2DReductionStressTest, Iterate) {
 //   C(m, n) +=! A(m, r_k) * B(r_k, n)
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(TcCudaMapperMatmulTest, Matmul1DSchedule) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .fixParametersBeforeScheduling(true)
                             .tile(1, 1, K)
                             .mapToBlocks({M, N})
@@ -182,7 +194,7 @@ TEST_F(TcCudaMapperMatmulTest, Matmul1DScheduleMultipleOccurrence) {
   // Without full specialization, AST generator will duplicate the first
   // statement C[i][j] = 0.0f (for K > 0 and K < 0).  The codegen must be able
   // to handle the same statement appearing in different contexts.
-  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpMappingOptions()
                             .fixParametersBeforeScheduling(false)
                             .tile(32, 32, 32)
                             .mapToBlocks({8})
@@ -194,7 +206,7 @@ TEST_F(TcCudaMapperMatmulTest, Matmul1DScheduleMultipleOccurrence) {
 }
 
 TEST_F(TcCudaMapperMatmulTest, Matmul3DSchedule) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .fixParametersBeforeScheduling(true)
                             .mapToBlocks({1, 1, 1})
                             .mapToThreads({4, 1, 1});
@@ -205,7 +217,7 @@ TEST_F(TcCudaMapperMatmulTest, Matmul3DSchedule) {
 }
 
 TEST_F(TcCudaMapperMatmulTest, Matmul3DScheduleMultipleOccurrence) {
-  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpMappingOptions()
                             .tile(32, 32, 32)
                             .mapToBlocks({8})
                             .mapToThreads({16})
@@ -220,7 +232,7 @@ TEST_F(TcCudaMapperMatmulTest, Matmul3DScheduleMultipleOccurrence) {
 //   Z(b, n, k) +=! X(b, n, r_m) * Y(b, r_m, k)
 ///////////////////////////////////////////////////////////////////////////////
 TEST_F(TcCudaMapperBatchMatmulTest, BatchMatmul) {
-  auto mappingOptions = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto mappingOptions = tc::CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(1)
                             .mapToThreads({123})
                             .mapToBlocks({50})
@@ -257,7 +269,7 @@ def batch_triple_hadamard(float(B, D) U, float(B, D) V, float(B, D) W) -> (Z) {
   Check(
       TC,
       "batch_triple_hadamard",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       checkFun);
 }
@@ -281,7 +293,7 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
   // No defaults for this case
   auto checkFun = [](const std::vector<at::Tensor>& inputs,
                      std::vector<at::Tensor>& outputs) { return true; };
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "tensordot";
   Check(TC, name, options, inputs, checkFun);
   ::benchmarkKernelOptions(TC, name, inputs, options);
@@ -330,7 +342,7 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
   Check(
       TC,
       "fun",
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions(),
+      tc::CudaMappingOptions::makeNaiveMappingOptions(),
       inputs,
       checkFun);
 }
@@ -393,7 +405,7 @@ def spatial_batch_norm(
   };
 
   auto name = "spatial_batch_norm";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
                      .tile(0)

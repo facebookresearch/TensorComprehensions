@@ -41,7 +41,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
     O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
+  tc::ATenCompilationUnit<tc::CudaBackend> atCompl;
   atCompl.define(tc);
 
   // 2. Allocate tensors with random data.
@@ -49,7 +49,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
   at::Tensor I1 = at::CUDA(at::kFloat).rand({32, 16, 2, 17, 25});
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
     "/tmp/save_results", "tensordot", {I0, I1}, options);

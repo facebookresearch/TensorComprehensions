@@ -45,7 +45,7 @@ DECLARE_uint32(tuner_gen_mutation_rate);
 DECLARE_uint32(tuner_gen_generations);
 DECLARE_uint32(tuner_gen_number_elites);
 DECLARE_uint32(tuner_threads);
-DECLARE_string(tuner_gpus);
+DECLARE_string(tuner_devices);
 DECLARE_bool(tuner_print_best);
 DECLARE_string(tuner_rng_restore);
 DECLARE_bool(tuner_gen_restore_from_proto);

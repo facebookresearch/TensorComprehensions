@@ -296,6 +296,11 @@ void TuningConfiguration::fromCudaMappingOptions(
   unrollCopyShared.selectValue(options.proto().unroll_copy_shared());
 }
 
+void TuningConfiguration::fromCpuMappingOptions(
+    const CpuMappingOptions& options) {
+  fromMappingOptions(options.generic);
+}
+
 void TuningConfiguration::applyToMappingOptions(
     MappingOptionsView& options) const {
   outerScheduleOptions.applyToMappingOptions(options.outerScheduleOptions);
@@ -316,6 +321,11 @@ void TuningConfiguration::applyToCudaMappingOptions(
   options.useSharedMemory(useSharedMemory.value());
   options.usePrivateMemory(usePrivateMemory.value());
   options.unrollCopyShared(unrollCopyShared.value());
+}
+
+void TuningConfiguration::applyToCpuMappingOptions(
+    CpuMappingOptions& options) const {
+  applyToMappingOptions(options.generic);
 }
 
 TuningConfiguration::TuningConfiguration()

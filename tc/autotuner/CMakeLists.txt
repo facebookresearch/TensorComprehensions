@@ -1,19 +1,29 @@
+set(AUTOTUNER_FILES
+
+  genetic_search.cc
+  parameters.cc
+  utils.cc
+  cpu/autotuner.cc
+)
+
 if (WITH_CUDA)
-  add_library(
-    tc_autotuner
-
-    SHARED
-
-    genetic_autotuner.cc
-    genetic_autotuner_aten.cc
-    genetic_search.cc
-    genetic_tuning_harness.cc
-    parameters.cc
-    utils/printer.cc
-    utils/utils.cc)
-
-  target_include_directories(tc_autotuner PUBLIC ${PROJECT_SOURCE_DIR}/include)
-  target_link_libraries(tc_autotuner PUBLIC ${ATEN_LIBRARIES} tc_cuda tc_proto)
-
-  install(TARGETS tc_autotuner DESTINATION lib)
+set(AUTOTUNER_FILES ${AUTOTUNER_FILES} cuda/autotuner.cc)
 endif()
+
+add_library(
+  tc_autotuner
+
+  SHARED
+
+  ${AUTOTUNER_FILES}
+)
+
+target_include_directories(tc_autotuner PUBLIC ${PROJECT_SOURCE_DIR}/include)
+
+if (WITH_CUDA)
+  target_link_libraries(tc_autotuner PUBLIC ${ATEN_LIBRARIES} tc_cuda tc_core_cpu)
+else()
+  target_link_libraries(tc_autotuner PUBLIC ${ATEN_LIBRARIES} tc_core_cpu)
+endif()
+
+install(TARGETS tc_autotuner DESTINATION lib)

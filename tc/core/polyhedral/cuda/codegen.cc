@@ -25,7 +25,7 @@
 #include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
-#include "tc/core/polyhedral/cuda/mapping_types.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -279,9 +279,9 @@ void emitTreeSyncCall(
                      .as<Halide::Internal::Provide>();
 
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::array<size_t, 3> dims = {TX.mappingSize(context.mappedScop.numThreads),
-                                TY.mappingSize(context.mappedScop.numThreads),
-                                TZ.mappingSize(context.mappedScop.numThreads)};
+  std::array<size_t, 3> dims = {mappingSize(TX, context.mappedScop.numThreads),
+                                mappingSize(TY, context.mappedScop.numThreads),
+                                mappingSize(TZ, context.mappedScop.numThreads)};
 
   context.ss << tc::code::cuda::kCUBReductionName;
 

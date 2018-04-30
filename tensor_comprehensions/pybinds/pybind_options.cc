@@ -35,25 +35,23 @@ PYBIND11_MODULE(mapping_options, m) {
       .def(
           py::init([](std::string type) {
             if (type == "naive") {
-              return tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+              return tc::CudaMappingOptions::makeNaiveMappingOptions();
             }
             if (type == "single_thread") {
-              return tc::CudaMappingOptions::
-                  makeSingleThreadCudaMappingOptions();
+              return tc::CudaMappingOptions::makeSingleThreadMappingOptions();
             }
             if (type == "pointwise") {
-              return tc::CudaMappingOptions::makePointwiseCudaMappingOptions();
+              return tc::CudaMappingOptions::makePointwiseMappingOptions();
             }
             if (type == "mlp") {
-              return tc::CudaMappingOptions::makeMlpCudaMappingOptions();
+              return tc::CudaMappingOptions::makeMlpMappingOptions();
             }
             if (type == "conv") {
-              return tc::CudaMappingOptions::
-                  makeConvolutionCudaMappingOptions();
+              return tc::CudaMappingOptions::makeConvolutionMappingOptions();
             }
             if (type == "group_conv") {
               return tc::CudaMappingOptions::
-                  makeGroupConvolutionCudaMappingOptions();
+                  makeGroupConvolutionMappingOptions();
             }
             throw std::runtime_error("Invalid option passed");
           }),

@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
@@ -57,11 +57,9 @@ static void Succeed(
     const tensor_list& inputs,
     tensor_list&& outputs,
     std::string fn = "f") {
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
-  cu.define(str);
-  auto handle = cu.compile(
-      fn, inputs, tc::CudaMappingOptions::makeNaiveCudaMappingOptions());
-  cu.run("f", inputs, outputs, handle);
+  auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+      str, fn, inputs, tc::CudaMappingOptions::makeNaiveMappingOptions());
+  tc::aten::run(*pExecutor, inputs, outputs);
 }
 
 static void Fail(
@@ -134,8 +132,7 @@ TEST(TestCornerCases, E9) {
 }
 
 TEST(TestCornerCases, E10) {
-  Succeed(
-      "def f(int32 a) -> (b) { b(i) = a where i in 0:10 }", {I()}, {I(10, 10)});
+  Succeed("def f(int32 a) -> (b) { b(i) = a where i in 0:10 }", {I()}, {I(10)});
 }
 
 TEST(TestCornerCases, E11) {

@@ -16,21 +16,56 @@ message TensorInfoProto {
   required DLDataTypeProto dtype = 4;
 }
 
-message OptionsCacheValuesProto{
-  required CudaMappingOptionsProto kernel_options = 1;
-  repeated uint64 recorded_runtimes = 2;
-}
-
-message OptionsCacheEntryProto {
+message OptionsCacheKeyProto {
   required string id = 1;
   repeated TensorInfoProto inputs = 2;
   repeated TensorInfoProto outputs = 3;
   required string device_str = 4;
   required string git_version = 5;
-
-  repeated OptionsCacheValuesProto values = 6;
 }
 
-message OptionsCacheProto {
-  repeated OptionsCacheEntryProto entries = 1;
+/******************************************************************************/
+/* CUDA-specific cache                                                        */
+/******************************************************************************/
+message CudaOptionsCacheValueProto{
+  required CudaMappingOptionsProto kernel_options = 1;
+  repeated uint64 recorded_runtimes = 2;
+}
+
+/*
+ * The options cache proto is a multimap.
+ * We store the keys multiple times in the proto for now.
+ * Once we measure that the caches grow too big we can improve this.
+ * Note however that if the key size and the value size are of the same order of
+ * magnitude, the gain will be lower than 2x (just for perspective).
+ *
+ * TODO: move to proto3 and use a proper map. For now ensure
+ *   keys.size() == values.size() in code.
+ */
+message CudaOptionsCacheProto {
+  repeated OptionsCacheKeyProto keys = 1;
+  repeated CudaOptionsCacheValueProto values = 2;
+}
+
+/******************************************************************************/
+/* CPU-specific cache                                                         */
+/******************************************************************************/
+message CpuOptionsCacheValueProto{
+  required CpuMappingOptionsProto kernel_options = 1;
+  repeated uint64 recorded_runtimes = 2;
+}
+
+/*
+ * The options cache proto is a multimap.
+ * We store the keys multiple times in the proto for now.
+ * Once we measure that the caches grow too big we can improve this.
+ * Note however that if the key size and the value size are of the same order of
+ * magnitude, the gain will be lower than 2x (just for perspective).
+ *
+ * TODO: move to proto3 and use a proper map. For now ensure
+ *   keys.size() == values.size() in code.
+ */
+message CpuOptionsCacheProto {
+  repeated OptionsCacheKeyProto keys = 1;
+  repeated CpuOptionsCacheValueProto values = 2;
 }

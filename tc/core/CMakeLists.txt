@@ -9,12 +9,12 @@ add_library(
 
   SHARED
 
-  compilation_cache.cc
   flags.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
-  tc_executor.cc
   islpp.cc
+  compiler.cc
+  tensor.cc
 
   tc2halide.cc
 
@@ -22,7 +22,6 @@ add_library(
   halide_utils.cc
 
   polyhedral/codegen.cc
-  polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
   polyhedral/reduction_matcher.cc
   polyhedral/schedule_isl_conversion.cc
@@ -90,10 +89,8 @@ install(
 
 set(TC_CUDA_CROSS_COMPILE_FILES
     cuda/cuda_mapping_options.cc
-    cuda/cuda_mapping_options_cpp_printer.cc
     polyhedral/cuda/codegen.cc
     polyhedral/cuda/mapped_scop.cc
-    polyhedral/cuda/mapping_types.cc
     polyhedral/cuda/memory_promotion_heuristic.cc
     polyhedral/cuda/tighten_launch_bounds.cc
 )
@@ -154,7 +151,6 @@ if (WITH_CUDA)
 
     # Files needed for execution
     cuda/cuda.cc
-    cuda/cuda_compilation_cache.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
   )

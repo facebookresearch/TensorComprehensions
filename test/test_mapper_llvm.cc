@@ -18,12 +18,9 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
-
-#include "tc/aten/utils.h"
+#include "tc/aten/aten.h"
+#include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/cpu/cpu_tc_executor.h"
-#include "tc/core/execution_engine.h"
-#include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
 #include "tc/core/polyhedral/llvm_jit.h"
 #include "tc/core/polyhedral/scop.h"
@@ -64,29 +61,6 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   fptr(A.data<float>(), B.data<float>(), C.data<float>());
 
   checkRtol(Cc - C, {A, B}, N * M);
-}
-
-TEST(LLVMCodegen, DISABLED_BasicExecutionEngine) {
-  string tc = R"TC(
-def fun(float(N, M) A, float(N, M) B) -> (C) {
-    C(n, m) = A(n, m) + B(n, m)
-}
-)TC";
-
-  auto N = 40;
-  auto M = 24;
-
-  at::Tensor A = at::CPU(at::kFloat).rand({N, M});
-  at::Tensor B = at::CPU(at::kFloat).rand({N, M});
-  at::Tensor C = at::CPU(at::kFloat).rand({N, M});
-
-  ExecutionEngine<CpuTcExecutor> engine;
-  engine.define(tc);
-  auto options = tc::MappingOptions::makeNaiveMappingOptions();
-  auto inputDLTensorsPair = toConstDlpackTensors({A, B});
-  ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
-  engine.compile(
-      "fun", inputDLTensorsPair.first, options.toProtobufSerializedString());
 }
 
 TEST(LLVMCodegen, MultiStmt) {

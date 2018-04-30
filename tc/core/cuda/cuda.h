@@ -107,7 +107,7 @@ class CudaGPUInfo {
   int CurrentGPUId() const;
   void SynchronizeCurrentGPU() const;
   std::string GetGPUName(int id = -1) const;
-  std::string GetCudaDeviceStr() const;
+  std::string getCudaDeviceStr() const;
   size_t SharedMemorySize() const;
 
   std::vector<std::string> gpuNames_;

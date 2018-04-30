@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 
+#include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/memory.h"
 
@@ -161,6 +162,8 @@ class TuningConfiguration {
   TuningConfiguration(const TuningConfiguration&) = default;
   TuningConfiguration& operator=(const TuningConfiguration&) = default;
 
+  void fromCpuMappingOptions(const CpuMappingOptions& options);
+  void applyToCpuMappingOptions(CpuMappingOptions& options) const;
   void fromCudaMappingOptions(const CudaMappingOptions& options);
   void applyToCudaMappingOptions(CudaMappingOptions& options) const;
 
