@@ -22,7 +22,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_autotuner.h"
 #include "tc/autotuner/genetic_tuning_harness.h"
-#include "tc/autotuner/utils/utils.h"
+#include "tc/autotuner/utils.h"
 #include "tc/lang/parser.h"
 
 namespace tc {

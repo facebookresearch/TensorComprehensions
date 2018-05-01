@@ -24,7 +24,7 @@
 
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/parameters.h"
-#include "tc/autotuner/utils/printer.h"
+#include "tc/autotuner/utils.h"
 #include "tc/core/utils/dlpack.h"
 #include "tc/lang/parser.h"
 

@@ -24,8 +24,7 @@
 #include <cuda_runtime_api.h>
 #include <glog/stl_logging.h>
 
-#include "tc/autotuner/utils/printer.h"
-#include "tc/autotuner/utils/utils.h"
+#include "tc/autotuner/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/cuda/cuda_tc_executor.h"

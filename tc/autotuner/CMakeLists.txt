@@ -9,8 +9,7 @@ if (WITH_CUDA)
     genetic_search.cc
     genetic_tuning_harness.cc
     parameters.cc
-    utils/printer.cc
-    utils/utils.cc)
+    utils.cc)
 
   target_include_directories(tc_autotuner PUBLIC ${PROJECT_SOURCE_DIR}/include)
   target_link_libraries(tc_autotuner PUBLIC ${ATEN_LIBRARIES} tc_cuda tc_proto)

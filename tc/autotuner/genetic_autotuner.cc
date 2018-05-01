@@ -20,6 +20,7 @@
 #include <csignal>
 #include <thread>
 
+#include "tc/autotuner/utils.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"

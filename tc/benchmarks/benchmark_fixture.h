@@ -28,7 +28,7 @@
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_autotuner_aten.h"
-#include "tc/autotuner/utils/utils.h"
+#include "tc/autotuner/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_compilation_cache.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
