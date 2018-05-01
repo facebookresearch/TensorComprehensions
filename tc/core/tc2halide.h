@@ -27,8 +27,8 @@ namespace tc2halide {
 // of the input and output tensors. We do not explicitly enumerate the
 // scalar params.
 struct HalideComponents {
-  lang::TreeRef
-      def; // post-semantic analaysis tree, used for later error reporting
+  // post-semantic analaysis tree, used for later error reporting
+  lang::TreeRef def;
   Halide::Internal::Stmt stmt;
   std::vector<Halide::ImageParam> inputs;
   std::map<std::string, Halide::Internal::Parameter> params;

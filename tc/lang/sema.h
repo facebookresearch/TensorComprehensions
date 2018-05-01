@@ -339,6 +339,21 @@ struct Sema {
         throw ErrorReport(exp) << "NYI - semantic checking for " << exp;
     }
   }
+  // This is the entry function for semantic analysis. It is called by
+  // tc2halide to associate type with each node of the tree and to also make
+  // sure that the tree is sematically correct. For example: a variable
+  // may not be input two times. Parser only verifies for the syntax but does
+  // not check the semantics.
+  //
+  // It converts the TK_APPLY nodes to TK_ACCESS or TK_BUILT_IN
+  //
+  // The reduction variables are deduced and the objects are created for them
+  // and they are appended to the tree
+  //
+  // Type checking is also done by small amount of code
+  //
+  // The method 'withType' can be used to associate the type with a given node
+  //
   TreeRef checkFunction(TreeRef func_) {
     auto func = Def(func_);
     auto params_ =
@@ -350,6 +365,10 @@ struct Sema {
       }
     }
 
+    // Everything has to be input or output. Keep track of the variables that
+    // are either input/output. We will check that the statements have variables
+    // from this list. If not, then throw error that temporaries are not yet
+    // implemented.
     for (auto p : func.params()) {
       nonTemporaries.insert(p.ident().name());
       inputParameters.insert(p.ident().name());
@@ -437,6 +456,7 @@ struct Sema {
       return checkRangeConstraint(RangeConstraint(ref));
     }
   }
+  // Semantic checking for the statements/comprehensions in a TC Def.
   TreeRef checkStmt(TreeRef stmt_) {
     auto stmt = Comprehension(stmt_);
 

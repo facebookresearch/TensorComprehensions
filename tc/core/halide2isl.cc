@@ -35,7 +35,8 @@ using namespace tc::polyhedral::detail;
 
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components) {
   // const Stmt& s) {
-  // Collect and categorize all the Variable symbols
+  // Collect and categorize all the Halide Variable symbols as reduction
+  // or index variables
   class BuildSymbolTable : public IRVisitor {
     using IRVisitor::visit;
     std::set<std::string> included;
@@ -60,7 +61,7 @@ SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components) {
 
   components.stmt.accept(&builder);
   // Get params from components.params which contain everything declared in
-  // tcdef. However, the 0-D tensors are registered as both params and inputs,
+  // TC Def. However, the 0-D tensors are registered as both params and inputs,
   // filter those out.
   for (auto kvp : components.params) {
     bool skip = false;

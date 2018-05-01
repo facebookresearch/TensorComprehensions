@@ -62,10 +62,13 @@ Type translateScalarType(int tcType) {
   }
 }
 
+// Translate the TC def input params to corresponding Halide components.
+// params, inputs will be populated here.
 void translateParam(
     const lang::Param& p,
     map<string, Parameter>* params,
     vector<ImageParam>* inputs) {
+  // Check if the param has already been converted to halide components.
   if (params->find(p.ident().name()) != params->end()) {
     return;
   } else {
@@ -492,6 +495,8 @@ Expr reductionUpdate(Expr e) {
   return Call::make(e.type(), kReductionUpdate, {e}, Call::Intrinsic);
 }
 
+// Translate a single TC comprehension/statement to Halide components: funcs,
+// bounds, reductions.
 void translateComprehension(
     const lang::Comprehension& c,
     const map<string, Parameter>& params,
@@ -737,6 +742,7 @@ void translateComprehension(
   stage.reorder(loop_nest);
 }
 
+// Translate a semantically checked TC def to HalideComponents struct.
 HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   map<string, Function> funcs;
   HalideComponents components;
@@ -956,6 +962,8 @@ translate(isl::ctx ctx, const lang::TreeRef& treeRef, bool throwWarnings) {
       lang::Def(lang::Sema().checkFunction(treeRef)), throwWarnings);
 }
 
+// NOTE: there is no guarantee here that the tc string has only one def. It
+// could have many defs. Only first def will be converted in that case.
 HalideComponents
 translate(isl::ctx ctx, const std::string& tc, bool throwWarnings) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << tc;
