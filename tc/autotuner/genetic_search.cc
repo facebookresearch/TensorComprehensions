@@ -302,12 +302,6 @@ void GeneticSearch::updateParameters() {
   // Update failsafe lastBestConf
   lastBestConf =
       population.size() > 0 ? population.front()->configuration : lastBestConf;
-  if (FLAGS_tuner_print_best) {
-    CudaMappingOptions options(
-        CudaMappingOptions::makeSingleThreadMappingOptions());
-    lastBestConf.applyToCudaMappingOptions(options);
-    LOG(INFO) << "Best so far:\n" << options;
-  }
 
   if (population.size() < kMinCandidatesForBreeding) {
     LOG_IF(ERROR, FLAGS_debug_tuner)
