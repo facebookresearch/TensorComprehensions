@@ -650,24 +650,12 @@ IslCodegenRes codegenISL(const Scop& scop) {
     return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
   };
 
-  auto bands = detail::ScheduleTree::collect(
-      scop.scheduleRoot(), detail::ScheduleTreeType::Band);
-  size_t maxDepth = 0;
-  for (auto const& node : bands) {
-    auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
-    auto depth = node->scheduleDepth(scop.scheduleRoot()) +
-        bandElem->mupa_.dim(isl::dim_type::set);
-    if (depth > maxDepth) {
-      maxDepth = depth;
-    }
-  }
-
   checkValidIslSchedule(scop.scheduleRoot());
   auto schedule = detail::toIslSchedule(scop.scheduleRoot());
-  auto ctx = schedule.get_ctx();
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);
-  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
+  auto root = scop.scheduleRoot();
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
   auto astNode = astBuild.node_from(schedule);
   return {
       std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};

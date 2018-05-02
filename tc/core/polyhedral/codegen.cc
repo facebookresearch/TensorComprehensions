@@ -15,15 +15,32 @@
  */
 
 #include "tc/core/polyhedral/codegen.h"
+
 #include <sstream>
+
+#include "tc/core/polyhedral/schedule_tree.h"
 
 namespace tc {
 namespace polyhedral {
 
-isl::id_list
-Codegen::makeLoopIterators(isl::ctx ctx, int n, const std::string& prefix) {
+isl::id_list Codegen::makeLoopIterators(
+    const detail::ScheduleTree* root,
+    const std::string& prefix) {
+  auto bands =
+      detail::ScheduleTree::collect(root, detail::ScheduleTreeType::Band);
+  size_t n = 0;
+  for (auto const& node : bands) {
+    auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
+    auto depth =
+        node->scheduleDepth(root) + bandElem->mupa_.dim(isl::dim_type::set);
+    if (depth > n) {
+      n = depth;
+    }
+  }
+
+  auto ctx = root->ctx_;
   isl::id_list loopIterators(ctx, n);
-  for (int i = 0; i < n; ++i) {
+  for (size_t i = 0; i < n; ++i) {
     std::stringstream ss;
     ss << prefix << i;
     loopIterators = loopIterators.add(isl::id(ctx, ss.str()));
