@@ -77,8 +77,8 @@ class TestMatmul(TestCase):
 
         mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
         inputs = [mat1, mat2]
-        handle = cu.compile("matmul", [mat1, mat2], options="mlp")
-        outputs = cu.run(handle, "matmul", inputs)
+        cu.compile("matmul", [mat1, mat2], options="mlp")
+        outputs = cu.run("matmul", inputs)
         torch.cuda.synchronize()
         expected = torch.mm(mat1, mat2)
         torch.cuda.synchronize()
@@ -87,7 +87,7 @@ class TestMatmul(TestCase):
 
         mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
         inputs = [mat1, mat2]
-        cu.run(handle, "matmul", inputs, outputs=outputs)
+        cu.run("matmul", inputs, outputs=outputs)
         expected = torch.mm(mat1, mat2)
         diff = outputs[0] - expected
         self.assert_almost_equal(diff, inputs, 4)

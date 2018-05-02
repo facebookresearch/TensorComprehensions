@@ -21,9 +21,9 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
-#include "tc/aten/aten_compiler.h"
+#include "tc/aten/aten_compiler_new_api.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/test_harness.h"
@@ -158,7 +158,6 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
           "group_convolution",
           inputs,
           options,
-          {options},
           checkFun);
     }
   }

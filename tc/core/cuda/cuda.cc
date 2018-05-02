@@ -89,7 +89,7 @@ void CudaGPUInfo::SynchronizeCurrentGPU() const {
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
 }
 
-std::string CudaGPUInfo::GetCudaDeviceStr() const {
+std::string CudaGPUInfo::getCudaDeviceStr() const {
   if (NumberGPUs() == 0) {
     throw std::runtime_error("No GPUs found.");
   }

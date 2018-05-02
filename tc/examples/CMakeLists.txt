@@ -23,13 +23,14 @@ foreach(i ${EXAMPLES_FILES})
   target_link_libraries(
      ${i}
 
-     tc_autotuner
-     tc_core
-
      ${GTEST_LIBS}
      ${GFLAGS_LIBRARIES}
      ${GLOG_LIBRARIES}
 
      ${ATEN_LIBRARIES}
+
+     tc_autotuner
+     tc_core
+     tc_aten
   )
 endforeach()

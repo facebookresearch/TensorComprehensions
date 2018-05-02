@@ -14,6 +14,7 @@ target_link_libraries(
   tc
 
   tc_autotuner
+  tc_aten
 
   ${PYTHON_LIBRARIES}
   ${GFLAGS_LIBRARIES}
@@ -48,6 +49,7 @@ if (WITH_CUDA)
     autotuner
 
     tc_autotuner
+    tc_aten
 
     ${PYTHON_LIBRARIES}
     ${GFLAGS_LIBRARIES}

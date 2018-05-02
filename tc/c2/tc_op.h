@@ -20,10 +20,10 @@
 #include <string>
 #include <vector>
 
+#include "tc/core/compiler.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_tc_executor.h"
-#include "tc/core/execution_engine.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/tensor.h"
 
 #include "tc/c2/context.h"
 #include "tc/c2/dlpack_c2.h"
@@ -37,7 +37,7 @@ template <typename T, class Context, class Engine = DefaultEngine>
 class TcOp : public Operator<Context> {
  public:
   TcOp(const OperatorDef& operator_def, Workspace* ws)
-      : caffe2::Operator<Context>(operator_def, ws),
+      : Operator<Context>(operator_def, ws),
         tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
         tcName_(
             OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
@@ -48,9 +48,8 @@ class TcOp : public Operator<Context> {
         OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =
         OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
-    checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     compiled_ = false;
-    handle_ = 0;
+    checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     ArgumentHelper args(operator_def);
     if (args.HasArgument("mappingOptions")) {
       cudaMappingOptions_ = tc::CudaMappingOptions(
@@ -66,8 +65,6 @@ class TcOp : public Operator<Context> {
     } else {
       setupDefaultGradCudaMappingOptions();
     }
-    executionEngine_ = std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>>(
-        new tc::ExecutionEngine<tc::CudaTcExecutor>());
   }
 
   USE_OPERATOR_CONTEXT_FUNCTIONS;
@@ -85,11 +82,10 @@ class TcOp : public Operator<Context> {
   /// reimplement this to customize stategies.
   virtual void setupDefaultGradCudaMappingOptions() {}
 
-  void prepareOutputs(const std::vector<const DLTensor*> tensorInfo) {
-    for (size_t i = 0; i < tensorInfo.size(); ++i) {
-      auto info = tensorInfo[i];
-      std::vector<int64_t> shape(info->shape, info->shape + info->ndim);
-      Output(i)->Resize(shape);
+  void prepareOutputs(const std::vector<tc::TensorInfo> tensorInfos) {
+    for (size_t i = 0; i < tensorInfos.size(); ++i) {
+      auto info = tensorInfos[i];
+      Output(i)->Resize(info.shape);
       // Note: this mutable_data() call actually creates the data storage.
       Output(i)->template mutable_data<T>();
     }
@@ -97,36 +93,42 @@ class TcOp : public Operator<Context> {
 
   virtual bool RunOnDevice() override {
     if (!compiled_) {
-      // first, given the TC, define it in the executionEngine_
-      executionEngine_->define(tc_);
+      // now, given the input tensors, convert them to dlpack tensors so that
+      // we can call the compile command
       for (int idx = 0; idx < this->InputSize(); ++idx) {
-        auto dims = this->Input(idx).dims();
-        inTensorUPtrs_.emplace_back(
-            dlpack::makeConstDLTensor(this->Input(idx), dims));
-        inputDLTensors_.push_back(inTensorUPtrs_[idx].get());
-        inputVoidPtrs_.push_back(inputDLTensors_[idx]->data);
+        inputDLTensors_.emplace_back(
+            dlpack::makeDLConstTensor(this->Input(idx)));
+        rawInputDLTensors_.push_back(inputDLTensors_.back().get());
+        inputVoidPtrs_.push_back(inputDLTensors_.back()->data);
       }
-      auto outTensorInfo =
-          executionEngine_->inferOutputTensorInfo(tcName_, inputDLTensors_);
+
+      auto parsedTcs = tc::detail::parse(tc_);
+      CHECK_EQ(parsedTcs.count(tcName_), 1u)
+          << "attempting to access undefined function " << tcName_;
+
+      auto outTensorInfo = tc::detail::inferOutputTensorInfo(
+          parsedTcs.at(tcName_), rawInputDLTensors_);
       prepareOutputs(outTensorInfo);
-      for (int idx = 0; idx < OutputSize(); ++idx) {
-        outTensorUPtrs_.emplace_back(dlpack::makeDLTensor(Output(idx)));
-        outputDLTensors_.push_back(outTensorUPtrs_[idx].get());
-        outputVoidPtrs_.push_back(outputDLTensors_[idx]->data);
+
+      // now create the outputDLTensors
+      for (int i = 0; i < OutputSize(); ++i) {
+        outputDLTensors_.emplace_back(dlpack::makeDLTensor(*Output(i)));
+        rawOutputDLTensors_.push_back(outputDLTensors_.back().get());
+        outputVoidPtrs_.push_back(outputDLTensors_[i]->data);
       }
-      handle_ = executionEngine_->compile(
-          tcName_,
-          inputDLTensors_,
-          cudaMappingOptions_.toProtobufSerializedString());
+
+      // compile
+      executor_ = tc::compile<tc::CudaBackend>(
+          parsedTcs.at(tcName_), rawInputDLTensors_, cudaMappingOptions_);
       compiled_ = true;
     }
 
-    if (checkSizes_) {
-      executionEngine_->run(handle_, inputDLTensors_, outputDLTensors_);
+    // run
+    if (!checkSizes_) {
+      executor_->uncheckedRun(inputVoidPtrs_, outputVoidPtrs_);
     } else {
-      executionEngine_->uncheckedRun(handle_, inputVoidPtrs_, outputVoidPtrs_);
+      executor_->run(rawInputDLTensors_, rawOutputDLTensors_);
     }
-
     return true;
   }
 
@@ -135,20 +137,21 @@ class TcOp : public Operator<Context> {
   std::string gradTc_;
   std::string tcName_;
   std::string gradTcName_;
-  bool checkSizes_;
   bool compiled_;
-  size_t handle_;
-  std::vector<const void*> inputVoidPtrs_;
-  std::vector<void*> outputVoidPtrs_;
-  std::vector<const DLTensor*> inputDLTensors_;
-  std::vector<DLTensor*> outputDLTensors_;
-  std::vector<::tc::dlutils::DLTensorUPtr> inTensorUPtrs_;
-  std::vector<::tc::dlutils::DLTensorUPtr> outTensorUPtrs_;
+  bool checkSizes_;
   tc::CudaMappingOptions cudaMappingOptions_;
   tc::CudaMappingOptions gradCudaMappingOptions_;
+  // Owning DLTensor wrapping C2 tensors
+  std::vector<tc::DLConstTensorUPtr> inputDLTensors_;
+  std::vector<tc::DLTensorUPtr> outputDLTensors_;
+  // Pointers into owning DLTensor wrapping C2 tensors
+  std::vector<const DLConstTensor*> rawInputDLTensors_;
+  std::vector<const DLTensor*> rawOutputDLTensors_;
+  // Pointers into unchecked void*
+  std::vector<const void*> inputVoidPtrs_;
+  std::vector<void*> outputVoidPtrs_;
 
- private:
-  std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>> executionEngine_;
+  std::unique_ptr<tc::CudaBackend::ExecutorType> executor_;
 };
 
 class GetTcOpGradient : public GradientMakerBase {

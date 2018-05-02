@@ -40,17 +40,17 @@ CudaRTCFunction::~CudaRTCFunction() {
 void CudaRTCFunction::clear() {
   if (!cleared_) {
     for (auto kvp : perGpuModule_) {
-      WithDevice(kvp.first);
+      WithCudaDevice(kvp.first);
       TC_CUDA_DRIVERAPI_ENFORCE(cuModuleUnload(kvp.second));
     }
     cleared_ = true;
   }
 }
 
-std::shared_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
+std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
     const std::string& name,
     const std::string& source) {
-  std::shared_ptr<CudaRTCFunction> res(new CudaRTCFunction());
+  std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
   res->specializedName = name;
   res->cleared_ = false;
 
@@ -131,7 +131,7 @@ Duration CudaRTCFunction::Launch(
     const std::array<size_t, 3>& block,
     unsigned int shared_mem,
     cudaStream_t stream,
-    std::vector<int> params,
+    std::vector<long> params,
     std::vector<void*> outputs,
     std::vector<const void*> inputs,
     bool profile) const {

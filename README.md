@@ -41,7 +41,7 @@ def tensordot(float(N, C1, C2, H, W) I0,
     O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
+  tc::ATenCompilationUnit<tc::CudaBackend> atCompl;
   atCompl.define(tc);
 
   // 2. Allocate tensors with random data.

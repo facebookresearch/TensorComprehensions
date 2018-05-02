@@ -54,8 +54,7 @@ TuningHarness<Backend>::TuningHarness(
 template <typename Backend>
 template <typename SearchStrategy>
 void TuningHarness<Backend>::run(SearchStrategy& searchStrategy) {
-  // TODO: kNumGenerations -> iterations
-  for (size_t i = 0; i < searchStrategy.kNumGenerations; ++i) {
+  for (size_t i = 0; i < searchStrategy.numGenerations; ++i) {
     if (not stopRequested_) {
       runOneIteration(searchStrategy, i);
     }

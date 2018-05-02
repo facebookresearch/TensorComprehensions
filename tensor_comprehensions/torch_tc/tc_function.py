@@ -75,7 +75,7 @@ class TCFunction(Function):
         ctx.save_for_backward(*inputs)
         outputs = unpack_variables(tc_info["outputs"]) if "outputs" in tc_info else None
         outputs = tc_unit.run(
-            tc_info["handle_forward"], tc_info["forward_name"],
+            tc_info["forward_name"],
             make_contiguous(list(inputs)), outputs=outputs
         )
         return tuple(outputs)
@@ -92,8 +92,8 @@ class TCFunction(Function):
         inputs = make_contiguous(unpack_variables(list(real_inputs) + list(rearranged_grad_outputs)))
 
         # if backwards hasn't been compiled before, we compile it  again
-        if "handle_backward" not in tc_info:
-            handle_backward = tc_unit.compile(tc_info["backward_name"], inputs, **kwargs)
-            tc_info["handle_backward"] = handle_backward
-        grad_inputs = tc_unit.run(tc_info["handle_backward"], tc_info["backward_name"], inputs)
+        if "compiled_backward" not in tc_info:
+            tc_unit.compile(tc_info["backward_name"], inputs, **kwargs)
+            tc_info["compiled_backward"] = True
+        grad_inputs = tc_unit.run(tc_info["backward_name"], inputs)
         return (None, None, None,) + tuple(wrap_variable(grad_inputs))

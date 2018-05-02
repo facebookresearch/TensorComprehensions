@@ -24,11 +24,10 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tc2halide.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 using namespace tc;
 using namespace std;
-using namespace tc::dlutils;
 
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}

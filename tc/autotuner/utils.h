@@ -24,11 +24,7 @@
 
 #include <llvm/ADT/Optional.h>
 
-#include "tc/core/cuda/cuda_compilation_cache.h"
-#include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/utils/dlpack.h"
 #include "tc/core/utils/time.h"
-#include "tc/lang/canonicalize.h"
 
 namespace tc {
 namespace autotune {
@@ -40,16 +36,6 @@ std::vector<std::size_t> powers2andCeilDivisors(std::size_t val);
 
 template <typename Vector, typename... Vectors>
 Vector mergeVectors(Vector&& v, Vectors&&... vs);
-
-std::vector<CudaMappingOptions> restoreCandidates(
-    const lang::CanonicalTcString& tc,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs);
-
-llvm::Optional<CudaMappingOptions> getBestOptions(
-    const lang::CanonicalTcString& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs);
 
 /**
  * Helper class to pretty print autotuning progress

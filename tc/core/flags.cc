@@ -35,7 +35,7 @@ DEFINE_bool(
     debug_tc_mapper,
     false,
     "Print debug spew for the tc_mapper like cuda code, mapping options etc");
-DEFINE_bool(dump_cuda, false, "Print the generated cudaSource");
+DEFINE_bool(dump_cuda, false, "Print the generated source");
 
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
@@ -77,7 +77,7 @@ DEFINE_uint32(
     "The number of best candidates that are preserved intact between generations");
 DEFINE_uint32(tuner_threads, 1, "Number of CPU threads to use when autotuning");
 DEFINE_string(
-    tuner_gpus,
+    tuner_devices,
     "0",
     "Comma separated list of GPUs to use for autotuning");
 DEFINE_bool(

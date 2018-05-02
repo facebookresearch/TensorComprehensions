@@ -21,13 +21,8 @@
 
 #include <glog/stl_logging.h>
 
-#include "tc/core/cuda/cuda_compilation_cache.h"
-#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/flags.h"
-#include "tc/core/utils/dlpack.h"
-#include "tc/core/utils/math.h"
 #include "tc/core/utils/time.h"
-#include "tc/lang/canonicalize.h"
 
 namespace tc {
 namespace autotune {
@@ -55,78 +50,16 @@ std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
   return res;
 }
 
-struct OptionsWithMedianTime {
-  CudaMappingOptions options;
-  Duration medianRuntime;
-};
-
-std::vector<OptionsWithMedianTime> getOptionsAndMedianRuntimes(
-    const lang::CanonicalTcString& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  auto candidates =
-      OptionsCache::getCache()->retrieveOptionsAndRuntimes(id, inputs, outputs);
-
-  std::vector<OptionsWithMedianTime> c;
-  c.reserve(candidates.size());
-  std::transform(
-      candidates.begin(),
-      candidates.end(),
-      std::back_inserter(c),
-      [](const OptionsCacheRetrievalResult& rr) -> OptionsWithMedianTime {
-        return {std::move(rr.options), median(rr.recordedRuntimes)};
-      });
-  return c;
-}
-
-std::vector<CudaMappingOptions> restoreCandidates(
-    const lang::CanonicalTcString& tc,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  auto candidates = getOptionsAndMedianRuntimes(tc, inputs, outputs);
-  LOG_IF(INFO, candidates.size() < FLAGS_tuner_gen_restore_number)
-      << "Requested " << FLAGS_tuner_gen_restore_number
-      << " candidates but there are only " << candidates.size() << " in cache.";
-  auto restoreNumber =
-      std::min(candidates.size(), size_t(FLAGS_tuner_gen_restore_number));
-  std::sort(
-      candidates.begin(),
-      candidates.end(),
-      [](const OptionsWithMedianTime& a, const OptionsWithMedianTime& b) {
-        return a.medianRuntime < b.medianRuntime;
-      });
-  std::vector<CudaMappingOptions> res;
-  res.reserve(restoreNumber);
-  std::transform(
-      candidates.begin(),
-      candidates.begin() + restoreNumber,
-      std::back_inserter(res),
-      [](const OptionsWithMedianTime& rr) { return rr.options; });
-  return res;
-}
-
-llvm::Optional<CudaMappingOptions> getBestOptions(
-    const lang::CanonicalTcString& id,
-    const std::vector<const DLTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) {
-  auto bestOptions =
-      OptionsCache::getCache()->retrieveBestOptions(id, inputs, outputs);
-  if (bestOptions) {
-    return *bestOptions;
-  }
-  return llvm::Optional<CudaMappingOptions>{};
-}
-
-void Printer::record(Duration runtime) {
-  std::lock_guard<std::mutex> lock(runtimesMtx_);
-  runtimes_.push_back(runtime);
-}
-
 namespace {
 uint64_t toMicroseconds(const Duration& d) {
   return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
 }
 } // namespace
+
+void Printer::record(Duration runtime) {
+  std::lock_guard<std::mutex> lock(runtimesMtx_);
+  runtimes_.push_back(runtime);
+}
 
 void Printer::printLoop() {
   while (true) {

@@ -20,7 +20,7 @@
 #include <string>
 #include <vector>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "caffe2/core/common.h"
 #include "caffe2/core/common_gpu.h"

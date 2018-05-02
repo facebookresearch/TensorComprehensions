@@ -325,7 +325,7 @@ detail::ScheduleTree* MappedScop::mapThreadsBackward(
   CHECK(bandNode);
   auto nMember = bandNode->nMember();
   auto nToMap = std::min(nMember, numThreads.view.size());
-  CHECK_LE(nToMap, 3) << "mapping to too many threads";
+  CHECK_LE(nToMap, 3u) << "mapping to too many threads";
 
   auto ctx = band->ctx_;
   insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
@@ -385,7 +385,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
   }
 
-  CHECK_GT(nMappedThreads, 0) << "not mapping to threads";
+  CHECK_GT(nMappedThreads, 0u) << "not mapping to threads";
 
   mapThreadsBackward(band);
 

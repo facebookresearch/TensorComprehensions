@@ -176,7 +176,7 @@ TuningConfiguration GeneticTunerHarness::makeTuningConfiguration(
 }
 
 std::vector<size_t> parseGpus() {
-  std::stringstream ss(FLAGS_tuner_gpus);
+  std::stringstream ss(FLAGS_tuner_devices);
   size_t gpu;
   std::vector<size_t> res;
   while (ss >> gpu) {

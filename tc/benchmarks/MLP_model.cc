@@ -21,9 +21,9 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
-#include "tc/aten/aten_compiler.h"
+#include "tc/aten/aten_compiler_new_api.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/test_harness.h"
@@ -218,7 +218,6 @@ def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
             "_1LUT",
             inputs,
             options,
-            {options},
             checkFun);
       }
     }
@@ -324,7 +323,6 @@ def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2
             "_2LUT",
             inputs,
             options,
-            {options},
             checkFun);
       }
     }
@@ -379,7 +377,6 @@ def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
           "_C3",
           inputs,
           options,
-          {options},
           checkFun);
     }
   }
@@ -436,7 +433,6 @@ def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
           "mlp1",
           inputs,
           options,
-          {options},
           checkFun);
     }
   }
@@ -509,7 +505,6 @@ def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3, f
           "mlp3",
           inputs,
           options,
-          {options},
           checkFun);
     }
   }
