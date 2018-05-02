@@ -18,7 +18,7 @@ function run_test {
 }
 
 TEST_PATH="./build/test"
-TEST_REGEX="test_basic test_core test_inference test_isl_scheduler test_lang test_mapper* test_tc2halide"
+TEST_REGEX="test_basic test_core test_inference test_isl_scheduler test_lang test_mapper* test_tc2halide test_cuda_mapper"
 run_test
 
 echo SUCCESS
