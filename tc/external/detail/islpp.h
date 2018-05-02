@@ -275,13 +275,6 @@ inline bool operator!=(const isl::id& id1, const isl::id& id2) {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
-template <typename T>
-inline T dropDimsPreserveTuple(T t, isl::dim_type type, int from, int length) {
-  auto id = t.get_tuple_id(type);
-  t = t.drop_dims(type, from, length);
-  return t.set_tuple_id(type, id);
-}
-
 // Given a space and a list of values, this returns the corresponding multi_val.
 template <typename T>
 isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
