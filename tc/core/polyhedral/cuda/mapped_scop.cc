@@ -448,7 +448,357 @@ bool hasOuterSequentialMember(
   }
   return false;
 }
+
+// Intersect the union set with all the mapping
+// filters params in the given schedule tree
+isl::union_set intersectMappingFilterParams(
+    detail::ScheduleTree* st,
+    isl::union_set us) {
+  if (auto filter = st->elemAsBase<detail::ScheduleTreeElemFilter>()) {
+    us = us.intersect(filter->filter_);
+  }
+
+  auto children = st->children();
+  auto nChildren = children.size();
+  if (nChildren == 1) {
+    us = intersectMappingFilterParams(children[0], us);
+  } else if (nChildren > 1) {
+    auto usParent = us;
+    us = intersectMappingFilterParams(children[0], us);
+    for (size_t i = 1; i < nChildren; ++i) {
+      us = us.unite(intersectMappingFilterParams(children[i], usParent));
+    }
+  }
+
+  return us;
+}
+
+// Change the name of the isl ids tied to threads and blocks
+// by adding a suffix
+isl::union_set modifyMappingNames(
+    isl::union_set set,
+    const std::string suffix) {
+  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
+  std::unordered_set<isl::id, isl::IslIdIslHash> identifiers{
+      BX, BY, BZ, TX, TY, TZ};
+
+  auto space = set.get_space();
+  for (auto id : identifiers) {
+    auto name = id.get_name();
+    auto dim = space.find_dim_by_name(isl::dim_type::param, id.get_name());
+    CHECK_LE(0, dim);
+    space = space.set_dim_name(isl::dim_type::param, dim, name + suffix);
+  }
+  auto newSet = isl::union_set::empty(space);
+  set.foreach_set([&newSet, &identifiers, &suffix](isl::set set) {
+    for (auto id : identifiers) {
+      auto name = id.get_name();
+      auto dim = set.get_space().find_dim_by_name(isl::dim_type::param, name);
+      CHECK_LE(0, dim);
+      set = set.set_dim_name(isl::dim_type::param, dim, name + suffix);
+    }
+    newSet = newSet.unite(set);
+  });
+  return newSet;
+}
+
+// Get the formula computing the linearized index of a thread in a block.
+isl::aff getLinearizedThreadIdxFormula(
+    isl::space space,
+    const Block& block,
+    const std::string& suffix = "") {
+  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
+  std::vector<std::pair<isl::id, unsigned>> mappingIds{
+      {TX, TX.mappingSize(block)},
+      {TY, TY.mappingSize(block)},
+      {TZ, TZ.mappingSize(block)}};
+
+  isl::aff formula = isl::aff(isl::local_space(space));
+
+  for (int i = (int)mappingIds.size() - 1; i >= 0; --i) {
+    auto name = mappingIds[i].first.to_str();
+    auto dim = space.find_dim_by_name(isl::dim_type::param, name + suffix);
+    CHECK_LE(0, dim);
+    auto id = space.get_dim_id(isl::dim_type::param, dim);
+    isl::aff aff(isl::aff::param_on_domain_space(space, id));
+    formula = formula * mappingIds[i].second + aff;
+  }
+
+  return formula;
+}
+
+// Return the constraints ensuring that the points with parameters
+// [t0,t1,t2] and [t0',t1',t2'] are in the same warp.
+// (where t0 is "t0" + suffix1 and t0' is "t0" + suffix2)
+// if suffix1 is "_1" and suffix2 is "_2", the constraint is in the form
+// ((t0_1 + a * t1_1 + b * t2_1) / warpSize).floor()
+// == ((t0_2 + a' * t1_2 + b' * t1_2) / warpSize).floor()
+// with t0_1 + a * t1_1 + b * t2_1 the linearized formula of the thread index.
+// This function returns a set because it might change in the future,
+// and take into account the blocks.
+isl::set getSameWarpConstraints(
+    isl::space space,
+    const std::string& suffix1,
+    const std::string& suffix2,
+    const unsigned warpSize,
+    const Block& block) {
+  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
+  std::vector<std::pair<isl::id, unsigned>> mappingIds{
+      {TX, TX.mappingSize(block)},
+      {TY, TY.mappingSize(block)},
+      {TZ, TZ.mappingSize(block)}};
+
+  auto formula1 = getLinearizedThreadIdxFormula(space, block, suffix1);
+  auto formula2 = getLinearizedThreadIdxFormula(space, block, suffix2);
+
+  return (
+      isl::aff_set((formula1 / warpSize).floor()) ==
+      (formula2 / warpSize).floor());
+}
 } // namespace
+
+Scop::SyncLevel MappedScop::findBestSync(
+    detail::ScheduleTree* st1,
+    detail::ScheduleTree* st2) {
+  // Active points in the two schedule trees
+  auto stRoot = scop_->scheduleRoot();
+  auto activePoints1 = activeDomainPointsBelow(stRoot, st1);
+  auto activePoints2 = activeDomainPointsBelow(stRoot, st2);
+
+  // The dependences between the two schedule trees
+  auto dependences =
+      isl::union_map::from_domain_and_range(activePoints1, activePoints2);
+  dependences = dependences.intersect(scop_->dependences);
+  if (dependences.is_empty()) {
+    return Scop::SyncLevel::None;
+  }
+
+  // The domain and the context of the root schedule tree
+  auto domainAndContext = scop_->domain();
+  CHECK_LE(1u, scop_->scheduleRoot()->children().size());
+  auto contextSt = scop_->scheduleRoot()->children()[0];
+  auto contextElem = contextSt->elemAs<detail::ScheduleTreeElemContext>();
+  CHECK(nullptr != contextElem);
+  domainAndContext = domainAndContext.intersect_params(contextElem->context_);
+
+  // The domain of both schedule trees filtered by mapping filters,
+  // and then modified to have different threads and blocks names.
+  auto domain1 = intersectMappingFilterParams(st1, domainAndContext);
+  auto domain2 = intersectMappingFilterParams(st2, domainAndContext);
+  auto suffix1 = "_1";
+  auto suffix2 = "_2";
+  domain1 = modifyMappingNames(domain1, suffix1);
+  domain2 = modifyMappingNames(domain2, suffix2);
+
+  // The dependences between the two schedule trees
+  // with mapping from threads and blocks
+  auto mappedDependences =
+      isl::union_map::from_domain_and_range(domain1, domain2);
+  mappedDependences = mappedDependences.intersect(dependences);
+
+  auto space = mappedDependences.get_space();
+  auto sameThreadConstraint =
+      getSameWarpConstraints(space, suffix1, suffix2, 1, numThreads);
+  auto sameWarpConstraints =
+      getSameWarpConstraints(space, suffix1, suffix2, 32, numThreads);
+
+  if (mappedDependences ==
+      mappedDependences.intersect_params(sameThreadConstraint)) {
+    return Scop::SyncLevel::None;
+  } else if (
+      mappedDependences ==
+      mappedDependences.intersect_params(sameWarpConstraints)) {
+    return Scop::SyncLevel::Warp;
+  }
+  return Scop::SyncLevel::Block;
+}
+
+std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
+    std::vector<std::vector<int>> bestSync,
+    size_t nChildren,
+    bool hasOuterSequentialMember) {
+  // Get the least strict synchronization level that is needed in the sequence
+  // children[i], ..., children[i+k] to be correct and optimal. If the level
+  // is l, this mean that a synchronization of level l have to be inserted
+  // in this sequence to be correct, and that no synchronizations of level
+  // greater than l is needed.
+  // if i + k is greater than nChildren, it represent the child
+  // (i + k) % nChildren at the next iteration of the outer sequential member if
+  // it exists.
+  std::vector<std::vector<int>> bestSyncInRange(
+      nChildren, std::vector<int>(nChildren));
+  for (size_t i = 0; i < nChildren; ++i) {
+    bestSyncInRange[i][0] = 0;
+  }
+  for (size_t k = 1; k < nChildren; ++k) {
+    for (size_t i = 0; i < nChildren; ++i) {
+      bestSyncInRange[i][k] = bestSync[i][k];
+      bestSyncInRange[i][k] =
+          std::max(bestSyncInRange[i][k - 1], bestSyncInRange[i][k]);
+      bestSyncInRange[i][k] = std::max(
+          bestSyncInRange[(i + 1) % nChildren][k - 1], bestSyncInRange[i][k]);
+    }
+  }
+
+  // The optimal number of block sync and thread sync needed to
+  // have the sequence children[i], ..., children[i + k] correctly
+  // synchronized
+  std::vector<std::vector<std::pair<int, int>>> optimalValue(
+      nChildren, std::vector<std::pair<int, int>>(nChildren, {-1, -1}));
+
+  // An optimal position for doing a synchronization between children[i]
+  // and children[i + k]. The first member indicates after which child the
+  // synchronization should be inserted, and the second member indicates which
+  // synchronization should be inserted. This should be used recursively to
+  // get the optimal synchronization. If the second member is equal to 0,
+  // this means that no synchronization is needed.
+  std::vector<std::vector<std::pair<int, int>>> optimalSyncPosition(
+      nChildren, std::vector<std::pair<int, int>>(nChildren, {-1, -1}));
+
+  // The dynamic programming algorithm to compute the optimal synchronizations
+  // To compute the optimal synchronizations for the sequence
+  // children[i] ... children[i + k]
+  // It split the sequence into children[i], ..., children[i + s] and
+  // children[i + s + 1], ..., children[i + k] for all possible s, and
+  // insert between children[i + s] and children[i + s + 1] the least
+  // strict synchronization needed.
+  for (size_t i = 0; i < nChildren; ++i) {
+    optimalValue[i][0] = {0, 0};
+    optimalSyncPosition[i][0] = {0, 0};
+  }
+  for (size_t k = 1; k < nChildren; ++k) {
+    for (size_t i = 0; i < nChildren; ++i) {
+      if (bestSyncInRange[i][k] == 0) {
+        optimalValue[i][k] = {0, 0};
+        optimalSyncPosition[i][k] = {0, 0};
+      } else if (bestSyncInRange[i][k] == 1) {
+        optimalValue[i][k] = {nChildren, nChildren};
+        // Separation in [i, i+s] [i+s+1, i+k]
+        for (size_t s = 0; s < k; ++s) {
+          // OptimalValue.first is always equal to 0 here,
+          // since there is no need to do a block synchronization
+          // between children[i] and children[i+k]
+          std::pair<int, int> costOfSeparation = {
+              0,
+              1 + optimalValue[i][s].second +
+                  optimalValue[(i + s + 1) % nChildren][k - s - 1].second};
+          if (costOfSeparation < optimalValue[i][k]) {
+            optimalValue[i][k] = costOfSeparation;
+            optimalSyncPosition[i][k] = {s, 1};
+          }
+        }
+      } else { // bestSyncInRange[i][k] == 2
+        optimalValue[i][k] = {nChildren, nChildren};
+        // Separation in [i, i+s] [i+s+1, i+k]
+        for (size_t s = 0; s < k; ++s) {
+          std::pair<int, int> costOfSeparation;
+          costOfSeparation.first = 1 + optimalValue[i][s].first +
+              optimalValue[(i + s + 1) % nChildren][k - s - 1].first;
+          costOfSeparation.second = optimalValue[i][s].second +
+              optimalValue[(i + s + 1) % nChildren][k - s - 1].second;
+          if (costOfSeparation < optimalValue[i][k]) {
+            optimalValue[i][k] = costOfSeparation;
+            optimalSyncPosition[i][k] = {s, 2};
+          }
+        }
+      }
+    }
+  }
+
+  // Construct the list of all the synchronizations in the optimal configuation
+  // for the range [begining, beginging + nChildren - 1].
+  auto constructSynchronizationsList = [&](int begining) {
+    // The stack recurse in the optimalSyncPosition table
+    std::vector<std::pair<int, int>> stack = {{begining, nChildren - 1}};
+    std::vector<std::pair<int, int>> synchronizations;
+    while (!stack.empty()) {
+      auto range = stack.back();
+      auto i = range.first;
+      auto k = range.second;
+      stack.pop_back();
+      auto syncLevel = optimalSyncPosition[i][k].second;
+      if (syncLevel != 0) {
+        auto separation = optimalSyncPosition[i][k].first;
+        stack.push_back({i, separation});
+        stack.push_back({(i + separation + 1) % nChildren, k - separation - 1});
+        synchronizations.push_back({(separation + i) % nChildren, syncLevel});
+      }
+    }
+    return synchronizations;
+  };
+
+  // If there is no outer sequential member,
+  // the problem is simple and only the range [0, nChildren - 1] should
+  // be considered
+  if (not hasOuterSequentialMember) {
+    return constructSynchronizationsList(0);
+  }
+
+  // If there is an outer sequential member, there might have dependences
+  // between a child i and a child j in another iteration of the outer
+  // sequential member.
+  // To solve that, we first find the least strict synchronization needed,
+  // and try to insert it in all possible position s, and then get the
+  // solution of the problem computed for the range [s + 1, s + nChildren].
+  int maxValue = 0;
+  for (size_t i = 0; i < nChildren; ++i) {
+    for (size_t k = 0; k < nChildren; ++k) {
+      maxValue = std::max(maxValue, bestSync[i][k]);
+    }
+  }
+  if (maxValue == 0) {
+    return {};
+  }
+  int bestBegining = 0;
+  for (size_t begining = 1; begining < nChildren; ++begining) {
+    if (optimalValue[begining][nChildren - 1] <
+        optimalValue[bestBegining][nChildren - 1]) {
+      bestBegining = begining;
+    }
+  }
+  auto solutionWithBestBegining = constructSynchronizationsList(bestBegining);
+  solutionWithBestBegining.push_back(
+      {(bestBegining + nChildren - 1) % nChildren, maxValue});
+  return solutionWithBestBegining;
+}
+
+void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
+  CHECK(seq->elemAs<detail::ScheduleTreeElemSequence>());
+
+  auto children = seq->children();
+  auto nChildren = children.size();
+
+  auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), seq);
+
+  std::vector<std::vector<int>> bestSync(
+      nChildren, std::vector<int>(nChildren + 1));
+  // Get the synchronization needed between children[i] and children[i+k]
+  // without considering the children in between
+  // if k == 0, the synchronization needed between children[i] and children[i+k]
+  // correspond to the synchronization needed them at different iterations of
+  // the outer sequential member. Thus, when there is no outer sequential
+  // member, bestSync[i][0] == (int)SyncLevel::None
+  for (size_t i = 0; i < nChildren; ++i) {
+    for (size_t k = 0; k < nChildren; ++k) {
+      auto ik = (i + k) % nChildren;
+      bestSync[i][k] = (int)findBestSync(children[i], children[ik]);
+    }
+  }
+
+  // Get the optimal synchronizations configuration
+  std::vector<std::pair<int, int>> synchronizations =
+      findBestSyncConfigInSeq(bestSync, nChildren, outer);
+
+  // Insert all the synchronizations
+  std::sort(
+      synchronizations.begin(),
+      synchronizations.end(),
+      std::greater<std::pair<int, int>>());
+  for (size_t i = 0; i < synchronizations.size(); i++) {
+    auto level = static_cast<Scop::SyncLevel>(synchronizations[i].second);
+    scop_->insertSync(seq, synchronizations[i].first + 1, level);
+  }
+}
 
 // Maps bands to threads in DFS postorder.
 // Mapping is only allowed if descendants are not already mapped to threads.
@@ -489,15 +839,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       }
     }
     if (needSync) {
-      auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), st);
-      if (outer && (nInner[0] > 0 || nInner[nChildren - 1] > 0)) {
-        scop_->insertSync(st, nChildren);
-      }
-      for (size_t i = nChildren - 1; i > 0; --i) {
-        if (nInner[i] > 0 || nInner[i - 1] > 0) {
-          scop_->insertSync(st, i);
-        }
-      }
+      insertBestSyncInSeq(st);
     }
   }
 
@@ -612,8 +954,9 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   auto mappedScopForCodegen = makeSpecializedMappedScop(*this);
 
   std::stringstream code;
-  code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines
-       << std::endl;
+  code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
+  code << code::c::warpSyncFunctions;
+  code << std::endl;
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
     code << code::cuda::common;
     code << code::cuda::cubBlockReduce;
@@ -681,10 +1024,14 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     scop->specializeToContext();
   }
 
-  // 5. Map to threads
+  // 5. Insert mapping context
+  mappedScop->insertMappingContext();
+
+  // 6. Map to threads
   if (outerBand->numChildren() > 0) {
     CHECK_EQ(1u, outerBand->numChildren());
-    // 5.1. Optionally detect reductions while mapping to threads
+    // 6.1. Optionally detect reductions while mapping to threads
+
     if (generic.proto.match_library_calls()) {
       mappedScop->detectReductions(outerBand->child({0}));
     }
@@ -697,13 +1044,13 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
         << *mappedScop->schedule();
   }
 
-  // 6. Map to blocks
+  // 7. Map to blocks
   mappedScop->mapToBlocksAndScaleBand(
       outerBand, generic.tiling.extractVector());
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 7. Promote to shared memory below the loops mapped to blocks.
+  // 8. Promote to shared memory below the loops mapped to blocks.
   // This may split the outer band, so find the new outer band after promotion.
   if (cudaOptions.proto().use_shared_memory()) {
     size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
@@ -749,13 +1096,11 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     }
   }
 
-  // 8. Promote to registers below the loops mapped to threads.
+  // 9. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(mappedScop->scop(), -1ull);
   }
 
-  // 9. Insert mapping context
-  mappedScop->insertMappingContext();
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "After outerBlockInnerThread strategy:" << std::endl
       << *mappedScop->schedule();

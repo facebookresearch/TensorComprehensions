@@ -103,7 +103,8 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
             throw tightening::TighteningException(ss.str());
           }
           auto single = isl::set::from_union_set(f->filter_);
-          return !Scop::isSyncId(single.get_tuple_id());
+          auto single_id = single.get_tuple_id();
+          return !Scop::isSyncId(single_id) && !Scop::isWarpSyncId(single_id);
         },
         leaves(root));
     for (auto p : nonSyncLeaves) {

@@ -144,10 +144,6 @@ isl::id Scop::insertReductionSync1D(
   return treeSyncId;
 }
 
-void Scop::insertSync(detail::ScheduleTree* seqNode, size_t i) {
-  insertExtensionLabelAt(scheduleRoot(), seqNode, i, makeSyncId());
-}
-
 namespace {
 
 void checkFiltersDisjointStatements(const ScheduleTree* root) {
@@ -228,6 +224,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
       << "unexpected tree structure";
 
   int foundMainComputations = 0;
+  std::string lastTupleName = "";
   for (size_t i = 0; i < seqNode->numChildren(); ++i) {
     auto filterNode =
         seqNode->child({i})->elemAs<detail::ScheduleTreeElemFilter>();
@@ -237,6 +234,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
         (filters[0].get_tuple_name() == kReadIdName ||
          filters[0].get_tuple_name() == kWriteIdName);
     if ((foundMainComputations != 0) ^ isCopyFilter) {
+      lastTupleName = "";
       continue;
     }
     if (!isCopyFilter) {
@@ -244,8 +242,11 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
     }
     CHECK_LT(foundMainComputations, 2)
         << "copies are interleaved with computation" << *seqNode;
-    insertSync(seqNode, i);
-    ++i;
+    if (filters[0].get_tuple_name() != lastTupleName) {
+      lastTupleName = filters[0].get_tuple_name();
+      insertSync(seqNode, i);
+      ++i;
+    }
   }
   insertSync(seqNode, 0);
   insertSync(seqNode, seqNode->numChildren());
@@ -336,30 +337,18 @@ isl::union_map computeDependences(
   return flow.get_may_dependence();
 }
 
-// Do the simplest possible dependence analysis.
-// Live-range reordering needs tagged access relations to be available.
 // The domain of the constraints is intersected with "restrictDomain" if it is
 // provided.
 isl::schedule_constraints makeScheduleConstraints(
     const Scop& scop,
     const SchedulerOptionsView& schedulerOptions,
     isl::union_set restrictDomain = isl::union_set()) {
-  auto schedule = toIslSchedule(scop.scheduleRoot());
   auto firstChildNode = scop.scheduleRoot()->child({0});
-  auto reads = scop.reads.domain_factor_domain();
-  auto writes = scop.writes.domain_factor_domain();
-
-  // RAW
-  auto flowDeps = computeDependences(writes, reads, schedule);
-  // WAR and WAW
-  auto falseDeps = computeDependences(writes.unite(reads), writes, schedule);
-
-  auto allDeps = flowDeps.unite(falseDeps).coalesce();
 
   auto constraints = isl::schedule_constraints::on_domain(scop.domain())
-                         .set_validity(allDeps)
-                         .set_proximity(allDeps)
-                         .set_coincidence(allDeps);
+                         .set_validity(scop.dependences)
+                         .set_proximity(scop.dependences)
+                         .set_coincidence(scop.dependences);
   if (restrictDomain) {
     constraints = constraints.intersect_domain(restrictDomain);
   }
@@ -398,6 +387,19 @@ isl::schedule_constraints makeScheduleConstraints(
 }
 } // namespace
 
+void Scop::computeAllDependences() {
+  auto schedule = toIslSchedule(scheduleRoot());
+  auto allReads = reads.domain_factor_domain();
+  auto allWrites = writes.domain_factor_domain();
+  // RAW
+  auto flowDeps = computeDependences(allWrites, allReads, schedule);
+  // WAR and WAW
+  auto falseDeps =
+      computeDependences(allWrites.unite(allReads), allWrites, schedule);
+
+  dependences = flowDeps.unite(falseDeps).coalesce();
+}
+
 std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
     isl::schedule_constraints constraints,
     const SchedulerOptionsView& schedulerOptions) {
@@ -426,6 +428,9 @@ std::unique_ptr<Scop> Scop::makeScheduled(
     const Scop& scop,
     const SchedulerOptionsView& schedulerOptions) {
   auto s = makeScop(scop);
+  if (not s->dependences) {
+    s->computeAllDependences();
+  }
   auto constraints = makeScheduleConstraints(*s, schedulerOptions);
   s->scheduleTreeUPtr = computeSchedule(constraints, schedulerOptions);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After scheduling:" << std::endl
