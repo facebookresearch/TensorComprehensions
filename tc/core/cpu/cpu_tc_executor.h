@@ -20,7 +20,7 @@
 
 #include "tc/core/cpu/cpu_backend.h"
 #include "tc/core/cpu/cpu_mapping_options.h"
-#include "tc/core/tc_executor_new_api.h"
+#include "tc/core/tc_executor.h"
 #include "tc/core/tensor.h"
 
 namespace tc {

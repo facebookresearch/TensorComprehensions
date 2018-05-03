@@ -23,12 +23,12 @@
 
 #include "tc/aten/aten.h"
 #include "tc/aten/aten_autotuner.h"
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/core/cpu/cpu_mapping_options.h"
-#include "tc/core/cpu/cpu_tc_executor_new_api.h"
+#include "tc/core/cpu/cpu_tc_executor.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");

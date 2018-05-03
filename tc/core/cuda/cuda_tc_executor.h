@@ -20,7 +20,7 @@
 
 #include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/tc_executor_new_api.h"
+#include "tc/core/tc_executor.h"
 #include "tc/core/tensor.h"
 
 namespace tc {

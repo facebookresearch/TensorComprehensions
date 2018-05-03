@@ -9,7 +9,7 @@ add_library(
 
   SHARED
 
-  aten_compiler_new_api.cc
+  aten_compiler.cc
 )
 target_link_libraries(
   tc_aten

@@ -91,4 +91,4 @@ void uncheckedRun(
 } // namespace aten
 } // namespace tc
 
-#include "tc/aten/aten_compiler_new_api-inl.h"
+#include "tc/aten/aten_compiler-inl.h"

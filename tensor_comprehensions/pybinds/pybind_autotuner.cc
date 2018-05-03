@@ -28,7 +28,7 @@
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/options_cache.h"
 #include "tc/core/cuda/cuda_backend.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"

@@ -62,7 +62,7 @@ add_library(
 
   SHARED
 
-  cpu/cpu_tc_executor_new_api.cc
+  cpu/cpu_tc_executor.cc
   cpu/cpu_mapping_options.cc
   cpu/cpu_mapping_options_cpp_printer.cc
 
@@ -156,7 +156,7 @@ if (WITH_CUDA)
     # Files needed for execution
     cuda/cuda.cc
     cuda/cuda_rtc.cc
-    cuda/cuda_tc_executor_new_api.cc
+    cuda/cuda_tc_executor.cc
   )
   target_include_directories(tc_cuda PUBLIC ${LLVM_INCLUDE_DIRS})
   target_link_libraries(

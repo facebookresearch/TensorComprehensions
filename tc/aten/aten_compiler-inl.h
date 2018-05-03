@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 
 #include <iostream>
 #include <string>
@@ -21,7 +21,7 @@
 
 #include "tc/aten/aten.h"
 #include "tc/core/compiler.h"
-#include "tc/core/tc_executor_new_api.h"
+#include "tc/core/tc_executor.h"
 #include "tc/core/tensor.h"
 
 namespace tc {

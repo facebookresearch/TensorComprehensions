@@ -19,9 +19,9 @@
 
 #include "tc/aten/aten.h"
 
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/exceptions.h"
 

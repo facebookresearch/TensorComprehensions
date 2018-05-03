@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 
 #include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/halide_utils.h"

@@ -19,7 +19,7 @@
 
 #include "tc/aten/aten.h"
 
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"

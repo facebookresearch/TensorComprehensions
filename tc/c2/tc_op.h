@@ -22,7 +22,7 @@
 
 #include "tc/core/compiler.h"
 #include "tc/core/cuda/cuda.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/tensor.h"
 
 #include "tc/c2/context.h"

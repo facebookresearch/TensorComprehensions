@@ -15,13 +15,13 @@
  */
 #include <gtest/gtest.h>
 
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/autotuner.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/utils.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_backend.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/scope_guard.h"
 #include "tc/lang/canonicalize.h"
 

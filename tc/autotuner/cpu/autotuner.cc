@@ -26,7 +26,7 @@
 #include "tc/autotuner/utils.h"
 #include "tc/core/compiler.h"
 #include "tc/core/cpu/cpu_mapping_options_cpp_printer.h"
-#include "tc/core/cpu/cpu_tc_executor_new_api.h"
+#include "tc/core/cpu/cpu_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"

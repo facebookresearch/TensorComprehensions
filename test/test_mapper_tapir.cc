@@ -22,7 +22,7 @@
 #include <llvm/IR/Instructions.h>
 
 #include "tc/aten/aten.h"
-#include "tc/core/cpu/cpu_tc_executor_new_api.h"
+#include "tc/core/cpu/cpu_tc_executor.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
 #include "tc/core/polyhedral/llvm_jit.h"

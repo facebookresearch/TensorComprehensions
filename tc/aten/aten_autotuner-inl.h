@@ -23,7 +23,7 @@
 #include <glog/stl_logging.h>
 
 #include "tc/aten/aten.h"
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/utils.h"
 #include "tc/core/compiler.h"
 #include "tc/core/flags.h"

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "tc/core/tc_executor_new_api.h"
+#include "tc/core/tc_executor.h"
 
 #include <sstream>
 #include <string>

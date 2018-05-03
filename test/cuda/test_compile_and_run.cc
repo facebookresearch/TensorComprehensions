@@ -23,9 +23,9 @@
 
 #include "tc/aten/aten.h"
 
-#include "tc/aten/aten_compiler_new_api.h"
+#include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/library/common.h"
 
 #include "test_harness_aten_cuda.h"

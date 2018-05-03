@@ -120,4 +120,4 @@ class TcExecutor {
 };
 } // namespace tc
 
-#include "tc/core/tc_executor_new_api-inl.h"
+#include "tc/core/tc_executor-inl.h"

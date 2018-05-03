@@ -28,7 +28,7 @@
 #include "tc/core/compiler.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
-#include "tc/core/cuda/cuda_tc_executor_new_api.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/scope_guard.h"
