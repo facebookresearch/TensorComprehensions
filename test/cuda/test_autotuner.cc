@@ -105,7 +105,7 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
       O(t, b, c) =  centered(t, b, c) / rsqrt(var(t, b))
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "layernorm";
 
   std::string cacheFilename = "";
@@ -124,7 +124,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   output(m, k) +=! A(m, r_n) * B(r_n, k)
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -143,7 +143,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   output(m, k) +=! A(m, r_n) * B(r_n, k)
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -162,7 +162,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   output(m, k) +=! A(m, r_n) * B(r_n, k)
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
   std::string cacheFilename = "";
@@ -181,7 +181,7 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
   O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
 }
   )TC";
-  auto options = tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeConvolutionMappingOptions();
   auto name = "tensordot";
   Check(TC, name, options, inputs, outputs);
   benchmarkKernelOptions(TC, name, inputs, options);

@@ -52,7 +52,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
   std::vector<at::Tensor> outputs;
-  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpMappingOptions();
   auto handle = atCompl.compile("matmul", inputs, mappingOptions);
   atCompl.run("matmul", inputs, outputs, handle);
   at::Tensor diff = outputs[0].sub(a.mm(b));
@@ -65,8 +65,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
   at::Tensor B = at::CUDA(at::kFloat).rand({O});
   std::vector<at::Tensor> inputs1 = {I, W1, B};
   std::vector<at::Tensor> outputs1;
-  mappingOptions =
-      tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
+  mappingOptions = tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
   handle = atCompl.compile("convolution", inputs1, mappingOptions);
   atCompl.run("convolution", inputs1, outputs1, handle);
   at::Tensor expected = at::conv2d(I, W1, B);

@@ -74,7 +74,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   // 1. Allocate and autotune
   at::Tensor I = at::CUDA(at::kFloat).rand({128, 10, 50});
   at::Tensor W = at::CUDA(at::kFloat).rand({10, 50, 50});
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
       FLAGS_proto_path, "blockdiagperm2dfissioned_1", {I, W}, options);

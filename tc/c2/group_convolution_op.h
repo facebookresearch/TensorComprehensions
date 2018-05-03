@@ -79,9 +79,9 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
  protected:
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
+        tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
     this->gradCudaMappingOptions_ =
-        tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
+        tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
   }
 };
 } // namespace caffe2

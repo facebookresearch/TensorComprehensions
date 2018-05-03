@@ -47,7 +47,7 @@ def matmul(float(M,K) A, float(K,N) B) -> (output) {
   std::vector<at::Tensor> inputs = {a, b};
   std::vector<at::Tensor> outputs;
 
-  auto mappingOptions = tc::CudaMappingOptions::makeMlpCudaMappingOptions();
+  auto mappingOptions = tc::CudaMappingOptions::makeMlpMappingOptions();
   auto handle = atCompl.compile("matmul", inputs, mappingOptions);
   atCompl.run("matmul", inputs, outputs, handle);
   at::Tensor diff = outputs[0].sub(a.mm(b));

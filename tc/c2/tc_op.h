@@ -41,10 +41,9 @@ class TcOp : public Operator<Context> {
         tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
         tcName_(
             OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
-        cudaMappingOptions_(
-            tc::CudaMappingOptions::makeNaiveCudaMappingOptions()),
+        cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
         gradCudaMappingOptions_(
-            tc::CudaMappingOptions::makeNaiveCudaMappingOptions()) {
+            tc::CudaMappingOptions::makeNaiveMappingOptions()) {
     gradTc_ =
         OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
     gradTcName_ =

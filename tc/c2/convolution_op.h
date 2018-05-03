@@ -72,9 +72,9 @@ class TcConvolutionOp : public TcOp<T, Context, Engine> {
  protected:
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
+        tc::CudaMappingOptions::makeConvolutionMappingOptions();
     this->gradCudaMappingOptions_ =
-        tc::CudaMappingOptions::makeConvolutionCudaMappingOptions();
+        tc::CudaMappingOptions::makeConvolutionMappingOptions();
   }
 };
 } // namespace caffe2

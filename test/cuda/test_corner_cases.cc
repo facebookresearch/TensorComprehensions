@@ -59,8 +59,8 @@ static void Succeed(
     std::string fn = "f") {
   tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
   cu.define(str);
-  auto handle = cu.compile(
-      fn, inputs, tc::CudaMappingOptions::makeNaiveCudaMappingOptions());
+  auto handle =
+      cu.compile(fn, inputs, tc::CudaMappingOptions::makeNaiveMappingOptions());
   cu.run("f", inputs, outputs, handle);
 }
 

@@ -109,7 +109,7 @@ TEST_F(TransposedMatMul, TransposedMatMul) {
   auto N = FLAGS_N;
   auto M = FLAGS_M;
   auto K = FLAGS_K;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .fixParametersBeforeScheduling(true)
                      .tile(32, 32, 32)
                      .mapToThreads({32, 32})
@@ -125,7 +125,7 @@ TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_1024_K_1024) {
   uint32_t N = 1024;
   uint32_t K = 1024;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -150,7 +150,7 @@ TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_256_K_32) {
   uint32_t N = 256;
   uint32_t K = 32;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -175,7 +175,7 @@ TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_16384_K_4096) {
   uint32_t N = 16384;
   uint32_t K = 4096;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
