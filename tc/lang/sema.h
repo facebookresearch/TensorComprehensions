@@ -166,6 +166,7 @@ struct Sema {
     }
     return expr_to_type.at(ref);
   }
+
   // associate a type with this expression
   TreeRef withType(TreeRef expr, TreeRef type) {
     auto inserted = expr_to_type.emplace(expr, type).second;
@@ -179,6 +180,7 @@ struct Sema {
     }
     return TensorType(typ);
   }
+
   TreeRef matchAllTypes(TreeRef list, TreeRef matched_type = nullptr) {
     for (auto e : list->trees()) {
       if (!matched_type)
@@ -188,6 +190,7 @@ struct Sema {
     }
     return matched_type;
   }
+
   TreeRef expectIntegral(TreeRef e) {
     if (TypeInfo(typeOfExpr(e)).code() == TypeInfo::Float) {
       throw ErrorReport(e) << " expected integral type but found "
@@ -195,16 +198,19 @@ struct Sema {
     }
     return e;
   }
+
   void expectBool(TreeRef anchor, int token) {
     if (token != TK_BOOL) {
       throw ErrorReport(anchor)
           << "expected boolean but found " << kindToString(token);
     }
   }
+
   TreeRef expectBool(TreeRef exp) {
     expectBool(exp, typeOfExpr(exp)->kind());
     return exp;
   }
+
   TreeRef lookupVarOrCreateIndex(Ident ident) {
     TreeRef type = lookup(ident, false);
     if (!type) {
@@ -216,6 +222,7 @@ struct Sema {
     }
     return type;
   }
+
   TreeRef checkExp(TreeRef exp, bool allow_access) {
     switch (exp->kind()) {
       case TK_APPLY: {
@@ -339,6 +346,7 @@ struct Sema {
         throw ErrorReport(exp) << "NYI - semantic checking for " << exp;
     }
   }
+
   // This is the entry function for semantic analysis. It is called by
   // tc2halide to associate type with each node of the tree and to also make
   // sure that the tree is sematically correct. For example: a variable
@@ -352,7 +360,7 @@ struct Sema {
   //
   // Type checking is also done by small amount of code
   //
-  // The method 'withType' can be used to associate the type with a given node
+  // The method 'withType' is used to associate the type with a given node
   //
   TreeRef checkFunction(TreeRef func_) {
     auto func = Def(func_);
@@ -385,21 +393,27 @@ struct Sema {
         Def::create(func.range(), func.name(), params_, returns_, statements_);
     return r;
   }
+
   TreeRef indexType(TreeRef anchor) {
-    return c(TK_INT32, anchor->range(), {});
+    return createCompound(TK_INT32, anchor->range(), {});
   }
+
   TreeRef dimType(TreeRef anchor) {
     return indexType(anchor);
   }
+
   TreeRef floatType(TreeRef anchor) {
-    return c(TK_FLOAT, anchor->range(), {});
+    return createCompound(TK_FLOAT, anchor->range(), {});
   }
+
   TreeRef boolType(TreeRef anchor) {
-    return c(TK_BOOL, anchor->range(), {});
+    return createCompound(TK_BOOL, anchor->range(), {});
   }
+
   void checkDim(Ident dim) {
     insert(env, dim, dimType(dim), false);
   }
+
   TreeRef checkTensorType(TreeRef type) {
     auto tt = TensorType(type);
     for (const auto& d : tt.dims()) {
@@ -409,6 +423,7 @@ struct Sema {
     }
     return type;
   }
+
   TreeRef checkParam(TreeRef param) {
     auto p = Param(param);
     TreeRef type_ = checkTensorType(p.type());
@@ -416,11 +431,13 @@ struct Sema {
     live_input_names.insert(p.ident().name());
     return param;
   }
+
   TreeRef checkReturn(TreeRef ret) {
     auto r = Param(ret);
     TreeRef real_type = lookup(env, r.ident(), true);
     return ret;
   }
+
   TreeRef checkList(TreeRef list, std::function<TreeRef(TreeRef)> fn) {
     TC_ASSERT(list, list->kind() == TK_LIST);
     TreeList r;
@@ -429,6 +446,7 @@ struct Sema {
     }
     return List::create(list->range(), std::move(r));
   }
+
   TreeRef checkRangeConstraint(RangeConstraint rc) {
     // RCs are checked _before_ the rhs of the TC, so
     // it is possible the index is not in the environment yet
@@ -441,11 +459,13 @@ struct Sema {
     auto e = expectIntegral(checkExp(rc.end(), false));
     return RangeConstraint::create(rc.range(), rc.ident(), s, e);
   }
+
   TreeRef checkLet(Let l) {
     auto rhs = checkExp(l.rhs(), true);
     insert(let_env, l.name(), typeOfExpr(rhs), true);
     return Let::create(l.range(), l.name(), rhs);
   }
+
   TreeRef checkWhereClause(TreeRef ref) {
     if (ref->kind() == TK_LET) {
       return checkLet(Let(ref));
@@ -456,6 +476,7 @@ struct Sema {
       return checkRangeConstraint(RangeConstraint(ref));
     }
   }
+
   // Semantic checking for the statements/comprehensions in a TC Def.
   TreeRef checkStmt(TreeRef stmt_) {
     auto stmt = Comprehension(stmt_);
@@ -467,11 +488,13 @@ struct Sema {
       insert(index_env, index, typ, true);
     }
 
-    // make dimension variables for each dimension of the output tensor
+    // check that the input is not used for output - inputs are immutable
     std::string name = stmt.ident().name();
     if (inputParameters.count(name) > 0) {
       throw ErrorReport(stmt_) << "TC inputs are immutable";
     }
+
+    // make dimension variables for each dimension of the output tensor
     TreeList output_indices;
     int n = stmt.indices().size();
     for (int i = 0; i < n; ++i) {
@@ -578,6 +601,7 @@ struct Sema {
 
     return result;
   }
+
   static bool isUninitializedReductionOperation(TreeRef assignment) {
     switch (assignment->kind()) {
       case TK_PLUS_EQ:
@@ -589,6 +613,7 @@ struct Sema {
         return false;
     }
   }
+
   bool isNotInplace(TreeRef assignment) {
     switch (assignment->kind()) {
       case TK_PLUS_EQ_B:
@@ -600,6 +625,7 @@ struct Sema {
         return false;
     }
   }
+
   std::string dumpEnv() {
     std::stringstream ss;
     std::vector<std::pair<std::string, TreeRef>> elems(env.begin(), env.end());
@@ -618,6 +644,7 @@ struct Sema {
 
  private:
   using Env = std::unordered_map<std::string, TreeRef>;
+
   void
   insert(Env& the_env, Ident ident, TreeRef value, bool must_be_undefined) {
     std::string name = ident.name();
@@ -630,6 +657,7 @@ struct Sema {
       throw ErrorReport(ident) << name << " already defined";
     }
   }
+
   TreeRef lookup(Ident ident, bool required) {
     TreeRef v = lookup(index_env, ident, false);
     if (!v)
@@ -638,6 +666,7 @@ struct Sema {
       v = lookup(env, ident, required);
     return v;
   }
+
   TreeRef lookup(Env& the_env, Ident ident, bool required) {
     std::string name = ident.name();
     auto it = the_env.find(name);
@@ -647,10 +676,12 @@ struct Sema {
     }
     return it == the_env.end() ? nullptr : it->second;
   }
-  TreeRef c(int kind, const SourceRange& range, TreeList&& trees) {
+
+  TreeRef createCompound(int kind, const SourceRange& range, TreeList&& trees) {
     return Compound::create(kind, range, std::move(trees));
   }
-  TreeRef s(const std::string& s) {
+
+  TreeRef createString(const std::string& s) {
     return String::create(s);
   }
 
