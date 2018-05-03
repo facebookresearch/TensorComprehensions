@@ -70,24 +70,6 @@ void validate(const detail::ScheduleTree* root) {
       root);
 }
 
-/*
- * Create a filter that maps the identifiers of type "MappingTypeId"
- * in the range [begin, end) to zero for all elements in "domain".
- */
-template <typename MappingTypeId>
-isl::union_set makeFixRemainingZeroFilter(
-    isl::union_set activeDomain,
-    std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> ids) {
-  std::unordered_map<MappingTypeId, size_t, typename MappingTypeId::Hash>
-      idExtents;
-  for (auto id : ids) {
-    idExtents.insert(std::make_pair(id, 1ul));
-  }
-  auto space = activeDomain.get_space();
-  auto filter = makeParameterContext(space, idExtents.begin(), idExtents.end());
-  return filter & activeDomain.universe();
-}
-
 bool anyNonCoincidentMember(const detail::ScheduleTreeElemBand* band) {
   return band->nOuterCoincident() < band->nMember();
 }
@@ -128,35 +110,26 @@ detail::ScheduleTree* MappedScop::map(
 
   auto root = scop_->scheduleRoot();
   auto domain = activeDomainPoints(root, tree).universe();
-  auto filter = domain;
 
-  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> idSet;
+  std::vector<MappingTypeId> idList;
+  auto affList = isl::union_pw_aff_list(list.get_ctx(), 0);
   for (size_t i = 0; i < nToMap; ++i) {
     auto id = MappingTypeId::makeId(i);
     auto upa = list.get(i);
-    // Introduce the "mapping" parameter after checking it is not already
-    // present in the schedule space.
-    CHECK(not upa.involves_param(id));
     CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
-
-    // Create mapping filter by equating the newly introduced
-    // parameter ids[i] to the "i"-th affine function modulo its extent.
     upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
-    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain, id));
-    filter = filter.intersect(upa.zero_union_set());
-
-    idSet.emplace(id);
+    affList = affList.add(upa);
+    idList.emplace_back(id);
   }
 
-  std::unordered_set<MappingTypeId, typename MappingTypeId::Hash> unmapped;
   for (size_t i = nToMap; i < extent.size(); ++i) {
     auto id = MappingTypeId::makeId(i);
-    unmapped.emplace(id);
-    idSet.emplace(id);
+    affList = affList.add(
+        isl::union_pw_aff(domain, isl::val::zero(domain.get_ctx())));
+    idList.emplace_back(id);
   }
-  filter = filter.intersect(makeFixRemainingZeroFilter(domain, unmapped));
 
-  auto mapping = detail::ScheduleTree::makeMappingFilter(filter, idSet);
+  auto mapping = detail::ScheduleTree::makeMappingFilter(idList, affList);
   tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
 
   return tree;
