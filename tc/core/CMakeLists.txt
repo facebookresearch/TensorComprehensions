@@ -64,6 +64,7 @@ add_library(
   SHARED
 
   cpu/cpu_tc_executor.cc
+  cpu/cpu_mapping_options.cc
 
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
