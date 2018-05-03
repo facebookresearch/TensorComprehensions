@@ -43,27 +43,27 @@ class CudaDimView {
   explicit CudaDimView(CudaDimProto& buf) : proto(buf) {}
 
   /// Number of values held.
-  inline size_t size() const;
+  size_t size() const;
 
   /// Return a copy of values as std::vector.
-  inline std::vector<uint64_t> extractVector() const;
+  std::vector<uint64_t> extractVector() const;
 
   /// Return a copy of values as std::array of size 3 padded with defaultDim.
-  inline std::array<uint64_t, 3> extractDefaultedArray() const;
+  std::array<uint64_t, 3> extractDefaultedArray() const;
 
   /// Return a modifiable object which replicates assignments back to the
   /// underlying protocol buffers message.
-  inline ValueAccessor<uint64_t> operator[](size_t i);
+  ValueAccessor<uint64_t> operator[](size_t i);
 
   /// Access the values positionally (x=0, y=1, z=2).
-  inline uint64_t operator[](size_t i) const;
+  uint64_t operator[](size_t i) const;
 
   /// Assign the values from another view.
-  inline CudaDimView& operator=(const CudaDimView& view);
+  CudaDimView& operator=(const CudaDimView& view);
 
   /// Compare the values with those from another view.
-  inline bool operator==(const CudaDimView& view) const;
-  inline bool operator!=(const CudaDimView& view) const;
+  bool operator==(const CudaDimView& view) const;
+  bool operator!=(const CudaDimView& view) const;
 
   /// Conversion to string and output operators.
   std::string toCommaSeparatedString() const;
@@ -94,9 +94,9 @@ class CudaDim {
   CudaDim(const CudaDimProto& proto) : ownedProto_(proto), view(ownedProto_) {}
   CudaDim(const CudaDimView& view)
       : ownedProto_(view.proto), view(ownedProto_) {}
-  inline CudaDim(std::initializer_list<uint64_t> il);
-  inline CudaDim(std::vector<uint64_t> il);
-  inline CudaDim(
+  CudaDim(std::initializer_list<uint64_t> il);
+  CudaDim(std::vector<uint64_t> il);
+  CudaDim(
       uint64_t x,
       uint64_t y = CudaDimView::defaultDim,
       uint64_t z = CudaDimView::defaultDim);
@@ -144,21 +144,21 @@ class Grid : public CudaDim {
 
 class CudaMappingOptions {
  private:
-  inline CudaMappingOptions();
+  CudaMappingOptions();
   static CudaMappingOptions makeUnmappedMappingOptions();
 
  public:
   /// Construct a deep copy of the options.
-  inline CudaMappingOptions(const CudaMappingOptions& options);
-  inline explicit CudaMappingOptions(const CudaMappingOptionsProto& buf);
-  inline CudaMappingOptions& operator=(const CudaMappingOptions& options);
+  CudaMappingOptions(const CudaMappingOptions& options);
+  explicit CudaMappingOptions(const CudaMappingOptionsProto& buf);
+  CudaMappingOptions& operator=(const CudaMappingOptions& options);
 
   /// Compare with another message.
-  inline bool operator==(const CudaMappingOptions& options) const;
-  inline bool operator!=(const CudaMappingOptions& options) const;
+  bool operator==(const CudaMappingOptions& options) const;
+  bool operator!=(const CudaMappingOptions& options) const;
 
   /// Construct from a serialized protocol buffer message.
-  inline explicit CudaMappingOptions(const std::string& str);
+  explicit CudaMappingOptions(const std::string& str);
 
   std::string toProtobufSerializedString() const {
     return ownedProto_.SerializeAsString();
@@ -171,32 +171,29 @@ class CudaMappingOptions {
    */
   /// Set mappings
   ///@{
-  inline CudaMappingOptions& mapToThreads(
-      std::initializer_list<uint64_t> threads);
-  inline CudaMappingOptions& mapToThreads(
+  CudaMappingOptions& mapToThreads(std::initializer_list<uint64_t> threads);
+  CudaMappingOptions& mapToThreads(
       uint64_t x,
       uint64_t y = CudaDimView::defaultDim,
       uint64_t z = CudaDimView::defaultDim);
-  inline CudaMappingOptions& mapToThreads(const std::vector<uint64_t>& threads);
+  CudaMappingOptions& mapToThreads(const std::vector<uint64_t>& threads);
   CudaMappingOptions& mapToThreads(const std::string& commaSeparatedSizes);
 
-  inline CudaMappingOptions& mapToBlocks(
-      std::initializer_list<uint64_t> blocks);
-  inline CudaMappingOptions& mapToBlocks(
+  CudaMappingOptions& mapToBlocks(std::initializer_list<uint64_t> blocks);
+  CudaMappingOptions& mapToBlocks(
       uint64_t x,
       uint64_t y = CudaDimView::defaultDim,
       uint64_t z = CudaDimView::defaultDim);
-  inline CudaMappingOptions& mapToBlocks(const std::vector<uint64_t>& blocks);
+  CudaMappingOptions& mapToBlocks(const std::vector<uint64_t>& blocks);
   CudaMappingOptions& mapToBlocks(const std::string& commaSeparatedSizes);
   ///@}
 
   /// Set mappings
-  inline CudaMappingOptions& genericMappingOptions(
-      const MappingOptions& options);
-  inline CudaMappingOptions& useSharedMemory(bool b);
-  inline CudaMappingOptions& usePrivateMemory(bool b);
-  inline CudaMappingOptions& maxSharedMemory(uint64_t size);
-  inline CudaMappingOptions& unrollCopyShared(bool b);
+  CudaMappingOptions& genericMappingOptions(const MappingOptions& options);
+  CudaMappingOptions& useSharedMemory(bool b);
+  CudaMappingOptions& usePrivateMemory(bool b);
+  CudaMappingOptions& maxSharedMemory(uint64_t size);
+  CudaMappingOptions& unrollCopyShared(bool b);
   ///@}
 
   /// Static constructors for predefined strategies.
@@ -250,5 +247,3 @@ std::ostream& operator<<(std::ostream& os, const Block& dim);
 std::ostream& operator<<(std::ostream& os, const CudaMappingOptions& view);
 
 } // namespace tc
-
-#include "tc/core/cuda/cuda_mapping_options-inl.h"
