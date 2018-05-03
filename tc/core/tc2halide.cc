@@ -71,37 +71,36 @@ void translateParam(
   // Check if the param has already been converted to halide components.
   if (params->find(p.ident().name()) != params->end()) {
     return;
-  } else {
-    lang::TensorType type = p.tensorType();
-    int dimensions = (int)type.dims().size();
-    ImageParam imageParam(
-        translateScalarType(type.scalarType()), dimensions, p.ident().name());
-    inputs->push_back(imageParam);
-    vector<Expr> dims;
-    for (auto d_ : type.dims()) {
-      if (d_->kind() == lang::TK_IDENT) {
-        auto d = lang::Ident(d_);
-        auto it = params->find(d.name());
-        Parameter p;
-        if (it != params->end()) {
-          p = it->second;
-        } else {
-          p = Parameter(Int(32), false, 0, d.name(), true);
-          (*params)[d.name()] = p;
-        }
-        dims.push_back(Variable::make(Int(32), p.name(), p));
-      } else {
-        CHECK(d_->kind() == lang::TK_CONST);
-        int32_t value = lang::Const(d_).value();
-        dims.push_back(Expr(value));
-      }
-    }
-
-    for (int i = 0; i < imageParam.dimensions(); i++) {
-      imageParam.dim(i).set_bounds(0, dims[i]);
-    }
-    (*params)[imageParam.name()] = imageParam.parameter();
   }
+  lang::TensorType type = p.tensorType();
+  int dimensions = (int)type.dims().size();
+  ImageParam imageParam(
+      translateScalarType(type.scalarType()), dimensions, p.ident().name());
+  inputs->push_back(imageParam);
+  vector<Expr> dims;
+  for (auto d_ : type.dims()) {
+    if (d_->kind() == lang::TK_IDENT) {
+      auto d = lang::Ident(d_);
+      auto it = params->find(d.name());
+      Parameter p;
+      if (it != params->end()) {
+        p = it->second;
+      } else {
+        p = Parameter(Int(32), false, 0, d.name(), true);
+        (*params)[d.name()] = p;
+      }
+      dims.push_back(Variable::make(Int(32), p.name(), p));
+    } else {
+      CHECK(d_->kind() == lang::TK_CONST);
+      int32_t value = lang::Const(d_).value();
+      dims.push_back(Expr(value));
+    }
+  }
+
+  for (int i = 0; i < imageParam.dimensions(); i++) {
+    imageParam.dim(i).set_bounds(0, dims[i]);
+  }
+  (*params)[imageParam.name()] = imageParam.parameter();
 }
 
 void translateOutput(
