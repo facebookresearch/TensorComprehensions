@@ -65,6 +65,7 @@ add_library(
 
   cpu/cpu_tc_executor.cc
   cpu/cpu_mapping_options.cc
+  cpu/cpu_mapping_options_cpp_printer.cc
 
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
