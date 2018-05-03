@@ -201,7 +201,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     std::vector<isl::aff> result;
     // We cannot span multiple constraints if a modulo operation is involved.
     // x > max(a,b) % C is not equivalent to (x > a % C && x > b % C).
-    auto lhs = makeIslAffBoundsFromExpr(space, e, false, false);
+    auto lhs = makeIslAffBoundsFromExpr(space, op->a, false, false);
     CHECK_EQ(lhs.size(), 1u);
     if (const int64_t* b = as_const_int(op->b)) {
       return {lhs[0].mod(isl::val(space.get_ctx(), *b))};
