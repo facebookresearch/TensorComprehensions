@@ -293,6 +293,7 @@ struct Sema {
       case '-':
       case '*':
       case '/':
+      case '%':
       case TK_MIN:
       case TK_MAX: {
         auto nexp =
