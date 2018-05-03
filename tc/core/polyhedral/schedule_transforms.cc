@@ -120,15 +120,9 @@ isl::union_set activeDomainPointsHelper(
     } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
-      CHECK(parentSchedule.get() || extension.dim(isl::dim_type::in) == 0)
-          << "expected a zero-dimensional domain of the Extension node "
-             "in absence of parent band nodes";
-      if (parentSchedule.get()) {
-        parentSchedule = parentSchedule.intersect_domain(domain);
-        domain = domain.unite(parentSchedule.range().apply(extension));
-      } else {
-        domain = domain.unite(extension.range());
-      }
+      CHECK(parentSchedule) << "missing root domain node";
+      parentSchedule = parentSchedule.intersect_domain(domain);
+      domain = domain.unite(parentSchedule.range().apply(extension));
     }
   }
   return domain;
