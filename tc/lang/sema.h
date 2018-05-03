@@ -682,10 +682,6 @@ struct Sema {
     return Compound::create(kind, range, std::move(trees));
   }
 
-  TreeRef createString(const std::string& s) {
-    return String::create(s);
-  }
-
   std::vector<TreeRef> reduction_variables; // per-statement
   Env index_env; // per-statement
   Env let_env; // per-statement, used for where i = <exp>
