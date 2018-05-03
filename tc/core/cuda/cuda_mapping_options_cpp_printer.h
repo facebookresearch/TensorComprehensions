@@ -45,11 +45,10 @@ class CudaMappingOptionsCppPrinter : public MappingOptionsCppPrinter {
       const CudaMappingOptions& options);
 };
 
-inline std::ostream& operator<<(
-    std::ostream& out,
-    const CudaMappingOptionsAsCpp& mo) {
-  auto prn = CudaMappingOptionsCppPrinter(out, mo.indent);
-  prn << mo.options;
-  return out;
-}
+CudaMappingOptionsCppPrinter& operator<<(
+    CudaMappingOptionsCppPrinter& prn,
+    const CudaMappingOptions& cudaOptions);
+
+std::ostream& operator<<(std::ostream& out, const CudaMappingOptionsAsCpp& mo);
+
 } // namespace tc
