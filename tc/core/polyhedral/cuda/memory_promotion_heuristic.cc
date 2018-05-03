@@ -18,6 +18,7 @@
 #include <glog/logging.h>
 
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
+#include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -33,6 +34,11 @@ namespace tc {
 namespace polyhedral {
 namespace {
 
+bool isThreadId(const mapping::MappingId& id) {
+  return id == mapping::ThreadId::x() or id == mapping::ThreadId::y() or
+      id == mapping::ThreadId::z();
+}
+
 /*
  * Is "tree" a mapping filter that maps a thread identifier?
  */
@@ -41,7 +47,7 @@ bool isThreadMapping(const detail::ScheduleTree* tree) {
 
   if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
     for (auto id : filterNode->mappingIds) {
-      if (id.isThreadId()) {
+      if (isThreadId(id)) {
         return true;
       }
     }

@@ -18,15 +18,8 @@
 #include "tc/external/isl.h"
 
 namespace tc {
-
-struct Block;
-struct Grid;
-
 namespace polyhedral {
 namespace mapping {
-
-struct BlockId;
-struct ThreadId;
 
 struct MappingId : public isl::id {
  protected:
@@ -34,12 +27,6 @@ struct MappingId : public isl::id {
 
  public:
   MappingId(const MappingId& id) : isl::id(id), dim(id.dim) {}
-
-  bool isBlockId();
-  BlockId* asBlockId();
-
-  bool isThreadId();
-  ThreadId* asThreadId();
 
   // For indexing into positional arrays
   // TODO: this should go away but this probably requires tinkering with

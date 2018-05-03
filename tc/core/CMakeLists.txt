@@ -22,7 +22,6 @@ add_library(
   halide_utils.cc
 
   polyhedral/codegen.cc
-  polyhedral/mapping_types.cc
   polyhedral/memory_promotion.cc
   polyhedral/reduction_matcher.cc
   polyhedral/schedule_isl_conversion.cc
