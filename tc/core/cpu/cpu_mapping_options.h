@@ -22,15 +22,56 @@
 namespace tc {
 
 class CpuMappingOptions {
- public:
+ private:
   CpuMappingOptions();
+  static CpuMappingOptions makeUnmappedMappingOptions();
+
+ public:
+  /// Construct a deep copy of the options.
+  CpuMappingOptions(const CpuMappingOptions& options);
+  explicit CpuMappingOptions(const CpuMappingOptionsProto& buf);
+  CpuMappingOptions& operator=(const CpuMappingOptions& options);
+
+  /// Compare with another message.
+  bool operator==(const CpuMappingOptions& options) const;
+  bool operator!=(const CpuMappingOptions& options) const;
 
   /// Construct from a serialized protocol buffer message.
-  inline explicit CpuMappingOptions(const std::string& str);
+  explicit CpuMappingOptions(const std::string& str);
 
-  inline bool operator==(const CpuMappingOptions& options);
+  std::string toProtobufSerializedString() const;
 
-  inline std::string toProtobufSerializedString() const;
+  /// Set mappings
+  CpuMappingOptions& genericMappingOptions(const MappingOptions& options);
+
+  /// Static constructors for predefined strategies.
+  static CpuMappingOptions makeNaiveMappingOptions();
+
+  const CpuMappingOptionsProto& proto() const {
+    return ownedProto_;
+  }
+
+#define FORWARD_FUN(FUN_NAME)                        \
+  template <typename... Args>                        \
+  inline CpuMappingOptions& FUN_NAME(Args... args) { \
+    generic.FUN_NAME(args...);                       \
+    return *this;                                    \
+  }
+
+  FORWARD_FUN(tile);
+  FORWARD_FUN(unroll);
+  FORWARD_FUN(fixParametersBeforeScheduling);
+  FORWARD_FUN(tileImperfectlyNested);
+  FORWARD_FUN(matchLibraryCalls);
+  FORWARD_FUN(scheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleFusionStrategy);
+  FORWARD_FUN(outerScheduleAllowSkewing);
+  FORWARD_FUN(outerSchedulePositiveOrthant);
+  FORWARD_FUN(intraTileScheduleFusionStrategy);
+  FORWARD_FUN(intraTileScheduleAllowSkewing);
+  FORWARD_FUN(intraTileSchedulePositiveOrthant);
+
+#undef FORWARD_FUN
 
  private:
   CpuMappingOptionsProto ownedProto_;
@@ -39,5 +80,3 @@ class CpuMappingOptions {
   MappingOptionsView generic;
 };
 } // namespace tc
-
-#include "tc/core/cpu/cpu_mapping_options-inl.h"
