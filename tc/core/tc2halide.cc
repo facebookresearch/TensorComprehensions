@@ -158,6 +158,8 @@ Expr translateExpr(
       return t(0) * t(1);
     case '/':
       return t(0) / t(1);
+    case '%':
+      return t(0) % t(1);
     case lang::TK_MIN:
       return min(t(0), t(1));
     case lang::TK_MAX:

@@ -87,7 +87,7 @@ namespace lang {
   _(TK_LET, "let", "")                           \
   _(TK_EXISTS, "exists", "exists")
 
-static const char* valid_single_char_tokens = "+-*/()[]?:,={}><!";
+static const char* valid_single_char_tokens = "+-*/()[]?:,={}><!%";
 
 enum TokenKind {
   // we use characters to represent themselves so skip all valid characters
@@ -137,7 +137,7 @@ struct SharedParserData {
         {TK_AND},
         {'>', '<', TK_LE, TK_GE, TK_EQ, TK_NE},
         {'+', '-'},
-        {'*', '/'},
+        {'*', '/', '%'},
     };
     std::vector<std::vector<int>> unary_ops = {
         {'-', '!'},

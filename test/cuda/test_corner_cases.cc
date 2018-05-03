@@ -285,6 +285,18 @@ TEST(TestCornerCases, E23) {
       at::Scalar(d[0]).toFloat());
 }
 
+TEST(TestCornerCases, E24) {
+  auto a = I();
+  auto b = I();
+  auto r = I(0);
+  Succeed(
+      "def f(int32 a, int32 b) -> (c) { c(i) = int32(a % b) where i in 0:1 }",
+      {a, b},
+      {r});
+  auto e = at::Scalar(a).toInt() % at::Scalar(b).toInt();
+  CHECK_EQ(at::Scalar(r[0]).toInt(), e);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
