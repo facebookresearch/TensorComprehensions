@@ -31,6 +31,7 @@
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
+#include "tc/core/utils/time.h"
 
 #include "test_harness_aten.h"
 
@@ -62,11 +63,10 @@ void benchmarkKernelOptions(
     auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
     kernelTimes.push_back(timings.kernelRuntime);
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-    auto time(std::chrono::system_clock::now());
+    auto start(std::chrono::system_clock::now());
     tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-    totalTimes.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::system_clock::now() - time));
+    totalTimes.push_back(tc::Duration::since(start));
   }
 
   auto p50idx = static_cast<int>(std::ceil(0.5 * kernelTimes.size()));
@@ -74,8 +74,7 @@ void benchmarkKernelOptions(
   auto p99idx = static_cast<int>(std::ceil(0.99 * kernelTimes.size()));
 
   std::sort(kernelTimes.begin(), kernelTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
   std::cout << "\n---------------------------------------------------------";
   std::cout << "\n--------------------- KERNEL STATS ----------------------";
@@ -101,8 +100,7 @@ void benchmarkKernelOptions(
 #undef GET_US
 
   std::sort(totalTimes.begin(), totalTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
   std::cout << "\n---------------------------------------------------------";
   std::cout << "\n-----------------------  TOTAL STATS --------------------";

@@ -129,21 +129,21 @@ TEST_F(OptionsCacheTest, DifferentIDs) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options,
-      std::chrono::microseconds(10));
+      tc::Duration::fromMicroSeconds(10));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel0"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options,
-      std::chrono::microseconds(11));
+      tc::Duration::fromMicroSeconds(11));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel1"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
 
   {
     OptionsCacheKey key{lang::CanonicalTcString("kernel0"),
@@ -155,8 +155,8 @@ TEST_F(OptionsCacheTest, DifferentIDs) {
     auto it = range.first;
     ASSERT_EQ(it->second.mappingOptions, options);
     ASSERT_EQ(it->second.runtimes.size(), 2u);
-    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(10));
-    ASSERT_EQ(it->second.runtimes[1], std::chrono::microseconds(11));
+    ASSERT_EQ(it->second.runtimes[0], tc::Duration::fromMicroSeconds(10));
+    ASSERT_EQ(it->second.runtimes[1], tc::Duration::fromMicroSeconds(11));
   }
 
   {
@@ -169,7 +169,7 @@ TEST_F(OptionsCacheTest, DifferentIDs) {
     ASSERT_EQ(optionsCache->count(key), 1u);
     ASSERT_EQ(it->second.mappingOptions, options);
     ASSERT_EQ(it->second.runtimes.size(), 1u);
-    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(1));
+    ASSERT_EQ(it->second.runtimes[0], tc::Duration::fromMicroSeconds(1));
   }
 
   {
@@ -196,14 +196,14 @@ TEST_F(OptionsCacheTest, DifferentOptions) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
 
   OptionsCacheKey key{lang::CanonicalTcString("kernel"),
                       tc::makeTensorInfoVector(inputPtrs),
@@ -221,11 +221,11 @@ TEST_F(OptionsCacheTest, DifferentOptions) {
   }
   ASSERT_EQ(it1->second.mappingOptions, options0);
   ASSERT_EQ(it1->second.runtimes.size(), 1u);
-  ASSERT_EQ(it1->second.runtimes[0], std::chrono::microseconds(1));
+  ASSERT_EQ(it1->second.runtimes[0], tc::Duration::fromMicroSeconds(1));
 
   ASSERT_EQ(it2->second.mappingOptions, options1);
   ASSERT_EQ(it2->second.runtimes.size(), 1u);
-  ASSERT_EQ(it2->second.runtimes[0], std::chrono::microseconds(2));
+  ASSERT_EQ(it2->second.runtimes[0], tc::Duration::fromMicroSeconds(2));
 
   ASSERT_EQ(optionsCache->numberSuccessfulRetrievals, 0u);
   ASSERT_EQ(optionsCache->numberCacheAttempts, 2u);
@@ -242,14 +242,14 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
 
   auto s = inputs[0].shape[0];
   inputs[0].shape[0] = 42;
@@ -261,7 +261,7 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options_,
-      std::chrono::microseconds(3));
+      tc::Duration::fromMicroSeconds(3));
 
   {
     inputs[0].shape[0] = s;
@@ -275,8 +275,8 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
     ASSERT_EQ(optionsCache->count(key), 1u);
     ASSERT_EQ(it->second.mappingOptions, options);
     ASSERT_EQ(it->second.runtimes.size(), 2u);
-    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(1));
-    ASSERT_EQ(it->second.runtimes[1], std::chrono::microseconds(2));
+    ASSERT_EQ(it->second.runtimes[0], tc::Duration::fromMicroSeconds(1));
+    ASSERT_EQ(it->second.runtimes[1], tc::Duration::fromMicroSeconds(2));
   }
 
   {
@@ -291,7 +291,7 @@ TEST_F(OptionsCacheTest, DifferentInputs) {
     ASSERT_EQ(optionsCache->count(key), 1u);
     ASSERT_EQ(it->second.mappingOptions, options_);
     ASSERT_EQ(it->second.runtimes.size(), 1u);
-    ASSERT_EQ(it->second.runtimes[0], std::chrono::microseconds(3));
+    ASSERT_EQ(it->second.runtimes[0], tc::Duration::fromMicroSeconds(3));
   }
 
   {
@@ -325,21 +325,21 @@ TEST_F(OptionsCacheTest, RetrieveBest) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options2,
-      std::chrono::microseconds(3));
+      tc::Duration::fromMicroSeconds(3));
 
   auto ret = optionsCache->getTopKOptions(
       lang::CanonicalTcString("kernel"),
@@ -386,35 +386,35 @@ TEST_F(OptionsCacheTest, RetrieveTopK) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(3));
+      tc::Duration::fromMicroSeconds(3));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options2,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options3,
-      std::chrono::microseconds(4));
+      tc::Duration::fromMicroSeconds(4));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options4,
-      std::chrono::microseconds(5));
+      tc::Duration::fromMicroSeconds(5));
 
   auto ret = optionsCache->getTopKOptions(
       lang::CanonicalTcString("kernelX"),
@@ -476,21 +476,21 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(3));
+      tc::Duration::fromMicroSeconds(3));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel0"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel0"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options2,
-      std::chrono::microseconds(4));
+      tc::Duration::fromMicroSeconds(4));
 
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel1"),
@@ -498,14 +498,14 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options2,
-      std::chrono::microseconds(4));
+      tc::Duration::fromMicroSeconds(4));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel1"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options3,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
 
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel2"),
@@ -513,7 +513,7 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options4,
-      std::chrono::microseconds(5));
+      tc::Duration::fromMicroSeconds(5));
 
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel3"),
@@ -521,28 +521,28 @@ TEST_F(OptionsCacheTest, KeepOnlyBestCandidates) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(2));
+      tc::Duration::fromMicroSeconds(2));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel3"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(6));
+      tc::Duration::fromMicroSeconds(6));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel3"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options3,
-      std::chrono::microseconds(5));
+      tc::Duration::fromMicroSeconds(5));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel3"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options4,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
 
   {
     ASSERT_EQ(optionsCache->size(), 10u);
@@ -633,21 +633,21 @@ TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(9));
+      tc::Duration::fromMicroSeconds(9));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(10));
+      tc::Duration::fromMicroSeconds(10));
 
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
@@ -655,21 +655,21 @@ TEST_F(OptionsCacheTest, RetrieveBestMedianTime) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(8));
+      tc::Duration::fromMicroSeconds(8));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(8));
+      tc::Duration::fromMicroSeconds(8));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(8));
+      tc::Duration::fromMicroSeconds(8));
 
   auto ret = optionsCache->getTopKOptions(
       lang::CanonicalTcString("kernel"),
@@ -699,21 +699,21 @@ TEST_F(OptionsCacheTest, Serialization) {
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(10));
+      tc::Duration::fromMicroSeconds(10));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel0"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options1,
-      std::chrono::microseconds(11));
+      tc::Duration::fromMicroSeconds(11));
   optionsCache->recordRuntime(
       lang::CanonicalTcString("kernel1"),
       tc::makeTensorInfoVector(inputPtrs),
       tc::makeTensorInfoVector(outputPtrs),
       backendStr(),
       options0,
-      std::chrono::microseconds(1));
+      tc::Duration::fromMicroSeconds(1));
 
   auto buf = optionsCache->toProtobuf();
   optionsCache->clear();
@@ -741,13 +741,11 @@ TEST_F(OptionsCacheTest, Serialization) {
     ASSERT_EQ(optionsCache->count(key), 2u);
     ASSERT_EQ(it1->second.mappingOptions, options0);
     ASSERT_EQ(it1->second.runtimes.size(), 1u);
-    ASSERT_EQ(
-        it1->second.runtimes[0].count(), std::chrono::microseconds(10).count());
+    ASSERT_EQ(it1->second.runtimes[0].toMicroSeconds(), 10u);
 
     ASSERT_EQ(it2->second.mappingOptions, options1);
     ASSERT_EQ(it2->second.runtimes.size(), 1u);
-    ASSERT_EQ(
-        it2->second.runtimes[0].count(), std::chrono::microseconds(11).count());
+    ASSERT_EQ(it2->second.runtimes[0].toMicroSeconds(), 11u);
   }
 
   {
@@ -760,8 +758,7 @@ TEST_F(OptionsCacheTest, Serialization) {
     ASSERT_EQ(optionsCache->count(key), 1u);
     ASSERT_EQ(it->second.mappingOptions, options0);
     ASSERT_EQ(it->second.runtimes.size(), 1u);
-    ASSERT_EQ(
-        it->second.runtimes[0].count(), std::chrono::microseconds(1).count());
+    ASSERT_EQ(it->second.runtimes[0].toMicroSeconds(), 1u);
   }
 
   {

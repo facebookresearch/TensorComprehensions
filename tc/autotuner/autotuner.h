@@ -113,7 +113,7 @@ class TuningHarness {
   std::unordered_map<size_t, std::vector<const DLTensor*>> outputs_;
 
   // results
-  size_t bestTime_;
+  Duration bestTime_;
   MappingOptionsType bestMappingOptions_;
 
   // backing options cache
@@ -212,7 +212,7 @@ bool skipExecutionOrWarmup(
     typename Backend::ExecutorType& executor,
     const std::vector<const DLTensor*>& outputs,
     const std::vector<const DLConstTensor*>& inputs,
-    size_t bestTimeSoFar);
+    Duration bestTimeSoFar);
 
 template <typename Backend>
 std::vector<size_t> parseDevices(const std::string& devices);

@@ -59,7 +59,7 @@ bool skipExecutionOrWarmup<CpuBackend>(
     typename CpuBackend::ExecutorType& executor,
     const std::vector<const DLTensor*>& outputs,
     const std::vector<const DLConstTensor*>& inputs,
-    size_t bestTimeSoFar) {
+    Duration bestTimeSoFar) {
   LOG(ERROR) << "NYI: skipExecutionOrWarmup<CpuBackend>";
   return false;
 }

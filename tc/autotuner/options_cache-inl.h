@@ -98,8 +98,7 @@ OptionsCacheValue<Backend>::toProtobuf() const {
   typename Backend::OptionsCacheValueProtoType buf_value;
   *(buf_value.mutable_kernel_options()) = mappingOptions.proto();
   for (auto d : runtimes) {
-    buf_value.add_recorded_runtimes(
-        std::chrono::duration_cast<std::chrono::microseconds>(d).count());
+    buf_value.add_recorded_runtimes(d.toMicroSeconds());
   }
   return buf_value;
 }
@@ -109,7 +108,7 @@ OptionsCacheValue<Backend> OptionsCacheValue<Backend>::fromProtobuf(
     const typename Backend::OptionsCacheValueProtoType& proto) {
   std::vector<Duration> runtimes;
   for (auto d : proto.recorded_runtimes()) {
-    runtimes.push_back(Duration(d));
+    runtimes.push_back(Duration::fromMicroSeconds(d));
   }
   return OptionsCacheValue<Backend>{
       runtimes, typename Backend::MappingOptionsType(proto.kernel_options())};

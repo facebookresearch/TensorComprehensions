@@ -202,6 +202,6 @@ Duration CudaRTCFunction::Launch(
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaEventElapsedTime(&milliseconds, start, stop));
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaEventDestroy(start));
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaEventDestroy(stop));
-  return std::chrono::microseconds(static_cast<int64_t>(milliseconds * 1000));
+  return Duration::fromMicroSeconds(milliseconds * 1000);
 }
 } // namespace tc

@@ -47,7 +47,7 @@ TuningHarness<Backend>::TuningHarness(
       baseMapping_(baseMapping),
       inputs_(inputs),
       outputs_(outputs),
-      bestTime_(std::numeric_limits<size_t>::max()),
+      bestTime_(Duration::max()),
       bestMappingOptions_(baseMapping),
       optionsCache_(optionsCache) {}
 
@@ -168,9 +168,9 @@ void TuningHarness<Backend>::doEvaluate(
       LOG_LINE_BY_LINE(INFO, ssInfo);
     }
 
-    std::vector<Duration> runtimes;
+    std::vector<Duration> runtimes{Duration::max()};
     try {
-      size_t bestTimeSoFar;
+      Duration bestTimeSoFar(Duration::max());
       {
         std::lock_guard<std::mutex> lock(bestTimeMutex_);
         bestTimeSoFar = bestTime_;
@@ -187,7 +187,7 @@ void TuningHarness<Backend>::doEvaluate(
         runtimes.reserve(kReducedBenchmarkIterations);
         for (size_t i = 0; i < kReducedBenchmarkIterations; ++i) {
           auto timings = pExecutor->profile(inputs, outputs);
-          if (timings.kernelRuntime.count() > 0) {
+          if (timings.kernelRuntime.toMicroSeconds() > 0) {
             runtimes.push_back(timings.kernelRuntime);
           }
         }
@@ -210,10 +210,10 @@ void TuningHarness<Backend>::doEvaluate(
     }
 
     auto prof = median(runtimes);
-    size_t profUs = prof.count();
 
     LOG_IF(INFO, tc::FLAGS_debug_tuner)
-        << "Run on device " << device << " took: " << profUs << "us";
+        << "Run on device " << device << " took: " << prof.toMicroSeconds()
+        << "us";
     printer.record(prof);
     pConf->runtime = prof;
 
@@ -228,8 +228,8 @@ void TuningHarness<Backend>::doEvaluate(
     // Save best time under lock
     {
       std::lock_guard<std::mutex> lock(bestTimeMutex_);
-      if (profUs < bestTime_) {
-        bestTime_ = profUs;
+      if (prof < bestTime_) {
+        bestTime_ = prof;
         bestMappingOptions_ = options;
       }
     }

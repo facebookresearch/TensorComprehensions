@@ -18,7 +18,61 @@
 #include <chrono>
 
 namespace tc {
-using Duration = std::chrono::high_resolution_clock::duration;
+struct Duration {
+ private:
+  Duration() : val_(0) {}
+  explicit Duration(size_t us) : val_(us) {}
+  explicit Duration(std::chrono::microseconds us) : val_(us) {}
+
+ public:
+  Duration(const Duration& d) : val_(d.val_) {}
+
+  static inline Duration since(
+      std::chrono::time_point<std::chrono::system_clock> begin) {
+    auto end = std::chrono::system_clock::now();
+    return Duration(
+        std::chrono::duration_cast<std::chrono::microseconds>(end - begin));
+  }
+  static inline Duration fromMicroSeconds(size_t us) {
+    return Duration(us);
+  }
+  inline size_t toMicroSeconds() {
+    return val_.count();
+  }
+  static inline Duration zero() {
+    return Duration(0);
+  }
+  static inline Duration max() {
+    return Duration(std::chrono::microseconds::max());
+  }
+
+  friend inline Duration operator-(Duration lhs, const Duration& rhs) {
+    lhs.val_ -= rhs.val_;
+    return lhs;
+  }
+  friend inline Duration operator+(Duration lhs, const Duration& rhs) {
+    lhs.val_ += rhs.val_;
+    return lhs;
+  }
+  friend inline Duration operator/(Duration lhs, uint32_t rhs) {
+    return Duration(lhs.val_ / rhs);
+  }
+  friend inline Duration operator*(Duration lhs, uint32_t rhs) {
+    return Duration(lhs.val_ * rhs);
+  }
+  friend inline bool operator>=(const Duration& lhs, const Duration& rhs) {
+    return lhs.val_ >= rhs.val_;
+  }
+  friend inline bool operator<(const Duration& lhs, const Duration& rhs) {
+    return lhs.val_ < rhs.val_;
+  }
+  friend inline bool operator==(const Duration& lhs, const Duration& rhs) {
+    return lhs.val_ == rhs.val_;
+  }
+
+ private:
+  std::chrono::microseconds val_;
+};
 
 struct ProfilingInfo {
   Duration cpuOverhead;

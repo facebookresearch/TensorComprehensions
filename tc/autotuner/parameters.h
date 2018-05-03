@@ -22,6 +22,7 @@
 #include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/utils/memory.h"
+#include "tc/core/utils/time.h"
 
 #include <llvm/ADT/Optional.h>
 
@@ -226,9 +227,6 @@ class TuningParameterFixer {
 
   friend class TuningConfiguration;
 };
-
-using TimePoint = std::chrono::high_resolution_clock::time_point;
-using Duration = std::chrono::high_resolution_clock::duration;
 
 class CandidateConfiguration {
  public:

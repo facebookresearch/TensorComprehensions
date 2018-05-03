@@ -130,11 +130,8 @@ def wavenet2layers(
       tc, "wavenet2layers", inputs, bestOption[0]);
   auto outputs = tc::aten::prepareOutputs(tc, "wavenet2layers", inputs);
   auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
-  std::cout << "wavenet2layers size weight0: " << weight0.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(
-                   timings.kernelRuntime)
-                   .count()
-            << "us\n";
+  std::cout << "wavenet2layers size weight0: " << weight0.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
 
   // 5. The following represent reasonable initialization operations,
   //    ported from PyTorch.

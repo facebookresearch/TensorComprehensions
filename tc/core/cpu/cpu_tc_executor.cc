@@ -60,8 +60,6 @@ ProfilingInfo CpuTcExecutor::profileUnchecked(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) const {
   LOG(ERROR) << "NYI: CpuTcExecutor::profileUnchecked";
-  return ProfilingInfo{
-      Duration(std::chrono::microseconds(static_cast<int64_t>(999999999999))),
-      Duration(std::chrono::microseconds(static_cast<int64_t>(999999999999)))};
+  return ProfilingInfo{Duration::max(), Duration::max()};
 }
 } // namespace tc

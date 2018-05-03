@@ -77,11 +77,8 @@ def tensordot(float(N, C1, C2, H, W) I0,
   auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
   auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
   std::cout << "tensordot size I0: " << I0.sizes() << ", "
-            << "size I1: " << I1.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(
-                   timings.kernelRuntime)
-                   .count()
-            << "us\n";
+            << "size I1: " << I1.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
 
   // 5. Optionally, perform precision checks against a ref. implementation.
   // TODO.
@@ -98,10 +95,8 @@ def tensordot(float(N, C1, C2, H, W) I0,
     auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
     auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
     std::cout << "tensordot size I0: " << I0.sizes() << ", "
-              << "size I1: " << I1.sizes() << " ran in: "
-              << std::chrono::duration_cast<std::chrono::microseconds>(
-                     timings.kernelRuntime)
-                     .count()
+              << "size I1: " << I1.sizes()
+              << " ran in: " << timings.kernelRuntime.toMicroSeconds()
               << "us\n";
   }
 }

@@ -144,8 +144,7 @@ ProfilingInfo CudaTcExecutor::profileUnchecked(
       inputs,
       true));
   // The CPU overhead is the total time minus the (synchronized) kernel runtime
-  auto end = std::chrono::system_clock::now();
-  Duration cpuOverhead(end - start);
+  Duration cpuOverhead(Duration::since(start));
   cpuOverhead = cpuOverhead - kernelRuntime;
   return ProfilingInfo{cpuOverhead, kernelRuntime};
 }

@@ -88,9 +88,7 @@ std::vector<double> computeNormalizedFitness(
       population.end(),
       std::back_inserter(fitness),
       [](const std::unique_ptr<CandidateConfiguration>& c) {
-        return 1.0 /
-            std::chrono::duration_cast<std::chrono::microseconds>(c->runtime)
-                .count();
+        return 1.0 / c->runtime.toMicroSeconds();
       });
   normalizeVector(fitness);
   return fitness;

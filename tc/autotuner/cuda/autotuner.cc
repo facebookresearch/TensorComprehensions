@@ -73,7 +73,7 @@ bool skipExecutionOrWarmup<CudaBackend>(
     typename CudaBackend::ExecutorType& executor,
     const std::vector<const DLTensor*>& outputs,
     const std::vector<const DLConstTensor*>& inputs,
-    size_t bestTimeSoFar) {
+    Duration bestTimeSoFar) {
   // 1. Prune based on the number of threads: if you don't hit at least k warps
   // (default k = 8; 256 total threads, controlled by
   // FLAGS_tuner_min_launch_total_threads) then it's likely the kernel is not
@@ -107,9 +107,8 @@ bool skipExecutionOrWarmup<CudaBackend>(
   auto timings = executor.profile(inputs, outputs);
   // 2.a.
   constexpr size_t kCatastrophicPerfFactor = 100;
-  if (bestTimeSoFar < std::numeric_limits<size_t>::max() and
-      timings.kernelRuntime >= std::chrono::microseconds(
-                                   (kCatastrophicPerfFactor * bestTimeSoFar))) {
+  if (bestTimeSoFar < Duration::max() and
+      timings.kernelRuntime >= bestTimeSoFar * kCatastrophicPerfFactor) {
     return true;
   }
   // 2.b. during autotuning we don't want to spend too much time executing,
@@ -123,9 +122,8 @@ bool skipExecutionOrWarmup<CudaBackend>(
   // catastrophically bad.
   constexpr int kEarlyPruneFactor = 5;
   timings = executor.profile(inputs, outputs);
-  if (bestTimeSoFar < std::numeric_limits<size_t>::max() and
-      timings.kernelRuntime >=
-          std::chrono::microseconds((kEarlyPruneFactor * bestTimeSoFar))) {
+  if (bestTimeSoFar < Duration::max() and
+      timings.kernelRuntime >= bestTimeSoFar * kEarlyPruneFactor) {
     return true;
   }
 

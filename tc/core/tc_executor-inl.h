@@ -138,8 +138,7 @@ ProfilingInfo TcExecutor<Backend>::profile(
 
   // The total CPU overhead is the total time minus the (synchronized) kernel
   // runtime
-  auto end = std::chrono::system_clock::now();
-  Duration cpuOverhead(end - start);
+  Duration cpuOverhead(Duration::since(start));
   cpuOverhead = cpuOverhead - pi.kernelRuntime;
   return ProfilingInfo{cpuOverhead, pi.kernelRuntime};
 }

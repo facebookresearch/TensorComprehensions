@@ -50,12 +50,6 @@ std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
   return res;
 }
 
-namespace {
-uint64_t toMicroseconds(const Duration& d) {
-  return std::chrono::duration_cast<std::chrono::microseconds>(d).count();
-}
-} // namespace
-
 void Printer::record(Duration runtime) {
   std::lock_guard<std::mutex> lock(runtimesMtx_);
   runtimes_.push_back(runtime);
@@ -75,11 +69,11 @@ void Printer::printLoop() {
       std::lock_guard<std::mutex> lock(runtimesMtx_);
       if (not runtimes_.empty()) {
         std::sort(runtimes_.begin(), runtimes_.end());
-        auto best = toMicroseconds(runtimes_.front());
-        auto median = toMicroseconds(runtimes_.at(runtimes_.size() / 2));
-        auto worst = toMicroseconds(runtimes_.back());
-        ss << "   (best/median/worst)us: " << best << '/' << median << '/'
-           << worst;
+        auto best = runtimes_.front();
+        auto median = runtimes_.at(runtimes_.size() / 2);
+        auto worst = runtimes_.back();
+        ss << "   (best/median/worst)us: " << best.toMicroSeconds() << '/'
+           << median.toMicroSeconds() << '/' << worst.toMicroSeconds();
       }
     }
     // XXX: platform specific erase current line and move cursor to begining
@@ -121,21 +115,21 @@ void Printer::stop() {
 }
 
 void Printer::printAll() {
-  auto runtimes = [this]() {
-    std::lock_guard<std::mutex> lock(runtimesMtx_);
-    std::sort(runtimes_.begin(), runtimes_.end());
-    std::vector<uint64_t> runtimes;
+  auto getSortedRuntimes = [this]() {
+    std::vector<size_t> runtimes;
     runtimes.reserve(runtimes_.size());
-    std::transform(
-        runtimes_.begin(),
-        runtimes_.end(),
-        std::back_inserter(runtimes),
-        toMicroseconds);
+    {
+      std::lock_guard<std::mutex> lock(runtimesMtx_);
+      for (auto r : runtimes_) {
+        runtimes.push_back(r.toMicroSeconds());
+      }
+    }
+    std::sort(runtimes.begin(), runtimes.end());
     return runtimes;
-  }();
+  };
   LOG_IF(INFO, FLAGS_debug_tuner)
       << "\n [TUNER][ITERATION LOG] median times of each candidate (in us) "
-      << runtimes << std::endl;
+      << getSortedRuntimes() << std::endl;
 }
 } // namespace autotune
 } // namespace tc

@@ -102,17 +102,11 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
 
   // 3. Report best standalone times
   std::cout << "blockdiagperm2dfissioned_1 size I: " << I.sizes() << ", "
-            << "size W: " << W.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(
-                   timings.kernelRuntime)
-                   .count()
-            << "us\n";
+            << "size W: " << W.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
   std::cout << "blockdiagperm2dfissioned_2 size O: " << O.sizes() << ", "
-            << "size Idx: " << Idx.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(
-                   timings2.kernelRuntime)
-                   .count()
-            << "us\n";
+            << "size Idx: " << Idx.sizes()
+            << " ran in: " << timings2.kernelRuntime.toMicroSeconds() << "us\n";
 
   // 4. Run unchecked one last time, use with:
   //   nvprof --profile-from-start off executable --use_nvprof=1

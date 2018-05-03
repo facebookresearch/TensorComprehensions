@@ -123,12 +123,10 @@ struct Benchmark : public ::testing::Test {
       auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
       kernelTimes.push_back(timings.kernelRuntime);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      auto time(std::chrono::system_clock::now());
+      auto start(std::chrono::system_clock::now());
       tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      totalTimes.push_back(
-          std::chrono::duration_cast<std::chrono::microseconds>(
-              std::chrono::system_clock::now() - time));
+      totalTimes.push_back(tc::Duration::since(start));
     }
 
     auto p50idx = static_cast<int>(std::ceil(0.5 * kernelTimes.size()));
@@ -136,8 +134,7 @@ struct Benchmark : public ::testing::Test {
     auto p99idx = static_cast<int>(std::ceil(0.99 * kernelTimes.size()));
 
     std::sort(kernelTimes.begin(), kernelTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n------------------ COMPILED KERNEL STATS ----------------";
@@ -163,8 +160,7 @@ struct Benchmark : public ::testing::Test {
 #undef GET_US
 
     std::sort(totalTimes.begin(), totalTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n------------------ COMPILED TOTAL STATS ----------------";
@@ -199,19 +195,17 @@ struct Benchmark : public ::testing::Test {
     std::vector<tc::Duration> times;
     times.reserve(tc::FLAGS_benchmark_iterations);
     for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-      auto time(std::chrono::system_clock::now());
+      auto start(std::chrono::system_clock::now());
       compute(res);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      times.push_back(std::chrono::duration_cast<std::chrono::microseconds>(
-          std::chrono::system_clock::now() - time));
+      times.push_back(tc::Duration::since(start));
     }
     std::sort(times.begin(), times.end());
     auto p50idx = static_cast<int>(std::ceil(0.5 * times.size()));
     auto p90idx = static_cast<int>(std::ceil(0.9 * times.size()));
     auto p99idx = static_cast<int>(std::ceil(0.99 * times.size()));
 
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n------------------ REFERENCE IMPL. STATS ----------------";
@@ -285,12 +279,10 @@ struct Benchmark : public ::testing::Test {
       auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
       kernelTimes.push_back(timings.kernelRuntime);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      auto time(std::chrono::system_clock::now());
+      auto start(std::chrono::system_clock::now());
       tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      totalTimes.push_back(
-          std::chrono::duration_cast<std::chrono::microseconds>(
-              std::chrono::system_clock::now() - time));
+      totalTimes.push_back(tc::Duration::since(start));
     }
 
     auto p50idx = static_cast<int>(std::ceil(0.5 * kernelTimes.size()));
@@ -298,8 +290,7 @@ struct Benchmark : public ::testing::Test {
     auto p99idx = static_cast<int>(std::ceil(0.99 * kernelTimes.size()));
 
     std::sort(kernelTimes.begin(), kernelTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n------------- AUTOTUNED VALIDATED KERNEL STATS ----------";
@@ -325,8 +316,7 @@ struct Benchmark : public ::testing::Test {
 #undef GET_US
 
     std::sort(totalTimes.begin(), totalTimes.end());
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n-------------- AUTOTUNED VALIDATED TOTAL STATS ----------";
@@ -392,12 +382,10 @@ struct Benchmark : public ::testing::Test {
         auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
         kernelTimes.push_back(timings.kernelRuntime);
         TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-        auto time(std::chrono::system_clock::now());
+        auto start(std::chrono::system_clock::now());
         tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
         TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-        totalTimes.push_back(
-            std::chrono::duration_cast<std::chrono::microseconds>(
-                std::chrono::system_clock::now() - time));
+        totalTimes.push_back(tc::Duration::since(start));
       }
 
       auto p50idx = static_cast<int>(std::ceil(0.5 * kernelTimes.size()));
@@ -405,8 +393,7 @@ struct Benchmark : public ::testing::Test {
       auto p99idx = static_cast<int>(std::ceil(0.99 * kernelTimes.size()));
       std::sort(kernelTimes.begin(), kernelTimes.end());
 
-#define GET_US(X) \
-  (std::chrono::duration_cast<std::chrono::microseconds>((X)).count())
+#define GET_US(X) ((X)).toMicroSeconds()
 
       {
         std::ofstream out(resultsFilename);
