@@ -753,6 +753,38 @@ def perforatedConvolution(float(N, C, H, W) input, float(M, C, KH, KW) weights,
   Prepare(tc);
 }
 
+TEST_F(PolyhedralMapperTest, ModulusConstantRHS) {
+  string tc = R"TC(
+def fun(float(N) a) -> (b) { b(i) = a(i % 3) where i in 0:N }
+)TC";
+  // This triggers tc2halide conversion and should not throw.
+  auto scop = Prepare(tc);
+  for (auto r : scop->reads.range().get_set_list()) {
+    // skip irrelevant reads, if any
+    if (r.get_tuple_name() != std::string("a")) {
+      continue;
+    }
+    // EXPECT_EQ(r.get_stride(0), ?);
+  }
+}
+
+TEST_F(PolyhedralMapperTest, ModulusVariableRHS) {
+  string tc = R"TC(
+def local_sparse_convolution(float(N, C, H, W) I, float(O, KC, KH, KW) W1) -> (O1) {
+  O1(n, o, h, w) +=! I(n, kc % c, h + kh, w + kw) * W1(o, kc, kh, kw) where c in 1:C
+}
+)TC";
+  // This triggers tc2halide conversion and should not throw.
+  auto scop = Prepare(tc);
+  for (auto r : scop->reads.range().get_set_list()) {
+    // skip irrelevant reads, if any
+    if (r.get_tuple_name() != std::string("I")) {
+      continue;
+    }
+    EXPECT_TRUE(r.plain_is_universe());
+  }
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
