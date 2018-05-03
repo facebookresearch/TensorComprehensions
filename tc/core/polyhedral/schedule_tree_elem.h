@@ -22,7 +22,7 @@
 
 #include "tc/external/isl.h"
 
-#include "tc/core/polyhedral/cuda/mapping_types.h"
+#include "tc/core/polyhedral/mapping_types.h"
 
 namespace tc {
 namespace polyhedral {
