@@ -190,6 +190,18 @@ Expr translateExpr(
       return t(0) && t(1);
     case lang::TK_OR:
       return t(0) || t(1);
+    case lang::TK_LS:
+      return t(0) << t(1);
+    case lang::TK_RS:
+      return t(0) >> t(1);
+    case '|':
+      return t(0) | t(1);
+    case '^':
+      return t(0) ^ t(1);
+    case '&':
+      return t(0) & t(1);
+    case '~':
+      return ~t(0);
     case lang::TK_BUILT_IN: {
       auto b = lang::BuiltIn(expr);
       vector<Expr> exprs;

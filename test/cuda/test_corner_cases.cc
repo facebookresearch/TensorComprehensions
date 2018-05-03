@@ -297,6 +297,33 @@ TEST(TestCornerCases, E24) {
   CHECK_EQ(at::Scalar(r[0]).toInt(), e);
 }
 
+TEST(TestCornerCases, E25){
+#define GEN_BITWISE(op)                                        \
+  {                                                            \
+    auto a = 2 * I();                                          \
+    auto b = 2 * I();                                          \
+    auto r = I(0);                                             \
+    Succeed(                                                   \
+        "def f(int32 a, int32 b) -> (c) { c(i) = int32(a " #op \
+        " b) where i in 0:1 }",                                \
+        {a, b},                                                \
+        {r});                                                  \
+    auto e = at::Scalar(a).toInt() op at::Scalar(b).toInt();   \
+    CHECK_EQ(e, at::Scalar(r[0]).toInt());                     \
+  }
+
+    GEN_BITWISE(<<) GEN_BITWISE(>>) GEN_BITWISE(&) GEN_BITWISE(|)
+        GEN_BITWISE (^)}
+
+TEST(TestCornerCases, E26) {
+  auto a = I();
+  auto r = I(0);
+  Succeed(
+      "def f(int32 a) -> (c) { c(i) = int32(~a) where i in 0:1 }", {a}, {r});
+  auto e = ~at::Scalar(a).toInt();
+  CHECK_EQ(at::Scalar(r[0]).toInt(), e);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

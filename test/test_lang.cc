@@ -244,6 +244,14 @@ int main(int argc, char** argv) {
     ss2 << p2.parseExp();
     assertEqual("function.expected", ss2.str());
   }
+  {
+    std::string bitOps = "~3&4^5|6>>8<<2";
+    Parser p(bitOps);
+    auto r = p.parseExp();
+    std::stringstream ss;
+    ss << r;
+    assertEqual("bitwise.expected", ss.str());
+  }
   assertParseEqual("trinary.expected", "a ? 3 : b ? 3 : 4", [&](Parser& p) {
     return p.parseExp();
   });

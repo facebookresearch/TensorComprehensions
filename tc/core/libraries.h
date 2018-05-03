@@ -145,6 +145,12 @@ template<typename T> inline __device__ T floord(T n, T d) {
   return n < 0 ? - (-n + d - 1)/d : n / d;
 }
 #define if_then_else(cond,a,b) ((cond) ? (a) : (b))
+#define shift_left(a,b) ((a) << (b))
+#define shift_right(a,b) ((a) >> (b))
+#define bitwise_and(a,b) ((a) & (b))
+#define bitwise_xor(a,b) ((a) ^ (b))
+#define bitwise_or(a,b) ((a) | (b))
+#define bitwise_not(a) (~(a))
 )C";
 } // namespace cpp
 

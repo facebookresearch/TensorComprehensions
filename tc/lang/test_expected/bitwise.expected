@@ -1,0 +1,11 @@
+(|
+  (^
+    (&
+      (~ (const 3 (int32)))
+      (const 4 (int32)))
+    (const 5 (int32)))
+  (ls
+    (rs
+      (const 6 (int32))
+      (const 8 (int32)))
+    (const 2 (int32))))
