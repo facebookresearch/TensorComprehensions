@@ -21,16 +21,18 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
-
+#include "tc/aten/aten.h"
+#include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
-#include "tc/autotuner/genetic_autotuner_aten.h"
+#include "tc/autotuner/genetic_search.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 
-#include "../test/test_harness_aten_cuda.h"
-
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
+
+using ATenGeneticCudaTuner =
+    tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>;
 
 TEST(WaveNet2Layers, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -83,8 +85,6 @@ def wavenet2layers(
             where out in 0:IN # necessary because out gets into unresolved min/max
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
 
   // 2. Allocate tensors with random data.
   at::Tensor weight0 = at::CUDA(at::kFloat).rand({128, 64, 2});
@@ -105,34 +105,33 @@ def wavenet2layers(
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
   auto naiveOptions = tc::CudaMappingOptions::makeNaiveMappingOptions();
-  tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
-  std::vector<at::Tensor> tensors = {weight0,
-                                     bias0,
-                                     data0,
-                                     res_weight0,
-                                     res_bias0,
-                                     skip_weight0,
-                                     skip_bias0,
-                                     weight1,
-                                     bias1,
-                                     data1,
-                                     res_weight1,
-                                     res_bias1,
-                                     skip_weight1,
-                                     skip_bias1};
+  ATenGeneticCudaTuner geneticAutotuneATen(tc);
+  std::vector<at::Tensor> inputs = {weight0,
+                                    bias0,
+                                    data0,
+                                    res_weight0,
+                                    res_bias0,
+                                    skip_weight0,
+                                    skip_bias0,
+                                    weight1,
+                                    bias1,
+                                    data1,
+                                    res_weight1,
+                                    res_bias1,
+                                    skip_weight1,
+                                    skip_bias1};
   auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_proto_path, "wavenet2layers", tensors, naiveOptions);
+      "wavenet2layers", inputs, naiveOptions, FLAGS_proto_path);
+  CHECK_GT(bestOption.size(), 0u);
 
   // 4. Compile and run the TC with the best option.
-  // Outputs get allocated; could also be pre-allocated and passed.
-  auto handle =
-      atCompl.compile("wavenet2layers", tensors, bestOption.getValue());
-  std::vector<at::Tensor> outputs;
-  auto duration = atCompl.run("wavenet2layers", tensors, outputs, handle, true);
-  std::cout
-      << "wavenet2layers size weight0: " << weight0.sizes() << " ran in: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
-      << "us\n";
+  // Output are pre-allocated and passed.
+  auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+      tc, "wavenet2layers", inputs, bestOption[0]);
+  auto outputs = tc::aten::prepareOutputs(tc, "wavenet2layers", inputs);
+  auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
+  std::cout << "wavenet2layers size weight0: " << weight0.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
 
   // 5. The following represent reasonable initialization operations,
   //    ported from PyTorch.
@@ -157,7 +156,7 @@ def wavenet2layers(
   {
     tc::CudaProfiler cp;
     for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-      atCompl.uncheckedRun(tensors, outputs, handle);
+      tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
     }
   }
 }
@@ -170,6 +169,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

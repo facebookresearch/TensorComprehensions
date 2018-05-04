@@ -57,7 +57,7 @@ inline TreeRef canonicalize(TreeRef tree) {
 }
 
 struct CanonicalTcString : public std::string {
-  explicit CanonicalTcString(const std::string& s) : std::string(s) {}
+  explicit CanonicalTcString(const std::string& s = "") : std::string(s) {}
 };
 
 inline CanonicalTcString canonicalTc(const lang::TreeRef& tc) {

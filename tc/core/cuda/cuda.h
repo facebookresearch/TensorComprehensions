@@ -73,14 +73,14 @@ namespace tc {
 
 DECLARE_bool(use_nvprof);
 
-struct WithDevice {
-  WithDevice(size_t g) : newGpu(g) {
+struct WithCudaDevice {
+  WithCudaDevice(size_t g) : newGpu(g) {
     int dev;
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
     oldGpu = dev;
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaSetDevice(newGpu));
   }
-  ~WithDevice() noexcept(false) {
+  ~WithCudaDevice() noexcept(false) {
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaSetDevice(oldGpu));
   }
   size_t oldGpu;
@@ -107,7 +107,7 @@ class CudaGPUInfo {
   int CurrentGPUId() const;
   void SynchronizeCurrentGPU() const;
   std::string GetGPUName(int id = -1) const;
-  std::string GetCudaDeviceStr() const;
+  std::string getCudaDeviceStr() const;
   size_t SharedMemorySize() const;
 
   std::vector<std::string> gpuNames_;

@@ -224,7 +224,7 @@ class TcAutotuner(object):
         if not isinstance(options, Options):
             options = Options(options)
         try:
-            best_options = self.autotuner.tune(cache_file, tc_name, inputs, options, [options])
+            best_options = self.autotuner.tune(tc_name, inputs, options, cache_file)
             return best_options
         except Exception as e:
             logger.error('Raised exception: {}'.format(e))
@@ -331,21 +331,20 @@ class TcCompilationUnit(object):
         if "type" not in kwargs:
             kwargs["type"] = 'forward'
         options = get_options_from_kwargs(name, *inputs, **kwargs)
-        handle = self.cu.compile(name, inputs, options)
-        return handle
+        self.cu.compile(name, inputs, options)
 
-    def run(self, handle, name, inputs, **kwargs):
+    def run(self, name, inputs, **kwargs):
         outputs = []
         if "outputs" in kwargs and kwargs["outputs"] is not None:
             outputs = kwargs["outputs"]
             if not isinstance(outputs, list):
                 outputs = [outputs]
-        self.cu.run(name, inputs, outputs, handle)
+        self.cu.run(name, inputs, outputs)
         return outputs
 
     def compile_and_run(self, name, inputs, **kwargs):
-        handle = self.compile(name, inputs, **kwargs)
-        return self.run(handle, name, inputs, **kwargs)
+        self.compile(name, inputs, **kwargs)
+        return self.run(name, inputs, **kwargs)
 
 
 ###############################################################################
@@ -460,8 +459,8 @@ class TcUnit(object):
                 kwargs["type"] = "forward"
                 input_tensors = unpack_variables(list(inputs))
 
-                handle_forward = self.cu.compile(name, input_tensors, **kwargs)
-                tc_info["forward_name"], tc_info["handle_forward"] = name, handle_forward
+                self.cu.compile(name, input_tensors, **kwargs)
+                tc_info["forward_name"] = name
 
                 if backward:
                     tc_info["backward_name"] = backward_name

@@ -41,7 +41,7 @@ class CudaRTCFunction {
  public:
   ~CudaRTCFunction();
 
-  static std::shared_ptr<CudaRTCFunction> Compile(
+  static std::unique_ptr<CudaRTCFunction> Compile(
       const std::string& name,
       const std::string& source);
 
@@ -54,7 +54,7 @@ class CudaRTCFunction {
       // by copy because we take an address to element when calling the kernel
       // TODO: check the overhead of double indirection on kernel calls, this
       // does not look ideal for low-latency
-      std::vector<int> params,
+      std::vector<long> params,
       std::vector<void*> outputs,
       std::vector<const void*> inputs,
       bool profile = false) const;

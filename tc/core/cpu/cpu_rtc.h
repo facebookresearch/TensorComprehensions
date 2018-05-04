@@ -15,33 +15,15 @@
  */
 #pragma once
 
-#include <condition_variable>
-#include <queue>
-#include <type_traits>
-
 namespace tc {
-namespace autotune {
-
 /**
- * A basic concurrent queue synchronized with a lock.
- * We will never need a more intricate implementation for anything related to
- * compilation and autotuning.
+ * This is the class that holds a binary object resulting from compilation.
+ * It must provide a clear function and be callable.
+ * TODO: Impl me
  */
-template <typename T>
-class ConcurrentQueue {
- public:
-  void enqueue(T t);
-  T dequeueWaitFor(std::chrono::steady_clock::duration);
-  bool empty() const;
-  size_t size() const;
-
- private:
-  mutable std::mutex mtx_;
-  std::condition_variable cv_;
-  std::queue<T> queue_;
+struct CpuRTCFunction {
+  void clear() {}
+  template <typename... Args>
+  void operator()(Args&... args) {}
 };
-
-} // namespace autotune
 } // namespace tc
-
-#include "tc/autotuner/utils/concurrent_queue-inl.h"

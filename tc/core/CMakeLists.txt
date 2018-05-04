@@ -9,12 +9,12 @@ add_library(
 
   SHARED
 
-  compilation_cache.cc
   flags.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
-  tc_executor.cc
   islpp.cc
+  compiler.cc
+  tensor.cc
 
   tc2halide.cc
 
@@ -155,7 +155,6 @@ if (WITH_CUDA)
 
     # Files needed for execution
     cuda/cuda.cc
-    cuda/cuda_compilation_cache.cc
     cuda/cuda_rtc.cc
     cuda/cuda_tc_executor.cc
   )

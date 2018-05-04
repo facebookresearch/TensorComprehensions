@@ -27,7 +27,7 @@ inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
   for (auto id : mappedIds) {
     ids.push_back(id);
   }
-  CHECK_GT(ids.size(), 0) << "empty mapping";
+  CHECK_GE(ids.size(), 1u) << "empty mapping";
   auto ctx = mappedIds[0].get_ctx();
   ScheduleTreeUPtr res(new ScheduleTree(ctx));
   res->elem_ = std::unique_ptr<ScheduleTreeElemMappingFilter>(

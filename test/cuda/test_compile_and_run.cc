@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
@@ -30,29 +30,35 @@
 
 #include "test_harness_aten_cuda.h"
 
-struct ATenCompilationUnitTest : public ::testing::Test {
+struct CompilationTest : public ::testing::Test {
   static constexpr uint32_t N = 8, C = 16, O = 6, H = 24, W = 27;
   static constexpr uint32_t KH = 3, KW = 3, SH = 1, SW = 1;
-  void Check(
+  std::vector<at::Tensor> Check(
       const std::string& tc,
       const std::string& name,
       const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor> inputs,
-      std::vector<at::Tensor>& outputs) {
-    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-    atCompl.define(tc);
-    auto handle = atCompl.compile(name, inputs, mappingOptions);
-    atCompl.run(name, inputs, outputs, handle);
+      const std::vector<at::Tensor>& preInitializedOutputs =
+          std::vector<at::Tensor>()) {
+    auto pExecutor =
+        tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
+    std::vector<at::Tensor> outputs;
+    if (preInitializedOutputs.size() == 0) {
+      outputs = tc::aten::prepareOutputs(tc, name, inputs);
+    } else {
+      outputs = preInitializedOutputs;
+    }
+    tc::aten::run(*pExecutor, inputs, outputs);
+    return outputs;
   }
 };
 
-TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxA) {
+TEST_F(CompilationTest, DISABLED_SoftmaxA) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a};
-  std::vector<at::Tensor> outputs;
 
   // Tensor dependencies should form a DAG
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def softmax(float(N, D) I) -> (O, tmp) {
     tmp(n) max=     I(n, d)
@@ -63,17 +69,15 @@ def softmax(float(N, D) I) -> (O, tmp) {
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, DISABLED_SoftmaxB) {
+TEST_F(CompilationTest, DISABLED_SoftmaxB) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a};
-  std::vector<at::Tensor> outputs;
 
   // Tensor dependencies should form a DAG
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def softmax(float(N, D) I) -> (O, tmp) {
     tmp(n) max=     I(n, d)
@@ -84,16 +88,14 @@ def softmax(float(N, D) I) -> (O, tmp) {
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, SoftmaxC) {
+TEST_F(CompilationTest, SoftmaxC) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def softmax(float(N, D) I) -> (O, expsum, maxVal) {
     maxVal(n) max=!     I(n, d)
@@ -103,16 +105,14 @@ def softmax(float(N, D) I) -> (O, expsum, maxVal) {
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, SoftmaxD) {
+TEST_F(CompilationTest, SoftmaxD) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
          maxVal(n) max=!     I(n, d)
@@ -123,17 +123,15 @@ def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
     )",
       "softmax",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, Concat) {
+TEST_F(CompilationTest, Concat) {
   at::Tensor a = at::CUDA(at::kFloat).rand({32, 16});
   at::Tensor b = at::CUDA(at::kFloat).rand({32, 16});
   std::vector<at::Tensor> inputs = {a, b};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def concat(float(M, N) A, float(M, N) B) -> (O1) {
     O1(n, i, m) = i == 0 ? A(m, n) : B(m, n) where i in 0:2
@@ -141,17 +139,15 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
     )",
       "concat",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, Indexing) {
+TEST_F(CompilationTest, Indexing) {
   at::Tensor a = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor b = at::CUDA(at::kInt).ones({2});
   std::vector<at::Tensor> inputs = {a, b};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def indexing(float(H, W) input, int32(L) index) -> (output) {
     output(l, w) = input(index(l), w) where l in 0:2
@@ -159,17 +155,15 @@ def indexing(float(H, W) input, int32(L) index) -> (output) {
     )",
       "indexing",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 }
 
-TEST_F(ATenCompilationUnitTest, MatMul) {
+TEST_F(CompilationTest, MatMul) {
   at::Tensor a = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def matmul(float(M,N) A, float(N,K) B) -> (output) {
     output(m, k) +=! A(m, r_n) * B(r_n, k)
@@ -177,22 +171,19 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
     )",
       "matmul",
       tc::CudaMappingOptions::makeMlpMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 
   at::Tensor diff = outputs[0].sub(a.mm(b));
   checkRtol(diff, inputs, N);
 }
 
-TEST_F(ATenCompilationUnitTest, MatMulInplace) {
+TEST_F(CompilationTest, MatMulInplace) {
   at::Tensor a = at::CUDA(at::kFloat).rand({3, 4});
   at::Tensor b = at::CUDA(at::kFloat).rand({4, 5});
   std::vector<at::Tensor> inputs = {a, b};
   at::Tensor c = at::CUDA(at::kFloat).rand({3, 5});
 
-  std::vector<at::Tensor> outputs = {c.clone()};
-
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def matmul(float(M,N) A, float(N,K) B) -> (output) {
     output(m, k) += A(m, r_n) * B(r_n, k)
@@ -201,20 +192,19 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
       "matmul",
       tc::CudaMappingOptions::makeMlpMappingOptions(),
       inputs,
-      outputs);
+      {c.clone()});
 
   at::Tensor diff = outputs[0].sub(a.mm(b) + c);
   checkRtol(diff, inputs, N);
 }
 
-TEST_F(ATenCompilationUnitTest, Convolution2d) {
+TEST_F(CompilationTest, Convolution2d) {
   at::Tensor I = at::CUDA(at::kFloat).rand({N, C, H, W});
   at::Tensor W1 = at::CUDA(at::kFloat).rand({O, C, KH, KW});
   at::Tensor B = at::CUDA(at::kFloat).rand({O});
   std::vector<at::Tensor> inputs = {I, W1, B};
-  std::vector<at::Tensor> outputs;
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
 -> (tmp, O1) {
@@ -227,20 +217,18 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
     )",
       "convolution",
       tc::CudaMappingOptions::makeConvolutionMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 
   at::Tensor expected = at::conv2d(I, W1, B);
   at::Tensor diff = outputs[1].sub(expected);
   checkRtol(diff, inputs, C * KW * KH, 5e-7);
 }
 
-TEST_F(ATenCompilationUnitTest, Convolution2dStrided) {
+TEST_F(CompilationTest, Convolution2dStrided) {
   at::Tensor I = at::CUDA(at::kFloat).rand({N, C, H, W});
   at::Tensor W1 = at::CUDA(at::kFloat).rand({O, C, KH, KW});
   at::Tensor B = at::CUDA(at::kFloat).rand({O});
   std::vector<at::Tensor> inputs = {I, W1, B};
-  std::vector<at::Tensor> outputs;
 
   constexpr static auto convolutionStrided = R"TC(
 def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
@@ -255,12 +243,11 @@ def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
   tcStr = tc::replaceString(tcStr, "<sh>", std::to_string(SH));
   tcStr = tc::replaceString(tcStr, "<sw>", std::to_string(SW));
 
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       tcStr,
       "convolutionStrided",
       tc::CudaMappingOptions::makeConvolutionMappingOptions(),
-      inputs,
-      outputs);
+      inputs);
 
   at::Tensor expected = at::conv2d(I, W1, B);
   at::Tensor diff = outputs[0].sub(expected);
@@ -268,15 +255,13 @@ def convolutionStrided(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B)
   checkRtol(diff, inputs, 2 * (C * KW * KH) / (SW * SH), 5e-7);
 }
 
-TEST_F(ATenCompilationUnitTest, Casts) {
+TEST_F(CompilationTest, Casts) {
   at::Tensor a = at::CUDA(at::kFloat).ones({2, 4});
   at::Tensor b = at::CUDA(at::kInt).tensor({}).fill_(4);
   a = a / 2.0 + 1;
   at::Tensor c = at::CUDA(at::kFloat).rand({3, 5});
 
-  std::vector<at::Tensor> outputs;
-
-  Check(
+  std::vector<at::Tensor> outputs = Check(
       R"(
 def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
     output(m,n) = int32(A(m,n) + four)
@@ -284,8 +269,7 @@ def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
     )",
       "cast",
       tc::CudaMappingOptions::makeNaiveMappingOptions(),
-      {a, b},
-      outputs);
+      {a, b});
   auto r = outputs[0].sub(at::CUDA(at::kInt).ones({2, 4}) + 4).max().toCFloat();
   CHECK_EQ(r, 0);
 }
@@ -294,6 +278,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

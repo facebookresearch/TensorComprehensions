@@ -63,7 +63,7 @@ target_link_libraries(
   ${ATEN_LIBRARIES}
   -lLLVM
 
-  tc_core_cpu tc_lang)
+  tc_core_cpu tc_lang tc_aten)
 
 if (WITH_TAPIR)
   add_executable(test_mapper_tapir test_mapper_tapir.cc)
@@ -75,7 +75,7 @@ if (WITH_TAPIR)
     ${ATEN_LIBRARIES}
     -lLLVM
 
-    tc_core_cpu tc_lang)
+    tc_core_cpu tc_lang tc_aten)
 endif()
 
 ################################################################################

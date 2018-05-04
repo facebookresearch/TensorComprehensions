@@ -33,7 +33,7 @@ typename V::value_type median(V v) {
   }
   auto rightElement = v.at(n / 2);
   std::nth_element(v.begin(), v.begin() + n / 2 - 1, v.end());
-  return (v.at(n / 2 - 1) + rightElement) / 2;
+  return (v.at(n / 2 - 1) + rightElement) / 2u;
 }
 
 } // namespace tc

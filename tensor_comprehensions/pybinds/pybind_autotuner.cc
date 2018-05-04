@@ -22,17 +22,50 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <ATen/ATen.h>
-
 #include "pybind_utils.h"
-#include "tc/autotuner/genetic_autotuner_aten.h"
-#include "tc/core/cuda/cuda_mapping_options.h"
+#include "tc/aten/aten.h"
+#include "tc/aten/aten_autotuner.h"
+#include "tc/autotuner/genetic_search.h"
+#include "tc/autotuner/options_cache.h"
+#include "tc/core/cuda/cuda_backend.h"
+#include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
+#include "tc/core/tensor.h"
+#include "tc/lang/canonicalize.h"
 
 namespace tc {
 namespace python {
 
 namespace py = pybind11;
+
+using ATenCudaGeneticTuner =
+    tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>;
+
+class ATenCudaTuner : public ATenCudaGeneticTuner {
+ public:
+  ATenCudaTuner(const std::string& tc)
+      : ATenCudaGeneticTuner(tc), tcEntryPointMap_(tc::detail::parse(tc)) {}
+
+  std::vector<tc::CudaMappingOptions> load(
+      const std::string& cacheFileName,
+      const std::string& entryPoint,
+      const std::vector<at::Tensor>& inputs,
+      const size_t numCandidates) {
+    tc::autotune::OptionsCache<tc::CudaBackend> cache;
+    cache.loadCacheFromFile(tc::makeOptionsFilename(cacheFileName));
+    auto inputsDLTensors = tc::aten::makeDLConstTensors(inputs);
+    return cache.getTopKOptions(
+        lang::canonicalTc(tcEntryPointMap_.at(entryPoint)),
+        makeTensorInfoVector(extractRawPtrs(inputsDLTensors)),
+        tc::inferOutputTensorInfo(
+            tc_, entryPoint, extractRawPtrs(inputsDLTensors)),
+        tc::CudaBackend::backendString(),
+        numCandidates);
+  }
+
+ private:
+  std::map<std::string, lang::TreeRef> tcEntryPointMap_;
+};
 
 PYBIND11_MODULE(autotuner, m) {
   m.doc() =
@@ -44,93 +77,83 @@ PYBIND11_MODULE(autotuner, m) {
     std::cerr << "\n PyTorch installation is missing, binary will be useless \n"
               << e.what() << std::endl;
   }
-  py::class_<tc::autotune::GeneticAutotunerATen>(m, "ATenAutotuner")
+  py::class_<ATenCudaTuner>(m, "ATenAutotuner")
       .def(py::init<const std::string>())
       .def(
           "pop_size",
-          [](tc::autotune::GeneticAutotunerATen& instance, uint32_t& pop_size) {
+          [](ATenCudaTuner& instance, uint32_t& pop_size) {
             tc::FLAGS_tuner_gen_pop_size = pop_size;
           })
       .def(
           "crossover_rate",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& crossover_rate) {
+          [](ATenCudaTuner& instance, uint32_t& crossover_rate) {
             tc::FLAGS_tuner_gen_crossover_rate = crossover_rate;
           })
       .def(
           "mutation_rate",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& mutation_rate) {
+          [](ATenCudaTuner& instance, uint32_t& mutation_rate) {
             tc::FLAGS_tuner_gen_mutation_rate = mutation_rate;
           })
       .def(
           "generations",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& generations) {
+          [](ATenCudaTuner& instance, uint32_t& generations) {
             tc::FLAGS_tuner_gen_generations = generations;
           })
       .def(
           "number_elites",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& number_elites) {
+          [](ATenCudaTuner& instance, uint32_t& number_elites) {
             tc::FLAGS_tuner_gen_number_elites = number_elites;
           })
       .def(
           "threads",
-          [](tc::autotune::GeneticAutotunerATen& instance, uint32_t& threads) {
+          [](ATenCudaTuner& instance, uint32_t& threads) {
             tc::FLAGS_tuner_threads = threads;
           })
       .def(
           "gpus",
-          [](tc::autotune::GeneticAutotunerATen& instance, std::string& gpus) {
-            tc::FLAGS_tuner_gpus = gpus;
+          [](ATenCudaTuner& instance, std::string& gpus) {
+            tc::FLAGS_tuner_devices = gpus;
           })
       .def(
           "restore_from_proto",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool restore_from_proto) {
+          [](ATenCudaTuner& instance, bool restore_from_proto) {
             tc::FLAGS_tuner_gen_restore_from_proto = restore_from_proto;
           })
       .def(
           "restore_number",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             uint32_t& restore_number) {
+          [](ATenCudaTuner& instance, uint32_t& restore_number) {
             tc::FLAGS_tuner_gen_restore_number = restore_number;
           })
       .def(
           "log_generations",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool log_generations) {
+          [](ATenCudaTuner& instance, bool log_generations) {
             tc::FLAGS_tuner_gen_log_generations = log_generations;
           })
       .def(
           "tuner_min_launch_total_threads",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool tuner_min_launch_total_threads) {
+          [](ATenCudaTuner& instance, bool tuner_min_launch_total_threads) {
             tc::FLAGS_tuner_min_launch_total_threads =
                 tuner_min_launch_total_threads;
           })
       .def(
           "save_best_candidates_count",
-          [](tc::autotune::GeneticAutotunerATen& instance,
-             bool save_best_candidates_count) {
+          [](ATenCudaTuner& instance, bool save_best_candidates_count) {
             tc::FLAGS_tuner_save_best_candidates_count =
                 save_best_candidates_count;
           })
       .def(
           "tune",
           [dlpack](
-              tc::autotune::GeneticAutotunerATen& instance,
-              const std::string& cacheFileName,
-              const std::string& tcName,
+              ATenCudaTuner& instance,
+              const std::string& entryPoint,
               py::list& inputs,
               tc::CudaMappingOptions& baseMapping,
-              std::vector<tc::CudaMappingOptions>& startingOptions) {
+              const std::string& cacheFileName) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            auto bestOptions = instance.tune(
-                cacheFileName, tcName, atInputs, baseMapping, startingOptions);
-            if (bestOptions) {
-              return *bestOptions;
+            auto bestOptions =
+                instance.tune(entryPoint, atInputs, baseMapping, cacheFileName);
+            if (bestOptions.size() > 0u) {
+              return bestOptions[0];
             } else {
               std::cout << "Autotuner could not find options, returning base"
                         << std::endl;
@@ -140,15 +163,16 @@ PYBIND11_MODULE(autotuner, m) {
       .def(
           "load",
           [dlpack](
-              tc::autotune::GeneticAutotunerATen& instance,
+              ATenCudaTuner& instance,
               const std::string& cacheFileName,
-              const std::string& tcName,
+              const std::string& entryPoint,
               py::list& inputs,
               const size_t& numCandidates) {
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<tc::CudaMappingOptions> mappingOptions =
-                instance.load(cacheFileName, tcName, atInputs, numCandidates);
-            return mappingOptions;
+            return instance.load(
+                cacheFileName,
+                entryPoint,
+                getATenTensors(inputs, dlpack),
+                numCandidates);
           });
 }
 

@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
@@ -99,7 +99,6 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
           "tmm",
           inputs,
           options,
-          {options},
           checkFun);
     }
   }
@@ -232,6 +231,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

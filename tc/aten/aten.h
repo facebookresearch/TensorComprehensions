@@ -19,18 +19,22 @@
 #include <vector>
 
 #include <ATen/ATen.h>
-#include <ATen/DLConvertor.h>
+
+#include "tc/core/tensor.h"
 
 namespace tc {
-namespace {
-std::pair<std::vector<DLTensor*>, std::vector<DLManagedTensor*>>
-toDlpackTensors(const std::vector<at::Tensor>& tensors);
+namespace aten {
 
-std::pair<std::vector<const DLTensor*>, std::vector<DLManagedTensor*>>
-toConstDlpackTensors(const std::vector<at::Tensor>& tensors);
+inline std::vector<DLTensorUPtr> makeDLTensors(
+    const std::vector<at::Tensor>& tensors);
 
-void deleteDlmTensors(std::vector<DLManagedTensor*>& tensors);
-} // namespace
+inline std::vector<DLConstTensorUPtr> makeDLConstTensors(
+    const std::vector<at::Tensor>& tensors);
+
+inline void setAtenSeed(uint64_t seed, at::Backend backend);
+inline uint64_t getAtenSeed(at::Backend backend);
+
+} // namespace aten
 } // namespace tc
 
-#include "tc/aten/utils-inl.h"
+#include "tc/aten/aten-inl.h"

@@ -28,7 +28,13 @@ target_link_libraries(test_basic_gpu ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARIES} ${
 ################################################################################
 add_executable(test_autotuner_utility test_autotuner_utility.cc)
 add_test(test_autotuner_utility test_autotuner_utility)
-target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc_cuda tc_autotuner)
+target_link_libraries(
+    test_autotuner_utility
+    ${GOOGLE_LIBS}
+    ${ATEN_LIBRARIES}
+    tc_cuda
+    tc_autotuner
+    tc_aten)
 
 ################################################################################
 # ATen execution based test
@@ -36,9 +42,7 @@ target_link_libraries(test_autotuner_utility ${GOOGLE_LIBS} ${ATEN_LIBRARIES} tc
 set(ATEN_TEST_FILES
   test_autotuner
   test_compilation_cache
-  test_execution_engine
-  test_execution_engine_cache
-  test_execution_engine_db
+  test_compile_and_run
   test_tc_mapper
   test_tc_mapper_bugs
   test_corner_cases
@@ -48,10 +52,10 @@ foreach(i ${ATEN_TEST_FILES})
   add_test(${i} ${i})
   target_link_libraries(
       ${i}
-
       ${GOOGLE_LIBS}
       ${ATEN_LIBRARIES}
-      tc_autotuner)
+      tc_autotuner
+      tc_aten)
 endforeach()
 
 ################################################################################
