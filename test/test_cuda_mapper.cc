@@ -46,9 +46,6 @@ using namespace tc;
 using namespace tc::polyhedral;
 using namespace tc::polyhedral::detail;
 
-using tc::polyhedral::detail::fromIslSchedule;
-using tc::polyhedral::detail::toIslSchedule;
-
 struct PolyhedralMapperTest : public ::testing::Test {
   std::unique_ptr<Scop> Prepare(std::string tc) {
     auto ctx = isl::with_exceptions::globalIslCtx();
@@ -87,8 +84,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
-    auto ns = detail::ScheduleTree::collectDFSPostorder(
-        root, detail::ScheduleTreeType::Band);
+    auto ns = ScheduleTree::collectDFSPostorder(root, ScheduleTreeType::Band);
     mscop->mapThreadsBackward(ns[1]);
     mscop->insertMappingContext();
     return mscop;
@@ -132,7 +128,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
       auto islNode = toIslSchedule(schedule2.get()).get_root().child(0);
       auto mv = isl::makeMultiVal(
           schedule2->child({0})
-              ->elemAs<detail::ScheduleTreeElemBand>()
+              ->elemAs<ScheduleTreeElemBand>()
               ->mupa_.get_space(),
           tileSizes);
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
@@ -758,7 +754,6 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiledBand =
       ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling.view));
 
-  using detail::ScheduleTreeElemBand;
   ASSERT_TRUE(maxMinOuterBand->elemAs<ScheduleTreeElemBand>());
   ASSERT_TRUE(maxMaxOuterBand->elemAs<ScheduleTreeElemBand>());
   ASSERT_TRUE(tiledBand->elemAs<ScheduleTreeElemBand>());
