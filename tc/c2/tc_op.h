@@ -38,19 +38,18 @@ class TcOp : public Operator<Context> {
  public:
   TcOp(const OperatorDef& operator_def, Workspace* ws)
       : Operator<Context>(operator_def, ws),
-        tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
-        tcName_(
-            OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
         cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
         gradCudaMappingOptions_(
             tc::CudaMappingOptions::makeNaiveMappingOptions()) {
-    gradTc_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
-    gradTcName_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
+    is_backward_ = OperatorBase::GetSingleArgument<bool>("is_backward_", false);
+    tc_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tcGradDef" : "tcDef", "ERROR");
+    tcName_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tcGradName" : "tcName", "ERROR");
     compiled_ = false;
     checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     ArgumentHelper args(operator_def);
+
     if (args.HasArgument("mappingOptions")) {
       cudaMappingOptions_ = tc::CudaMappingOptions(
           args.GetSingleArgument<std::string>("mappingOptions", "ERROR"));
@@ -119,7 +118,10 @@ class TcOp : public Operator<Context> {
 
       // compile
       executor_ = tc::compile<tc::CudaBackend>(
-          parsedTcs.at(tcName_), rawInputDLTensors_, cudaMappingOptions_);
+          parsedTcs.at(tcName_),
+          rawInputDLTensors_,
+          is_backward_ ? gradCudaMappingOptions_.toProtobufSerializedString()
+                       : cudaMappingOptions_.toProtobufSerializedString());
       compiled_ = true;
     }
 
@@ -134,11 +136,10 @@ class TcOp : public Operator<Context> {
 
  protected:
   std::string tc_;
-  std::string gradTc_;
   std::string tcName_;
-  std::string gradTcName_;
   bool compiled_;
   bool checkSizes_;
+  bool is_backward_;
   tc::CudaMappingOptions cudaMappingOptions_;
   tc::CudaMappingOptions gradCudaMappingOptions_;
   // Owning DLTensor wrapping C2 tensors
@@ -160,8 +161,37 @@ class GetTcOpGradient : public GradientMakerBase {
 
   std::vector<OperatorDef> GetGradientDefs() override {
     ArgumentHelper args(Def());
-    CHECK(false) << "NYI gradient";
-    return {};
+    vector<OperatorDef> grad_ops;
+
+    std::vector<string> input_vec, output_vec;
+
+    // First input: inputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("inputs_used_by_gradient")) {
+      input_vec.push_back(I(idx));
+    }
+
+    // Second input: outputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("outputs_used_by_gradient")) {
+      input_vec.push_back(O(idx));
+    }
+
+    // Third input: Gradient-of-outputs to be used in TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("output_gradients_used_by_gradient")) {
+      input_vec.push_back(GO(idx));
+    }
+
+    // Output: calculated output from TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("inputs_to_compute_gradients_of")) {
+      output_vec.push_back(GI(idx));
+    }
+
+    Argument grad_arg = MakeArgument<bool>("is_backward_", true);
+
+    grad_ops.push_back(CreateOperatorDef(
+        "TcOp", "", input_vec, output_vec, std::vector<Argument>{grad_arg}));
+    return grad_ops;
   }
 };
 } // namespace caffe2

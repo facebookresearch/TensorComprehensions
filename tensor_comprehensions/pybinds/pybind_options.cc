@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include <google/protobuf/text_format.h>
+
 #include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -91,6 +93,14 @@ PYBIND11_MODULE(mapping_options, m) {
           [](tc::CudaMappingOptions& instance) {
             std::string str = instance.toProtobufSerializedString();
             return py::bytes(str);
+          },
+          "Serialize the options to a protobuf string")
+      .def(
+          "serializeAsText",
+          [](tc::CudaMappingOptions& instance) {
+            std::string str;
+            google::protobuf::TextFormat::PrintToString(instance.proto(), &str);
+            return str;
           },
           "Serialize the options to a protobuf string")
       .def(

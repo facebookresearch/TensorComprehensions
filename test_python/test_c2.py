@@ -35,10 +35,17 @@ output(i, j) +=! A(i, kk) * B(kk, j)
 }
 """
 
+MATMUL_GRAD_LANG = """
+def matmul_grad(float(M, N) A, float(N, K) B, float(M, K) O_grad) -> (A_grad, B_grad) {
+    A_grad(i, kk) +=! O_grad(i, j) * B(kk, j)
+    B_grad(kk, j) +=! O_grad(i, j) * A(i, kk)
+}
+"""
+
 class TestCaffe2(hu.HypothesisTestCase):
-    @given(n=st.integers(1, 128),
-           m=st.integers(1, 128),
-           k=st.integers(1, 128),
+    @given(n=st.integers(1, 4),
+           m=st.integers(1, 4),
+           k=st.integers(1, 4),
            seed=st.integers(min_value=0, max_value=2**32 - 1),
            **hu.gcs_gpu_only)
     def test_matmul(self, n, m, k, seed, gc, dc):
@@ -54,6 +61,11 @@ class TestCaffe2(hu.HypothesisTestCase):
             "TcOp", ["X", "Y"], "out",
             tcDef=MATMUL_LANG,
             tcName="matmul",
+            tcGradDef=MATMUL_GRAD_LANG,
+            tcGradName="matmul_grad",
+            inputs_used_by_gradient=[0, 1],
+            output_gradients_used_by_gradient=[0],
+            inputs_to_compute_gradients_of=[0, 1],
         )
 
         self.assertReferenceChecks(
@@ -63,17 +75,35 @@ class TestCaffe2(hu.HypothesisTestCase):
             reference=ref,
         )
 
-    @given(n=st.integers(1, 128),
-           m=st.integers(1, 128),
-           k=st.integers(1, 128),
+        for i in range(2):
+            self.assertGradientChecks(
+                device_option=gc,
+                op=op,
+                inputs=[X, W],
+                outputs_to_check=i,
+                outputs_with_grads=[0],
+            )
+
+    @given(n=st.integers(1, 4),
+           m=st.integers(1, 4),
+           k=st.integers(1, 4),
            seed=st.integers(min_value=0, max_value=2**32 - 1),
            **hu.gcs_gpu_only)
     @settings(max_examples=2)
     def test_matmul_tune_and_run(self, n, m, k, seed, gc, dc):
         matmul = tc.define(MATMUL_LANG, name="matmul")
+        matmul_grad = tc.define(MATMUL_GRAD_LANG, name="matmul_grad")
 
         mapping_options = matmul.autotune(
             (n, k), (k, m),
+            generations=1,
+            threads=32,
+            pop_size=2,
+            tuner_min_launch_total_threads=1,
+        )
+
+        grad_mapping_options = matmul_grad.autotune(
+            (n, k), (k, m), (n, m),
             generations=1,
             threads=32,
             pop_size=2,
@@ -90,7 +120,13 @@ class TestCaffe2(hu.HypothesisTestCase):
             "TcOp", ["X", "Y"], "out",
             tcDef=MATMUL_LANG,
             tcName="matmul",
+            tcGradDef=MATMUL_GRAD_LANG,
+            tcGradName="matmul_grad",
+            inputs_used_by_gradient=[0, 1],
+            output_gradients_used_by_gradient=[0],
+            inputs_to_compute_gradients_of=[0, 1],
             mappingOptions=mapping_options.serialize(),
+            gradCudaMappingOptions=grad_mapping_options.serialize(),
         )
 
         self.assertReferenceChecks(
@@ -99,6 +135,15 @@ class TestCaffe2(hu.HypothesisTestCase):
             inputs=[X, W],
             reference=ref,
         )
+
+        for i in range(2):
+            self.assertGradientChecks(
+                device_option=gc,
+                op=op,
+                inputs=[X, W],
+                outputs_to_check=i,
+                outputs_with_grads=[0],
+            )
 
 if __name__ == '__main__':
     unittest.main()
