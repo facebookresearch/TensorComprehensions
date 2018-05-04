@@ -42,16 +42,6 @@ at::Tensor subtensor(at::Tensor& tensor, int dim, int groups, int g) {
   return tensor.narrow(dim, n * g, n).contiguous();
 }
 
-void setAtenSeed(uint64_t seed, at::Backend backend) {
-  at::Generator& gen = at::globalContext().defaultGenerator(backend);
-  gen.manualSeed(seed);
-}
-
-uint64_t getAtenSeed(at::Backend backend) {
-  at::Generator& gen = at::globalContext().defaultGenerator(backend);
-  return gen.seed();
-}
-
 void benchmarkKernelOptions(
     const std::string& tc,
     const std::string& name,

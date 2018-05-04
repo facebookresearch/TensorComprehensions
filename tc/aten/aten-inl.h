@@ -46,5 +46,15 @@ inline std::vector<DLConstTensorUPtr> makeDLConstTensors(
   }
   return dlTensors;
 }
+
+inline void setAtenSeed(uint64_t seed, at::Backend backend) {
+  at::Generator& gen = at::globalContext().defaultGenerator(backend);
+  gen.manualSeed(seed);
+}
+
+inline uint64_t getAtenSeed(at::Backend backend) {
+  at::Generator& gen = at::globalContext().defaultGenerator(backend);
+  return gen.seed();
+}
 } // namespace aten
 } // namespace tc

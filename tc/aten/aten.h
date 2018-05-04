@@ -31,6 +31,9 @@ inline std::vector<DLTensorUPtr> makeDLTensors(
 inline std::vector<DLConstTensorUPtr> makeDLConstTensors(
     const std::vector<at::Tensor>& tensors);
 
+inline void setAtenSeed(uint64_t seed, at::Backend backend);
+inline uint64_t getAtenSeed(at::Backend backend);
+
 } // namespace aten
 } // namespace tc
 
