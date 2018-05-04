@@ -402,8 +402,7 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
   auto space = scop.domain().get_space().params();
   auto nDim = halideParameter.dimensions();
-  space = space.add_dims(isl::dim_type::set, nDim)
-              .set_tuple_id(isl::dim_type::set, tensorId);
+  space = space.named_set_from_params_id(tensorId, nDim);
 
   auto tensorElements = isl::set::universe(space);
   for (int i = 0; i < nDim; ++i) {
