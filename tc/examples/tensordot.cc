@@ -31,8 +31,6 @@
 #include "tc/core/cuda/cuda_tc_executor_new_api.h"
 #include "tc/core/flags.h"
 
-#include "../test/test_harness_aten_cuda.h"
-
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 
 template <typename Backend>
