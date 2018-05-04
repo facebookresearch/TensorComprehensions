@@ -38,13 +38,18 @@ class TcOp : public Operator<Context> {
  public:
   TcOp(const OperatorDef& operator_def, Workspace* ws)
       : Operator<Context>(operator_def, ws),
-        tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
-        tcName_(
-            OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
-        cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()) {
+        cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
+        gradCudaMappingOptions_(
+            tc::CudaMappingOptions::makeNaiveMappingOptions()) {
+    isBackward_ = OperatorBase::GetSingleArgument<bool>("is_backward", false);
+    tc_ = OperatorBase::GetSingleArgument<std::string>(
+        isBackward_ ? "tcGradDef" : "tcDef", "ERROR");
+    tcName_ = OperatorBase::GetSingleArgument<std::string>(
+        isBackward_ ? "tcGradName" : "tcName", "ERROR");
     compiled_ = false;
     checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     ArgumentHelper args(operator_def);
+
     if (args.HasArgument("mappingOptions")) {
       cudaMappingOptions_ = tc::CudaMappingOptions(
           args.GetSingleArgument<std::string>("mappingOptions", "ERROR"));
@@ -62,6 +67,11 @@ class TcOp : public Operator<Context> {
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
   virtual void setupNaiveCudaMappingOptions() {}
+
+  /// Hook called when the gradCudaMappingOptions are not provided in the Caffe2
+  /// operator arguments. Does nothing by default, derived classes can
+  /// reimplement this to customize stategies.
+  virtual void setupDefaultGradCudaMappingOptions() {}
 
   void prepareOutputs(const std::vector<tc::TensorInfo> tensorInfos) {
     for (size_t i = 0; i < tensorInfos.size(); ++i) {
@@ -96,7 +106,10 @@ class TcOp : public Operator<Context> {
 
       // compile
       executor_ = tc::compile<tc::CudaBackend>(
-          tc_, tcName_, rawInputDLTensors_, cudaMappingOptions_);
+          tc_,
+          tcName_,
+          rawInputDLTensors_,
+          isBackward_ ? gradCudaMappingOptions_ : cudaMappingOptions_);
       compiled_ = true;
     }
 
@@ -114,7 +127,9 @@ class TcOp : public Operator<Context> {
   std::string tcName_;
   bool compiled_;
   bool checkSizes_;
+  bool isBackward_;
   tc::CudaMappingOptions cudaMappingOptions_;
+  tc::CudaMappingOptions gradCudaMappingOptions_;
   // Owning DLTensor wrapping C2 tensors
   std::vector<tc::DLConstTensorUPtr> inputDLTensors_;
   std::vector<tc::DLTensorUPtr> outputDLTensors_;
@@ -134,8 +149,37 @@ class GetTcOpGradient : public GradientMakerBase {
 
   std::vector<OperatorDef> GetGradientDefs() override {
     ArgumentHelper args(Def());
-    CHECK(false) << "NYI gradient";
-    return {};
+    vector<OperatorDef> gradOps;
+
+    std::vector<string> inputVec, outputVec;
+
+    // First input: inputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("inputs_used_by_gradient")) {
+      inputVec.push_back(I(idx));
+    }
+
+    // Second input: outputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("outputs_used_by_gradient")) {
+      inputVec.push_back(O(idx));
+    }
+
+    // Third input: Gradient-of-outputs to be used in TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("output_gradients_used_by_gradient")) {
+      inputVec.push_back(GO(idx));
+    }
+
+    // Output: calculated output from TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("inputs_to_compute_gradients_of")) {
+      outputVec.push_back(GI(idx));
+    }
+
+    Argument gradArg = MakeArgument<bool>("is_backward", true);
+
+    gradOps.push_back(CreateOperatorDef(
+        "TcOp", "", inputVec, outputVec, std::vector<Argument>{gradArg}));
+    return gradOps;
   }
 };
 } // namespace caffe2
