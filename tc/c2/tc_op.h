@@ -41,14 +41,11 @@ class TcOp : public Operator<Context> {
         cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
         gradCudaMappingOptions_(
             tc::CudaMappingOptions::makeNaiveMappingOptions()) {
-    is_backward_ =
-      OperatorBase::GetSingleArgument<bool>("is_backward_", false);
-    tc_ =
-      OperatorBase::GetSingleArgument<std::string>(
-          is_backward_ ? "tcGradDef" : "tcDef", "ERROR");
-    tcName_ =
-      OperatorBase::GetSingleArgument<std::string>(
-          is_backward_ ? "tcGradName" : "tcName", "ERROR");
+    is_backward_ = OperatorBase::GetSingleArgument<bool>("is_backward_", false);
+    tc_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tcGradDef" : "tcDef", "ERROR");
+    tcName_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tcGradName" : "tcName", "ERROR");
     compiled_ = false;
     checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     ArgumentHelper args(operator_def);
@@ -121,9 +118,10 @@ class TcOp : public Operator<Context> {
 
       // compile
       executor_ = tc::compile<tc::CudaBackend>(
-          parsedTcs.at(tcName_), rawInputDLTensors_,
-          is_backward_ ? gradCudaMappingOptions_.toProtobufSerializedString() :
-              cudaMappingOptions_.toProtobufSerializedString());
+          parsedTcs.at(tcName_),
+          rawInputDLTensors_,
+          is_backward_ ? gradCudaMappingOptions_.toProtobufSerializedString()
+                       : cudaMappingOptions_.toProtobufSerializedString());
       compiled_ = true;
     }
 
@@ -167,38 +165,33 @@ class GetTcOpGradient : public GradientMakerBase {
 
     std::vector<string> input_vec, output_vec;
 
-    //First input: inputs to be used in TC Op Gradient
-    for (int idx: args.GetRepeatedArgument<int>("inputs_used_by_gradient")) {
+    // First input: inputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("inputs_used_by_gradient")) {
       input_vec.push_back(I(idx));
     }
 
-    //Second input: outputs to be used in TC Op Gradient
-    for (int idx: args.GetRepeatedArgument<int>("outputs_used_by_gradient")) {
+    // Second input: outputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("outputs_used_by_gradient")) {
       input_vec.push_back(O(idx));
     }
 
-    //Third input: Gradient-of-outputs to be used in TC Op Gradient
-    for (int idx:
-      args.GetRepeatedArgument<int>("output_gradients_used_by_gradient")) {
+    // Third input: Gradient-of-outputs to be used in TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("output_gradients_used_by_gradient")) {
       input_vec.push_back(GO(idx));
     }
 
-    //Output: calculated output from TC Op Gradient
-    for (int idx:
-      args.GetRepeatedArgument<int>("inputs_to_compute_gradients_of")) {
+    // Output: calculated output from TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("inputs_to_compute_gradients_of")) {
       output_vec.push_back(GI(idx));
     }
 
     Argument grad_arg = MakeArgument<bool>("is_backward_", true);
 
     grad_ops.push_back(CreateOperatorDef(
-        "TcOp",
-        "",
-        input_vec,
-        output_vec,
-        std::vector<Argument>{grad_arg}));
+        "TcOp", "", input_vec, output_vec, std::vector<Argument>{grad_arg}));
     return grad_ops;
   }
-
 };
 } // namespace caffe2
