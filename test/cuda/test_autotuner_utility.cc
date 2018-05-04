@@ -60,16 +60,6 @@ std::vector<CudaMappingOptions> restoreCandidates(
       lang::canonicalTc(tc), inputsPair.first, outputsPair.first);
 }
 
-TEST(RestoreCandidates, NoCache) {
-  std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
-                                 at::CUDA(at::kFloat).rand({16, 20})};
-  static constexpr auto tc = R"(
-      def tc2(float(M,N) A, float(N,K) B) -> (output) {
-        output(m, k) +=! A(m, nn) * B(nn, k) + 1
-      })";
-  ASSERT_THROW(restoreCandidates(tc, inputs, inputs), std::runtime_error);
-}
-
 TEST(RestoreCandidates, NotATCid) {
   std::vector<at::Tensor> inputs{at::CUDA(at::kFloat).rand({10, 16}),
                                  at::CUDA(at::kFloat).rand({16, 20})};
