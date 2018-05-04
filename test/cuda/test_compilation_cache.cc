@@ -437,40 +437,6 @@ TEST_F(OptionsCacheTest, Serialization) {
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 }
 
-/*
- *class FCReluTester {
- * public:
- *  FCReluTester(int B, int M, int N)
- *      : inputs_{at::CUDA(at::kFloat).rand({B, M}),
- *                at::CUDA(at::kFloat).rand({N, M}),
- *                at::CUDA(at::kFloat).rand({N})},
- *        M{M} {}
- *  void Run() {
- *    tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
- *    atCompl.define(tc_);
- *    std::vector<at::Tensor> outputs_;
- *    atCompl.run(
- *        "fcrelu",
- *        inputs_,
- *        outputs_,
- *        tc::CudaMappingOptions::makeMlpMappingOptions(), true);
- *    at::Tensor diff =
- *        outputs_[0].sub(inputs_[0].mm(inputs_[1]).add(inputs_[2]).clamp_min(0));
- *    checkRtol(diff, inputs_, M);
- *  }
- *
- * private:
- *  std::vector<at::Tensor> inputs_;
- *  int M;
- *  static constexpr auto tc_ = R"(
- *  def fcrelu(float(B,M) I, float(N,M) W1, float(N) B1) -> (O1) {
- *      O1(b, n) += I(b, m) * W1(n, m)
- *      O1(b, n) = O1(b, n) + B1(n)
- *      O1(b, n) = fmax(O1(b, n), 0)
- *    })";
- *};
- */
-
 class MatMulTester {
  public:
   MatMulTester(int N, int M, int B)
@@ -547,7 +513,6 @@ class CompilationCacheTest : public ::testing::Test {
     ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
     ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
 
-    // test0.Run();
     test1.Run();
     test2.Run();
 
@@ -563,15 +528,11 @@ class CompilationCacheTest : public ::testing::Test {
     ASSERT_FALSE(tc::OptionsCache::cacheEnabled());
   }
 
-  // FCReluTester test0{8, 16, 16};
   MatMulTester test1{8, 32, 16};
   ConvolutionTester test2{1, 1, 1, 2, 2, 1, 1};
 };
 
 TEST_F(CompilationCacheTest, ExpectQuerySuccess) {
-  // FCReluTester test0{8, 16, 16};
-  // test0.Run();
-
   MatMulTester test1{8, 32, 16};
   test1.Run();
 
@@ -586,13 +547,6 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccess) {
 }
 
 TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
-  /*
-   *  auto fut0 = std::async(std::launch::async, []() {
-   *    FCReluTester test0{8, 16, 16};
-   *    test0.Run();
-   *  });
-   *
-   */
   auto fut1 = std::async(std::launch::async, []() {
     MatMulTester test1{8, 32, 16};
     test1.Run();
@@ -603,7 +557,6 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
     test2.Run();
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
@@ -615,9 +568,6 @@ TEST_F(CompilationCacheTest, ExpectQuerySuccessConcurrent) {
 }
 
 TEST_F(CompilationCacheTest, ShapesNotPresentInCache) {
-  // FCReluTester test0{10, 16, 16};
-  // test0.Run();
-
   MatMulTester test1{12, 32, 16};
   test1.Run();
 
@@ -631,11 +581,6 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCache) {
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 4);
 }
 TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
-  // auto fut0 = std::async(std::launch::async, []() {
-  // FCReluTester test0{10, 16, 16};
-  // test0.Run();
-  //});
-
   auto fut1 = std::async(std::launch::async, []() {
     MatMulTester test1{12, 32, 16};
     test1.Run();
@@ -646,7 +591,6 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
     test2.Run();
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
@@ -658,11 +602,6 @@ TEST_F(CompilationCacheTest, ShapesNotPresentInCacheConcurrent) {
 }
 
 TEST_F(CompilationCacheTest, ModifyIslOptions) {
-  // FCReluTester test0{8, 16, 16};
-  // test0.ModifyParameters(
-  //{tc::Tile{4}, tc::Block{128}, tc::Grid{1}, tc::Unroll{1}});
-  // test0.Run();
-
   MatMulTester test1{8, 32, 16};
   auto options = tc::CudaMappingOptions::makeMlpMappingOptions()
                      .tile(1, 1, 1)
@@ -687,13 +626,6 @@ TEST_F(CompilationCacheTest, ModifyIslOptions) {
 }
 
 TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
-  // auto fut0 = std::async(std::launch::async, []() {
-  // FCReluTester test0{8, 16, 16};
-  // test0.ModifyParameters(
-  //{tc::Tile{4}, tc::Block{128}, tc::Grid{1}, tc::Unroll{1}});
-  // test0.Run();
-  //});
-
   auto fut1 = std::async(std::launch::async, []() {
     MatMulTester test1{8, 32, 16};
     auto options = tc::CudaMappingOptions::makeMlpMappingOptions()
@@ -714,7 +646,6 @@ TEST_F(CompilationCacheTest, ModifyIslOptionsConcurrent) {
     test2.Run(options);
   });
 
-  // fut0.get();
   fut1.get();
   fut2.get();
 
@@ -736,11 +667,6 @@ TEST_F(CompilationCacheTest, Serialization) {
   ASSERT_EQ(tc::OptionsCache::getCache()->numberAttemptedRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberSuccessfulRetrievals, 0);
   ASSERT_EQ(tc::OptionsCache::getCache()->numberCacheAttemps, 0);
-
-  /*
-   *FCReluTester test0{8, 16, 16};
-   *test0.Run();
-   */
 
   MatMulTester test1{8, 32, 16};
   test1.Run();
