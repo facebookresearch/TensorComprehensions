@@ -63,8 +63,6 @@ class TcConvolutionOp : public TcOp<T, Context, Engine> {
 
     this->tc_ = tc::makeConvolution2DTc(strideH, strideW);
     this->tcName_ = tc::CONVOLUTION2D_TC_NAME;
-    this->gradTc_ = tc::makeConvolution2DGradTc(strideH, strideW);
-    this->gradTcName_ = tc::CONVOLUTION2D_GRAD_TC_NAME;
   }
 
   ~TcConvolutionOp() override {}
