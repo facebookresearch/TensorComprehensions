@@ -302,9 +302,8 @@ struct ScheduleTree {
 
   template <typename MappingIdType>
   static inline ScheduleTreeUPtr makeMappingFilter(
-      isl::union_set filter,
-      const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-          mappingIds,
+      const std::vector<MappingIdType>& mappedIds,
+      isl::union_pw_aff_list mappedAffs,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   static ScheduleTreeUPtr makeExtension(

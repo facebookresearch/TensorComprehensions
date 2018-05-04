@@ -166,6 +166,9 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     bool allowMax) {
   CHECK(!(allowMin && allowMax));
 
+  using Halide::Internal::Max;
+  using Halide::Internal::Min;
+
   const Min* minOp = e.as<Min>();
   const Max* maxOp = e.as<Max>();
 
