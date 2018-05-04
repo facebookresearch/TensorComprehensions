@@ -660,7 +660,6 @@ TEST_F(TMM_128_1024_1024, Tightening) {
 TEST(LayerNorm, ReferenceBelongsToTwoGroups) {
   at::Tensor mat1 = at::CUDA(at::kFloat).rand({7, 32, 64});
   std::vector<at::Tensor> inputs = {mat1};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
@@ -706,7 +705,6 @@ TEST(TMM_128_1024_1000, DisjunctiveFilter) {
   at::Tensor I = at::CUDA(at::kFloat).rand({128, 1024});
   at::Tensor W = at::CUDA(at::kFloat).rand({1000, 1024});
   std::vector<at::Tensor> inputs = {I, W};
-  std::vector<at::Tensor> outputs;
 
   auto TC = std::string(R"TC(
 def tmm_naive(float(B, X) I, float(Y, X) W) -> (O) {
