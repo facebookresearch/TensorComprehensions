@@ -26,6 +26,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
+#include "../test/caffe2/cuda/test_harness.h"
 #include "../test/caffe2/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
 #include "benchmark_fixture.h"
@@ -154,11 +155,13 @@ void ProductionModel::run1LUT(
   // This test uses an c2 OpTester because we need to run the C2 reference
   // implementation for TcLUTOp.
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {B, L1}, "I", 0, E1 - 1);
-    TestHarness::AddConstInput<int, CUDAContext>(w, {B}, L1, "__lengths");
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {B, L1}, "I", 0, E1 - 1);
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {B}, L1, "__lengths");
   };
   OperatorDef op_def =
       TestHarness::ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
@@ -166,16 +169,21 @@ void ProductionModel::run1LUT(
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
-  auto expectedBlob = reference->getReferenceHostBlob("O");
+
+  auto& referenceWorkspace = reference->w_ref;
+  auto expectedBlob = caffe2::TensorCPU(
+      getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "O"));
 
   {
     // Piggy-back on the C2 CUDA tensors
-    auto inLutBlob = reference->getReferenceDeviceBlob("LUT");
-    auto inIdxBlob = reference->getReferenceDeviceBlob("I");
-    at::Tensor LUT1 = makeATenTensor<caffe2::CUDAContext>(
-        inLutBlob, at::Backend::CUDA, at::ScalarType::Float);
-    at::Tensor IDX1 = makeATenTensor<caffe2::CUDAContext>(
-        inIdxBlob, at::Backend::CUDA, at::ScalarType::Int);
+    auto inLutBlob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "LUT");
+    auto inIdxBlob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "I");
+    at::Tensor LUT1 =
+        makeATenTensor(inLutBlob, at::Backend::CUDA, at::ScalarType::Float);
+    at::Tensor IDX1 =
+        makeATenTensor(inIdxBlob, at::Backend::CUDA, at::ScalarType::Int);
 
     auto checkFun = [&](const std::vector<at::Tensor>& inputs,
                         const std::vector<at::Tensor>& outputs) {
@@ -237,16 +245,20 @@ void ProductionModel::run2LUT(
   CHECK_LT(0, E2);
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {B, L1}, "IDX1", 0, E1 - 1);
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {B, L1}, "IDX1", 0, E1 - 1);
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E2, D}, "LUT2");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {B, L2}, "IDX2", 0, E2 - 1);
-    TestHarness::AddConstInput<int, CUDAContext>(w, {B}, L1, "__lengths1");
-    TestHarness::AddConstInput<int, CUDAContext>(w, {B}, L2, "__lengths2");
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {B, L2}, "IDX2", 0, E2 - 1);
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {B}, L1, "__lengths1");
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {B}, L2, "__lengths2");
   };
   OperatorDef op_def = TestHarness::ConfigureCUDA(
       "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
@@ -254,24 +266,32 @@ void ProductionModel::run2LUT(
       new TestHarness::OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
+
+  auto& referenceWorkspace = reference->w_ref;
   std::vector<caffe2::Tensor<caffe2::CPUContext>> expectedOutput;
-  expectedOutput.push_back(reference->getReferenceHostBlob("O1"));
-  expectedOutput.push_back(reference->getReferenceHostBlob("O2"));
+  expectedOutput.emplace_back(caffe2::TensorCPU(
+      getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "O1")));
+  expectedOutput.emplace_back(caffe2::TensorCPU(
+      getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "O2")));
 
   {
-    auto inLut1Blob = reference->getReferenceDeviceBlob("LUT1");
-    auto inIdx1Blob = reference->getReferenceDeviceBlob("IDX1");
-    at::Tensor LUT1 = makeATenTensor<caffe2::CUDAContext>(
-        inLut1Blob, at::Backend::CUDA, at::ScalarType::Float);
-    at::Tensor IDX1 = makeATenTensor<caffe2::CUDAContext>(
-        inIdx1Blob, at::Backend::CUDA, at::ScalarType::Int);
+    auto inLut1Blob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "LUT1");
+    auto inIdx1Blob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "IDX1");
+    at::Tensor LUT1 =
+        makeATenTensor(inLut1Blob, at::Backend::CUDA, at::ScalarType::Float);
+    at::Tensor IDX1 =
+        makeATenTensor(inIdx1Blob, at::Backend::CUDA, at::ScalarType::Int);
 
-    auto inLut2Blob = reference->getReferenceDeviceBlob("LUT2");
-    auto inIdx2Blob = reference->getReferenceDeviceBlob("IDX2");
-    at::Tensor LUT2 = makeATenTensor<caffe2::CUDAContext>(
-        inLut2Blob, at::Backend::CUDA, at::ScalarType::Float);
-    at::Tensor IDX2 = makeATenTensor<caffe2::CUDAContext>(
-        inIdx2Blob, at::Backend::CUDA, at::ScalarType::Int);
+    auto inLut2Blob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "LUT2");
+    auto inIdx2Blob =
+        getNamedTensor<caffe2::CUDABackend>(referenceWorkspace, "IDX2");
+    at::Tensor LUT2 =
+        makeATenTensor(inLut2Blob, at::Backend::CUDA, at::ScalarType::Float);
+    at::Tensor IDX2 =
+        makeATenTensor(inIdx2Blob, at::Backend::CUDA, at::ScalarType::Int);
 
     auto checkFun = [&](const std::vector<at::Tensor>& inputs,
                         const std::vector<at::Tensor>& outputs) {
@@ -565,11 +585,13 @@ TEST_F(ProductionModel, C21LUTReference) {
   vE = FLAGS_E1;
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE, vD}, "LUT");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {vB, vL}, "I", 0, vE - 1);
-    TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL, "__lengths");
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {vB, vL}, "I", 0, vE - 1);
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {vB}, vL, "__lengths");
   };
   OperatorDef op_def =
       TestHarness::ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
@@ -652,16 +674,20 @@ TEST_F(ProductionModel, C22LUTReference) {
   vE2 = FLAGS_E2;
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE1, vD}, "LUT1");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {vB, vL1}, "IDX1", 0, vE1 - 1);
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {vB, vL1}, "IDX1", 0, vE1 - 1);
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE2, vD}, "LUT2");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {vB, vL2}, "IDX2", 0, vE2 - 1);
-    TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL1, "__lengths1");
-    TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL2, "__lengths2");
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {vB, vL2}, "IDX2", 0, vE2 - 1);
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {vB}, vL1, "__lengths1");
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {vB}, vL2, "__lengths2");
   };
   OperatorDef op_def = TestHarness::ConfigureCUDA(
       "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
@@ -757,8 +783,8 @@ TEST_F(ProductionModel, C2C3Reference) {
   auto WY = FLAGS_WY;
 
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, WX}, "I");
     AddInput(w, {WY, WX}, "W");
   };
@@ -853,8 +879,8 @@ TEST_F(ProductionModel, C2MLP1Reference) {
   auto M = FLAGS_M;
   auto N = FLAGS_N;
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
@@ -975,7 +1001,7 @@ TEST_F(ProductionModel, C2MLP3Reference) {
   auto O = FLAGS_O;
   auto P = FLAGS_P;
   auto Q = FLAGS_Q;
-  auto AddConstInput = TestHarness::AddConstInput<float, CUDAContext>;
+  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
   auto ws_init_func = [&](Workspace& w) {
     AddConstInput(w, vector<TIndex>{B, N}, 1., "I");
     AddConstInput(w, vector<TIndex>{O, N}, 1., "W1");

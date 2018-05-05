@@ -26,6 +26,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
+#include "../test/caffe2/cuda/test_harness.h"
 #include "../test/caffe2/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
 #include "benchmark_fixture.h"
@@ -211,8 +212,8 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
   auto K = FLAGS_K;
 
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, K}, "I");
     AddInput(w, {N, K}, "W");
   };

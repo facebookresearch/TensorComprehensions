@@ -40,65 +40,30 @@ struct CPUBackend {
   using Tensor = TensorCPU;
 };
 
-caffe2::TensorCPU context2tensor(caffe2::CPUContext& ctx) {
-  return caffe2::TensorCPU();
-}
+/// Make a context for the proper Backend type.
+/// A DeviceOption may be passed (e.g. to set the random seed).
+template <typename Caffe2Backend>
+std::unique_ptr<typename Caffe2Backend::Context> makeContext(
+    caffe2::DeviceOption opt = DeviceOption());
 
-caffe2::TensorCUDA context2tensor(caffe2::CUDAContext& ctx) {
-  return caffe2::TensorCUDA();
-}
-
-template <typename T>
-std::unique_ptr<T> makeContext(
-    caffe2::DeviceOption opt = caffe2::DeviceOption());
-
-template <>
-std::unique_ptr<caffe2::CPUContext> makeContext(caffe2::DeviceOption opt) {
-  opt.set_device_type(caffe2::DeviceType::CPU);
-  return std::unique_ptr<caffe2::CPUContext>(new caffe2::CPUContext(opt));
-}
-
-template <>
-std::unique_ptr<caffe2::CUDAContext> makeContext(caffe2::DeviceOption opt) {
-  opt.set_device_type(caffe2::DeviceType::CUDA);
-  return std::unique_ptr<caffe2::CUDAContext>(new caffe2::CUDAContext(opt));
-}
-
-caffe2::Tensor<caffe2::CPUContext> getReferenceHostBlob(
+/// This function retrieves a Caffe2 tensor of the proper backend type
+/// from a workspace. The lookup is done by the underlying Blob name in the
+/// workspace.
+/// The backend type ***must match*** the underlying Blob type because the
+/// Blob.Get method is templated and performs correctness checks ar runtime.
+/// This function is used for testing purposes, we do not worry about
+/// const correctness for now.
+template <typename Caffe2Backend>
+caffe2::Tensor<typename Caffe2Backend::Context> getNamedTensor(
     caffe2::Workspace& ws,
-    const std::string& name) {
-  // Resolved dynamically
-  caffe2::Tensor<caffe2::CPUContext> Texpected(
-      ws.GetBlob(name)->Get<caffe2::TensorCUDA>());
-  return Texpected;
-}
-
-caffe2::Tensor<caffe2::CUDAContext> getReferenceDeviceBlob(
-    caffe2::Workspace& ws,
-    const std::string& name) {
-  caffe2::Tensor<caffe2::CUDAContext> Texpected(
-      ws.GetBlob(name)->Get<caffe2::TensorCUDA>());
-  return Texpected;
-}
+    const std::string& name);
 
 // helper functions to construct an ATen tensor from a caffe2 tensor
-template <typename C2Context>
+template <typename Caffe2TensorType>
 at::Tensor makeATenTensor(
-    const caffe2::Tensor<C2Context>& c2Tensor,
+    const Caffe2TensorType& c2Tensor,
     at::Backend backend,
-    at::ScalarType stype) {
-  auto dims = c2Tensor.dims();
-  auto ndim = dims.size();
-  auto shape = new int64_t[ndim];
-  for (size_t i = 0; i < ndim; ++i) {
-    shape[i] = dims[i];
-  }
-  at::Tensor out =
-      at::getType(backend, stype)
-          .tensorFromBlob(
-              const_cast<void*>(c2Tensor.raw_data()), at::IntList(shape, ndim));
-  return out;
-}
+    at::ScalarType stype);
 
 /// We need to provide a way to perform correctness checks on gradients
 /// using existing Caffe2 operators.
@@ -176,16 +141,16 @@ struct TestHarness {
     return tensor;
   }
 
-  template <typename T, typename Context>
+  template <typename Caffe2Backend, typename T>
   static void AddConstInput(
       caffe2::Workspace& ws,
       const std::vector<caffe2::TIndex>& shape,
       const T value,
       const std::string& name) {
-    auto context = makeContext<Context>();
-    using TensorType = decltype(context2tensor(*context));
-    auto* tensor = TestHarness::NewTensor<TensorType>(ws, shape, name);
-    caffe2::math::Set<T, Context>(
+    auto context = makeContext<Caffe2Backend>();
+    auto* tensor =
+        TestHarness::NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
+    caffe2::math::Set<T, typename Caffe2Backend::Context>(
         tensor->size(),
         value,
         tensor->template mutable_data<T>(),
@@ -195,27 +160,29 @@ struct TestHarness {
 
   // May need copies because RNG on CPU and GPU do not produce the same
   // values when initialized with the same seed.
-  template <typename T, typename DestinationContext, typename SourceContext>
+  template <
+      typename Caffe2SourceBackend,
+      typename Caffe2DestinationBackend,
+      typename T>
   static void AddCopyOfTensor(
       caffe2::Workspace& ws,
       const std::string& name,
       const caffe2::Workspace& sourceWs,
       const std::string& sourceName) {
-    auto destinationContext = makeContext<DestinationContext>();
-    using DestinationTensorType = Tensor<DestinationContext>;
-    auto sourceContext = makeContext<SourceContext>();
-    using SourceTensorType = decltype(context2tensor(*sourceContext));
-
+    auto sourceContext = makeContext<Caffe2SourceBackend>();
+    auto destinationContext = makeContext<Caffe2DestinationBackend>();
     const auto& sourceTensor =
-        sourceWs.GetBlob(sourceName)->Get<SourceTensorType>();
-    auto* destinationTensor = TestHarness::NewTensor<DestinationTensorType>(
-        ws, sourceTensor.dims(), name);
+        sourceWs.GetBlob(sourceName)
+            ->Get<typename Caffe2SourceBackend::Tensor>();
+    auto* destinationTensor =
+        TestHarness::NewTensor<typename Caffe2DestinationBackend::Tensor>(
+            ws, sourceTensor.dims(), name);
     destinationTensor->CopyFrom(sourceTensor);
     sourceContext->FinishDeviceComputation();
     destinationContext->FinishDeviceComputation();
   }
 
-  template <typename T, typename Context>
+  template <typename Caffe2Backend, typename T>
   static void AddDeterministicallyRandomInputWithRange(
       caffe2::Workspace& ws,
       const std::vector<caffe2::TIndex>& shape,
@@ -225,10 +192,10 @@ struct TestHarness {
     std::lock_guard<std::mutex> lock{rng_mutex};
     DeviceOption option;
     option.set_random_seed(std::hash<std::string>()(name));
-    auto context = makeContext<Context>(option);
-    using TensorType = decltype(context2tensor(*context));
-    auto* tensor = TestHarness::NewTensor<TensorType>(ws, shape, name);
-    caffe2::math::RandUniform<T, Context>(
+    auto context = makeContext<Caffe2Backend>(option);
+    auto* tensor =
+        TestHarness::NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
+    caffe2::math::RandUniform<T, typename Caffe2Backend::Context>(
         tensor->size(),
         min,
         max,
@@ -237,13 +204,14 @@ struct TestHarness {
     context->FinishDeviceComputation();
   }
 
-  template <typename T, typename Context>
+  template <typename Caffe2Backend, typename T>
   static void AddDeterministicallyRandomInput(
       caffe2::Workspace& ws,
       const std::vector<caffe2::TIndex>& shape,
       const std::string& name) {
     // 0..2 seems like a nice range for weights
-    AddDeterministicallyRandomInputWithRange<T, Context>(ws, shape, name, 0, 2);
+    AddDeterministicallyRandomInputWithRange<Caffe2Backend, T>(
+        ws, shape, name, 0, 2);
   }
 
   template <typename T>
@@ -369,21 +337,6 @@ struct TestHarness {
       }
     }
 
-    caffe2::Tensor<caffe2::CPUContext> getReferenceHostBlob(
-        const std::string& name) {
-      // Resolved dynamically
-      caffe2::Tensor<caffe2::CPUContext> Texpected(
-          w_ref.GetBlob(name)->Get<caffe2::TensorCUDA>());
-      return Texpected;
-    }
-
-    caffe2::Tensor<caffe2::CUDAContext> getReferenceDeviceBlob(
-        const std::string& name) {
-      caffe2::Tensor<caffe2::CUDAContext> Texpected(
-          w_ref.GetBlob(name)->Get<caffe2::TensorCUDA>());
-      return Texpected;
-    }
-
     void RunAllAndCheck() {
       RunReference();
       Run();
@@ -483,6 +436,7 @@ struct TestHarness {
     }
   }
 
+  template <typename Backend>
   static void BasicGradientCorrectnessTest(
       const OperatorDef& op_def,
       std::function<void(Workspace&)> ws_init_func,
@@ -526,10 +480,14 @@ struct TestHarness {
     if (check) {
       for (const auto& n : names_to_compare) {
         TestHarness::CheckEqual(
-            getReferenceHostBlob(w1, n), getReferenceHostBlob(w2, n), 1e-4);
+            caffe2::TensorCPU(getNamedTensor<Backend>(w1, n)),
+            caffe2::TensorCPU(getNamedTensor<Backend>(w2, n)),
+            1e-4);
       }
     }
   }
 };
 
 } // namespace caffe2
+
+#include "test_harness-inl.h"

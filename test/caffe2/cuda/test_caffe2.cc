@@ -23,6 +23,7 @@
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/flags.h"
 
+#include "../test_harness.h"
 #include "isl_cli_strategy.h"
 #include "test_harness.h"
 
@@ -62,8 +63,8 @@ struct Caffe2CopyTest : public Caffe2Test {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default1D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M}, "I");
   };
   OperatorDef def =
@@ -73,8 +74,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default1D) {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default2D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
   };
   OperatorDef def =
@@ -84,8 +85,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default2D) {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default3D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P}, "I");
   };
   OperatorDef def =
@@ -95,8 +96,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default3D) {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default4D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q}, "I");
   };
   OperatorDef def =
@@ -106,8 +107,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default4D) {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default5D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q, R}, "I");
   };
   OperatorDef def =
@@ -117,8 +118,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default5D) {
 
 TEST_F(Caffe2Test, TcMatMulOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, K}, "I");
     AddInput(w, {K, N}, "W");
   };
@@ -146,8 +147,8 @@ TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
   // 1. Function to initialize tensors in a workspace.
   // Will be applied to both reference and actual workspaces.
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
     AddInput(w, {N, K}, "W");
   };
@@ -217,7 +218,7 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
   };
 
   // 5. Now we can run the correctness test: both forward and backward
-  TestHarness::BasicGradientCorrectnessTest(
+  TestHarness::BasicGradientCorrectnessTest<caffe2::CUDABackend>(
       def,
       init_ws,
       {},
@@ -231,12 +232,14 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
 
 TEST_F(Caffe2Test, TcLUTOp) {
   auto init_ws = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(
+    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE, vD}, "LUT");
-    TestHarness::AddDeterministicallyRandomInputWithRange<int, CUDAContext>(
-        w, {vB, vL}, "I", 0, vE - 1);
+    TestHarness::
+        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+            w, {vB, vL}, "I", 0, vE - 1);
 
-    TestHarness::AddConstInput<int, CUDAContext>(w, {vB}, vL, "__lengths");
+    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
+        w, {vB}, vL, "__lengths");
   };
 
   CudaMappingOptions options =
@@ -256,8 +259,8 @@ TEST_F(Caffe2Test, TcLUTOp) {
 
 TEST_F(Caffe2Test, TcFCReluOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
@@ -277,8 +280,8 @@ TEST_F(Caffe2Test, TcFCReluOp) {
 
 TEST_F(Caffe2Test, Tc2FCReluOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
@@ -305,7 +308,7 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
 }
 
 TEST_F(Caffe2Test, Tc3FCReluOp) {
-  auto AddConstInput = TestHarness::AddConstInput<float, CUDAContext>;
+  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
   auto init_ws = [&](Workspace& w) {
     AddConstInput(w, vector<TIndex>{B, M}, 1., "I");
     AddConstInput(w, vector<TIndex>{N, M}, 1., "W1");
@@ -333,7 +336,7 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
 }
 
 TEST_F(Caffe2Test, Tc4FCReluOp) {
-  auto AddConstInput = TestHarness::AddConstInput<float, CUDAContext>;
+  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
   auto init_ws = [&](Workspace& w) {
     AddConstInput(w, vector<TIndex>{B, M}, 1., "I");
     AddConstInput(w, vector<TIndex>{N, M}, 1., "W1");
@@ -364,7 +367,7 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
 
 TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::AddConstInput<float, CUDAContext>;
+    auto AddInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
     AddInput(w, vector<TIndex>{NN, G * C, W, H}, 1., "I");
     AddInput(w, vector<TIndex>{G * F, C, KW, KH}, 1., "W");
     AddInput(w, {G * F}, 1., "B");
@@ -400,7 +403,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   }
 
   auto init_ws2 = [&](Workspace& w) {
-    auto AddInput = TestHarness::AddConstInput<float, CUDAContext>;
+    auto AddInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
     AddInput(w, vector<TIndex>{NN, G, C, W, H}, 1., "I");
     AddInput(w, vector<TIndex>{G, F, C, KW, KH}, 1., "W");
     AddInput(w, {G, F}, 1., "B");
@@ -427,8 +430,8 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
 
 TEST_F(Caffe2Test, TcConvolutionOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {NN, C, H, W}, "I");
     AddInput(w, {F, C, KH, KW}, "filter");
     AddInput(w, {F}, "bias");
@@ -460,8 +463,8 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
 
 TEST_F(Caffe2Test, TcBatchMatmul) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, N, M}, "X");
     AddInput(w, {B, M, K}, "Y");
   };
@@ -507,8 +510,8 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
 // TODO:
 TEST_F(Caffe2Test, DISABLED_TcGather) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {12}, "X");
     auto* I = w.CreateBlob("I")->GetMutable<TensorCUDA>();
     I->Resize(3, 4);
@@ -552,8 +555,8 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
 
 TEST_F(Caffe2Test, TcFunctions) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput =
-        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    auto AddInput = TestHarness::
+        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, N, M}, "X");
   };
 

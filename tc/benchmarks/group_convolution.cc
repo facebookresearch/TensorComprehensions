@@ -26,6 +26,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
+#include "../test/caffe2/cuda/test_harness.h"
 #include "../test/caffe2/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
 #include "benchmark_fixture.h"
@@ -73,7 +74,7 @@ void GroupConvolution::runGroupConvolution(
     bool useFlags) {
   Workspace w;
   auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+      TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, H, W}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KH, KW}, "W");
   AddInput(w, {G * F}, "B");
@@ -362,7 +363,7 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
 
   Workspace w;
   auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+      TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, W, H}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KW, KH}, "W");
   AddInput(w, {G * F}, "B");
