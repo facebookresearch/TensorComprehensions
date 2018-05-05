@@ -36,14 +36,14 @@ constexpr static auto GROUP_CONVOLUTION2D_TC = R"TC(
 
 constexpr static auto GROUP_CONVOLUTION2D_GRAD_TC = R"TC(
   def group_convolution2dGrad(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1,
-                              float(N,F,H,W) O_grad)
-  -> (I_grad, W1_grad, B_grad)
+                              float(N,F,H,W) d_O)
+  -> (d_I, d_W1, d_B)
   {
-    I_grad(n, g, c, h, w) +=!
-      O_grad(n, g, f, <sh> * h - kh, <sw> * w - kw) * W1(g, f, c, kh, kw)
-    W1_grad(g, f, c, kh, kw) +=!
-      O_grad(n, g, f, <sh> * h - kh, <sw> * w - kw) * I(n, g, c, h, w)
-    B_grad(g, f) +=! O_grad(n, g, f, h, w)
+    d_I(n, g, c, h, w) +=!
+      d_O(n, g, f, <sh> * h - kh, <sw> * w - kw) * W1(g, f, c, kh, kw)
+    d_W1(g, f, c, kh, kw) +=!
+      d_O(n, g, f, <sh> * h - kh, <sw> * w - kw) * I(n, g, c, h, w)
+    d_B(g, f) +=! d_O(n, g, f, h, w)
   }
 )TC";
 } // namespace

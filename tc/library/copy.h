@@ -37,8 +37,8 @@ constexpr static auto COPY_TC = R"TC(
 )TC";
 
 constexpr static auto COPY_GRAD_TC = R"TC(
-  def copyGrad(float(${dimParams}) O_grad) -> (I_grad) {
-    I_grad(${dimIndices}) = O_grad(${dimIndices})
+  def copyGrad(float(${dimParams}) d_O) -> (d_I) {
+    d_I(${dimIndices}) = d_O(${dimIndices})
   }
 )TC";
 } // namespace

@@ -14,9 +14,9 @@ class TestTrainMatMul(unittest.TestCase):
         def matmul(float(M,N) A, float(N,K) B) -> (output) {
           output(i, j) +=! A(i, kk) * B(kk, j)
         }
-        def matmul_grad(float(M,N) A, float(N,K) B, float(M,K) O_grad) -> (A_grad, B_grad){
-          A_grad(i, j) +=! O_grad(i, kk) * B(j, kk)
-          B_grad(i, j) +=! O_grad(kk, j) * A(kk, i)
+        def matmul_grad(float(M,N) A, float(N,K) B, float(M,K) d_O) -> (d_A, d_B){
+          d_A(i, j) +=! d_O(i, kk) * B(j, kk)
+          d_B(i, j) +=! d_O(kk, j) * A(kk, i)
         }
         """
 
