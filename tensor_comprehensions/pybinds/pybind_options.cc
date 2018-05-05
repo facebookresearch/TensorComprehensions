@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+#include <google/protobuf/text_format.h>
+
 #include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -112,6 +114,14 @@ PYBIND11_MODULE(mapping_options, m) {
             return py::bytes(str);
           },
           "Serialize the options to a protobuf string")
+      .def(
+          "toString",
+          [](tc::CudaMappingOptions& instance) {
+            std::string str;
+            google::protobuf::TextFormat::PrintToString(instance.proto(), &str);
+            return str;
+          },
+          "Returns the CudaMappingOptions as a human-readable string")
       .def(
           "tile",
           // pybind11 has implicit conversion from list -> vector
