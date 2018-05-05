@@ -56,6 +56,12 @@ class TcOp : public Operator<Context> {
     } else {
       setupNaiveCudaMappingOptions();
     }
+    if (args.HasArgument("gradMappingOptions")) {
+      gradCudaMappingOptions_ = tc::CudaMappingOptions(
+          args.GetSingleArgument<std::string>("gradMappingOptions", "ERROR"));
+    } else {
+      setupDefaultGradCudaMappingOptions();
+    }
   }
 
   USE_OPERATOR_CONTEXT_FUNCTIONS;

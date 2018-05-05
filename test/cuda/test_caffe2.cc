@@ -135,6 +135,100 @@ TEST_F(Caffe2Test, TcMatMulOp) {
   TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
+// In Caffe2, one does not specify the inputs/outputs for the gradients.
+// Instead, one runs the forward pass with the input/output blobs and then
+// uses the inputMapArg, outputMapArg and inputToComputeGradOpMapArg to
+// map the correspondence between input/output, gradInput/gradOutput and
+// the actual parameters of the function.
+// So we only declare what we need for the forward pass and the rest will
+// appear automagically when running.
+TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
+  // 1. Function to initialize tensors in a workspace.
+  // Will be applied to both reference and actual workspaces.
+  auto init_ws = [&](Workspace& w) {
+    auto AddInput =
+        TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+    AddInput(w, {M, N}, "I");
+    AddInput(w, {N, K}, "W");
+  };
+
+  // 2. Make arguments for TcOp execution:
+  //    a. MappingOptions for forward and gradient
+  CudaMappingOptions options = tc::makeBaseCliStrategy()
+                                   .tile(32, 32, 32)
+                                   .mapToThreads({4, 32})
+                                   .mapToBlocks({32, 32, 32});
+  Argument mappingOptionsArg = MakeArgument<string>(
+      "mappingOptions",
+      tc::makeCliStrategy(options).toProtobufSerializedString());
+  Argument mappingOptionsGradArg = MakeArgument<string>(
+      "gradMappingOptions",
+      tc::makeCliStrategy(options).toProtobufSerializedString());
+  //    b. TC string and entry point name for both forward and gradient
+  Argument tcDefArg = MakeArgument<string>(
+      "tcDef",
+      R"TC(
+def matmul(float(M, N) I, float(N, K) W) -> (O) {
+    O(m, k) +=! I(m, r_n) * W(r_n, k)
+}
+)TC");
+  Argument tcNameArg = MakeArgument<string>("tcName", "matmul");
+  Argument tcGradDefArg = MakeArgument<string>(
+      "tcGradDef",
+      R"TC(
+def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
+    d_I(m, n) +=! d_O(m, r_k) * W(n, r_k)
+    d_W(n, k) +=! d_O(r_m, k) * I(r_m, n)
+}
+)TC");
+  Argument tcGradNameArg = MakeArgument<string>("tcGradName", "matmul_grad");
+  //    c. input and output maps to properly connect the input/ouput tensors
+  //       for a given operator to the gradient operator.
+  Argument inputMapArg = MakeArgument<std::vector<int>>(
+      "inputs_used_by_gradient", std::vector<int>{0, 1});
+  Argument outputMapArg = MakeArgument<std::vector<int>>(
+      "output_gradients_used_by_gradient", std::vector<int>{0});
+  Argument inputToComputeGradOpMapArg = MakeArgument<std::vector<int>>(
+      "inputs_to_compute_gradients_of", std::vector<int>{0, 1});
+
+  // 3. Create the TC operator we want to test with all the parameters above
+  OperatorDef def = TestHarness::ConfigureCUDA(
+      "TcOp",
+      {"I", "W"},
+      {"O"},
+      {mappingOptionsArg,
+       tcDefArg,
+       tcNameArg,
+       mappingOptionsGradArg,
+       tcGradDefArg,
+       tcGradNameArg,
+       inputMapArg,
+       outputMapArg,
+       inputToComputeGradOpMapArg});
+
+  // 4. Since we are using the generic TcOp, we need to explicitly build a
+  //    reference using existing caffe2 operators.
+  ReferenceImplementationBuilder referenceMatMul = [](const OperatorDef& op_def,
+                                                      NetDef* net_def) {
+    DeviceOption option;
+    option.set_device_type(CUDA);
+    net_def->add_op()->CopyFrom(
+        CreateOperatorDef("MatMul", "", {"I", "W"}, {"O"}, option, "CUDA"));
+  };
+
+  // 5. Now we can run the correctness test: both forward and backward
+  TestHarness::BasicGradientCorrectnessTest(
+      def,
+      init_ws,
+      {},
+      // TODO: It seems Caffe2 creates blobs with _grad appended for tensors
+      // whose gradient is computed. Is there an easy idiomatic way to access
+      // those or do we consider that this is reasonable enough for small tests?
+      std::vector<std::string>{"I_grad", "W_grad"},
+      true,
+      referenceMatMul);
+}
+
 TEST_F(Caffe2Test, TcLUTOp) {
   auto init_ws = [=](Workspace& w) {
     TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>(

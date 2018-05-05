@@ -93,6 +93,32 @@ at::Tensor makeATenTensor(
   return out;
 }
 
+/// We need to provide a way to perform correctness checks on gradients
+/// using existing Caffe2 operators.
+///
+/// The default reference implementation builder can be obtained by calling
+/// MakeDefaultReferenceImplementationworks for Caffe2 operators whose
+/// gradient reference implementation has been registered properly
+/// (in the ReferenceImplementationRegistry). Such operators usually are
+/// named TcOpCaffe2OpName (e.g. TcOpMatMul).
+///
+/// In the case of the generic TcOp, this is not possible because there is
+/// no such thing as generic matching of a TC function to a Caffe2 operator
+/// (at least not for now). Therefore we need to provide a way to construct
+/// a reference implementation for generic TcOp instances.
+///
+/// This is the purpose of the ReferenceImplementationBuilder.
+/// For properly registered TcOp, one can use the default
+/// MakeDefaultReferenceImplementationBuilder()
+using ReferenceImplementationBuilder =
+    std::function<void(const OperatorDef& op_def, NetDef* net_def)>;
+
+ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder() {
+  return [](const OperatorDef& op_def, NetDef* net_def) {
+    caffe2::ReferenceImplementationRegistry::Append(net_def, op_def);
+  };
+}
+
 namespace {
 std::mutex rng_mutex;
 }
@@ -239,6 +265,33 @@ struct TestHarness {
     }
   }
 
+  static void CheckEqual(
+      const caffe2::Tensor<caffe2::CPUContext>& Texpected,
+      const caffe2::Tensor<caffe2::CPUContext>& Tactual,
+      float relativePrecision = 0.0,
+      long offsetInExpected = 0,
+      long offsetInActual = 0) {
+    for (int i = 0; i < Texpected.size() - offsetInExpected; ++i) {
+      if (relativePrecision == 0.0) {
+        ASSERT_FLOAT_EQ(
+            Texpected.data<float>()[i + offsetInExpected],
+            Tactual.data<float>()[i + offsetInActual])
+            << " for Tensor " << Texpected.DebugString() << " at position "
+            << i;
+      } else {
+        // From glog's glog/src/glog/logging.h.in
+        // #define CHECK_NEAR(val1, val2, margin)
+        // CHECK_NEAR is actualy absolute!!!
+        ASSERT_NEAR(
+            Texpected.data<float>()[i + offsetInExpected],
+            Tactual.data<float>()[i + offsetInActual],
+            relativePrecision * Texpected.data<float>()[i + offsetInExpected])
+            << " for Tensor " << Texpected.DebugString() << " at position "
+            << i;
+      }
+    }
+  }
+
   template <typename T = caffe2::TensorCUDA>
   static void CheckEqual(
       const caffe2::Workspace& expected,
@@ -251,23 +304,12 @@ struct TestHarness {
     caffe2::Tensor<caffe2::CPUContext> Texpected(
         expected.GetBlob(name)->Get<T>());
     caffe2::Tensor<caffe2::CPUContext> Tactual(actual.GetBlob(name)->Get<T>());
-    for (int i = 0; i < Texpected.size() - offsetInExpected; ++i) {
-      if (relativePrecision == 0.0) {
-        ASSERT_FLOAT_EQ(
-            Texpected.data<float>()[i + offsetInExpected],
-            Tactual.data<float>()[i + offsetInActual])
-            << " for Blob " << name << " at position " << i;
-      } else {
-        // From glog's glog/src/glog/logging.h.in
-        // #define CHECK_NEAR(val1, val2, margin)
-        // CHECK_NEAR is actualy absolute!!!
-        ASSERT_NEAR(
-            Texpected.data<float>()[i + offsetInExpected],
-            Tactual.data<float>()[i + offsetInActual],
-            relativePrecision * Texpected.data<float>()[i + offsetInExpected])
-            << " for Blob " << name << " at position " << i;
-      }
-    }
+    CheckEqual(
+        Texpected,
+        Tactual,
+        relativePrecision,
+        offsetInExpected,
+        offsetInActual);
   }
 
   class OpTester {
@@ -383,7 +425,7 @@ struct TestHarness {
   static void RunGradient(Workspace& w, const OperatorDef& def) {
     vector<GradientWrapper> g_output(def.output().size());
     for (int i = 0; i < def.output().size(); i++) {
-      g_output[i].dense_ = def.output(i) + "_grad";
+      g_output[i].dense_ = def.output(i);
     }
     GradientOpsMeta meta = GetGradientForOp(def, g_output);
     for (auto& g_op : meta.ops_) {
@@ -438,11 +480,16 @@ struct TestHarness {
       const OperatorDef& op_def,
       std::function<void(Workspace&)> ws_init_func,
       std::map<string, int> params = {},
-      bool check = true) {
+      const std::vector<std::string>& names_to_compare = {},
+      bool check = true,
+      ReferenceImplementationBuilder make_reference_impl =
+          MakeDefaultReferenceImplementationBuilder()) {
+    // Reference implementation runs on a first workspace initialized with
+    // random tensors, in a reproducible fashion
     Workspace w1;
     ws_init_func(w1);
     NetDef net_def;
-    caffe2::ReferenceImplementationRegistry::Append(&net_def, op_def);
+    make_reference_impl(op_def, &net_def);
     for (auto s : params) {
       auto arg = net_def.mutable_op()->Mutable(0)->add_arg();
       arg->set_name(s.first);
@@ -456,6 +503,8 @@ struct TestHarness {
     }
     RunGradient(w1, *net_def.mutable_op()->Mutable(0));
 
+    // TC implementation runs on a second workspace initialized with
+    // random tensors, in a reproducible fashion
     Workspace w2;
     ws_init_func(w2);
     unique_ptr<OperatorBase> op(CreateOperator(op_def, &w2));
@@ -465,22 +514,12 @@ struct TestHarness {
       ASSERT_TRUE(op->Run());
     }
     OperatorDef def = op_def;
-    // auto pOp = static_cast<TcOp<float,
-    // caffe2::CUDAContext>*>(op.get());
-    // The following three lines flush any changes
-    //  done by calling functions on pOp (i.e. pOp->setIslGrad)
-    //  such that this information is available to the operatordef
-    //  and thus the gradient creation
-    CHECK(false) << "NYI: C2 gradients are not supported atm, FIXME!";
-    // caffe2::AddArgument("strategy", // pOp->serializeIsl()
-    //                     , &def);
-    // caffe2::AddArgument("grad_strategy", // pOp->serializeIslGrad()
-    //                     , &def);
     RunGradient(w2, def);
 
     if (check) {
-      for (auto out : op_def.input()) {
-        TestHarness::CheckEqual(w1, w2, out + "_grad");
+      for (const auto& n : names_to_compare) {
+        TestHarness::CheckEqual(
+            getReferenceHostBlob(w1, n), getReferenceHostBlob(w2, n), 1e-4);
       }
     }
   }

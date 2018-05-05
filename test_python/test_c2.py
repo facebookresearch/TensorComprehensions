@@ -91,6 +91,7 @@ class TestCaffe2(hu.HypothesisTestCase):
             tcDef=MATMUL_LANG,
             tcName="matmul",
             mappingOptions=mapping_options.serialize(),
+            gradMappingOptions=grad_mapping_options.serialize(),
         )
 
         self.assertReferenceChecks(
