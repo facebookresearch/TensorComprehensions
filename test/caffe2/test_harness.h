@@ -33,6 +33,13 @@
 
 namespace caffe2 {
 
+// CPUBackend is always used and the source of truth for performing checks
+struct CPUBackend {
+  static constexpr auto Device = DeviceType::CPU;
+  using Context = CPUContext;
+  using Tensor = TensorCPU;
+};
+
 caffe2::TensorCPU context2tensor(caffe2::CPUContext& ctx) {
   return caffe2::TensorCPU();
 }
