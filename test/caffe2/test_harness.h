@@ -93,63 +93,57 @@ ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder() {
   };
 }
 
-namespace {
-std::mutex rng_mutex;
-}
-
 template <
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
 OperatorDef Configure(
-    std::string type,
+    std::string op_name,
     IterableInputs ins,
     IterableOutputs outs,
     IterableArgs args = {},
-    caffe2::DeviceType dtype = caffe2::CPUBackend::Device) {
-  OperatorDef def = CreateOperatorDef(type, "", ins, outs, args);
-  def.mutable_device_option()->set_device_type(dtype);
-  return def;
-}
+    caffe2::DeviceType dtype = caffe2::CPUBackend::Device);
 
+/// Creates an OperatorDef
+/// op_name is the name of the operator (e.g. TcOp)
+/// ins are the name of the input tensors, they must match the names in the
+///     workspace on which the OperatorDef is run
+/// outs are the name of the output tensors. Tensors with those names will be
+///     added to the workspace on which the OperatorDef is run
+/// args are extra arguments (created with MakeArgument) that the operator
+///     makes use of internally (e.g. mappingOptions for TcOp)
 template <
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
 OperatorDef ConfigureCUDA(
-    std::string type,
+    std::string op_name,
     IterableInputs ins,
     IterableOutputs outs,
-    IterableArgs args = {}) {
-  return Configure(type, ins, outs, args, caffe2::CUDABackend::Device);
-}
+    IterableArgs args = {});
 
-template <typename T>
-T* NewTensor(
-    caffe2::Workspace& ws,
-    std::vector<caffe2::TIndex> shape,
-    const std::string& name) {
-  caffe2::Blob* blob = ws.CreateBlob(name);
-  auto* tensor = blob->GetMutable<T>();
-  tensor->Resize(shape);
-  return tensor;
-}
-
+/// Adds a tensor with constant value to the workspace with the
+/// specified (contiguous) shape and name.
 template <typename Caffe2Backend, typename T>
 void AddConstInput(
     caffe2::Workspace& ws,
     const std::vector<caffe2::TIndex>& shape,
     const T value,
-    const std::string& name) {
-  auto context = makeContext<Caffe2Backend>();
-  auto* tensor = NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
-  caffe2::math::Set<T, typename Caffe2Backend::Context>(
-      tensor->size(), value, tensor->template mutable_data<T>(), context.get());
-  context->FinishDeviceComputation();
-}
+    const std::string& name);
 
-// May need copies because RNG on CPU and GPU do not produce the same
-// values when initialized with the same seed.
+/// Adds a tensor with reproducible random values to the workspace with the
+/// specified (contiguous) shape and name.
+/// Values are in a 0..2 range for testing.
+template <typename Caffe2Backend, typename T>
+void AddDeterministicallyRandomInput(
+    caffe2::Workspace& ws,
+    const std::vector<caffe2::TIndex>& shape,
+    const std::string& name);
+
+/// Adds a copy of a named tensor from a source workspace to the current
+/// workspace under another name.
+/// Such copies may be needed because RNG on CPU and GPU do not produce the same
+/// values when initialized with the same seed.
 template <
     typename Caffe2SourceBackend,
     typename Caffe2DestinationBackend,
@@ -158,49 +152,7 @@ void AddCopyOfTensor(
     caffe2::Workspace& ws,
     const std::string& name,
     const caffe2::Workspace& sourceWs,
-    const std::string& sourceName) {
-  auto sourceContext = makeContext<Caffe2SourceBackend>();
-  auto destinationContext = makeContext<Caffe2DestinationBackend>();
-  const auto& sourceTensor =
-      sourceWs.GetBlob(sourceName)->Get<typename Caffe2SourceBackend::Tensor>();
-  auto* destinationTensor =
-      NewTensor<typename Caffe2DestinationBackend::Tensor>(
-          ws, sourceTensor.dims(), name);
-  destinationTensor->CopyFrom(sourceTensor);
-  sourceContext->FinishDeviceComputation();
-  destinationContext->FinishDeviceComputation();
-}
-
-template <typename Caffe2Backend, typename T>
-void AddDeterministicallyRandomInputWithRange(
-    caffe2::Workspace& ws,
-    const std::vector<caffe2::TIndex>& shape,
-    const std::string& name,
-    T min,
-    T max) {
-  std::lock_guard<std::mutex> lock{rng_mutex};
-  DeviceOption option;
-  option.set_random_seed(std::hash<std::string>()(name));
-  auto context = makeContext<Caffe2Backend>(option);
-  auto* tensor = NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
-  caffe2::math::RandUniform<T, typename Caffe2Backend::Context>(
-      tensor->size(),
-      min,
-      max,
-      tensor->template mutable_data<T>(),
-      context.get());
-  context->FinishDeviceComputation();
-}
-
-template <typename Caffe2Backend, typename T>
-void AddDeterministicallyRandomInput(
-    caffe2::Workspace& ws,
-    const std::vector<caffe2::TIndex>& shape,
-    const std::string& name) {
-  // 0..2 seems like a nice range for weights
-  AddDeterministicallyRandomInputWithRange<Caffe2Backend, T>(
-      ws, shape, name, 0, 2);
-}
+    const std::string& sourceName);
 
 void CheckEqual(
     const caffe2::Tensor<caffe2::CPUBackend::Context>& Texpected,
@@ -216,13 +168,7 @@ void CheckEqual(
     const std::string& name,
     float relativePrecision = 0.0,
     long offsetInExpected = 0,
-    long offsetInTested = 0) {
-  // Resolved dynamically
-  caffe2::CPUBackend::Tensor Texpected(expected.GetBlob(name)->Get<T>());
-  caffe2::CPUBackend::Tensor Ttested(tested.GetBlob(name)->Get<T>());
-  CheckEqual(
-      Texpected, Ttested, relativePrecision, offsetInExpected, offsetInTested);
-}
+    long offsetInTested = 0);
 
 class OpTester {
   std::unique_ptr<NetBase> net_ref;
@@ -275,15 +221,15 @@ class OpTester {
   }
 };
 
-// Compares individual operator
+/// Compares individual operator
 unique_ptr<OpTester> BasicCorrectnessTest(
     const OperatorDef& op_def,
     std::function<void(Workspace&)> ws_init_func,
     float relativePrecision = 0.0,
     std::map<string, int> reference_args = {});
 
-// Runs the gradient of an operator and adds the gradient tensors to the
-// workspace
+/// Runs the gradient of an operator and adds the gradient tensors to the
+/// workspace
 void RunGradient(Workspace& w, const OperatorDef& def);
 
 /// This function runs forward and gradient for op_def (the tested operator
@@ -316,6 +262,17 @@ void BasicGradientCorrectnessTest(
     ReferenceImplementationBuilder make_reference_impl =
         MakeDefaultReferenceImplementationBuilder());
 
+namespace detail {
+
+template <typename Caffe2Backend, typename T>
+void AddDeterministicallyRandomInputWithRange(
+    caffe2::Workspace& ws,
+    const std::vector<caffe2::TIndex>& shape,
+    const std::string& name,
+    T min,
+    T max);
+
+} // namespace detail
 } // namespace caffe2
 
 #include "test_harness-inl.h"

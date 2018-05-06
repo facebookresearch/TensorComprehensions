@@ -158,7 +158,7 @@ void ProductionModel::run1LUT(
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {B, L1}, "I", 0, E1 - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths");
   };
@@ -245,12 +245,12 @@ void ProductionModel::run2LUT(
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {B, L1}, "IDX1", 0, E1 - 1);
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E2, D}, "LUT2");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {B, L2}, "IDX2", 0, E2 - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths1");
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L2, "__lengths2");
@@ -582,7 +582,7 @@ TEST_F(ProductionModel, C21LUTReference) {
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE, vD}, "LUT");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {vB, vL}, "I", 0, vE - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL, "__lengths");
   };
@@ -668,12 +668,12 @@ TEST_F(ProductionModel, C22LUTReference) {
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE1, vD}, "LUT1");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {vB, vL1}, "IDX1", 0, vE1 - 1);
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE2, vD}, "LUT2");
 
-    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+    detail::AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
         w, {vB, vL2}, "IDX2", 0, vE2 - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL1, "__lengths1");
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL2, "__lengths2");

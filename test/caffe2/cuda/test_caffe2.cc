@@ -29,6 +29,7 @@
 
 using namespace std;
 using namespace caffe2;
+using namespace caffe2::detail;
 using namespace tc;
 
 struct Caffe2Test : public ::testing::Test {
