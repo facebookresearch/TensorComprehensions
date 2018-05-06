@@ -55,7 +55,7 @@ at::Tensor makeATenTensor(
 }
 
 template <typename Backend>
-void TestHarness::BasicGradientCorrectnessTest(
+void BasicGradientCorrectnessTest(
     const OperatorDef& op_def,
     std::function<void(Workspace&)> ws_init_func,
     float relativePrecision,
@@ -95,7 +95,7 @@ void TestHarness::BasicGradientCorrectnessTest(
   RunGradient(w2, def);
 
   for (const auto& n : names_to_compare) {
-    TestHarness::CheckEqual(
+    CheckEqual(
         CPUBackend::Tensor(getNamedTensor<Backend>(w1, n)),
         CPUBackend::Tensor(getNamedTensor<Backend>(w2, n)),
         relativePrecision);

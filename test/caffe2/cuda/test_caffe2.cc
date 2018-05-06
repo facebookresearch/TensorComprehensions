@@ -63,63 +63,52 @@ struct Caffe2CopyTest : public Caffe2Test {
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default1D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M}, "I");
   };
-  OperatorDef def =
-      TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws);
+  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws);
 }
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default2D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
   };
-  OperatorDef def =
-      TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws);
+  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws);
 }
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default3D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P}, "I");
   };
-  OperatorDef def =
-      TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws);
+  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws);
 }
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default4D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q}, "I");
   };
-  OperatorDef def =
-      TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws);
+  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws);
 }
 
 TEST_F(Caffe2CopyTest, TcCopyOp_Default5D) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q, R}, "I");
   };
-  OperatorDef def =
-      TestHarness::ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws);
+  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws);
 }
 
 TEST_F(Caffe2Test, TcMatMulOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, K}, "I");
     AddInput(w, {K, N}, "W");
   };
@@ -131,9 +120,9 @@ TEST_F(Caffe2Test, TcMatMulOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = TestHarness::ConfigureCUDA(
-      "TcMatMulOp", {"I", "W"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+  OperatorDef def =
+      ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 // In Caffe2, one does not specify the inputs/outputs for the gradients.
@@ -147,8 +136,7 @@ TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
   // 1. Function to initialize tensors in a workspace.
   // Will be applied to both reference and tested workspaces.
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
     AddInput(w, {N, K}, "W");
   };
@@ -193,7 +181,7 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
       "inputs_to_compute_gradients_of", std::vector<int>{0, 1});
 
   // 3. Create the TC operator we want to test with all the parameters above
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "TcOp",
       {"I", "W"},
       {"O"},
@@ -221,7 +209,7 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
   auto m = M;
   auto k = K;
   // 5. Now we can run the correctness test: both forward and backward
-  TestHarness::BasicGradientCorrectnessTest<caffe2::CUDABackend>(
+  BasicGradientCorrectnessTest<caffe2::CUDABackend>(
       def,
       init_ws,
       1e-7 * std::max(m, k), // number of reductions * 1e-7 relative precision
@@ -235,14 +223,13 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
 
 TEST_F(Caffe2Test, TcLUTOp) {
   auto init_ws = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE, vD}, "LUT");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {vB, vL}, "I", 0, vE - 1);
 
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {vB}, vL, "__lengths");
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {vB, vL}, "I", 0, vE - 1);
+
+    AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL, "__lengths");
   };
 
   CudaMappingOptions options =
@@ -256,14 +243,13 @@ TEST_F(Caffe2Test, TcLUTOp) {
           .unrollCopyShared(false)
           .toProtobufSerializedString());
   OperatorDef def =
-      TestHarness::ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+      ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 TEST_F(Caffe2Test, TcFCReluOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
@@ -276,15 +262,14 @@ TEST_F(Caffe2Test, TcFCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = TestHarness::ConfigureCUDA(
-      "TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+  OperatorDef def =
+      ConfigureCUDA("TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategyArg});
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 TEST_F(Caffe2Test, Tc2FCReluOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
@@ -302,24 +287,24 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "Tc2FCReluOp",
       {"I", "W1", "B1", "W2", "B2"},
       {"O1", "O2"},
       {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 TEST_F(Caffe2Test, Tc3FCReluOp) {
-  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddConstInput<caffe2::CUDABackend, float>;
   auto init_ws = [&](Workspace& w) {
-    AddConstInput(w, vector<TIndex>{B, M}, 1., "I");
-    AddConstInput(w, vector<TIndex>{N, M}, 1., "W1");
-    AddConstInput(w, vector<TIndex>{N}, 1., "B1");
-    AddConstInput(w, vector<TIndex>{O, N}, 1., "W2");
-    AddConstInput(w, vector<TIndex>{O}, 1., "B2");
-    AddConstInput(w, vector<TIndex>{P, O}, 1., "W3");
-    AddConstInput(w, vector<TIndex>{P}, 1., "B3");
+    AddInput(w, vector<TIndex>{B, M}, 1., "I");
+    AddInput(w, vector<TIndex>{N, M}, 1., "W1");
+    AddInput(w, vector<TIndex>{N}, 1., "B1");
+    AddInput(w, vector<TIndex>{O, N}, 1., "W2");
+    AddInput(w, vector<TIndex>{O}, 1., "B2");
+    AddInput(w, vector<TIndex>{P, O}, 1., "W3");
+    AddInput(w, vector<TIndex>{P}, 1., "B3");
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
@@ -330,26 +315,26 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "Tc3FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3"},
       {"O1", "O2", "O3"},
       {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 TEST_F(Caffe2Test, Tc4FCReluOp) {
-  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddConstInput<caffe2::CUDABackend, float>;
   auto init_ws = [&](Workspace& w) {
-    AddConstInput(w, vector<TIndex>{B, M}, 1., "I");
-    AddConstInput(w, vector<TIndex>{N, M}, 1., "W1");
-    AddConstInput(w, vector<TIndex>{N}, 1., "B1");
-    AddConstInput(w, vector<TIndex>{O, N}, 1., "W2");
-    AddConstInput(w, vector<TIndex>{O}, 1., "B2");
-    AddConstInput(w, vector<TIndex>{P, O}, 1., "W3");
-    AddConstInput(w, vector<TIndex>{P}, 1., "B3");
-    AddConstInput(w, vector<TIndex>{Q, P}, 1., "W4");
-    AddConstInput(w, vector<TIndex>{Q}, 1., "B4");
+    AddInput(w, vector<TIndex>{B, M}, 1., "I");
+    AddInput(w, vector<TIndex>{N, M}, 1., "W1");
+    AddInput(w, vector<TIndex>{N}, 1., "B1");
+    AddInput(w, vector<TIndex>{O, N}, 1., "W2");
+    AddInput(w, vector<TIndex>{O}, 1., "B2");
+    AddInput(w, vector<TIndex>{P, O}, 1., "W3");
+    AddInput(w, vector<TIndex>{P}, 1., "B3");
+    AddInput(w, vector<TIndex>{Q, P}, 1., "W4");
+    AddInput(w, vector<TIndex>{Q}, 1., "B4");
   };
 
   CudaMappingOptions options = tc::makeBaseCliStrategy()
@@ -360,17 +345,17 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "Tc4FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3", "W4", "B4"},
       {"O1", "O2", "O3", "O4"},
       {strategyArg});
-  TestHarness::BasicCorrectnessTest(def, init_ws, 1e-6);
+  BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddConstInput<caffe2::CUDABackend, float>;
     AddInput(w, vector<TIndex>{NN, G * C, W, H}, 1., "I");
     AddInput(w, vector<TIndex>{G * F, C, KW, KH}, 1., "W");
     AddInput(w, {G * F}, 1., "B");
@@ -392,7 +377,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = TestHarness::ConfigureCUDA(
+  OperatorDef ndef = ConfigureCUDA(
       "Conv",
       {"I", "W", "B"},
       {"O"},
@@ -406,7 +391,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   }
 
   auto init_ws2 = [&](Workspace& w) {
-    auto AddInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddConstInput<caffe2::CUDABackend, float>;
     AddInput(w, vector<TIndex>{NN, G, C, W, H}, 1., "I");
     AddInput(w, vector<TIndex>{G, F, C, KW, KH}, 1., "W");
     AddInput(w, {G, F}, 1., "B");
@@ -416,7 +401,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   init_ws2(w2);
   // groupArg = MakeArgument<int>("group", G);
   // Argument reshapeArg = MakeArgument<int>("reshape", 1);
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "TcGroupConvolutionOp", {"I", "W", "B"}, {"O"}, {strategyArg});
   // {strategyArg, groupArg, reshapeArg});
   unique_ptr<OperatorBase> op(CreateOperator(def, &w2));
@@ -428,13 +413,12 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
 
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
 
-  TestHarness::CheckEqual(w1, w2, "O");
+  CheckEqual(w1, w2, "O");
 }
 
 TEST_F(Caffe2Test, TcConvolutionOp) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {NN, C, H, W}, "I");
     AddInput(w, {F, C, KH, KW}, "filter");
     AddInput(w, {F}, "bias");
@@ -448,7 +432,7 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
       tc::makeCliStrategy(options).toProtobufSerializedString());
   Argument strideHArg = MakeArgument<int>("stride_h", SH);
   Argument strideWArg = MakeArgument<int>("stride_w", SW);
-  OperatorDef def = TestHarness::ConfigureCUDA(
+  OperatorDef def = ConfigureCUDA(
       "TcConvolutionOp",
       {"I", "filter", "bias"},
       {"H_test"},
@@ -457,7 +441,7 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
   auto kw = KW;
   auto sh = SH;
   auto sw = SW;
-  TestHarness::BasicCorrectnessTest(
+  BasicCorrectnessTest(
       def,
       init_ws,
       1e-6,
@@ -466,16 +450,14 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
 
 TEST_F(Caffe2Test, TcBatchMatmul) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, N, M}, "X");
     AddInput(w, {B, M, K}, "Y");
   };
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def =
-      TestHarness::ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
+  OperatorDef ref_def = ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -499,22 +481,21 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = TestHarness::ConfigureCUDA(
-      "TcOp", {"X", "Y"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def =
+      ConfigureCUDA("TcOp", {"X", "Y"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
 
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
 
-  TestHarness::CheckEqual(w_ref, w_test, "Z", 1e-6);
+  CheckEqual(w_ref, w_test, "Z", 1e-6);
 }
 
 // TODO:
 TEST_F(Caffe2Test, DISABLED_TcGather) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {12}, "X");
     auto* I = w.CreateBlob("I")->GetMutable<TensorCUDA>();
     I->Resize(3, 4);
@@ -525,7 +506,7 @@ TEST_F(Caffe2Test, DISABLED_TcGather) {
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = TestHarness::ConfigureCUDA("Gather", {"X", "I"}, {"Z"});
+  OperatorDef ref_def = ConfigureCUDA("Gather", {"X", "I"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -548,24 +529,23 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = TestHarness::ConfigureCUDA(
-      "TcOp", {"X", "I"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def =
+      ConfigureCUDA("TcOp", {"X", "I"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
-  TestHarness::CheckEqual(w_ref, w_test, "Z");
+  CheckEqual(w_ref, w_test, "Z");
 };
 
 TEST_F(Caffe2Test, TcFunctions) {
   auto init_ws = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, N, M}, "X");
   };
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = TestHarness::ConfigureCUDA("Sigmoid", {"X"}, {"Z"});
+  OperatorDef ref_def = ConfigureCUDA("Sigmoid", {"X"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -588,12 +568,12 @@ def fun(float(B, N, M) X) -> (Z) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = TestHarness::ConfigureCUDA(
-      "TcOp", {"X"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def =
+      ConfigureCUDA("TcOp", {"X"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
-  TestHarness::CheckEqual(w_ref, w_test, "Z", 1e-6);
+  CheckEqual(w_ref, w_test, "Z", 1e-6);
 };
 
 int main(int argc, char** argv) {

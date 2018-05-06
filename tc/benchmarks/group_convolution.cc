@@ -73,8 +73,7 @@ void GroupConvolution::runGroupConvolution(
     const tc::CudaMappingOptions& options,
     bool useFlags) {
   Workspace w;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, H, W}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KH, KW}, "W");
   AddInput(w, {G * F}, "B");
@@ -82,7 +81,7 @@ void GroupConvolution::runGroupConvolution(
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef op_def = TestHarness::ConfigureCUDA(
+  OperatorDef op_def = ConfigureCUDA(
       "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
 
   std::unique_ptr<OperatorBase> net(CreateOperator(op_def, &w));
@@ -362,15 +361,14 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
   auto KH = FLAGS_KH;
 
   Workspace w;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, W, H}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KW, KH}, "W");
   AddInput(w, {G * F}, "B");
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = TestHarness::ConfigureCUDA(
+  OperatorDef ndef = ConfigureCUDA(
       "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
   std::unique_ptr<OperatorBase> net(CreateOperator(ndef, &w));
 

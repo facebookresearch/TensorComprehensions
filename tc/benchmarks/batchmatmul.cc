@@ -169,12 +169,10 @@ TEST_F(BatchMatMul, C2TransposedBatchMatMulReference) {
   int K = FLAGS_K;
 
   Workspace w_ref;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w_ref, {B, N, M}, "X");
   AddInput(w_ref, {B, M, K}, "Y");
-  OperatorDef ref_def =
-      TestHarness::ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
+  OperatorDef ref_def = ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
   std::unique_ptr<OperatorBase> net(CreateOperator(ref_def, &w_ref));
   Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
 }

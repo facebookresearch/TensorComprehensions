@@ -155,18 +155,15 @@ void ProductionModel::run1LUT(
   // This test uses an c2 OpTester because we need to run the C2 reference
   // implementation for TcLUTOp.
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {B, L1}, "I", 0, E1 - 1);
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {B}, L1, "__lengths");
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {B, L1}, "I", 0, E1 - 1);
+    AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths");
   };
-  OperatorDef op_def =
-      TestHarness::ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def = ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
 
@@ -245,25 +242,22 @@ void ProductionModel::run2LUT(
   CHECK_LT(0, E2);
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {B, L1}, "IDX1", 0, E1 - 1);
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {B, L1}, "IDX1", 0, E1 - 1);
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E2, D}, "LUT2");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {B, L2}, "IDX2", 0, E2 - 1);
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {B}, L1, "__lengths1");
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {B}, L2, "__lengths2");
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {B, L2}, "IDX2", 0, E2 - 1);
+    AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths1");
+    AddConstInput<caffe2::CUDABackend, int>(w, {B}, L2, "__lengths2");
   };
-  OperatorDef op_def = TestHarness::ConfigureCUDA(
-      "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def =
+      ConfigureCUDA("Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
 
@@ -585,18 +579,15 @@ TEST_F(ProductionModel, C21LUTReference) {
   vE = FLAGS_E1;
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE, vD}, "LUT");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {vB, vL}, "I", 0, vE - 1);
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {vB}, vL, "__lengths");
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {vB, vL}, "I", 0, vE - 1);
+    AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL, "__lengths");
   };
-  OperatorDef op_def =
-      TestHarness::ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def = ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
   Reference(
@@ -674,25 +665,22 @@ TEST_F(ProductionModel, C22LUTReference) {
   vE2 = FLAGS_E2;
 
   auto ws_init_func = [=](Workspace& w) {
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE1, vD}, "LUT1");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {vB, vL1}, "IDX1", 0, vE1 - 1);
-    TestHarness::AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {vB, vL1}, "IDX1", 0, vE1 - 1);
+    AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {vE2, vD}, "LUT2");
-    TestHarness::
-        AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
-            w, {vB, vL2}, "IDX2", 0, vE2 - 1);
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {vB}, vL1, "__lengths1");
-    TestHarness::AddConstInput<caffe2::CUDABackend, int>(
-        w, {vB}, vL2, "__lengths2");
+
+    AddDeterministicallyRandomInputWithRange<caffe2::CUDABackend, int>(
+        w, {vB, vL2}, "IDX2", 0, vE2 - 1);
+    AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL1, "__lengths1");
+    AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL2, "__lengths2");
   };
-  OperatorDef op_def = TestHarness::ConfigureCUDA(
-      "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def =
+      ConfigureCUDA("Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
   Reference(
@@ -783,15 +771,12 @@ TEST_F(ProductionModel, C2C3Reference) {
   auto WY = FLAGS_WY;
 
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, WX}, "I");
     AddInput(w, {WY, WX}, "W");
   };
-  OperatorDef op_def =
-      TestHarness::ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def = ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
 
   Reference(
@@ -879,16 +864,13 @@ TEST_F(ProductionModel, C2MLP1Reference) {
   auto M = FLAGS_M;
   auto N = FLAGS_N;
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {B, M}, "I");
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
   };
-  OperatorDef op_def =
-      TestHarness::ConfigureCUDA("TcFCReluOp", {"I", "W1", "B1"}, {"O1"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  OperatorDef op_def = ConfigureCUDA("TcFCReluOp", {"I", "W1", "B1"}, {"O1"});
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
   Reference(
@@ -1001,22 +983,21 @@ TEST_F(ProductionModel, C2MLP3Reference) {
   auto O = FLAGS_O;
   auto P = FLAGS_P;
   auto Q = FLAGS_Q;
-  auto AddConstInput = TestHarness::AddConstInput<caffe2::CUDABackend, float>;
+  auto AddInput = AddConstInput<caffe2::CUDABackend, float>;
   auto ws_init_func = [&](Workspace& w) {
-    AddConstInput(w, vector<TIndex>{B, N}, 1., "I");
-    AddConstInput(w, vector<TIndex>{O, N}, 1., "W1");
-    AddConstInput(w, vector<TIndex>{O}, 1., "B1");
-    AddConstInput(w, vector<TIndex>{P, O}, 1., "W2");
-    AddConstInput(w, vector<TIndex>{P}, 1., "B2");
-    AddConstInput(w, vector<TIndex>{Q, P}, 1., "W3");
-    AddConstInput(w, vector<TIndex>{Q}, 1., "B3");
+    AddInput(w, vector<TIndex>{B, N}, 1., "I");
+    AddInput(w, vector<TIndex>{O, N}, 1., "W1");
+    AddInput(w, vector<TIndex>{O}, 1., "B1");
+    AddInput(w, vector<TIndex>{P, O}, 1., "W2");
+    AddInput(w, vector<TIndex>{P}, 1., "B2");
+    AddInput(w, vector<TIndex>{Q, P}, 1., "W3");
+    AddInput(w, vector<TIndex>{Q}, 1., "B3");
   };
-  OperatorDef op_def = TestHarness::ConfigureCUDA(
+  OperatorDef op_def = ConfigureCUDA(
       "Tc3FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3"},
       {"O1", "O2", "O3"});
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def));
+  std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
   Reference(

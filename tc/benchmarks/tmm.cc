@@ -212,16 +212,13 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
   auto K = FLAGS_K;
 
   auto ws_init_func = [&](Workspace& w) {
-    auto AddInput = TestHarness::
-        AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, K}, "I");
     AddInput(w, {N, K}, "W");
   };
-  OperatorDef op_def =
-      TestHarness::ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
+  OperatorDef op_def = ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
   float precision = 0.0;
-  std::unique_ptr<TestHarness::OpTester> reference(
-      new TestHarness::OpTester(op_def, precision));
+  std::unique_ptr<OpTester> reference(new OpTester(op_def, precision));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
 
   Reference(
