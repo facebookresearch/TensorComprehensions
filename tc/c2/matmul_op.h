@@ -33,14 +33,14 @@ class TcMatMulOp : public TcOp<T, Context, Engine> {
     bool trans_a = OperatorBase::GetSingleArgument<int>("trans_a", 0);
     bool trans_b = OperatorBase::GetSingleArgument<int>("trans_b", 0);
     this->tc_ = tc::makeMatmulTc(trans_a, trans_b);
-    this->tcName_ = tc::TC_MATMUL_NAME;
+    this->tc_name_ = tc::TC_MATMUL_NAME;
   }
 
   ~TcMatMulOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_.tile(16, 16, 32)
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_.tile(16, 16, 32)
         .mapToThreads(4, 32)
         .mapToBlocks(32, 32, 32)
         .unroll(1);

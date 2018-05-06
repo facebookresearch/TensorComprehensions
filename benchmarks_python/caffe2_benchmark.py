@@ -116,11 +116,11 @@ def compare_fcs(B, M, N, num_runs, mapping_options=None):
         net.FC(["X", "W", "b"], "Y_baseline")
         net.TcOp(
             ["X", "W", "b"], "Y_TC",
-            tcDef=FC_LANG,
-            tcName="func_fc",
-            mappingOptions=(
+            tc_def=FC_LANG,
+            tc_name="func_fc",
+            mapping_options=(
                 mapping_options.serialize() if mapping_options else None),
-            checkSizes=True,
+            check_sizes=True,
         )
 
     workspace.CreateNet(net)

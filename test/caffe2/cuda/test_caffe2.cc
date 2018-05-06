@@ -50,14 +50,14 @@ struct Caffe2CopyTest : public Caffe2Test {
   using Caffe2Test::Q;
   using Caffe2Test::R;
 
-  Argument strategyArg;
+  Argument strategy_arg;
   Caffe2CopyTest() {
     CudaMappingOptions options = tc::makeBaseCliStrategy()
                                      .tile(32, 32)
                                      .mapToThreads({32, 32})
                                      .mapToBlocks({32, 32, 32});
-    strategyArg = MakeArgument<string>(
-        "mappingOptions",
+    strategy_arg = MakeArgument<string>(
+        "mapping_options",
         tc::makeCliStrategy(options).toProtobufSerializedString());
   }
 };
@@ -67,8 +67,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default1D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M}, "I");
   };
-  OperatorDef def =
-      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcCopyOp", {"I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -77,8 +77,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default2D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
   };
-  OperatorDef def =
-      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcCopyOp", {"I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -87,8 +87,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default3D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P}, "I");
   };
-  OperatorDef def =
-      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcCopyOp", {"I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -97,8 +97,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default4D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q}, "I");
   };
-  OperatorDef def =
-      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcCopyOp", {"I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -107,8 +107,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default5D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q, R}, "I");
   };
-  OperatorDef def =
-      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcCopyOp", {"I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -123,21 +123,20 @@ TEST_F(Caffe2Test, TcMatMulOp) {
                                    .tile(32, 32, 32)
                                    .mapToThreads({4, 32})
                                    .mapToBlocks({32, 32, 32});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
-      "TcMatMulOp", {"I", "W"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcMatMulOp", {"I", "W"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
 // In Caffe2, one does not specify the inputs/outputs for the gradients.
 // Instead, one runs the forward pass with the input/output blobs and then
-// uses the inputMapArg, outputMapArg and inputToComputeGradOpMapArg to
-// map the correspondence between input/output, gradInput/gradOutput and
-// the actual parameters of the function.
-// So we only declare what we need for the forward pass and the rest will
-// appear automagically when running.
+// uses the input_map_arg, output_map_arg and input_to_compute_grad_op_map_arg
+// to map the correspondence between input/output, gradInput/gradOutput and the
+// actual parameters of the function. So we only declare what we need for the
+// forward pass and the rest will appear automagically when running.
 TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
   // 1. Function to initialize tensors in a workspace.
   // Will be applied to both reference and tested workspaces.
@@ -153,53 +152,54 @@ TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
                                    .tile(32, 32, 32)
                                    .mapToThreads({4, 32})
                                    .mapToBlocks({32, 32, 32});
-  Argument mappingOptionsArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument mapping_options_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  Argument mappingOptionsGradArg = MakeArgument<string>(
-      "gradMappingOptions",
+  Argument mapping_options_grad_arg = MakeArgument<string>(
+      "grad_mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
   //    b. TC string and entry point name for both forward and gradient
-  Argument tcDefArg = MakeArgument<string>(
-      "tcDef",
+  Argument tc_def_arg = MakeArgument<string>(
+      "tc_def",
       R"TC(
 def matmul(float(M, N) I, float(N, K) W) -> (O) {
     O(m, k) +=! I(m, r_n) * W(r_n, k)
 }
 )TC");
-  Argument tcNameArg = MakeArgument<string>("tcName", "matmul");
-  Argument tcGradDefArg = MakeArgument<string>(
-      "tcGradDef",
+  Argument tc_name_arg = MakeArgument<string>("tc_name", "matmul");
+  Argument tc_grad_def_arg = MakeArgument<string>(
+      "tc_grad_def",
       R"TC(
 def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
     d_I(m, n) +=! d_O(m, r_k) * W(n, r_k)
     d_W(n, k) +=! d_O(r_m, k) * I(r_m, n)
 }
 )TC");
-  Argument tcGradNameArg = MakeArgument<string>("tcGradName", "matmul_grad");
+  Argument tc_grad_name_arg =
+      MakeArgument<string>("tc_grad_name", "matmul_grad");
   //    c. input and output maps to properly connect the input/ouput tensors
   //       for a given operator to the gradient operator.
-  Argument inputMapArg = MakeArgument<std::vector<int>>(
+  Argument input_map_arg = MakeArgument<std::vector<int>>(
       "inputs_used_by_gradient", std::vector<int>{0, 1});
-  Argument outputMapArg = MakeArgument<std::vector<int>>(
+  Argument output_map_arg = MakeArgument<std::vector<int>>(
       "output_gradients_used_by_gradient", std::vector<int>{0});
-  Argument inputToComputeGradOpMapArg = MakeArgument<std::vector<int>>(
+  Argument input_to_compute_grad_op_map_arg = MakeArgument<std::vector<int>>(
       "inputs_to_compute_gradients_of", std::vector<int>{0, 1});
 
   // 3. Create the TC operator we want to test with all the parameters above
-  OperatorDef def = Configure<caffe2::CUDABackend>(
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
       "TcOp",
       {"I", "W"},
       {"O"},
-      {mappingOptionsArg,
-       tcDefArg,
-       tcNameArg,
-       mappingOptionsGradArg,
-       tcGradDefArg,
-       tcGradNameArg,
-       inputMapArg,
-       outputMapArg,
-       inputToComputeGradOpMapArg});
+      {mapping_options_arg,
+       tc_def_arg,
+       tc_name_arg,
+       mapping_options_grad_arg,
+       tc_grad_def_arg,
+       tc_grad_name_arg,
+       input_map_arg,
+       output_map_arg,
+       input_to_compute_grad_op_map_arg});
 
   // 4. Since we are using the generic TcOp, we need to explicitly build a
   //    reference using existing caffe2 operators.
@@ -241,15 +241,15 @@ TEST_F(Caffe2Test, TcLUTOp) {
   CudaMappingOptions options =
       tc::makeBaseCliStrategy().tile(32, 32).mapToThreads({32, 32}).mapToBlocks(
           {32, 32, 32});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options)
           .useSharedMemory(false) // NYI: shared indirection
           .usePrivateMemory(false)
           .unrollCopyShared(false)
           .toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
-      "TcLUTOp", {"LUT", "I"}, {"O"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcLUTOp", {"LUT", "I"}, {"O"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -265,11 +265,11 @@ TEST_F(Caffe2Test, TcFCReluOp) {
                                    .tile(32, 32, 32)
                                    .mapToThreads({32, 4})
                                    .mapToBlocks({32, 32});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
-      "TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategyArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -290,14 +290,14 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
                                    .mapToBlocks({128})
                                    .useSharedMemory(false)
                                    .usePrivateMemory(false);
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
       "Tc2FCReluOp",
       {"I", "W1", "B1", "W2", "B2"},
       {"O1", "O2"},
-      {strategyArg});
+      {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -318,14 +318,14 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
                                    .tile(1)
                                    .mapToThreads({200})
                                    .mapToBlocks({32});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
       "Tc3FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3"},
       {"O1", "O2", "O3"},
-      {strategyArg});
+      {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -348,14 +348,14 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
                                    .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({128});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = Configure<caffe2::CUDABackend>(
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
       "Tc4FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3", "W4", "B4"},
       {"O1", "O2", "O3", "O4"},
-      {strategyArg});
+      {strategy_arg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -372,8 +372,8 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
                                    .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({128});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
 
   // NetDef defined in caffe2.proto, see caffe2/build/caffe2/proto/caffe2.pb.h
@@ -383,11 +383,11 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = Configure<caffe2::CUDABackend>(
+  OperatorDef ndef = MakeOperatorDef<caffe2::CUDABackend>(
       "Conv",
       {"I", "W", "B"},
       {"O"},
-      {strategyArg, groupArg, kernelHArg, kernelWArg});
+      {strategy_arg, groupArg, kernelHArg, kernelWArg});
 
   unique_ptr<OperatorBase> net(CreateOperator(ndef, &w1));
   ASSERT_TRUE(net.get());
@@ -407,9 +407,9 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   init_ws2(w2);
   // groupArg = MakeArgument<int>("group", G);
   // Argument reshapeArg = MakeArgument<int>("reshape", 1);
-  OperatorDef def = Configure<caffe2::CUDABackend>(
-      "TcGroupConvolutionOp", {"I", "W", "B"}, {"O"}, {strategyArg});
-  // {strategyArg, groupArg, reshapeArg});
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcGroupConvolutionOp", {"I", "W", "B"}, {"O"}, {strategy_arg});
+  // {strategy_arg, groupArg, reshapeArg});
   unique_ptr<OperatorBase> op(CreateOperator(def, &w2));
   ASSERT_TRUE(op.get());
   {
@@ -433,16 +433,16 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
   CudaMappingOptions options =
       tc::makeBaseCliStrategy().tile(32, 32).mapToThreads({32, 32}).mapToBlocks(
           {32, 32, 32});
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
   Argument strideHArg = MakeArgument<int>("stride_h", SH);
   Argument strideWArg = MakeArgument<int>("stride_w", SW);
-  OperatorDef def = Configure<caffe2::CUDABackend>(
+  OperatorDef def = MakeOperatorDef<caffe2::CUDABackend>(
       "TcConvolutionOp",
       {"I", "filter", "bias"},
       {"H_test"},
-      {strategyArg, strideHArg, strideWArg});
+      {strategy_arg, strideHArg, strideWArg});
   auto kh = KH;
   auto kw = KW;
   auto sh = SH;
@@ -464,7 +464,7 @@ TEST_F(Caffe2Test, TcBatchMatmul) {
   Workspace w_ref;
   init_ws(w_ref);
   OperatorDef ref_def =
-      Configure<caffe2::CUDABackend>("BatchMatMul", {"X", "Y"}, {"Z"});
+      MakeOperatorDef<caffe2::CUDABackend>("BatchMatMul", {"X", "Y"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -478,18 +478,18 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
 
   Workspace w_test;
   init_ws(w_test);
-  Argument tcArg = MakeArgument<string>("tcDef", tc);
-  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
+  Argument tc_arg = MakeArgument<string>("tc_def", tc);
+  Argument tc_name_arg = MakeArgument<string>("tc_name", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = Configure<caffe2::CUDABackend>(
-      "TcOp", {"X", "Y"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcOp", {"X", "Y"}, {"Z"}, {tc_arg, tc_name_arg, strategy_arg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
@@ -514,7 +514,7 @@ TEST_F(Caffe2Test, DISABLED_TcGather) {
   Workspace w_ref;
   init_ws(w_ref);
   OperatorDef ref_def =
-      Configure<caffe2::CUDABackend>("Gather", {"X", "I"}, {"Z"});
+      MakeOperatorDef<caffe2::CUDABackend>("Gather", {"X", "I"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -527,18 +527,18 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
 }
 )TC";
 
-  Argument tcArg = MakeArgument<string>("tcDef", tc);
-  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
+  Argument tc_arg = MakeArgument<string>("tc_def", tc);
+  Argument tc_name_arg = MakeArgument<string>("tc_name", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = Configure<caffe2::CUDABackend>(
-      "TcOp", {"X", "I"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcOp", {"X", "I"}, {"Z"}, {tc_arg, tc_name_arg, strategy_arg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
@@ -553,7 +553,8 @@ TEST_F(Caffe2Test, TcFunctions) {
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = Configure<caffe2::CUDABackend>("Sigmoid", {"X"}, {"Z"});
+  OperatorDef ref_def =
+      MakeOperatorDef<caffe2::CUDABackend>("Sigmoid", {"X"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -566,18 +567,18 @@ def fun(float(B, N, M) X) -> (Z) {
 
   Workspace w_test;
   init_ws(w_test);
-  Argument tcArg = MakeArgument<string>("tcDef", tc);
-  Argument tcNameArg = MakeArgument<string>("tcName", "fun");
+  Argument tc_arg = MakeArgument<string>("tc_def", tc);
+  Argument tc_name_arg = MakeArgument<string>("tc_name", "fun");
   CudaMappingOptions options = tc::makeBaseCliStrategy()
                                    .tile(1)
                                    .mapToThreads({128})
                                    .mapToBlocks({1000})
                                    .unroll(1024);
-  Argument strategyArg = MakeArgument<string>(
-      "mappingOptions",
+  Argument strategy_arg = MakeArgument<string>(
+      "mapping_options",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def = Configure<caffe2::CUDABackend>(
-      "TcOp", {"X"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcOp", {"X"}, {"Z"}, {tc_arg, tc_name_arg, strategy_arg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());

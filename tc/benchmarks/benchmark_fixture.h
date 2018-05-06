@@ -103,15 +103,15 @@ struct Benchmark : public ::testing::Test {
       const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor>& inputs,
       std::vector<at::Tensor>& outputs,
-      CheckFunction checkFun = [](const std::vector<at::Tensor>& inputs,
-                                  std::vector<at::Tensor>& outputs) {
+      CheckFunction check_fun = [](const std::vector<at::Tensor>& inputs,
+                                   std::vector<at::Tensor>& outputs) {
         return true;
       }) {
     auto pExecutor =
         tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
     outputs = tc::aten::prepareOutputs(tc, name, inputs);
     tc::aten::run(*pExecutor, inputs, outputs);
-    EXPECT_TRUE(checkFun(inputs, outputs));
+    EXPECT_TRUE(check_fun(inputs, outputs));
     for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
       tc::aten::run(*pExecutor, inputs, outputs);
     }
@@ -236,8 +236,8 @@ struct Benchmark : public ::testing::Test {
       const std::string& tc,
       const std::string& name,
       const std::vector<at::Tensor>& inputs,
-      CheckFunction checkFun = [](const std::vector<at::Tensor>&,
-                                  const std::vector<at::Tensor>&) {
+      CheckFunction check_fun = [](const std::vector<at::Tensor>&,
+                                   const std::vector<at::Tensor>&) {
         return true;
       }) {
     std::cout << "Validating proto from: "
@@ -267,7 +267,7 @@ struct Benchmark : public ::testing::Test {
         tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions[0]);
     auto outputs = tc::aten::prepareOutputs(tc, name, inputs);
     tc::aten::run(*pExecutor, inputs, outputs);
-    EXPECT_TRUE(checkFun(inputs, outputs));
+    EXPECT_TRUE(check_fun(inputs, outputs));
     for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
       tc::aten::run(*pExecutor, inputs, outputs);
     }
@@ -350,7 +350,7 @@ struct Benchmark : public ::testing::Test {
       std::string kernelName,
       std::vector<at::Tensor> inputs,
       tc::CudaMappingOptions baseMapping,
-      CheckFunction checkFun =
+      CheckFunction check_fun =
           [](const std::vector<at::Tensor>&, const std::vector<at::Tensor>&) {
             return true;
           },
@@ -370,7 +370,7 @@ struct Benchmark : public ::testing::Test {
           tc, kernelName, inputs, bestOptions);
       auto outputs = tc::aten::prepareOutputs(tc, kernelName, inputs);
       tc::aten::run(*pExecutor, inputs, outputs);
-      EXPECT_TRUE(checkFun(inputs, outputs));
+      EXPECT_TRUE(check_fun(inputs, outputs));
       for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
         tc::aten::run(*pExecutor, inputs, outputs);
       }

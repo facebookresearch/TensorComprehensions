@@ -45,7 +45,7 @@ void AddDeterministicallyRandomInputWithRange(
   std::lock_guard<std::mutex> lock{detail::RNGMutex()};
   DeviceOption option;
   option.set_random_seed(std::hash<std::string>()(name));
-  auto context = makeContext<Caffe2Backend>(option);
+  auto context = MakeContext<Caffe2Backend>(option);
   auto* tensor =
       detail::NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
   caffe2::math::RandUniform<T, typename Caffe2Backend::Context>(
@@ -60,7 +60,7 @@ void AddDeterministicallyRandomInputWithRange(
 } // namespace detail
 
 template <typename Caffe2Backend>
-std::unique_ptr<typename Caffe2Backend::Context> makeContext(
+std::unique_ptr<typename Caffe2Backend::Context> MakeContext(
     caffe2::DeviceOption opt) {
   opt.set_device_type(Caffe2Backend::Device);
   return std::unique_ptr<typename Caffe2Backend::Context>(
@@ -68,31 +68,30 @@ std::unique_ptr<typename Caffe2Backend::Context> makeContext(
 }
 
 template <typename Caffe2Backend>
-caffe2::Tensor<typename Caffe2Backend::Context> getNamedTensor(
+caffe2::Tensor<typename Caffe2Backend::Context> GetNamedTensor(
     caffe2::Workspace& ws,
     const std::string& name) {
   // Resolved dynamically
-  caffe2::Tensor<typename Caffe2Backend::Context> Texpected(
+  return caffe2::Tensor<typename Caffe2Backend::Context>(
       ws.GetBlob(name)->Get<typename Caffe2Backend::Tensor>());
-  return Texpected;
 }
 
 // helper functions to construct an ATen tensor from a caffe2 tensor
 template <typename Caffe2TensorType>
-at::Tensor makeATenTensor(
-    const Caffe2TensorType& c2Tensor,
+at::Tensor MakeAtenTensor(
+    const Caffe2TensorType& tensor,
     at::Backend backend,
-    at::ScalarType stype) {
-  auto dims = c2Tensor.dims();
+    at::ScalarType type) {
+  auto dims = tensor.dims();
   auto ndim = dims.size();
   auto shape = new int64_t[ndim];
   for (size_t i = 0; i < ndim; ++i) {
     shape[i] = dims[i];
   }
   at::Tensor out =
-      at::getType(backend, stype)
+      at::getType(backend, type)
           .tensorFromBlob(
-              const_cast<void*>(c2Tensor.raw_data()), at::IntList(shape, ndim));
+              const_cast<void*>(tensor.raw_data()), at::IntList(shape, ndim));
   return out;
 }
 
@@ -101,7 +100,7 @@ template <
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
-OperatorDef Configure(
+OperatorDef MakeOperatorDef(
     std::string type,
     IterableInputs ins,
     IterableOutputs outs,
@@ -117,7 +116,7 @@ void AddConstInput(
     const std::vector<caffe2::TIndex>& shape,
     const T value,
     const std::string& name) {
-  auto context = makeContext<Caffe2Backend>();
+  auto context = MakeContext<Caffe2Backend>();
   auto* tensor =
       detail::NewTensor<typename Caffe2Backend::Tensor>(ws, shape, name);
   caffe2::math::Set<T, typename Caffe2Backend::Context>(
@@ -142,40 +141,40 @@ template <
 void AddCopyOfTensor(
     caffe2::Workspace& ws,
     const std::string& name,
-    const caffe2::Workspace& sourceWs,
-    const std::string& sourceName) {
-  auto sourceContext = makeContext<Caffe2SourceBackend>();
-  auto destinationContext = makeContext<Caffe2DestinationBackend>();
-  const auto& sourceTensor =
-      sourceWs.GetBlob(sourceName)->Get<typename Caffe2SourceBackend::Tensor>();
-  auto* destinationTensor =
+    const caffe2::Workspace& source_ws,
+    const std::string& source_name) {
+  auto source_context = MakeContext<Caffe2SourceBackend>();
+  auto destination_context = MakeContext<Caffe2DestinationBackend>();
+  const auto& source_tensor = source_ws.GetBlob(source_name)
+                                  ->Get<typename Caffe2SourceBackend::Tensor>();
+  auto* destination_tensor =
       detail::NewTensor<typename Caffe2DestinationBackend::Tensor>(
-          ws, sourceTensor.dims(), name);
-  destinationTensor->CopyFrom(sourceTensor);
-  sourceContext->FinishDeviceComputation();
-  destinationContext->FinishDeviceComputation();
+          ws, source_tensor.dims(), name);
+  destination_tensor->CopyFrom(source_tensor);
+  source_context->FinishDeviceComputation();
+  destination_context->FinishDeviceComputation();
 }
 
 template <typename T>
 void CheckEqual(
-    const caffe2::Workspace& expected,
-    const caffe2::Workspace& tested,
+    const caffe2::Workspace& ws_expected,
+    const caffe2::Workspace& ws_test,
     const std::string& name,
-    float relativePrecision,
-    long offsetInExpected,
-    long offsetInTested) {
+    float relative_precision,
+    long offset_in_expected,
+    long offset_in_test) {
   // Resolved dynamically
-  caffe2::CPUBackend::Tensor Texpected(expected.GetBlob(name)->Get<T>());
-  caffe2::CPUBackend::Tensor Ttested(tested.GetBlob(name)->Get<T>());
+  caffe2::CPUBackend::Tensor expected(ws_expected.GetBlob(name)->Get<T>());
+  caffe2::CPUBackend::Tensor test(ws_test.GetBlob(name)->Get<T>());
   CheckEqual(
-      Texpected, Ttested, relativePrecision, offsetInExpected, offsetInTested);
+      expected, test, relative_precision, offset_in_expected, offset_in_test);
 }
 
 template <typename Backend>
 void BasicGradientCorrectnessTest(
     const OperatorDef& op_def,
     std::function<void(Workspace&)> ws_init_func,
-    float relativePrecision,
+    float relative_precision,
     const std::vector<std::string>& names_to_compare,
     std::map<string, int> params,
     ReferenceImplementationBuilder make_reference_impl) {
@@ -213,9 +212,9 @@ void BasicGradientCorrectnessTest(
 
   for (const auto& n : names_to_compare) {
     CheckEqual(
-        CPUBackend::Tensor(getNamedTensor<Backend>(w1, n)),
-        CPUBackend::Tensor(getNamedTensor<Backend>(w2, n)),
-        relativePrecision);
+        CPUBackend::Tensor(GetNamedTensor<Backend>(w1, n)),
+        CPUBackend::Tensor(GetNamedTensor<Backend>(w2, n)),
+        relative_precision);
   }
 }
 

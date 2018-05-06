@@ -48,7 +48,7 @@ class TransposedMatMul : public Benchmark {
       uint32_t M,
       uint32_t K,
       const tc::CudaMappingOptions& options,
-      bool useFlags = false);
+      bool use_flags = false);
 };
 
 void TransposedMatMul::runTransposedMatMul(
@@ -56,18 +56,18 @@ void TransposedMatMul::runTransposedMatMul(
     uint32_t M,
     uint32_t K,
     const tc::CudaMappingOptions& options,
-    bool useFlags) {
+    bool use_flags) {
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({N, K});
 
-  auto refOutput = A.mm(B.transpose(0, 1));
-  auto checkFun = [&, refOutput](
-                      const std::vector<at::Tensor>& inputs,
-                      const std::vector<at::Tensor>& outputs) {
+  auto ref_output = A.mm(B.transpose(0, 1));
+  auto check_fun = [&, ref_output](
+                       const std::vector<at::Tensor>& inputs,
+                       const std::vector<at::Tensor>& outputs) {
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 3e-7;
     std::cout << "Checking expected output relative precision @" << prec;
-    at::Tensor diff = outputs[0].sub(refOutput);
+    at::Tensor diff = outputs[0].sub(ref_output);
     checkRtol(diff, inputs, M * N, prec);
     return true;
   };
@@ -82,17 +82,17 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
   std::string suffix = std::string("_M_") + std::to_string(FLAGS_M) +
       std::string("_N_") + std::to_string(FLAGS_N) + std::string("_K_") +
       std::to_string(FLAGS_K);
-  if (useFlags && FLAGS_validate_proto) {
+  if (use_flags && FLAGS_validate_proto) {
     validateProto(
         FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
         tc,
         "tmm",
         inputs,
-        checkFun);
+        check_fun);
   } else {
     std::vector<at::Tensor> outputs;
-    Check(tc, "tmm", options, inputs, outputs, checkFun);
-    if (useFlags) {
+    Check(tc, "tmm", options, inputs, outputs, check_fun);
+    if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
           FLAGS_save_tuner_proto_prefix + std::string("/tmm_best") + suffix,
@@ -100,7 +100,7 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
           "tmm",
           inputs,
           options,
-          checkFun);
+          check_fun);
     }
   }
 }
@@ -217,7 +217,7 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
     AddInput(w, {N, K}, "W");
   };
   OperatorDef op_def =
-      Configure<caffe2::CUDABackend>("TcMatMulOp", {"I", "W"}, {"O"});
+      MakeOperatorDef<caffe2::CUDABackend>("TcMatMulOp", {"I", "W"}, {"O"});
   float precision = 0.0;
   std::unique_ptr<OpTester> reference(new OpTester(op_def, precision));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});

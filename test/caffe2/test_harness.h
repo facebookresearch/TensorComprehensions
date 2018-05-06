@@ -45,7 +45,7 @@ struct CPUBackend {
 /// Make a context for the proper Backend type.
 /// A DeviceOption may be passed (e.g. to set the random seed).
 template <typename Caffe2Backend>
-std::unique_ptr<typename Caffe2Backend::Context> makeContext(
+std::unique_ptr<typename Caffe2Backend::Context> MakeContext(
     caffe2::DeviceOption opt = DeviceOption());
 
 /// This function retrieves a Caffe2 tensor of the proper backend type
@@ -56,16 +56,16 @@ std::unique_ptr<typename Caffe2Backend::Context> makeContext(
 /// This function is used for testing purposes, we do not worry about
 /// const correctness for now.
 template <typename Caffe2Backend>
-caffe2::Tensor<typename Caffe2Backend::Context> getNamedTensor(
+caffe2::Tensor<typename Caffe2Backend::Context> GetNamedTensor(
     caffe2::Workspace& ws,
     const std::string& name);
 
 // helper functions to construct an ATen tensor from a caffe2 tensor
 template <typename Caffe2TensorType>
-at::Tensor makeATenTensor(
-    const Caffe2TensorType& c2Tensor,
+at::Tensor MakeAtenTensor(
+    const Caffe2TensorType& tensor,
     at::Backend backend,
-    at::ScalarType stype);
+    at::ScalarType type);
 
 /// We need to provide a way to perform correctness checks on gradients
 /// using existing Caffe2 operators.
@@ -106,7 +106,7 @@ template <
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
-OperatorDef Configure(
+OperatorDef MakeOperatorDef(
     std::string op_name,
     IterableInputs ins,
     IterableOutputs outs,
@@ -141,37 +141,37 @@ template <
 void AddCopyOfTensor(
     caffe2::Workspace& ws,
     const std::string& name,
-    const caffe2::Workspace& sourceWs,
-    const std::string& sourceName);
+    const caffe2::Workspace& source_ws,
+    const std::string& source_name);
 
 void CheckEqual(
-    const caffe2::Tensor<caffe2::CPUBackend::Context>& Texpected,
-    const caffe2::Tensor<caffe2::CPUBackend::Context>& Ttested,
-    float relativePrecision = 0.0,
+    const caffe2::Tensor<caffe2::CPUBackend::Context>& expected,
+    const caffe2::Tensor<caffe2::CPUBackend::Context>& test,
+    float relative_precision = 0.0,
     long offsetInExpected = 0,
-    long offsetInTested = 0);
+    long offsetInTest = 0);
 
 template <typename T = caffe2::CUDABackend::Tensor>
 void CheckEqual(
-    const caffe2::Workspace& expected,
-    const caffe2::Workspace& tested,
+    const caffe2::Workspace& ws_expected,
+    const caffe2::Workspace& ws_test,
     const std::string& name,
-    float relativePrecision = 0.0,
-    long offsetInExpected = 0,
-    long offsetInTested = 0);
+    float relative_precision = 0.0,
+    long offset_in_expected = 0,
+    long offset_in_test = 0);
 
 class OpTester {
   std::unique_ptr<NetBase> net_ref;
   OperatorDef op_def;
-  float relativePrecision;
+  float relative_precision;
 
  public:
   Workspace w_ref;
   Workspace w_test;
   unique_ptr<OperatorBase> op_test;
 
-  OpTester(const OperatorDef& op_def, float relativePrecision = 0.0)
-      : op_def{op_def}, relativePrecision{relativePrecision} {}
+  OpTester(const OperatorDef& op_def, float relative_precision = 0.0)
+      : op_def{op_def}, relative_precision{relative_precision} {}
 
   void InitializeReference(
       std::function<void(Workspace&)> ws_init_func,
@@ -206,7 +206,7 @@ class OpTester {
 
   void Check() const {
     for (auto out : op_def.output()) {
-      CheckEqual(w_ref, w_test, out, relativePrecision);
+      CheckEqual(w_ref, w_test, out, relative_precision);
     }
   }
 };
@@ -215,22 +215,22 @@ class OpTester {
 unique_ptr<OpTester> BasicCorrectnessTest(
     const OperatorDef& op_def,
     std::function<void(Workspace&)> ws_init_func,
-    float relativePrecision = 0.0,
+    float relative_precision = 0.0,
     std::map<string, int> reference_args = {});
 
 /// Runs the gradient of an operator and adds the gradient tensors to the
 /// workspace
 void RunGradient(Workspace& w, const OperatorDef& def);
 
-/// This function runs forward and gradient for op_def (the tested operator
+/// This function runs forward and gradient for op_def (the test operator
 /// we want to compare against a reference) and for the reference
 /// implementation.
-/// Then it compares named tensors from both the reference and tested
+/// Then it compares named tensors from both the reference and test
 /// workspace to check correctness.
 ///
 /// op_def is the OperatorDef corresponding to the operator we wish to check
 ///        for correctness
-/// ws_init_func is a function to initialize both the reference and tested
+/// ws_init_func is a function to initialize both the reference and test
 ///        workspaces with
 /// params is a map containing constexpr values for operator specific
 ///        parameters (e.g. strides for convolutions)
@@ -246,7 +246,7 @@ template <typename Backend>
 void BasicGradientCorrectnessTest(
     const OperatorDef& op_def,
     std::function<void(Workspace&)> ws_init_func,
-    float relativePrecision = 0.0,
+    float relative_precision = 0.0,
     const std::vector<std::string>& names_to_compare = {},
     std::map<string, int> params = {},
     ReferenceImplementationBuilder make_reference_impl =
