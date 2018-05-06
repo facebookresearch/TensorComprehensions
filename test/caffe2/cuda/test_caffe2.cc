@@ -145,7 +145,7 @@ TEST_F(Caffe2Test, TcMatMulOp) {
 // appear automagically when running.
 TEST_F(Caffe2Test, TcMatMulOp_Gradient) {
   // 1. Function to initialize tensors in a workspace.
-  // Will be applied to both reference and actual workspaces.
+  // Will be applied to both reference and tested workspaces.
   auto init_ws = [&](Workspace& w) {
     auto AddInput = TestHarness::
         AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;

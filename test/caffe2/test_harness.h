@@ -126,12 +126,6 @@ struct TestHarness {
         type, ins, outs, args, caffe2::CUDABackend::Device);
   }
 
-  static DeviceOption getCUDADevice() {
-    DeviceOption device;
-    device.set_device_type(caffe2::CUDABackend::Device);
-    return device;
-  }
-
   template <typename T>
   static T* NewTensor(
       caffe2::Workspace& ws,
@@ -216,43 +210,17 @@ struct TestHarness {
         ws, shape, name, 0, 2);
   }
 
-  template <typename T>
-  static void CheckMatMulOfOnesOnCPU(caffe2::Blob* b, int m, int n, int k) {
-    auto& C = b->Get<T>();
-    auto cpuC = caffe2::Tensor<caffe2::CPUBackend::Context>(C);
-    assert(cpuC.size() == m * n);
-    for (int i = 0; i < cpuC.size(); ++i) {
-      ASSERT_EQ(cpuC.data<float>()[i], static_cast<float>(k));
-    }
-  }
-
-  static void PrintDualTensor(
-      caffe2::Workspace& expected,
-      caffe2::Workspace& actual,
-      std::string name,
-      float relativePrecision = 0.0) {
-    // Resolved dynamically
-    caffe2::Tensor<caffe2::CPUBackend::Context> Texpected(
-        expected.GetBlob(name)->Get<caffe2::CUDABackend::Tensor>());
-    caffe2::Tensor<caffe2::CPUBackend::Context> Tactual(
-        actual.GetBlob(name)->Get<caffe2::CUDABackend::Tensor>());
-    for (int i = 0; i < Texpected.size(); ++i) {
-      LOG(INFO) << name << "[" << i << "] | E=" << Texpected.data<float>()[i]
-                << " \tA=" << Tactual.data<float>()[i] << "\n";
-    }
-  }
-
   static void CheckEqual(
       const caffe2::Tensor<caffe2::CPUBackend::Context>& Texpected,
-      const caffe2::Tensor<caffe2::CPUBackend::Context>& Tactual,
+      const caffe2::Tensor<caffe2::CPUBackend::Context>& Ttested,
       float relativePrecision = 0.0,
       long offsetInExpected = 0,
-      long offsetInActual = 0) {
+      long offsetInTested = 0) {
     for (int i = 0; i < Texpected.size() - offsetInExpected; ++i) {
       if (relativePrecision == 0.0) {
         ASSERT_FLOAT_EQ(
             Texpected.data<float>()[i + offsetInExpected],
-            Tactual.data<float>()[i + offsetInActual])
+            Ttested.data<float>()[i + offsetInTested])
             << " for Tensor " << Texpected.DebugString() << " at position "
             << i;
       } else {
@@ -261,7 +229,7 @@ struct TestHarness {
         // CHECK_NEAR is actualy absolute!!!
         ASSERT_NEAR(
             Texpected.data<float>()[i + offsetInExpected],
-            Tactual.data<float>()[i + offsetInActual],
+            Ttested.data<float>()[i + offsetInTested],
             relativePrecision * Texpected.data<float>()[i + offsetInExpected])
             << " for Tensor " << Texpected.DebugString() << " at position "
             << i;
@@ -272,20 +240,20 @@ struct TestHarness {
   template <typename T = caffe2::CUDABackend::Tensor>
   static void CheckEqual(
       const caffe2::Workspace& expected,
-      const caffe2::Workspace& actual,
+      const caffe2::Workspace& tested,
       const std::string& name,
       float relativePrecision = 0.0,
       long offsetInExpected = 0,
-      long offsetInActual = 0) {
+      long offsetInTested = 0) {
     // Resolved dynamically
     caffe2::CPUBackend::Tensor Texpected(expected.GetBlob(name)->Get<T>());
-    caffe2::CPUBackend::Tensor Tactual(actual.GetBlob(name)->Get<T>());
+    caffe2::CPUBackend::Tensor Ttested(tested.GetBlob(name)->Get<T>());
     CheckEqual(
         Texpected,
-        Tactual,
+        Ttested,
         relativePrecision,
         offsetInExpected,
-        offsetInActual);
+        offsetInTested);
   }
 
   class OpTester {
@@ -336,28 +304,6 @@ struct TestHarness {
       for (auto out : op_def.output()) {
         TestHarness::CheckEqual(w_ref, w_test, out, relativePrecision);
       }
-    }
-
-    void RunAllAndCheck() {
-      RunReference();
-      Run();
-      Check();
-    }
-
-    // XXX:stupid gtest macros return void because
-    // google doesn't like exceptions
-    void GetTcOp(TcOp<float, caffe2::CUDABackend::Context>** op) {
-      *op = dynamic_cast<TcOp<float, caffe2::CUDABackend::Context>*>(
-          op_test.get());
-      ASSERT_NE(*op, nullptr);
-    }
-
-    bool cacheRetrievalSuccessful() {
-      return false;
-      // TODO(ttheodor) FIXME
-      // TcOp<float, CUDAContext>* op;
-      // GetTcOp(&op);
-      // return op->LastCacheRetrievalSuccessful();
     }
   };
 
@@ -438,15 +384,15 @@ struct TestHarness {
     }
   }
 
-  /// This function runs forward and gradient for op_def (the actual operator
+  /// This function runs forward and gradient for op_def (the tested operator
   /// we want to compare against a reference) and for the reference
   /// implementation.
-  /// Then it compares named tensors from both the reference and actual
+  /// Then it compares named tensors from both the reference and tested
   /// workspace to check correctness.
   ///
   /// op_def is the OperatorDef corresponding to the operator we wish to check
   ///        for correctness
-  /// ws_init_func is a function to initialize both the reference and actual
+  /// ws_init_func is a function to initialize both the reference and tested
   ///        workspaces with
   /// params is a map containing constexpr values for operator specific
   ///        parameters (e.g. strides for convolutions)
