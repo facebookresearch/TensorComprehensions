@@ -97,6 +97,7 @@ at::Tensor makeATenTensor(
 }
 
 template <
+    typename Backend,
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
@@ -104,23 +105,10 @@ OperatorDef Configure(
     std::string type,
     IterableInputs ins,
     IterableOutputs outs,
-    IterableArgs args,
-    caffe2::DeviceType dtype) {
-  OperatorDef def = CreateOperatorDef(type, "", ins, outs, args);
-  def.mutable_device_option()->set_device_type(dtype);
-  return def;
-}
-
-template <
-    class IterableInputs = std::initializer_list<string>,
-    class IterableOutputs = std::initializer_list<string>,
-    class IterableArgs = std::initializer_list<Argument>>
-OperatorDef ConfigureCUDA(
-    std::string type,
-    IterableInputs ins,
-    IterableOutputs outs,
     IterableArgs args) {
-  return Configure(type, ins, outs, args, caffe2::CUDABackend::Device);
+  OperatorDef def = CreateOperatorDef(type, "", ins, outs, args);
+  def.mutable_device_option()->set_device_type(Backend::Device);
+  return def;
 }
 
 template <typename Caffe2Backend, typename T>

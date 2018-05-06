@@ -67,7 +67,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default1D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M}, "I");
   };
-  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def =
+      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -76,7 +77,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default2D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N}, "I");
   };
-  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def =
+      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -85,7 +87,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default3D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P}, "I");
   };
-  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def =
+      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -94,7 +97,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default4D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q}, "I");
   };
-  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def =
+      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -103,7 +107,8 @@ TEST_F(Caffe2CopyTest, TcCopyOp_Default5D) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, N, P, Q, R}, "I");
   };
-  OperatorDef def = ConfigureCUDA("TcCopyOp", {"I"}, {"O"}, {strategyArg});
+  OperatorDef def =
+      Configure<caffe2::CUDABackend>("TcCopyOp", {"I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws);
 }
 
@@ -121,8 +126,8 @@ TEST_F(Caffe2Test, TcMatMulOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def =
-      ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"}, {strategyArg});
+  OperatorDef def = Configure<caffe2::CUDABackend>(
+      "TcMatMulOp", {"I", "W"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -182,7 +187,7 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
       "inputs_to_compute_gradients_of", std::vector<int>{0, 1});
 
   // 3. Create the TC operator we want to test with all the parameters above
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "TcOp",
       {"I", "W"},
       {"O"},
@@ -243,8 +248,8 @@ TEST_F(Caffe2Test, TcLUTOp) {
           .usePrivateMemory(false)
           .unrollCopyShared(false)
           .toProtobufSerializedString());
-  OperatorDef def =
-      ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"}, {strategyArg});
+  OperatorDef def = Configure<caffe2::CUDABackend>(
+      "TcLUTOp", {"LUT", "I"}, {"O"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -263,8 +268,8 @@ TEST_F(Caffe2Test, TcFCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def =
-      ConfigureCUDA("TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategyArg});
+  OperatorDef def = Configure<caffe2::CUDABackend>(
+      "TcFCReluOp", {"I", "W1", "B1"}, {"O1"}, {strategyArg});
   BasicCorrectnessTest(def, init_ws, 1e-6);
 }
 
@@ -288,7 +293,7 @@ TEST_F(Caffe2Test, Tc2FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "Tc2FCReluOp",
       {"I", "W1", "B1", "W2", "B2"},
       {"O1", "O2"},
@@ -316,7 +321,7 @@ TEST_F(Caffe2Test, Tc3FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "Tc3FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3"},
       {"O1", "O2", "O3"},
@@ -346,7 +351,7 @@ TEST_F(Caffe2Test, Tc4FCReluOp) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "Tc4FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3", "W4", "B4"},
       {"O1", "O2", "O3", "O4"},
@@ -378,7 +383,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = ConfigureCUDA(
+  OperatorDef ndef = Configure<caffe2::CUDABackend>(
       "Conv",
       {"I", "W", "B"},
       {"O"},
@@ -402,7 +407,7 @@ TEST_F(Caffe2Test, TcGroupConvolutionOp) {
   init_ws2(w2);
   // groupArg = MakeArgument<int>("group", G);
   // Argument reshapeArg = MakeArgument<int>("reshape", 1);
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "TcGroupConvolutionOp", {"I", "W", "B"}, {"O"}, {strategyArg});
   // {strategyArg, groupArg, reshapeArg});
   unique_ptr<OperatorBase> op(CreateOperator(def, &w2));
@@ -433,7 +438,7 @@ TEST_F(Caffe2Test, TcConvolutionOp) {
       tc::makeCliStrategy(options).toProtobufSerializedString());
   Argument strideHArg = MakeArgument<int>("stride_h", SH);
   Argument strideWArg = MakeArgument<int>("stride_w", SW);
-  OperatorDef def = ConfigureCUDA(
+  OperatorDef def = Configure<caffe2::CUDABackend>(
       "TcConvolutionOp",
       {"I", "filter", "bias"},
       {"H_test"},
@@ -458,7 +463,8 @@ TEST_F(Caffe2Test, TcBatchMatmul) {
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
+  OperatorDef ref_def =
+      Configure<caffe2::CUDABackend>("BatchMatMul", {"X", "Y"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -482,8 +488,8 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def =
-      ConfigureCUDA("TcOp", {"X", "Y"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = Configure<caffe2::CUDABackend>(
+      "TcOp", {"X", "Y"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
@@ -507,7 +513,8 @@ TEST_F(Caffe2Test, DISABLED_TcGather) {
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = ConfigureCUDA("Gather", {"X", "I"}, {"Z"});
+  OperatorDef ref_def =
+      Configure<caffe2::CUDABackend>("Gather", {"X", "I"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -530,8 +537,8 @@ def fun(float(N) X, int32(A,B) I) -> (Z) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def =
-      ConfigureCUDA("TcOp", {"X", "I"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = Configure<caffe2::CUDABackend>(
+      "TcOp", {"X", "I"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());
@@ -546,7 +553,7 @@ TEST_F(Caffe2Test, TcFunctions) {
 
   Workspace w_ref;
   init_ws(w_ref);
-  OperatorDef ref_def = ConfigureCUDA("Sigmoid", {"X"}, {"Z"});
+  OperatorDef ref_def = Configure<caffe2::CUDABackend>("Sigmoid", {"X"}, {"Z"});
   auto ref_op = CreateOperator(ref_def, &w_ref);
   ASSERT_TRUE(ref_op.get());
   ASSERT_TRUE(ref_op->Run());
@@ -569,8 +576,8 @@ def fun(float(B, N, M) X) -> (Z) {
   Argument strategyArg = MakeArgument<string>(
       "mappingOptions",
       tc::makeCliStrategy(options).toProtobufSerializedString());
-  auto op_def =
-      ConfigureCUDA("TcOp", {"X"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
+  auto op_def = Configure<caffe2::CUDABackend>(
+      "TcOp", {"X"}, {"Z"}, {tcArg, tcNameArg, strategyArg});
   auto op = CreateOperator(op_def, &w_test);
   ASSERT_TRUE(op.get());
   ASSERT_TRUE(op->Run());

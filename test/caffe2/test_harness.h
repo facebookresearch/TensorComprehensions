@@ -93,18 +93,7 @@ ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder() {
   };
 }
 
-template <
-    class IterableInputs = std::initializer_list<string>,
-    class IterableOutputs = std::initializer_list<string>,
-    class IterableArgs = std::initializer_list<Argument>>
-OperatorDef Configure(
-    std::string op_name,
-    IterableInputs ins,
-    IterableOutputs outs,
-    IterableArgs args = {},
-    caffe2::DeviceType dtype = caffe2::CPUBackend::Device);
-
-/// Creates an OperatorDef
+/// Creates an OperatorDef for a particular Backend
 /// op_name is the name of the operator (e.g. TcOp)
 /// ins are the name of the input tensors, they must match the names in the
 ///     workspace on which the OperatorDef is run
@@ -113,10 +102,11 @@ OperatorDef Configure(
 /// args are extra arguments (created with MakeArgument) that the operator
 ///     makes use of internally (e.g. mappingOptions for TcOp)
 template <
+    typename Backend,
     class IterableInputs = std::initializer_list<string>,
     class IterableOutputs = std::initializer_list<string>,
     class IterableArgs = std::initializer_list<Argument>>
-OperatorDef ConfigureCUDA(
+OperatorDef Configure(
     std::string op_name,
     IterableInputs ins,
     IterableOutputs outs,

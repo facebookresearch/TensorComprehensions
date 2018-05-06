@@ -81,7 +81,7 @@ void GroupConvolution::runGroupConvolution(
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef op_def = ConfigureCUDA(
+  OperatorDef op_def = Configure<caffe2::CUDABackend>(
       "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
 
   std::unique_ptr<OperatorBase> net(CreateOperator(op_def, &w));
@@ -368,7 +368,7 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
   Argument groupArg = MakeArgument<int>("group", G);
   Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
   Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = ConfigureCUDA(
+  OperatorDef ndef = Configure<caffe2::CUDABackend>(
       "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
   std::unique_ptr<OperatorBase> net(CreateOperator(ndef, &w));
 

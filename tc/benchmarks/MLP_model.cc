@@ -162,7 +162,8 @@ void ProductionModel::run1LUT(
         w, {B, L1}, "I", 0, E1 - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths");
   };
-  OperatorDef op_def = ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
+  OperatorDef op_def =
+      Configure<caffe2::CUDABackend>("TcLUTOp", {"LUT", "I"}, {"O"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
@@ -255,8 +256,8 @@ void ProductionModel::run2LUT(
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L1, "__lengths1");
     AddConstInput<caffe2::CUDABackend, int>(w, {B}, L2, "__lengths2");
   };
-  OperatorDef op_def =
-      ConfigureCUDA("Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
+  OperatorDef op_def = Configure<caffe2::CUDABackend>(
+      "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
   reference->RunReference();
@@ -586,7 +587,8 @@ TEST_F(ProductionModel, C21LUTReference) {
         w, {vB, vL}, "I", 0, vE - 1);
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL, "__lengths");
   };
-  OperatorDef op_def = ConfigureCUDA("TcLUTOp", {"LUT", "I"}, {"O"});
+  OperatorDef op_def =
+      Configure<caffe2::CUDABackend>("TcLUTOp", {"LUT", "I"}, {"O"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
@@ -678,8 +680,8 @@ TEST_F(ProductionModel, C22LUTReference) {
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL1, "__lengths1");
     AddConstInput<caffe2::CUDABackend, int>(w, {vB}, vL2, "__lengths2");
   };
-  OperatorDef op_def =
-      ConfigureCUDA("Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
+  OperatorDef op_def = Configure<caffe2::CUDABackend>(
+      "Tc2LUTOp", {"LUT1", "IDX1", "LUT2", "IDX2"}, {"O1", "O2"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
@@ -775,7 +777,8 @@ TEST_F(ProductionModel, C2C3Reference) {
     AddInput(w, {B, WX}, "I");
     AddInput(w, {WY, WX}, "W");
   };
-  OperatorDef op_def = ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
+  OperatorDef op_def =
+      Configure<caffe2::CUDABackend>("TcMatMulOp", {"I", "W"}, {"O"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
 
@@ -869,7 +872,8 @@ TEST_F(ProductionModel, C2MLP1Reference) {
     AddInput(w, {N, M}, "W1");
     AddInput(w, {N}, "B1");
   };
-  OperatorDef op_def = ConfigureCUDA("TcFCReluOp", {"I", "W1", "B1"}, {"O1"});
+  OperatorDef op_def =
+      Configure<caffe2::CUDABackend>("TcFCReluOp", {"I", "W1", "B1"}, {"O1"});
   std::unique_ptr<OpTester> reference(new OpTester(op_def));
   reference->InitializeReference(ws_init_func);
 
@@ -993,7 +997,7 @@ TEST_F(ProductionModel, C2MLP3Reference) {
     AddInput(w, vector<TIndex>{Q, P}, 1., "W3");
     AddInput(w, vector<TIndex>{Q}, 1., "B3");
   };
-  OperatorDef op_def = ConfigureCUDA(
+  OperatorDef op_def = Configure<caffe2::CUDABackend>(
       "Tc3FCReluOp",
       {"I", "W1", "B1", "W2", "B2", "W3", "B3"},
       {"O1", "O2", "O3"});

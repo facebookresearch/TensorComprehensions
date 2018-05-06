@@ -216,7 +216,8 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
     AddInput(w, {M, K}, "I");
     AddInput(w, {N, K}, "W");
   };
-  OperatorDef op_def = ConfigureCUDA("TcMatMulOp", {"I", "W"}, {"O"});
+  OperatorDef op_def =
+      Configure<caffe2::CUDABackend>("TcMatMulOp", {"I", "W"}, {"O"});
   float precision = 0.0;
   std::unique_ptr<OpTester> reference(new OpTester(op_def, precision));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
