@@ -282,12 +282,6 @@ unique_ptr<OpTester> BasicCorrectnessTest(
     float relativePrecision = 0.0,
     std::map<string, int> reference_args = {});
 
-// Compares the entire Net and all intermediate blobs
-void BasicCorrectnessTest(
-    const NetDef& net_def,
-    std::function<void(Workspace&)> ws_init_func,
-    float relativePrecision = 0.0);
-
 // Runs the gradient of an operator and adds the gradient tensors to the
 // workspace
 void RunGradient(Workspace& w, const OperatorDef& def);

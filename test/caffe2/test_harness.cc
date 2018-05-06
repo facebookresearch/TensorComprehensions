@@ -60,43 +60,6 @@ unique_ptr<OpTester> BasicCorrectnessTest(
   return test;
 }
 
-void BasicCorrectnessTest(
-    const NetDef& net_def,
-    std::function<void(Workspace&)> ws_init_func,
-    float relativePrecision) {
-  Workspace w1;
-  ws_init_func(w1);
-  NetDef ref_net_def =
-      caffe2::ReferenceImplementationRegistry::ConvertNet(net_def);
-  unique_ptr<NetBase> ref_net(CreateNet(ref_net_def, &w1));
-  ASSERT_TRUE(ref_net.get());
-  {
-    tc::CudaProfiler p;
-    ASSERT_TRUE(ref_net->Run());
-  }
-
-  Workspace w2;
-  ws_init_func(w2);
-  unique_ptr<NetBase> net(CreateNet(net_def, &w2));
-  ASSERT_TRUE(net.get());
-  {
-    tc::CudaProfiler p;
-    ASSERT_TRUE(net->Run());
-  }
-
-  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-
-  // try all output of all ops in original net as they are preserved
-  for (const auto& op_def : net_def.op()) {
-    for (auto out : op_def.output()) {
-      // skip auxiliary blobs
-      if (out[0] != '_') {
-        CheckEqual(w1, w2, out, relativePrecision);
-      }
-    }
-  }
-}
-
 void RunGradient(Workspace& w, const OperatorDef& def) {
   vector<GradientWrapper> g_output(def.output().size());
   for (int i = 0; i < def.output().size(); i++) {
