@@ -438,56 +438,35 @@ struct TestHarness {
     }
   }
 
+  /// This function runs forward and gradient for op_def (the actual operator
+  /// we want to compare against a reference) and for the reference
+  /// implementation.
+  /// Then it compares named tensors from both the reference and actual
+  /// workspace to check correctness.
+  ///
+  /// op_def is the OperatorDef corresponding to the operator we wish to check
+  ///        for correctness
+  /// ws_init_func is a function to initialize both the reference and actual
+  ///        workspaces with
+  /// params is a map containing constexpr values for operator specific
+  ///        parameters (e.g. strides for convolutions)
+  /// names_to_compare contains the names of the tensors that will be compared
+  ///        after the gradient is run. Note tht Caffe2 seems to append the
+  ///        _grad suffix to input tensors. For instance the gradient of
+  ///        tensor I is I_grad. While unsatisfactory from a static robustness
+  ///        perspective, it should be enough for testing
+  /// make_reference_impl is a function that builds the reference
+  ///        implementation to compare against (see the destription of the
+  ///        type MakeDefaultReferenceImplementationBuilder above)
   template <typename Backend>
   static void BasicGradientCorrectnessTest(
       const OperatorDef& op_def,
       std::function<void(Workspace&)> ws_init_func,
-      std::map<string, int> params = {},
+      float relativePrecision = 0.0,
       const std::vector<std::string>& names_to_compare = {},
-      bool check = true,
+      std::map<string, int> params = {},
       ReferenceImplementationBuilder make_reference_impl =
-          MakeDefaultReferenceImplementationBuilder()) {
-    // Reference implementation runs on a first workspace initialized with
-    // random tensors, in a reproducible fashion
-    Workspace w1;
-    ws_init_func(w1);
-    NetDef net_def;
-    make_reference_impl(op_def, &net_def);
-    for (auto s : params) {
-      auto arg = net_def.mutable_op()->Mutable(0)->add_arg();
-      arg->set_name(s.first);
-      arg->set_i(s.second);
-    }
-    unique_ptr<NetBase> net(CreateNet(net_def, &w1));
-    ASSERT_TRUE(net.get());
-    {
-      tc::CudaProfiler p;
-      ASSERT_TRUE(net->Run());
-    }
-    RunGradient(w1, *net_def.mutable_op()->Mutable(0));
-
-    // TC implementation runs on a second workspace initialized with
-    // random tensors, in a reproducible fashion
-    Workspace w2;
-    ws_init_func(w2);
-    unique_ptr<OperatorBase> op(CreateOperator(op_def, &w2));
-    ASSERT_TRUE(op.get());
-    {
-      tc::CudaProfiler p;
-      ASSERT_TRUE(op->Run());
-    }
-    OperatorDef def = op_def;
-    RunGradient(w2, def);
-
-    if (check) {
-      for (const auto& n : names_to_compare) {
-        TestHarness::CheckEqual(
-            CPUBackend::Tensor(getNamedTensor<Backend>(w1, n)),
-            CPUBackend::Tensor(getNamedTensor<Backend>(w2, n)),
-            1e-4);
-      }
-    }
-  }
+          MakeDefaultReferenceImplementationBuilder());
 };
 
 } // namespace caffe2

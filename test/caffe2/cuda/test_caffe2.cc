@@ -217,16 +217,19 @@ def matmul_grad(float(M, N) I, float(N, K) W, float(M, K) d_O) -> (d_I, d_W) {
         CreateOperatorDef("MatMul", "", {"I", "W"}, {"O"}, option, "CUDA"));
   };
 
+  // For some reason, undefined references occur without an extra variable
+  auto m = M;
+  auto k = K;
   // 5. Now we can run the correctness test: both forward and backward
   TestHarness::BasicGradientCorrectnessTest<caffe2::CUDABackend>(
       def,
       init_ws,
-      {},
+      1e-7 * std::max(m, k), // number of reductions * 1e-7 relative precision
       // TODO: It seems Caffe2 creates blobs with _grad appended for tensors
       // whose gradient is computed. Is there an easy idiomatic way to access
       // those or do we consider that this is reasonable enough for small tests?
       std::vector<std::string>{"I_grad", "W_grad"},
-      true,
+      {},
       referenceMatMul);
 }
 

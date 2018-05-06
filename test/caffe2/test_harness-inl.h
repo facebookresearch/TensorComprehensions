@@ -54,4 +54,52 @@ at::Tensor makeATenTensor(
   return out;
 }
 
+template <typename Backend>
+void TestHarness::BasicGradientCorrectnessTest(
+    const OperatorDef& op_def,
+    std::function<void(Workspace&)> ws_init_func,
+    float relativePrecision,
+    const std::vector<std::string>& names_to_compare,
+    std::map<string, int> params,
+    ReferenceImplementationBuilder make_reference_impl) {
+  // Reference implementation runs on a first workspace initialized with
+  // random tensors, in a reproducible fashion
+  Workspace w1;
+  ws_init_func(w1);
+  NetDef net_def;
+  make_reference_impl(op_def, &net_def);
+  for (auto s : params) {
+    auto arg = net_def.mutable_op()->Mutable(0)->add_arg();
+    arg->set_name(s.first);
+    arg->set_i(s.second);
+  }
+  unique_ptr<NetBase> net(CreateNet(net_def, &w1));
+  ASSERT_TRUE(net.get());
+  {
+    tc::CudaProfiler p;
+    ASSERT_TRUE(net->Run());
+  }
+  RunGradient(w1, *net_def.mutable_op()->Mutable(0));
+
+  // TC implementation runs on a second workspace initialized with
+  // random tensors, in a reproducible fashion
+  Workspace w2;
+  ws_init_func(w2);
+  unique_ptr<OperatorBase> op(CreateOperator(op_def, &w2));
+  ASSERT_TRUE(op.get());
+  {
+    tc::CudaProfiler p;
+    ASSERT_TRUE(op->Run());
+  }
+  OperatorDef def = op_def;
+  RunGradient(w2, def);
+
+  for (const auto& n : names_to_compare) {
+    TestHarness::CheckEqual(
+        CPUBackend::Tensor(getNamedTensor<Backend>(w1, n)),
+        CPUBackend::Tensor(getNamedTensor<Backend>(w2, n)),
+        relativePrecision);
+  }
+}
+
 } // namespace caffe2
