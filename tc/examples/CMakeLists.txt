@@ -14,6 +14,7 @@ set(GTEST_LIBS gtest gtest_main)
 ################################################################################
 set(EXAMPLES_FILES
   blockdiagperm
+  group_normalization
   tensordot
   wavenet
 )
