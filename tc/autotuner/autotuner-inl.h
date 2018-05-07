@@ -217,13 +217,7 @@ void TuningHarness<Backend>::doEvaluate(
     printer.record(prof);
     pConf->runtime = prof;
 
-    optionsCache_->recordRuntime(
-        lang::canonicalTc(tcTree_),
-        makeTensorInfoVector(inputs),
-        makeTensorInfoVector(outputs),
-        Backend::backendString(),
-        options,
-        prof);
+    optionsCache_->recordRuntime(*pExecutor, prof);
 
     // Save best time under lock
     {

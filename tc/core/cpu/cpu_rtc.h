@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #pragma once
+#include <string>
 
 namespace tc {
 /**
@@ -25,5 +26,9 @@ struct CpuRTCFunction {
   void clear() {}
   template <typename... Args>
   void operator()(Args&... args) {}
+  const std::string& deviceName() const {
+    static std::string dummy;
+    return dummy;
+  }
 };
 } // namespace tc
