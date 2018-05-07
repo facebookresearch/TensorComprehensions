@@ -67,17 +67,6 @@ ScopUPtr Scop::makeScop(
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
   scop->halide.iterators = std::move(tree.iterators);
 
-  // Set partial schedule tuples for proper comparison with ISL
-  // schedules (needs DFSPreorder numbering). Just for testing.
-  auto bands = ScheduleTree::collectDFSPreorder(
-      scop->scheduleRoot(), detail::ScheduleTreeType::Band);
-  for (size_t i = 0; i < bands.size(); ++i) {
-    auto b = bands[i]->elemAs<ScheduleTreeElemBand>();
-    CHECK(b);
-    b->mupa_ = b->mupa_.set_tuple_name(
-        isl::dim_type::set, kPartialScheduleLabel + std::to_string(i));
-  }
-
   return scop;
 }
 
