@@ -87,11 +87,7 @@ at::Tensor MakeAtenTensor(
 using ReferenceImplementationBuilder =
     std::function<void(const OperatorDef& op_def, NetDef* net_def)>;
 
-ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder() {
-  return [](const OperatorDef& op_def, NetDef* net_def) {
-    caffe2::ReferenceImplementationRegistry::Append(net_def, op_def);
-  };
-}
+ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder();
 
 /// Creates an OperatorDef for a particular Backend
 /// op_name is the name of the operator (e.g. TcOp)

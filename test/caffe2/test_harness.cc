@@ -16,6 +16,20 @@
 #include "test_harness.h"
 
 namespace caffe2 {
+namespace detail {
+
+std::mutex& RNGMutex() {
+  static std::mutex rng_mutex;
+  return rng_mutex;
+}
+
+} // namespace detail
+
+ReferenceImplementationBuilder MakeDefaultReferenceImplementationBuilder() {
+  return [](const OperatorDef& op_def, NetDef* net_def) {
+    caffe2::ReferenceImplementationRegistry::Append(net_def, op_def);
+  };
+}
 
 void CheckEqual(
     const caffe2::Tensor<caffe2::CPUContext>& Texpected,

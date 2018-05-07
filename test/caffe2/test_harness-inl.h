@@ -19,10 +19,7 @@ namespace caffe2 {
 
 namespace detail {
 
-std::mutex& RNGMutex() {
-  static std::mutex rng_mutex;
-  return rng_mutex;
-}
+std::mutex& RNGMutex();
 
 template <typename T>
 T* NewTensor(
