@@ -35,14 +35,14 @@ class TcLUTOp : public TcOp<T, Context, Engine> {
   TcLUTOp(const caffe2::OperatorDef& operator_def, caffe2::Workspace* ws)
       : TcOp<T, Context, Engine>(operator_def, ws) {
     this->tc_ = tc::TC_LUT;
-    this->tcName_ = tc::TC_LUT_NAME;
+    this->tc_name_ = tc::TC_LUT_NAME;
   }
 
   ~TcLUTOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_.tile(1)
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_.tile(1)
         .mapToThreads(64)
         .mapToBlocks(256)
         .unroll(1)

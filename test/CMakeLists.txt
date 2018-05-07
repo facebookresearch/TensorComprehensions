@@ -96,3 +96,7 @@ endforeach()
 if (WITH_CUDA)
   add_subdirectory(cuda)
 endif()
+
+if (WITH_CAFFE2)
+  add_subdirectory(caffe2)
+endif()

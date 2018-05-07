@@ -62,14 +62,14 @@ class TcConvolutionOp : public TcOp<T, Context, Engine> {
         << "NYI: padding larger than 0";
 
     this->tc_ = tc::makeConvolution2DTc(strideH, strideW);
-    this->tcName_ = tc::CONVOLUTION2D_TC_NAME;
+    this->tc_name_ = tc::CONVOLUTION2D_TC_NAME;
   }
 
   ~TcConvolutionOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_ =
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_ =
         tc::CudaMappingOptions::makeConvolutionMappingOptions();
   }
 };

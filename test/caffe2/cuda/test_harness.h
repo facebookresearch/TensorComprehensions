@@ -15,30 +15,17 @@
  */
 #pragma once
 
-#include <string>
-#include <vector>
-
-#include "tc/c2/tc_op.h"
-#include "tc/library/2fcrelu.h"
+#include "caffe2/core/common.h"
+#include "caffe2/core/common_gpu.h"
+#include "caffe2/core/context_gpu.h"
 
 namespace caffe2 {
 
-template <typename T, class Context, class Engine = caffe2::DefaultEngine>
-class Tc2FCReluOp : public TcOp<T, Context, Engine> {
- public:
-  static constexpr auto description = tc::TC_2FCRELU;
-
-  Tc2FCReluOp(const caffe2::OperatorDef& operator_def, caffe2::Workspace* ws)
-      : TcOp<T, Context, Engine>(operator_def, ws) {
-    this->tc_ = tc::TC_2FCRELU;
-    this->tc_name_ = tc::TC_2FCRELU_NAME;
-  }
-
-  ~Tc2FCReluOp() override {}
-
- protected:
-  void SetupNaiveMappingOptions() {
-    this->mapping_options_ = tc::CudaMappingOptions::makeMlpMappingOptions();
-  }
+// CUDABackend is used only for CUDA-specific tests
+struct CUDABackend {
+  static constexpr auto Device = DeviceType::CUDA;
+  using Context = CUDAContext;
+  using Tensor = TensorCUDA;
 };
+
 } // namespace caffe2

@@ -41,6 +41,7 @@ foreach(i ${EXAMPLES_FILES})
 
      ${ATEN_LIBRARIES}
 
+     tc_caffe2_test_harness
      tc_autotuner
      tc_core
      tc_c2

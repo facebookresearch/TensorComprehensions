@@ -57,20 +57,3 @@ foreach(i ${ATEN_TEST_FILES})
       tc_autotuner
       tc_aten)
 endforeach()
-
-################################################################################
-# TensorComprehensions tests
-# No real need for NVCC if we only use NVRTC
-# cuda_add_executable(test_matmul test_matmul.cu OPTIONS -std=c++11)
-################################################################################
-if (WITH_CAFFE2)
-  set(TEST_FILES
-    test_caffe2
-  )
-
-  foreach(i ${TEST_FILES})
-    add_executable(${i} ${i}.cc)
-    add_test(${i} ${i})
-    target_link_libraries(${i} ${GOOGLE_LIBS} pthread tc_c2)
-  endforeach()
-endif()

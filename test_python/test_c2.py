@@ -59,10 +59,10 @@ class TestCaffe2(hu.HypothesisTestCase):
 
         op = core.CreateOperator(
             "TcOp", ["X", "Y"], "out",
-            tcDef=MATMUL_LANG,
-            tcName="matmul",
-            tcGradDef=MATMUL_GRAD_LANG,
-            tcGradName="matmul_grad",
+            tc_def=MATMUL_LANG,
+            tc_name="matmul",
+            tc_grad_def=MATMUL_GRAD_LANG,
+            tc_grad_name="matmul_grad",
             inputs_used_by_gradient=[0, 1],
             output_gradients_used_by_gradient=[0],
             inputs_to_compute_gradients_of=[0, 1],
@@ -118,15 +118,15 @@ class TestCaffe2(hu.HypothesisTestCase):
 
         op = core.CreateOperator(
             "TcOp", ["X", "Y"], "out",
-            tcDef=MATMUL_LANG,
-            tcName="matmul",
-            tcGradDef=MATMUL_GRAD_LANG,
-            tcGradName="matmul_grad",
+            tc_def=MATMUL_LANG,
+            tc_name="matmul",
+            tc_grad_def=MATMUL_GRAD_LANG,
+            tc_grad_name="matmul_grad",
             inputs_used_by_gradient=[0, 1],
             output_gradients_used_by_gradient=[0],
             inputs_to_compute_gradients_of=[0, 1],
-            mappingOptions=mapping_options.serialize(),
-            gradMappingOptions=grad_mapping_options.serialize(),
+            mapping_options=mapping_options.serialize(),
+            grad_mapping_options=grad_mapping_options.serialize(),
         )
 
         self.assertReferenceChecks(
