@@ -127,6 +127,11 @@ struct OptionsCache {
       const std::string& backendStr,
       const typename Backend::MappingOptionsType& options,
       Duration duration);
+  // Same as recordRuntime(6) but it retrieves the key information directly
+  // from the executor
+  void recordRuntime(
+      const typename Backend::ExecutorType& exec,
+      Duration duration);
 
   /// Returns the top-K mapping options with the best median runtime for a
   /// particular TC/inputs/outputs/device. Note that the result may be empty
@@ -138,6 +143,12 @@ struct OptionsCache {
       const std::vector<TensorInfo>& inputs,
       const std::vector<TensorInfo>& outputs,
       const std::string& backendStr,
+      size_t K) const;
+
+  // Same as getTopKOptions(5) but it retrieves the key information directly
+  // from the executor
+  std::vector<typename Backend::MappingOptionsType> getTopKOptions(
+      const typename Backend::ExecutorType& exec,
       size_t K) const;
 
   /// Drops the (N - K) worst performing options
@@ -157,11 +168,7 @@ struct OptionsCache {
   // Make protected and not private so we can derive and test the internals
   mutable std::mutex mutex;
 
-  std::unordered_multimap<
-      OptionsCacheKey,
-      OptionsCacheValue<Backend>,
-      OptionsCacheKeyHash>
-      store_;
+  MultiMapType store_;
 };
 } // namespace autotune
 
