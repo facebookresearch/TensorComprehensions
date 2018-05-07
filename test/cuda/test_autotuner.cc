@@ -179,33 +179,42 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
 }
 
 TEST_F(ATenCompilationUnitTest, BatchNorm) {
-  static constexpr uint32_t N = 32, C = 4, H = 56, W = 56;
+  static constexpr uint32_t N = 32, C = 4, H = 256, W = 256;
   at::Tensor I = at::CUDA(at::kFloat).rand({N, C, H, W});
   at::Tensor rMeanIn = at::CUDA(at::kFloat).rand({C});
   at::Tensor rVarIn = at::CUDA(at::kFloat).rand({C});
-  std::vector<at::Tensor> inputs = {I, rMeanIn, rVarIn};
+  at::Tensor eps = at::CUDA(at::kFloat).rand({1});
+  eps[0] = 1.0f;
+  at::Tensor momentum = at::CUDA(at::kFloat).rand({1});
+  momentum[0] = 1.0;
 
-  // This may not be correct
+  std::vector<at::Tensor> inputs = {momentum, eps, I, rMeanIn, rVarIn};
+
   static constexpr auto TC = R"TC(
-  def batchnorm(float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn) -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut) {
-    mean(c) +=! I(nn, c, hh, ww)
-    mean(c)  = mean(c) / (N * H * W)
-    rMeanOut(c) = (1 - 0.2) * rMeanIn(c) + 0.2 * mean(c)
-    centered(n, c, h, w) =        I(n, c, h, w) - rMeanOut(c)
-    variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
-    expectedVariance(c) +=! (variance(n, c, h, w) + 0.001) / (N * H * W)
-    rVarOut(c) = rsqrt((1 - 0.2) * rVarIn(c) + 0.2 * expectedVariance(c))
-    O(n, c, h, w) = centered(n, c, h, w) / rVarOut(c)
-    normalizedOut(n, c, h, w) = O(n, c, h, w)
-  }
-)TC";
+def batchnorm(
+    float(1) momentum, float(1) eps,
+    float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn)
+-> (normalizedOut, rMeanOut, rVarOut, mean, centered, expectedVariance)
+{
+    mean(c)    +=!    I(r_n, c, r_h, r_w)
+    mean(c)     =  mean(c) / (N * H * W)
+    rMeanOut(c) = (1 - momentum(0)) * rMeanIn(c) + momentum(0) * mean(c)
+    centered(n, c, h, w) =          I(  n, c,   h,   w) - rMeanOut(c)
+    expectedVariance(c) +=! centered(  n, c,   h,   w) * centered(n, c, h, w)
+    expectedVariance(c) = expectedVariance(c) / (N * H * W) + eps(0)
+    rVarOut(c) = rsqrt(
+        (1 - momentum(0)) * rVarIn(c) +
+             momentum(0)  * expectedVariance(c))
+    normalizedOut(n, c, h, w) = centered(n, c, h, w) * rVarOut(c)
+    })TC";
+
 
   auto name = "batchnorm";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
   std::string cacheFilename = "";
   auto bestOptions =
-      autotune(cacheFilename, TC, name, inputs, options, {options});
+    autotune(TC, name, inputs, cacheFilename, options);
 }
 
 TEST_F(ATenCompilationUnitTest, GroupConvolution) {
@@ -227,11 +236,11 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
 )";
 
   auto name = "group_convolution";
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
   std::string cacheFilename = "";
   auto bestOptions =
-      autotune(cacheFilename, TC, name, inputs, options, {options});
+    autotune(TC, name, inputs, cacheFilename, options);
 }
 
 int main(int argc, char** argv) {
