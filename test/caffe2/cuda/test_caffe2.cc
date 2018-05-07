@@ -499,6 +499,142 @@ def fun(float(B, N, M) X, float(B, M, K) Y) -> (Z)
   CheckEqual(w_ref, w_test, "Z", 1e-6);
 }
 
+TEST_F(Caffe2Test, TcBatchNormNoGrid) {
+  static constexpr uint32_t N = 32, C = 4, H = 256, W = 256;
+  auto init_ws = [&](Workspace& w) {
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    AddInput(w, {N, C, H, W}, "I");
+    AddInput(w, {C}, "rMeanIn");
+    AddInput(w, {C}, "rVarIn");
+  };
+
+  auto tc = R"TC(
+  def batchnormnogrid(float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn) -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut) {
+    mean(c) +=! I(nn, c, hh, ww)
+    mean(c)  = mean(c) / (N * H * W)
+    rMeanOut(c) = (1 - 0.2) * rMeanIn(c) + 0.2 * mean(c)
+    centered(n, c, h, w) =        I(n, c, h, w) - rMeanOut(c)
+    variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
+    expectedVariance(c) +=! (variance(n, c, h, w) + 0.001) / (N * H * W)
+    rVarOut(c) = rsqrt((1 - 0.2) * rVarIn(c) + 0.2 * expectedVariance(c))
+    O(n, c, h, w) = centered(n, c, h, w) / rVarOut(c)
+    normalizedOut(n, c, h, w) = O(n, c, h, w)
+  }
+)TC";
+
+  Workspace w_test;
+  init_ws(w_test);
+  Argument tcArg = MakeArgument<string>("tc_def", tc);
+  Argument tcNameArg = MakeArgument<string>("tc_name", "batchnormnogrid");
+  CudaMappingOptions options =
+      tc::makeBaseCliStrategy()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .tile(2, 1, 8, 1)
+          .unroll(1)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads(256, 2)
+          .mapToBlocks(256)
+          .useSharedMemory(true)
+          .usePrivateMemory(false)
+          .unrollCopyShared(true);
+  Argument strategyArg = MakeArgument<string>(
+      "mappingOptions",
+      tc::makeCliStrategy(options).toProtobufSerializedString());
+  auto op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcOp",
+      {"I", "rMeanIn", "rVarIn"},
+      {"O",
+       "rMeanOut",
+       "rVarOut",
+       "mean",
+       "centered",
+       "variance",
+       "expectedVariance",
+       "normalizedOut"},
+      {tcArg, tcNameArg, strategyArg});
+  auto op = CreateOperator(op_def, &w_test);
+  ASSERT_TRUE(op.get());
+  ASSERT_TRUE(op->Run());
+
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+
+  // CheckEqual(w_ref, w_test, "Z", 1e-6);
+}
+
+TEST_F(Caffe2Test, TcBatchNormGrid) {
+  static constexpr uint32_t N = 32, C = 4, H = 256, W = 256;
+  auto init_ws = [&](Workspace& w) {
+    auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
+    AddInput(w, {N, C, H, W}, "I");
+    AddInput(w, {C}, "rMeanIn");
+    AddInput(w, {C}, "rVarIn");
+  };
+
+  auto tc = R"TC(
+  def batchnormgrid(float(N,C,H,W) I, float(C) rMeanIn, float(C) rVarIn) -> (O, rMeanOut, rVarOut, mean, centered, variance, expectedVariance, normalizedOut) {
+    mean(c) +=! I(nn, c, hh, ww)
+    mean(c)  = mean(c) / (N * H * W)
+    rMeanOut(c) = (1 - 0.2) * rMeanIn(c) + 0.2 * mean(c)
+    centered(n, c, h, w) =        I(n, c, h, w) - rMeanOut(c)
+    variance(n, c, h, w) = centered(n, c, h, w) * centered(n, c, h, w)
+    expectedVariance(c) +=! (variance(n, c, h, w) + 0.001) / (N * H * W)
+    rVarOut(c) = rsqrt((1 - 0.2) * rVarIn(c) + 0.2 * expectedVariance(c))
+    O(n, c, h, w) = centered(n, c, h, w) * rVarOut(c)
+    normalizedOut(n, c, h, w) = O(n, c, h, w)
+  }
+)TC";
+
+  Workspace w_test;
+  init_ws(w_test);
+  Argument tcArg = MakeArgument<string>("tc_def", tc);
+  Argument tcNameArg = MakeArgument<string>("tc_name", "batchnormgrid");
+  CudaMappingOptions options =
+      tc::makeBaseCliStrategy()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .tile(2, 64)
+          .unroll(2)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads(32, 2)
+          .mapToBlocks(128)
+          .useSharedMemory(false)
+          .usePrivateMemory(true)
+          .unrollCopyShared(false);
+  Argument strategyArg = MakeArgument<string>(
+      "mappingOptions",
+      tc::makeCliStrategy(options).toProtobufSerializedString());
+  auto op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "TcOp",
+      {"I", "rMeanIn", "rVarIn"},
+      {"O",
+       "rMeanOut",
+       "rVarOut",
+       "mean",
+       "centered",
+       "variance",
+       "expectedVariance",
+       "normalizedOut"},
+      {tcArg, tcNameArg, strategyArg});
+  auto op = CreateOperator(op_def, &w_test);
+  ASSERT_TRUE(op.get());
+  ASSERT_TRUE(op->Run());
+
+  TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+
+  // CheckEqual(w_ref, w_test, "Z", 1e-6);
+}
+
 // TODO:
 TEST_F(Caffe2Test, DISABLED_TcGather) {
   auto init_ws = [&](Workspace& w) {

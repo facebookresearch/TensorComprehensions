@@ -208,13 +208,11 @@ def batchnorm(
     normalizedOut(n, c, h, w) = centered(n, c, h, w) * rVarOut(c)
     })TC";
 
-
   auto name = "batchnorm";
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
   std::string cacheFilename = "";
-  auto bestOptions =
-    autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
 }
 
 TEST_F(ATenCompilationUnitTest, GroupConvolution) {
@@ -239,8 +237,7 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
   std::string cacheFilename = "";
-  auto bestOptions =
-    autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
 }
 
 int main(int argc, char** argv) {
