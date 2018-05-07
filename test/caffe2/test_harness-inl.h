@@ -97,9 +97,9 @@ at::Tensor MakeAtenTensor(
 
 template <
     typename Backend,
-    class IterableInputs = std::initializer_list<string>,
-    class IterableOutputs = std::initializer_list<string>,
-    class IterableArgs = std::initializer_list<Argument>>
+    class IterableInputs,
+    class IterableOutputs,
+    class IterableArgs>
 OperatorDef MakeOperatorDef(
     std::string type,
     IterableInputs ins,
