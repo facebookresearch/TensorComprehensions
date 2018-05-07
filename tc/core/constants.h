@@ -22,7 +22,6 @@ namespace polyhedral {
 // General constants to avoid hardcoding
 //
 constexpr auto kStatementLabel = "S_";
-constexpr auto kPartialScheduleLabel = "L_";
 
 constexpr auto kAstNodeIdPrefix = "__node_";
 
