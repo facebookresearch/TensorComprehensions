@@ -253,7 +253,6 @@ TEST_F(TcCudaMapperTest, BatchTripleHadamard) {
   at::Tensor V = at::CUDA(at::kFloat).rand({B, D});
   at::Tensor W = at::CUDA(at::kFloat).rand({B, D});
   std::vector<at::Tensor> inputs = {U, V, W};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def batch_triple_hadamard(float(B, D) U, float(B, D) V, float(B, D) W) -> (Z) {
@@ -283,7 +282,6 @@ TEST_F(TcCudaMapperTest, TensorDot) {
   at::Tensor I0 = at::CUDA(at::kFloat).rand({N, C1, C2, H, W});
   at::Tensor I1 = at::CUDA(at::kFloat).rand({N, C2, C3, H, W});
   std::vector<at::Tensor> inputs = {I0, I1};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
@@ -309,7 +307,6 @@ TEST_F(TcCudaMapperTest, LUT) {
   at::Tensor I =
       at::CUDA(at::kFloat).rand({B, N}).mul_(B).floor_().toType(at::kInt);
   std::vector<at::Tensor> inputs = {LUT, I};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
@@ -361,7 +358,6 @@ TEST_F(TcCudaMapperTest, DISABLED_SpatialBatchNormalization) {
   at::Tensor rMeanIn = at::CUDA(at::kFloat).rand({C2});
   at::Tensor rVarIn = at::CUDA(at::kFloat).rand({C2});
   std::vector<at::Tensor> inputs = {momentum, eps, I, rMeanIn, rVarIn};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def spatial_batch_norm(
