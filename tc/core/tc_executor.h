@@ -71,6 +71,8 @@ class TcExecutor {
       const std::vector<TensorInfo>& inputsInfo,
       const std::vector<TensorInfo>& outputsInfo,
       const tc2halide::HalideComponents& halideComponents,
+      const lang::TreeRef& tc,
+      const typename Backend::MappingOptionsType& options,
       const typename Backend::CompilationResultType& compilationResult);
 
  public:
@@ -104,6 +106,12 @@ class TcExecutor {
   // For inspection purposes
   const std::string compiledSource;
 
+  const std::vector<TensorInfo>& inputsInfo() const;
+  const std::vector<TensorInfo>& outputsInfo() const;
+  std::string deviceName() const;
+  const lang::TreeRef& tc() const;
+  const typename Backend::MappingOptionsType& options() const;
+
  protected:
   /// Used to check proper metadata when calling run
   ///@{
@@ -116,6 +124,12 @@ class TcExecutor {
   ///@{
   std::vector<long> parameters_;
   std::unique_ptr<typename Backend::RTCFunctionType> rtcFun_;
+  ///@}
+  
+  /// The source and options used to compile this executor
+  ///@{
+  lang::TreeRef tc_;
+  typename Backend::MappingOptionsType options_;
   ///@}
 };
 } // namespace tc

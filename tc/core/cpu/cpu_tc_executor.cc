@@ -29,11 +29,15 @@ CpuTcExecutor::CpuTcExecutor(
     const std::vector<TensorInfo>& inputsInfo,
     const std::vector<TensorInfo>& outputsInfo,
     const tc2halide::HalideComponents& halideComponents,
+    const lang::TreeRef& tc,
+    const CpuMappingOptions& options,
     const typename CpuBackend::CompilationResultType& compilationResult)
     : TcExecutor<CpuBackend>(
           inputsInfo,
           outputsInfo,
           halideComponents,
+          tc,
+          options,
           compilationResult) {
   LOG(ERROR) << "NYI: CpuTcExecutor::CpuTcExecutor setup RTC";
 }

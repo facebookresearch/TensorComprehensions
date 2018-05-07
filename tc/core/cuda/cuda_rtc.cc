@@ -66,6 +66,7 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
   int device, minor, major;
   CUdevice deviceHandle;
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&device));
+  res->deviceName_ = CudaGPUInfo::GPUInfo().GetGPUName(device);
   TC_CUDA_DRIVERAPI_ENFORCE(cuDeviceGet(&deviceHandle, device));
   TC_CUDA_DRIVERAPI_ENFORCE(cuDeviceGetAttribute(
       &major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, deviceHandle));

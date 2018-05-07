@@ -30,6 +30,8 @@ class CudaTcExecutor : public TcExecutor<CudaBackend> {
       const std::vector<TensorInfo>& inputsInfo,
       const std::vector<TensorInfo>& outputsInfo,
       const tc2halide::HalideComponents& halideComponents,
+      const lang::TreeRef& tc,
+      const CudaMappingOptions& options,
       const typename CudaBackend::CompilationResultType& compilationResult);
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to

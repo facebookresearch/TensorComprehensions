@@ -61,10 +61,15 @@ class CudaRTCFunction {
 
   void clear();
 
+  const std::string& deviceName() const {
+    return deviceName_;
+  }
+
  private:
   mutable std::unordered_map<size_t, CUmodule> perGpuModule_;
   mutable std::unordered_map<size_t, CUfunction> perGpuKernel_;
   std::string specializedName;
+  std::string deviceName_;
   std::vector<char> nvrtc_ptx;
   bool cleared_;
 };
