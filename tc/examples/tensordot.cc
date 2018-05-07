@@ -21,6 +21,8 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include "common.h"
+
 #include "tc/aten/aten.h"
 #include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
@@ -32,19 +34,6 @@
 #include "tc/core/flags.h"
 
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
-
-template <typename Backend>
-at::Tensor makeATenTensor(at::ArrayRef<long int> sizes);
-
-template <>
-at::Tensor makeATenTensor<tc::CudaBackend>(at::ArrayRef<long int> sizes) {
-  return at::CUDA(at::kFloat).rand(sizes);
-}
-
-template <>
-at::Tensor makeATenTensor<tc::CpuBackend>(at::ArrayRef<long int> sizes) {
-  return at::CPU(at::kFloat).rand(sizes);
-}
 
 template <typename Backend>
 void testOnBackend() {
