@@ -31,6 +31,8 @@
 #include "tc/c2/tc_op.h"
 #include "tc/core/cuda/cuda.h"
 
+#include "cuda/test_harness.h"
+
 namespace caffe2 {
 
 // CPUBackend is always used and the source of truth for performing checks
@@ -105,7 +107,7 @@ struct TestHarness {
       IterableInputs ins,
       IterableOutputs outs,
       IterableArgs args = {},
-      caffe2::DeviceType dtype = caffe2::DeviceType::CPU) {
+      caffe2::DeviceType dtype = caffe2::CPUBackend::Device) {
     OperatorDef def = CreateOperatorDef(type, "", ins, outs, args);
     def.mutable_device_option()->set_device_type(dtype);
     return def;
@@ -121,12 +123,12 @@ struct TestHarness {
       IterableOutputs outs,
       IterableArgs args = {}) {
     return TestHarness::Configure(
-        type, ins, outs, args, caffe2::DeviceType::CUDA);
+        type, ins, outs, args, caffe2::CUDABackend::Device);
   }
 
   static DeviceOption getCUDADevice() {
     DeviceOption device;
-    device.set_device_type(caffe2::DeviceType::CUDA);
+    device.set_device_type(caffe2::CUDABackend::Device);
     return device;
   }
 
@@ -217,7 +219,7 @@ struct TestHarness {
   template <typename T>
   static void CheckMatMulOfOnesOnCPU(caffe2::Blob* b, int m, int n, int k) {
     auto& C = b->Get<T>();
-    auto cpuC = caffe2::Tensor<caffe2::CPUContext>(C);
+    auto cpuC = caffe2::Tensor<caffe2::CPUBackend::Context>(C);
     assert(cpuC.size() == m * n);
     for (int i = 0; i < cpuC.size(); ++i) {
       ASSERT_EQ(cpuC.data<float>()[i], static_cast<float>(k));
@@ -230,10 +232,10 @@ struct TestHarness {
       std::string name,
       float relativePrecision = 0.0) {
     // Resolved dynamically
-    caffe2::Tensor<caffe2::CPUContext> Texpected(
-        expected.GetBlob(name)->Get<caffe2::TensorCUDA>());
-    caffe2::Tensor<caffe2::CPUContext> Tactual(
-        actual.GetBlob(name)->Get<caffe2::TensorCUDA>());
+    caffe2::Tensor<caffe2::CPUBackend::Context> Texpected(
+        expected.GetBlob(name)->Get<caffe2::CUDABackend::Tensor>());
+    caffe2::Tensor<caffe2::CPUBackend::Context> Tactual(
+        actual.GetBlob(name)->Get<caffe2::CUDABackend::Tensor>());
     for (int i = 0; i < Texpected.size(); ++i) {
       LOG(INFO) << name << "[" << i << "] | E=" << Texpected.data<float>()[i]
                 << " \tA=" << Tactual.data<float>()[i] << "\n";
@@ -241,8 +243,8 @@ struct TestHarness {
   }
 
   static void CheckEqual(
-      const caffe2::Tensor<caffe2::CPUContext>& Texpected,
-      const caffe2::Tensor<caffe2::CPUContext>& Tactual,
+      const caffe2::Tensor<caffe2::CPUBackend::Context>& Texpected,
+      const caffe2::Tensor<caffe2::CPUBackend::Context>& Tactual,
       float relativePrecision = 0.0,
       long offsetInExpected = 0,
       long offsetInActual = 0) {
@@ -267,7 +269,7 @@ struct TestHarness {
     }
   }
 
-  template <typename T = caffe2::TensorCUDA>
+  template <typename T = caffe2::CUDABackend::Tensor>
   static void CheckEqual(
       const caffe2::Workspace& expected,
       const caffe2::Workspace& actual,
@@ -276,9 +278,8 @@ struct TestHarness {
       long offsetInExpected = 0,
       long offsetInActual = 0) {
     // Resolved dynamically
-    caffe2::Tensor<caffe2::CPUContext> Texpected(
-        expected.GetBlob(name)->Get<T>());
-    caffe2::Tensor<caffe2::CPUContext> Tactual(actual.GetBlob(name)->Get<T>());
+    caffe2::CPUBackend::Tensor Texpected(expected.GetBlob(name)->Get<T>());
+    caffe2::CPUBackend::Tensor Tactual(actual.GetBlob(name)->Get<T>());
     CheckEqual(
         Texpected,
         Tactual,
@@ -345,8 +346,9 @@ struct TestHarness {
 
     // XXX:stupid gtest macros return void because
     // google doesn't like exceptions
-    void GetTcOp(TcOp<float, CUDAContext>** op) {
-      *op = dynamic_cast<TcOp<float, CUDAContext>*>(op_test.get());
+    void GetTcOp(TcOp<float, caffe2::CUDABackend::Context>** op) {
+      *op = dynamic_cast<TcOp<float, caffe2::CUDABackend::Context>*>(
+          op_test.get());
       ASSERT_NE(*op, nullptr);
     }
 
@@ -480,8 +482,8 @@ struct TestHarness {
     if (check) {
       for (const auto& n : names_to_compare) {
         TestHarness::CheckEqual(
-            caffe2::TensorCPU(getNamedTensor<Backend>(w1, n)),
-            caffe2::TensorCPU(getNamedTensor<Backend>(w2, n)),
+            CPUBackend::Tensor(getNamedTensor<Backend>(w1, n)),
+            CPUBackend::Tensor(getNamedTensor<Backend>(w2, n)),
             1e-4);
       }
     }
