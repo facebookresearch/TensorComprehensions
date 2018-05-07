@@ -253,7 +253,6 @@ TEST_F(TcCudaMapperTest, BatchTripleHadamard) {
   at::Tensor V = at::CUDA(at::kFloat).rand({B, D});
   at::Tensor W = at::CUDA(at::kFloat).rand({B, D});
   std::vector<at::Tensor> inputs = {U, V, W};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def batch_triple_hadamard(float(B, D) U, float(B, D) V, float(B, D) W) -> (Z) {
@@ -261,10 +260,10 @@ def batch_triple_hadamard(float(B, D) U, float(B, D) V, float(B, D) W) -> (Z) {
 }
   )TC";
 
-  auto checkFun = [=](const std::vector<at::Tensor>& inputs,
-                      std::vector<at::Tensor>& outputs) {
-    at::Tensor diff = outputs[0].sub(inputs[0] * inputs[1] * inputs[2]);
-    checkRtol(diff, inputs, D);
+  auto checkFun = [=](const std::vector<at::Tensor>& ins,
+                      std::vector<at::Tensor>& outs) {
+    at::Tensor diff = outs[0].sub(ins[0] * ins[1] * ins[2]);
+    checkRtol(diff, ins, D);
   };
   Check(
       TC,
@@ -283,7 +282,6 @@ TEST_F(TcCudaMapperTest, TensorDot) {
   at::Tensor I0 = at::CUDA(at::kFloat).rand({N, C1, C2, H, W});
   at::Tensor I1 = at::CUDA(at::kFloat).rand({N, C2, C3, H, W});
   std::vector<at::Tensor> inputs = {I0, I1};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
@@ -291,8 +289,8 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
 }
   )TC";
   // No defaults for this case
-  auto checkFun = [](const std::vector<at::Tensor>& inputs,
-                     std::vector<at::Tensor>& outputs) { return true; };
+  auto checkFun = [](const std::vector<at::Tensor>& ins,
+                     std::vector<at::Tensor>& outs) { return true; };
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "tensordot";
   Check(TC, name, options, inputs, checkFun);
@@ -309,7 +307,6 @@ TEST_F(TcCudaMapperTest, LUT) {
   at::Tensor I =
       at::CUDA(at::kFloat).rand({B, N}).mul_(B).floor_().toType(at::kInt);
   std::vector<at::Tensor> inputs = {LUT, I};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
@@ -317,13 +314,13 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
 }
 )TC";
 
-  auto checkFun = [=](const std::vector<at::Tensor>& inputs,
-                      std::vector<at::Tensor>& outputs) {
-    at::Tensor LUT = inputs[0].toBackend(at::kCPU);
-    at::Tensor I = inputs[1].toBackend(at::kCPU);
-    at::Tensor O = outputs[0].toBackend(at::kCPU);
-    auto LUTAccessor = LUT.accessor<float, 2>();
-    auto IAccessor = I.accessor<int, 2>();
+  auto checkFun = [=](const std::vector<at::Tensor>& ins,
+                      std::vector<at::Tensor>& outs) {
+    at::Tensor lut = ins[0].toBackend(at::kCPU);
+    at::Tensor in = ins[1].toBackend(at::kCPU);
+    at::Tensor O = outs[0].toBackend(at::kCPU);
+    auto LUTAccessor = lut.accessor<float, 2>();
+    auto IAccessor = in.accessor<int, 2>();
     auto OAccessor = O.accessor<float, 2>();
     for (int b = 0; b < B; b++) {
       for (int n = 0; n < N; n++) {
@@ -337,7 +334,7 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
       }
     }
 
-    checkRtol(O, inputs, 5e-7);
+    checkRtol(O, ins, 5e-7);
   };
   Check(
       TC,
@@ -361,7 +358,6 @@ TEST_F(TcCudaMapperTest, DISABLED_SpatialBatchNormalization) {
   at::Tensor rMeanIn = at::CUDA(at::kFloat).rand({C2});
   at::Tensor rVarIn = at::CUDA(at::kFloat).rand({C2});
   std::vector<at::Tensor> inputs = {momentum, eps, I, rMeanIn, rVarIn};
-  std::vector<at::Tensor> outputs;
 
   static constexpr auto TC = R"TC(
 def spatial_batch_norm(
@@ -382,8 +378,8 @@ def spatial_batch_norm(
     normalizedOut(n, c, h, w) =        O(n, c, h, w)
 })TC";
 
-  auto checkFun = [=](const std::vector<at::Tensor>& inputs,
-                      std::vector<at::Tensor>& outputs) {
+  auto checkFun = [=](const std::vector<at::Tensor>& ins,
+                      std::vector<at::Tensor>& outs) {
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 3e-7;
     std::cout << "Checking expected output relative precision @" << prec;
@@ -400,8 +396,8 @@ def spatial_batch_norm(
         at::Scalar(momentum[0]).toFloat(),
         at::Scalar(eps[0]).toFloat(),
         true);
-    auto diff = O.sub(outputs[0]);
-    checkRtol(diff, inputs, N * H * W, prec);
+    auto diff = O.sub(outs[0]);
+    checkRtol(diff, ins, N * H * W, prec);
   };
 
   auto name = "spatial_batch_norm";

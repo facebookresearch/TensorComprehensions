@@ -614,9 +614,9 @@ IslCodegenRes codegenISL(const Scop& scop) {
     auto collectIteratorMaps =
         [](isl::ast_node node,
            isl::ast_build build,
-           IteratorMapsType& iteratorMaps,
-           const Scop& scop,
-           StmtSubscriptExprMapType& stmtSubscripts) -> isl::ast_node {
+           IteratorMapsType& iteratorMapsInFun,
+           const Scop& scopInFun,
+           StmtSubscriptExprMapType& stmtSubscriptsInFun) -> isl::ast_node {
       auto user = node.as<isl::ast_node_user>();
       CHECK(user);
       auto expr = user.get_expr().as<isl::ast_expr_op>();
@@ -624,21 +624,22 @@ IslCodegenRes codegenISL(const Scop& scop) {
       auto scheduleMap = isl::map::from_union_map(schedule);
 
       auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
-      CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
+      CHECK_EQ(0u, iteratorMapsInFun.count(stmtId))
+          << "entry exists: " << stmtId;
       auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-      auto iterators = scop.halide.iterators.at(stmtId);
-      auto& stmtIteratorMap = iteratorMaps[stmtId];
+      auto iterators = scopInFun.halide.iterators.at(stmtId);
+      auto& stmtIteratorMap = iteratorMapsInFun[stmtId];
       for (size_t i = 0; i < iterators.size(); ++i) {
         auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
         stmtIteratorMap.emplace(iterators[i], expr);
       }
-      auto& subscripts = stmtSubscripts[stmtId];
-      auto provide =
-          scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
+      auto& subscripts = stmtSubscriptsInFun[stmtId];
+      auto provide = scopInFun.halide.statements.at(stmtId)
+                         .as<Halide::Internal::Provide>();
       for (auto e : provide->args) {
         const auto& map = iteratorMap;
         auto space = map.get_space().params();
-        auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
+        auto aff = scopInFun.makeIslAffFromStmtExpr(stmtId, space, e);
         auto pulled = isl::pw_aff(aff).pullback(map);
         CHECK_EQ(pulled.n_piece(), 1);
         subscripts.push_back(build.expr_from(pulled));

@@ -19,10 +19,7 @@ namespace caffe2 {
 
 namespace detail {
 
-std::mutex& RNGMutex() {
-  static std::mutex rng_mutex;
-  return rng_mutex;
-}
+std::mutex& RNGMutex();
 
 template <typename T>
 T* NewTensor(
@@ -97,9 +94,9 @@ at::Tensor MakeAtenTensor(
 
 template <
     typename Backend,
-    class IterableInputs = std::initializer_list<string>,
-    class IterableOutputs = std::initializer_list<string>,
-    class IterableArgs = std::initializer_list<Argument>>
+    class IterableInputs,
+    class IterableOutputs,
+    class IterableArgs>
 OperatorDef MakeOperatorDef(
     std::string type,
     IterableInputs ins,

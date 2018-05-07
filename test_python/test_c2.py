@@ -31,7 +31,7 @@ else:
 
 MATMUL_LANG = """
 def matmul(float(M,N) A, float(N,K) B) -> (output) {
-    output(m, n) +=! A(m, r_n) * B(r_n, k)
+    output(m, k) +=! A(m, r_n) * B(r_n, k)
 }
 """
 

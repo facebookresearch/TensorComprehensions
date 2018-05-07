@@ -463,14 +463,16 @@ isl::union_set modifyMappingNames(
     space = space.set_dim_name(isl::dim_type::param, dim, name + suffix);
   }
   auto newSet = isl::union_set::empty(space);
-  set.foreach_set([&newSet, &identifiers, &suffix](isl::set set) {
+  set.foreach_set([&newSet, &identifiers, &suffix](isl::set setInFun) {
     for (auto id : identifiers) {
       auto name = id.get_name();
-      auto dim = set.get_space().find_dim_by_name(isl::dim_type::param, name);
+      auto dim =
+          setInFun.get_space().find_dim_by_name(isl::dim_type::param, name);
       CHECK_LE(0, dim);
-      set = set.set_dim_name(isl::dim_type::param, dim, name + suffix);
+      setInFun =
+          setInFun.set_dim_name(isl::dim_type::param, dim, name + suffix);
     }
-    newSet = newSet.unite(set);
+    newSet = newSet.unite(setInFun);
   });
   return newSet;
 }
