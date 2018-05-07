@@ -83,12 +83,8 @@ class TcOp : public Operator<Context> {
         inputVoidPtrs_.push_back(inputDLTensors_.back()->data);
       }
 
-      auto parsedTcs = tc::detail::parse(tc_);
-      CHECK_EQ(parsedTcs.count(tcName_), 1u)
-          << "attempting to access undefined function " << tcName_;
-
-      auto outTensorInfo = tc::detail::inferOutputTensorInfo(
-          parsedTcs.at(tcName_), rawInputDLTensors_);
+      auto outTensorInfo =
+          tc::inferOutputTensorInfo(tc_, tcName_, rawInputDLTensors_);
       prepareOutputs(outTensorInfo);
 
       // now create the outputDLTensors
@@ -100,7 +96,7 @@ class TcOp : public Operator<Context> {
 
       // compile
       executor_ = tc::compile<tc::CudaBackend>(
-          parsedTcs.at(tcName_), rawInputDLTensors_, cudaMappingOptions_);
+          tc_, tcName_, rawInputDLTensors_, cudaMappingOptions_);
       compiled_ = true;
     }
 
