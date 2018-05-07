@@ -41,13 +41,7 @@ class TcOp : public Operator<Context> {
         tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
         tcName_(
             OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
-        cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
-        gradCudaMappingOptions_(
-            tc::CudaMappingOptions::makeNaiveMappingOptions()) {
-    gradTc_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
-    gradTcName_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
+        cudaMappingOptions_(tc::CudaMappingOptions::makeNaiveMappingOptions()) {
     compiled_ = false;
     checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
     ArgumentHelper args(operator_def);
@@ -56,14 +50,6 @@ class TcOp : public Operator<Context> {
           args.GetSingleArgument<std::string>("mappingOptions", "ERROR"));
     } else {
       setupNaiveCudaMappingOptions();
-    }
-
-    if (args.HasArgument("gradCudaMappingOptions")) {
-      gradCudaMappingOptions_ =
-          tc::CudaMappingOptions(args.GetSingleArgument<std::string>(
-              "gradCudaMappingOptions", "ERROR"));
-    } else {
-      setupDefaultGradCudaMappingOptions();
     }
   }
 
@@ -76,11 +62,6 @@ class TcOp : public Operator<Context> {
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
   virtual void setupNaiveCudaMappingOptions() {}
-
-  /// Hook called when the gradCudaMappingOptions are not provided in the Caffe2
-  /// operator arguments. Does nothing by default, derived classes can
-  /// reimplement this to customize stategies.
-  virtual void setupDefaultGradCudaMappingOptions() {}
 
   void prepareOutputs(const std::vector<tc::TensorInfo> tensorInfos) {
     for (size_t i = 0; i < tensorInfos.size(); ++i) {
@@ -134,13 +115,10 @@ class TcOp : public Operator<Context> {
 
  protected:
   std::string tc_;
-  std::string gradTc_;
   std::string tcName_;
-  std::string gradTcName_;
   bool compiled_;
   bool checkSizes_;
   tc::CudaMappingOptions cudaMappingOptions_;
-  tc::CudaMappingOptions gradCudaMappingOptions_;
   // Owning DLTensor wrapping C2 tensors
   std::vector<tc::DLConstTensorUPtr> inputDLTensors_;
   std::vector<tc::DLTensorUPtr> outputDLTensors_;

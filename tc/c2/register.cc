@@ -36,7 +36,6 @@ namespace caffe2 {
 // REGISTER_CPU_OPERATOR(TcMatMulOp, TcMatMulOp<float, CPUContext>);
 
 REGISTER_CUDA_OPERATOR(TcMatMulOp, TcMatMulOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcMatMulOp, GetTcOpGradient);
 OPERATOR_SCHEMA(TcMatMulOp)
     .NumInputs(2)
     .NumOutputs(1)
@@ -175,7 +174,6 @@ TC_REFERENCE_IMPLEMENTATION(
     });
 
 REGISTER_CUDA_OPERATOR(TcCopyOp, TcCopyOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcCopyOp, GetTcOpGradient);
 OPERATOR_SCHEMA(TcCopyOp).NumInputs(1).NumOutputs(1).SetDoc(
     TcCopyOp<float, CUDAContext>::description);
 TC_REFERENCE_IMPLEMENTATION(
@@ -190,7 +188,6 @@ TC_REFERENCE_IMPLEMENTATION(
     });
 
 REGISTER_CUDA_OPERATOR(TcConvolutionOp, TcConvolutionOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcConvolutionOp, GetTcOpGradient);
 OPERATOR_SCHEMA(TcConvolutionOp)
     .NumInputs(3)
     .NumOutputs(1)
@@ -209,7 +206,6 @@ TC_REFERENCE_IMPLEMENTATION(
 REGISTER_CUDA_OPERATOR(
     TcGroupConvolutionOp,
     TcGroupConvolutionOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcGroupConvolutionOp, GetTcOpGradient);
 OPERATOR_SCHEMA(TcGroupConvolutionOp).NumInputs(3).NumOutputs(1).SetDoc(R"DOC(
     O(b, g, o, x, y)  = 0
     O(b, g, o, x, y) += I(b, g, i, x + kx, y + ky) * W(g, i, o, kx, ky)
@@ -357,6 +353,5 @@ TC_REFERENCE_IMPLEMENTATION(
     });
 
 REGISTER_CUDA_OPERATOR(TcOp, TcOp<float, CUDAContext>);
-REGISTER_GRADIENT(TcOp, GetTcOpGradient);
 OPERATOR_SCHEMA(TcOp).SetDoc(R"DOC(Generic Op using CudaExecutionEngine)DOC");
 }; // namespace caffe2

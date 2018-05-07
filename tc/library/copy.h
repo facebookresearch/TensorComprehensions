@@ -27,18 +27,10 @@ static constexpr auto COPY_DOC = R"DOC(
 
 constexpr static auto COPY_TC_NAME = "copy";
 
-constexpr static auto COPY_GRAD_TC_NAME = "copyGrad";
-
 namespace {
 constexpr static auto COPY_TC = R"TC(
   def copy(float(${dimParams}) I) -> (O) {
     O(${dimIndices}) = I(${dimIndices})
-  }
-)TC";
-
-constexpr static auto COPY_GRAD_TC = R"TC(
-  def copyGrad(float(${dimParams}) d_O) -> (d_I) {
-    d_I(${dimIndices}) = d_O(${dimIndices})
   }
 )TC";
 } // namespace
@@ -61,10 +53,6 @@ setInputDims(std::string tcStr, int numDims, std::string paramPrefix) {
 
 std::string makeCopyTc(int numDims) {
   return setInputDims(COPY_TC, numDims, "P");
-}
-
-std::string makeCopyGradTc(int numDims) {
-  return setInputDims(COPY_GRAD_TC, numDims, "PG");
 }
 
 } // namespace tc

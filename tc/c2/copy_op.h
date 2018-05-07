@@ -36,8 +36,6 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
   bool RunOnDevice() override {
     this->tc_ = tc::makeCopyTc(this->Input(0).dims().size());
     this->tcName_ = tc::COPY_TC_NAME;
-    this->gradTc_ = tc::makeCopyGradTc(this->Input(0).dims().size());
-    this->gradTcName_ = tc::COPY_GRAD_TC_NAME;
     return TcOp<T, Context, Engine>::RunOnDevice();
   }
 
@@ -49,8 +47,6 @@ class TcCopyOp : public TcOp<T, Context, Engine> {
             .mapToThreads({32, 4, 4})
             .mapToBlocks({100, 100, 100})
             .unroll(128);
-    this->gradCudaMappingOptions_ =
-        tc::CudaMappingOptions::makePointwiseMappingOptions();
   }
 };
 } // namespace caffe2
