@@ -51,7 +51,7 @@ def GetArgumentParser():
     parser.add_argument("--tuner_cache_file", type=str,
                         default="tuner_cache",
                         help="File to store tuned mapping options")
-    parser.add_argument("--tuner_gpus", type=str,
+    parser.add_argument("--tuner_devices", type=str,
                         default="0",
                         help="String representation of gpus to use for tuning (e.g. \"0,1\")")
     parser.add_argument("--tuner_threads", type=int, default=10,
@@ -70,7 +70,7 @@ def main():
     core.GlobalInit([
         'tc_bench',
         '--caffe2_logging_operator_dyno_sampling_rate=0',
-        '--tuner_gpus=' + args.tuner_gpus,
+        '--tuner_devices=' + args.tuner_devices,
         '--caffe2_simple_net_benchmark_run_whole_net=0',
     ] + extra_args)
     mapping_options = tune(args)
