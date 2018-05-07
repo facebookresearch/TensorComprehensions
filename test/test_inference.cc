@@ -212,26 +212,26 @@ O@[N; M; ((H - KH) + 1); ((W - KW) + 1); ]
 TEST_F(InferenceTest, ConvGrad) {
   Check(
       R"(
-      def convolutionGrad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,OH,OW) O_grad) -> (I_grad, W1_grad, B_grad) {
-        I_grad(n, c, h, w) +=! O_grad(n, m, h - kh, w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, h - kh, w - kw) * I(n, c, h, w)
-        B_grad(m) +=! O_grad(n, m, h, w)
+      def convolutionGrad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,OH,OW) d_O) -> (d_I, d_W1, d_B) {
+        d_I(n, c, h, w) +=! d_O(n, m, h - kh, w - kw) * W1(m, c, kh, kw)
+        d_W1(m, c, kh, kw) +=! d_O(n, m, h - kh, w - kw) * I(n, c, h, w)
+        d_B(m) +=! d_O(n, m, h, w)
       }
     )",
       R"HALIDE(mins:
 I@[0; 0; 0; 0; ]
 W1@[0; 0; 0; 0; ]
-O_grad@[0; 0; 0; 0; ]
-I_grad@[0; 0; (KH + -1); (KW + -1); ]
-W1_grad@[0; 0; (H - OH); (W - OW); ]
-B_grad@[0; ]
+d_O@[0; 0; 0; 0; ]
+d_I@[0; 0; (KH + -1); (KW + -1); ]
+d_W1@[0; 0; (H - OH); (W - OW); ]
+d_B@[0; ]
 extents:
 I@[N; C; H; W; ]
 W1@[M; C; KH; KW; ]
-O_grad@[N; M; OH; OW; ]
-I_grad@[N; C; ((OH - KH) + 1); ((OW - KW) + 1); ]
-W1_grad@[M; C; ((OH - H) + 1); ((OW - W) + 1); ]
-B_grad@[M; ]
+d_O@[N; M; OH; OW; ]
+d_I@[N; C; ((OH - KH) + 1); ((OW - KW) + 1); ]
+d_W1@[M; C; ((OH - H) + 1); ((OW - W) + 1); ]
+d_B@[M; ]
 )HALIDE");
 }
 

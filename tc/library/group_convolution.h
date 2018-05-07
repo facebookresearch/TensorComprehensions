@@ -20,8 +20,6 @@
 namespace tc {
 
 constexpr static auto GROUP_CONVOLUTION2D_TC_NAME = "group_convolution";
-constexpr static auto GROUP_CONVOLUTION2D_GRAD_TC_NAME =
-    "group_convolution2dGrad";
 
 namespace {
 constexpr static auto GROUP_CONVOLUTION2D_TC = R"TC(
@@ -33,34 +31,12 @@ constexpr static auto GROUP_CONVOLUTION2D_TC = R"TC(
     O(n, g, f, h, w) = O(n, g, f, h, w) + B(g, f)
   }
 )TC";
-
-constexpr static auto GROUP_CONVOLUTION2D_GRAD_TC = R"TC(
-  def group_convolution2dGrad(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1,
-                              float(N,F,H,W) O_grad)
-  -> (I_grad, W1_grad, B_grad)
-  {
-    I_grad(n, g, c, h, w) +=!
-      O_grad(n, g, f, <sh> * h - kh, <sw> * w - kw) * W1(g, f, c, kh, kw)
-    W1_grad(g, f, c, kh, kw) +=!
-      O_grad(n, g, f, <sh> * h - kh, <sw> * w - kw) * I(n, g, c, h, w)
-    B_grad(g, f) +=! O_grad(n, g, f, h, w)
-  }
-)TC";
 } // namespace
 
 std::string makeGroupConvolution2DTc(int strideH, int strideW) {
   CHECK(strideH > 0 && strideW > 0) << "Stride must be greater than 0";
   std::string tcStr;
   tcStr = GROUP_CONVOLUTION2D_TC;
-  tcStr = replaceString(tcStr, "<sh>", std::to_string(strideH));
-  tcStr = replaceString(tcStr, "<sw>", std::to_string(strideW));
-  return tcStr;
-}
-
-std::string makeGroupConvolution2DGradTc(int strideH, int strideW) {
-  CHECK(strideH > 0 && strideW > 0) << "Stride must be greater than 0";
-  std::string tcStr;
-  tcStr = GROUP_CONVOLUTION2D_GRAD_TC;
   tcStr = replaceString(tcStr, "<sh>", std::to_string(strideH));
   tcStr = replaceString(tcStr, "<sw>", std::to_string(strideW));
   return tcStr;

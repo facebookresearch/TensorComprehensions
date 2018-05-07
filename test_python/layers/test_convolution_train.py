@@ -30,11 +30,11 @@ class TestTrainConvolutionStrided(unittest.TestCase):
         def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
             O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
         }}
-        def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad)
-        -> (I_grad, W1_grad)
+        def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O)
+        -> (d_I, d_W1)
         {{
-            I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-            W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+            d_I(n, c, h, w) +=! d_O(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
+            d_W1(m, c, kh, kw) +=! d_O(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
         }}
         """
 

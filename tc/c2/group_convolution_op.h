@@ -70,8 +70,6 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
 
     this->tc_ = tc::makeGroupConvolution2DTc(strideH, strideW);
     this->tcName_ = tc::GROUP_CONVOLUTION2D_TC_NAME;
-    this->gradTc_ = tc::makeGroupConvolution2DGradTc(strideH, strideW);
-    this->gradTcName_ = tc::GROUP_CONVOLUTION2D_GRAD_TC_NAME;
   }
 
   ~TcGroupConvolutionOp() override {}
@@ -79,8 +77,6 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
  protected:
   void setupNaiveCudaMappingOptions() override {
     this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
-    this->gradCudaMappingOptions_ =
         tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
   }
 };
