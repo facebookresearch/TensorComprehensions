@@ -21,12 +21,13 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
-#include "../test/test_harness.h"
+#include "../test/caffe2/cuda/test_harness.h"
+#include "../test/caffe2/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
 #include "benchmark_fixture.h"
 
@@ -49,7 +50,7 @@ class BatchMatMul : public Benchmark {
       uint32_t M,
       uint32_t K,
       const tc::CudaMappingOptions& options,
-      bool useFlags = false);
+      bool use_flags = false);
 };
 
 void BatchMatMul::runBatchMatMul(
@@ -58,18 +59,18 @@ void BatchMatMul::runBatchMatMul(
     uint32_t M,
     uint32_t K,
     const tc::CudaMappingOptions& options,
-    bool useFlags) {
+    bool use_flags) {
   at::Tensor X = at::CUDA(at::kFloat).rand({B, N, M});
   at::Tensor Y = at::CUDA(at::kFloat).rand({B, M, K});
 
-  auto refOutput = X.bmm(Y);
-  auto checkFun = [&, refOutput](
-                      const std::vector<at::Tensor>& inputs,
-                      const std::vector<at::Tensor>& outputs) {
+  auto ref_output = X.bmm(Y);
+  auto check_fun = [&, ref_output](
+                       const std::vector<at::Tensor>& inputs,
+                       const std::vector<at::Tensor>& outputs) {
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 3e-7;
     std::cout << "Checking expected output relative precision @" << prec;
-    at::Tensor diff = outputs[0].sub(refOutput);
+    at::Tensor diff = outputs[0].sub(ref_output);
     checkRtol(diff, inputs, M, prec);
     return true;
   };
@@ -84,18 +85,18 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
       std::string("_K_") + std::to_string(FLAGS_K) + std::string("_M_") +
       std::to_string(FLAGS_M) + std::string("_N_") + std::to_string(FLAGS_N);
-  if (useFlags && FLAGS_validate_proto) {
+  if (use_flags && FLAGS_validate_proto) {
     validateProto(
         FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
             suffix,
         tc,
         "batch_matmul",
         inputs,
-        checkFun);
+        check_fun);
   } else {
     std::vector<at::Tensor> outputs;
-    Check(tc, "batch_matmul", options, inputs, outputs, checkFun);
-    if (useFlags) {
+    Check(tc, "batch_matmul", options, inputs, outputs, check_fun);
+    if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
               suffix,
@@ -105,8 +106,7 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
           "batch_matmul",
           inputs,
           options,
-          {options},
-          checkFun);
+          check_fun);
     }
   }
 }
@@ -116,7 +116,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul) {
   auto N = FLAGS_N;
   auto M = FLAGS_M;
   auto K = FLAGS_K;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .tile(1)
                      .mapToThreads({128})
                      .mapToBlocks({B})
@@ -131,7 +131,7 @@ TEST_F(BatchMatMul, TransposedBatchMatMul_P100_autotuned_B_500_K_26_M_72_N_26) {
   uint32_t K = 26;
   uint32_t M = 72;
   uint32_t N = 26;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -169,12 +169,11 @@ TEST_F(BatchMatMul, C2TransposedBatchMatMulReference) {
   int K = FLAGS_K;
 
   Workspace w_ref;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w_ref, {B, N, M}, "X");
   AddInput(w_ref, {B, M, K}, "Y");
   OperatorDef ref_def =
-      TestHarness::ConfigureCUDA("BatchMatMul", {"X", "Y"}, {"Z"});
+      MakeOperatorDef<caffe2::CUDABackend>("BatchMatMul", {"X", "Y"}, {"Z"});
   std::unique_ptr<OperatorBase> net(CreateOperator(ref_def, &w_ref));
   Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
 }
@@ -183,6 +182,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

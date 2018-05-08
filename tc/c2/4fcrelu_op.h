@@ -31,15 +31,14 @@ class Tc4FCReluOp : public TcOp<T, Context, Engine> {
   Tc4FCReluOp(const caffe2::OperatorDef& operator_def, caffe2::Workspace* ws)
       : TcOp<T, Context, Engine>(operator_def, ws) {
     this->tc_ = tc::TC_4FCRELU;
-    this->tcName_ = tc::TC_4FCRELU_NAME;
+    this->tc_name_ = tc::TC_4FCRELU_NAME;
   }
 
   ~Tc4FCReluOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeMlpCudaMappingOptions();
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_ = tc::CudaMappingOptions::makeMlpMappingOptions();
   }
 };
 } // namespace caffe2

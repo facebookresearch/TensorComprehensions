@@ -53,6 +53,6 @@ class TestCase(unittest.TestCase):
     def check(self, lang, tc_name, options, inputs, outputs=None):
         cu = TcCompilationUnit()
         cu.define(lang)
-        handle = cu.compile(tc_name, inputs, options=options)
-        outputs = cu.run(handle, tc_name, inputs, outputs=outputs)
+        cu.compile(tc_name, inputs, options=options)
+        outputs = cu.run(tc_name, inputs, outputs=outputs)
         return outputs

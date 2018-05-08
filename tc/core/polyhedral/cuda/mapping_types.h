@@ -17,6 +17,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/polyhedral/mapping_types.h"
 
 namespace tc {

@@ -69,19 +69,15 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
         << "NYI: padding larger than 0";
 
     this->tc_ = tc::makeGroupConvolution2DTc(strideH, strideW);
-    this->tcName_ = tc::GROUP_CONVOLUTION2D_TC_NAME;
-    this->gradTc_ = tc::makeGroupConvolution2DGradTc(strideH, strideW);
-    this->gradTcName_ = tc::GROUP_CONVOLUTION2D_GRAD_TC_NAME;
+    this->tc_name_ = tc::GROUP_CONVOLUTION2D_TC_NAME;
   }
 
   ~TcGroupConvolutionOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_ =
-        tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
-    this->gradCudaMappingOptions_ =
-        tc::CudaMappingOptions::makeGroupConvolutionCudaMappingOptions();
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_ =
+        tc::CudaMappingOptions::makeGroupConvolutionMappingOptions();
   }
 };
 } // namespace caffe2

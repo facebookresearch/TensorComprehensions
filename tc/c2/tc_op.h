@@ -20,10 +20,10 @@
 #include <string>
 #include <vector>
 
+#include "tc/core/compiler.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
-#include "tc/core/execution_engine.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 #include "tc/c2/context.h"
 #include "tc/c2/dlpack_c2.h"
@@ -37,38 +37,31 @@ template <typename T, class Context, class Engine = DefaultEngine>
 class TcOp : public Operator<Context> {
  public:
   TcOp(const OperatorDef& operator_def, Workspace* ws)
-      : caffe2::Operator<Context>(operator_def, ws),
-        tc_(OperatorBase::GetSingleArgument<std::string>("tcDef", "ERROR")),
-        tcName_(
-            OperatorBase::GetSingleArgument<std::string>("tcName", "ERROR")),
-        cudaMappingOptions_(
-            tc::CudaMappingOptions::makeNaiveCudaMappingOptions()),
-        gradCudaMappingOptions_(
-            tc::CudaMappingOptions::makeNaiveCudaMappingOptions()) {
-    gradTc_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradDef", "ERROR");
-    gradTcName_ =
-        OperatorBase::GetSingleArgument<std::string>("tcGradName", "ERROR");
-    checkSizes_ = OperatorBase::GetSingleArgument<bool>("checkSizes", false);
+      : Operator<Context>(operator_def, ws),
+        mapping_options_(tc::CudaMappingOptions::makeNaiveMappingOptions()),
+        grad_mapping_options_(
+            tc::CudaMappingOptions::makeNaiveMappingOptions()) {
+    is_backward_ = OperatorBase::GetSingleArgument<bool>("is_backward", false);
+    tc_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tc_grad_def" : "tc_def", "ERROR");
+    tc_name_ = OperatorBase::GetSingleArgument<std::string>(
+        is_backward_ ? "tc_grad_name" : "tc_name", "ERROR");
     compiled_ = false;
-    handle_ = 0;
+    check_sizes_ = OperatorBase::GetSingleArgument<bool>("check_sizes", false);
     ArgumentHelper args(operator_def);
-    if (args.HasArgument("mappingOptions")) {
-      cudaMappingOptions_ = tc::CudaMappingOptions(
-          args.GetSingleArgument<std::string>("mappingOptions", "ERROR"));
-    } else {
-      setupNaiveCudaMappingOptions();
-    }
 
-    if (args.HasArgument("gradCudaMappingOptions")) {
-      gradCudaMappingOptions_ =
-          tc::CudaMappingOptions(args.GetSingleArgument<std::string>(
-              "gradCudaMappingOptions", "ERROR"));
+    if (args.HasArgument("mapping_options")) {
+      mapping_options_ = tc::CudaMappingOptions(
+          args.GetSingleArgument<std::string>("mapping_options", "ERROR"));
     } else {
-      setupDefaultGradCudaMappingOptions();
+      SetupNaiveMappingOptions();
     }
-    executionEngine_ = std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>>(
-        new tc::ExecutionEngine<tc::CudaTcExecutor>());
+    if (args.HasArgument("grad_mapping_options")) {
+      grad_mapping_options_ = tc::CudaMappingOptions(
+          args.GetSingleArgument<std::string>("grad_mapping_options", "ERROR"));
+    } else {
+      SetupNaiveGradMappingOptions();
+    }
   }
 
   USE_OPERATOR_CONTEXT_FUNCTIONS;
@@ -76,21 +69,20 @@ class TcOp : public Operator<Context> {
   ~TcOp() override {}
 
  protected:
-  /// Hook called when the mappingOptions are not provided in the Caffe2
+  /// Hook called when the mapping_options are not provided in the Caffe2
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
-  virtual void setupNaiveCudaMappingOptions() {}
+  virtual void SetupNaiveMappingOptions() {}
 
-  /// Hook called when the gradCudaMappingOptions are not provided in the Caffe2
+  /// Hook called when the grad_mapping_options are not provided in the Caffe2
   /// operator arguments. Does nothing by default, derived classes can
   /// reimplement this to customize stategies.
-  virtual void setupDefaultGradCudaMappingOptions() {}
+  virtual void SetupNaiveGradMappingOptions() {}
 
-  void prepareOutputs(const std::vector<const DLTensor*> tensorInfo) {
-    for (size_t i = 0; i < tensorInfo.size(); ++i) {
-      auto info = tensorInfo[i];
-      std::vector<int64_t> shape(info->shape, info->shape + info->ndim);
-      Output(i)->Resize(shape);
+  void PrepareOutputs(const std::vector<tc::TensorInfo> tensorInfos) {
+    for (size_t i = 0; i < tensorInfos.size(); ++i) {
+      auto info = tensorInfos[i];
+      Output(i)->Resize(info.shape);
       // Note: this mutable_data() call actually creates the data storage.
       Output(i)->template mutable_data<T>();
     }
@@ -98,58 +90,63 @@ class TcOp : public Operator<Context> {
 
   virtual bool RunOnDevice() override {
     if (!compiled_) {
-      // first, given the TC, define it in the executionEngine_
-      executionEngine_->define(tc_);
+      // now, given the input tensors, convert them to dlpack tensors so that
+      // we can call the compile command
       for (int idx = 0; idx < this->InputSize(); ++idx) {
-        auto dims = this->Input(idx).dims();
-        inTensorUPtrs_.emplace_back(
-            dlpack::makeConstDLTensor(this->Input(idx), dims));
-        inputDLTensors_.push_back(inTensorUPtrs_[idx].get());
-        inputVoidPtrs_.push_back(inputDLTensors_[idx]->data);
+        input_dl_tensors_.emplace_back(
+            dlpack::makeDLConstTensor(this->Input(idx)));
+        raw_input_dl_tensors_.push_back(input_dl_tensors_.back().get());
+        input_void_ptrs_.push_back(input_dl_tensors_.back()->data);
       }
-      auto outTensorInfo =
-          executionEngine_->inferOutputTensorInfo(tcName_, inputDLTensors_);
-      prepareOutputs(outTensorInfo);
-      for (int idx = 0; idx < OutputSize(); ++idx) {
-        outTensorUPtrs_.emplace_back(dlpack::makeDLTensor(Output(idx)));
-        outputDLTensors_.push_back(outTensorUPtrs_[idx].get());
-        outputVoidPtrs_.push_back(outputDLTensors_[idx]->data);
+
+      auto out_tensor_info =
+          tc::inferOutputTensorInfo(tc_, tc_name_, raw_input_dl_tensors_);
+      PrepareOutputs(out_tensor_info);
+
+      // now create the output_dl_tensors
+      for (int i = 0; i < OutputSize(); ++i) {
+        output_dl_tensors_.emplace_back(dlpack::makeDLTensor(*Output(i)));
+        raw_output_dl_tensors_.push_back(output_dl_tensors_.back().get());
+        output_void_ptrs_.push_back(output_dl_tensors_[i]->data);
       }
-      handle_ = executionEngine_->compile(
-          tcName_,
-          inputDLTensors_,
-          cudaMappingOptions_.toProtobufSerializedString());
+
+      // compile
+      executor_ = tc::compile<tc::CudaBackend>(
+          tc_,
+          tc_name_,
+          raw_input_dl_tensors_,
+          is_backward_ ? grad_mapping_options_ : mapping_options_);
       compiled_ = true;
     }
 
-    if (checkSizes_) {
-      executionEngine_->run(handle_, inputDLTensors_, outputDLTensors_);
+    // run
+    if (!check_sizes_) {
+      executor_->uncheckedRun(input_void_ptrs_, output_void_ptrs_);
     } else {
-      executionEngine_->uncheckedRun(handle_, inputVoidPtrs_, outputVoidPtrs_);
+      executor_->run(raw_input_dl_tensors_, raw_output_dl_tensors_);
     }
-
     return true;
   }
 
  protected:
   std::string tc_;
-  std::string gradTc_;
-  std::string tcName_;
-  std::string gradTcName_;
-  bool checkSizes_;
+  std::string tc_name_;
   bool compiled_;
-  size_t handle_;
-  std::vector<const void*> inputVoidPtrs_;
-  std::vector<void*> outputVoidPtrs_;
-  std::vector<const DLTensor*> inputDLTensors_;
-  std::vector<DLTensor*> outputDLTensors_;
-  std::vector<::tc::dlutils::DLTensorUPtr> inTensorUPtrs_;
-  std::vector<::tc::dlutils::DLTensorUPtr> outTensorUPtrs_;
-  tc::CudaMappingOptions cudaMappingOptions_;
-  tc::CudaMappingOptions gradCudaMappingOptions_;
+  bool check_sizes_;
+  bool is_backward_;
+  tc::CudaMappingOptions mapping_options_;
+  tc::CudaMappingOptions grad_mapping_options_;
+  // Owning DLTensor wrapping C2 tensors
+  std::vector<tc::DLConstTensorUPtr> input_dl_tensors_;
+  std::vector<tc::DLTensorUPtr> output_dl_tensors_;
+  // Pointers into owning DLTensor wrapping C2 tensors
+  std::vector<const DLConstTensor*> raw_input_dl_tensors_;
+  std::vector<const DLTensor*> raw_output_dl_tensors_;
+  // Pointers into unchecked void*
+  std::vector<const void*> input_void_ptrs_;
+  std::vector<void*> output_void_ptrs_;
 
- private:
-  std::unique_ptr<tc::ExecutionEngine<tc::CudaTcExecutor>> executionEngine_;
+  std::unique_ptr<tc::CudaBackend::ExecutorType> executor_;
 };
 
 class GetTcOpGradient : public GradientMakerBase {
@@ -158,8 +155,37 @@ class GetTcOpGradient : public GradientMakerBase {
 
   std::vector<OperatorDef> GetGradientDefs() override {
     ArgumentHelper args(Def());
-    CHECK(false) << "NYI gradient";
-    return {};
+    vector<OperatorDef> grad_ops;
+
+    std::vector<string> input_vec, output_vec;
+
+    // First input: inputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("inputs_used_by_gradient")) {
+      input_vec.push_back(I(idx));
+    }
+
+    // Second input: outputs to be used in TC Op Gradient
+    for (int idx : args.GetRepeatedArgument<int>("outputs_used_by_gradient")) {
+      input_vec.push_back(O(idx));
+    }
+
+    // Third input: Gradient-of-outputs to be used in TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("output_gradients_used_by_gradient")) {
+      input_vec.push_back(GO(idx));
+    }
+
+    // Output: calculated output from TC Op Gradient
+    for (int idx :
+         args.GetRepeatedArgument<int>("inputs_to_compute_gradients_of")) {
+      output_vec.push_back(GI(idx));
+    }
+
+    Argument grad_arg = MakeArgument<bool>("is_backward", true);
+
+    grad_ops.push_back(CreateOperatorDef(
+        "TcOp", "", input_vec, output_vec, std::vector<Argument>{grad_arg}));
+    return grad_ops;
   }
 };
 } // namespace caffe2

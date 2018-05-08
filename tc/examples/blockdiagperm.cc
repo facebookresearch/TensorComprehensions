@@ -21,16 +21,18 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
-
+#include "tc/aten/aten.h"
+#include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
-#include "tc/autotuner/genetic_autotuner_aten.h"
-#include "tc/core/cuda/cuda.h"
+#include "tc/autotuner/genetic_search.h"
+#include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
-#include "tc/core/mapping_options.h"
 
 DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
+
+using ATenGeneticCudaTuner =
+    tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>;
 
 TEST(BlockDiagPerm, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -68,52 +70,50 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
     O(b, n) = I(b, Idx(n)) where n in 0:N
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> atCompl;
-  atCompl.define(tc);
 
-  // 1. Allocate and autotune
+  // 1. Allocate and autotune blockdiagperm2dfissioned_1
   at::Tensor I = at::CUDA(at::kFloat).rand({128, 10, 50});
   at::Tensor W = at::CUDA(at::kFloat).rand({10, 50, 50});
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions();
-  tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
-  auto bestOption = geneticAutotuneATen.tune(
-      FLAGS_proto_path, "blockdiagperm2dfissioned_1", {I, W}, options);
-  auto handle = atCompl.compile(
-      "blockdiagperm2dfissioned_1", {I, W}, bestOption.getValue());
-  std::vector<at::Tensor> outputs;
-  auto duration =
-      atCompl.run("blockdiagperm2dfissioned_1", {I, W}, outputs, handle, true);
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
 
-  // 2. Allocate and autotune
+  ATenGeneticCudaTuner geneticAutotuneATen(tc);
+  auto bestOption = geneticAutotuneATen.tune(
+      "blockdiagperm2dfissioned_1", {I, W}, options, FLAGS_proto_path);
+  CHECK_GT(bestOption.size(), 0u);
+
+  auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+      tc, "blockdiagperm2dfissioned_1", {I, W}, bestOption[0]);
+  auto outputs =
+      tc::aten::prepareOutputs(tc, "blockdiagperm2dfissioned_1", {I, W});
+  auto timings = tc::aten::profile(*pExecutor, {I, W}, outputs);
+
+  // 2. Allocate and autotune blockdiagperm2dfissioned_2
   at::Tensor O = outputs[0].clone().resize_({128, 500});
   at::Tensor Idx = at::CPU(at::kInt).randperm({500}).toBackend(at::kCUDA);
-  tc::autotune::GeneticAutotunerATen geneticAutotuneATen2(tc);
   auto bestOption2 = geneticAutotuneATen.tune(
-      FLAGS_proto_path, "blockdiagperm2dfissioned_2", {O, Idx}, options);
-  auto handle2 = atCompl.compile(
-      "blockdiagperm2dfissioned_2", {O, Idx}, bestOption2.getValue());
-  std::vector<at::Tensor> outputs2;
-  auto duration2 = atCompl.run(
-      "blockdiagperm2dfissioned_2", {O, Idx}, outputs2, handle2, true);
+      "blockdiagperm2dfissioned_2", {O, Idx}, options, FLAGS_proto_path);
+  CHECK_GT(bestOption2.size(), 0u);
+
+  auto pExecutor2 = tc::aten::compile<tc::CudaBackend>(
+      tc, "blockdiagperm2dfissioned_2", {O, Idx}, bestOption2[0]);
+  auto outputs2 =
+      tc::aten::prepareOutputs(tc, "blockdiagperm2dfissioned_2", {O, Idx});
+  auto timings2 = tc::aten::profile(*pExecutor2, {O, Idx}, outputs2);
 
   // 3. Report best standalone times
-  std::cout
-      << "blockdiagperm2dfissioned_1 size I: " << I.sizes() << ", "
-      << "size W: " << W.sizes() << " ran in: "
-      << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
-      << "us\n";
+  std::cout << "blockdiagperm2dfissioned_1 size I: " << I.sizes() << ", "
+            << "size W: " << W.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
   std::cout << "blockdiagperm2dfissioned_2 size O: " << O.sizes() << ", "
-            << "size Idx: " << Idx.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(duration2)
-                   .count()
-            << "us\n";
+            << "size Idx: " << Idx.sizes()
+            << " ran in: " << timings2.kernelRuntime.toMicroSeconds() << "us\n";
 
   // 4. Run unchecked one last time, use with:
   //   nvprof --profile-from-start off executable --use_nvprof=1
   {
     tc::CudaProfiler cp;
-    atCompl.uncheckedRun({I, W}, outputs, handle);
-    atCompl.uncheckedRun({O, Idx}, outputs2, handle2);
+    tc::aten::uncheckedRun(*pExecutor, {I, W}, outputs);
+    tc::aten::uncheckedRun(*pExecutor2, {O, Idx}, outputs2);
   }
 }
 
@@ -125,5 +125,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

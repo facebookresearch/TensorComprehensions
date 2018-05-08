@@ -21,7 +21,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
@@ -57,11 +57,9 @@ static void Succeed(
     const tensor_list& inputs,
     tensor_list&& outputs,
     std::string fn = "f") {
-  tc::ATenCompilationUnit<tc::CudaTcExecutor> cu;
-  cu.define(str);
-  auto handle = cu.compile(
-      fn, inputs, tc::CudaMappingOptions::makeNaiveCudaMappingOptions());
-  cu.run("f", inputs, outputs, handle);
+  auto pExecutor = tc::aten::compile<tc::CudaBackend>(
+      str, fn, inputs, tc::CudaMappingOptions::makeNaiveMappingOptions());
+  tc::aten::run(*pExecutor, inputs, outputs);
 }
 
 static void Fail(
@@ -134,8 +132,7 @@ TEST(TestCornerCases, E9) {
 }
 
 TEST(TestCornerCases, E10) {
-  Succeed(
-      "def f(int32 a) -> (b) { b(i) = a where i in 0:10 }", {I()}, {I(10, 10)});
+  Succeed("def f(int32 a) -> (b) { b(i) = a where i in 0:10 }", {I()}, {I(10)});
 }
 
 TEST(TestCornerCases, E11) {
@@ -285,7 +282,45 @@ TEST(TestCornerCases, E23) {
       at::Scalar(d[0]).toFloat());
 }
 
+// This tests that the TC parser functions in the presence of arbitrary newlines
 TEST(TestCornerCases, E24) {
+  auto a = F(1);
+  auto b = F(1);
+  auto c = F(1);
+  auto d = F(1);
+  Succeed(
+      R"TC(
+
+def f(float(1)
+a, float(1
+) b, float
+(1) c) -> (d) { d(
+i)
+ =
+
+ min(
+a(i), max(
+b(i), c(
+i)))
+
+d(i) = d(i) + max(b(i),
+
+c(
+i))
+
+}
+)TC",
+      {a, b, c},
+      {d});
+  CHECK_EQ(
+      fminf(
+          at::Scalar(a[0]).toFloat(),
+          fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())) +
+          fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat()),
+      at::Scalar(d[0]).toFloat());
+}
+
+TEST(TestCornerCases, E25) {
   auto a = I();
   auto b = I();
   auto r = I(0);
@@ -301,6 +336,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

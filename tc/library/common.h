@@ -17,7 +17,7 @@
 
 namespace tc {
 
-std::string replaceString(
+inline std::string replaceString(
     std::string str,
     const std::string& search,
     const std::string& replace) {

@@ -17,6 +17,7 @@
 
 #include <string>
 
+#include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -27,14 +28,13 @@ class Codegen {
 
  public:
   // Create a list of isl ids to be used as loop iterators when building the
-  // AST.
+  // AST from the schedule tree with the given root.
   //
   // Note that this function can be scrapped as ISL can generate some default
   // iterator names.  However, it may come handy for associating extra info with
   // iterators.
   static isl::id_list makeLoopIterators(
-      isl::ctx ctx,
-      int n,
+      const detail::ScheduleTree* root,
       const std::string& prefix = kLoopIteratorDefaultPrefix);
 };
 

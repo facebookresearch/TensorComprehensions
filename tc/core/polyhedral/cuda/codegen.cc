@@ -415,6 +415,8 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     reductionUpdateNodeId_ = nodeId;
   } else if (context_.scop().isSyncId(stmtId)) {
     context_.ss << "__syncthreads();" << std::endl;
+  } else if (context_.scop().isWarpSyncId(stmtId)) {
+    context_.ss << "__syncwarp();" << std::endl;
   } else if (
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);
@@ -479,9 +481,8 @@ isl::multi_aff makeMultiAffAccess(
   CHECK_NE(subscripts.size(), 0u) << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
-  auto tensorSpace = domainSpace.params().set_from_params().add_dims(
-      isl::dim_type::set, subscripts.size());
-  tensorSpace = tensorSpace.set_tuple_id(isl::dim_type::set, tensorId);
+  auto tensorSpace = domainSpace.params().named_set_from_params_id(
+      tensorId, subscripts.size());
   auto space = domainSpace.map_from_domain_and_range(tensorSpace);
 
   auto ma = isl::multi_aff::zero(space);
@@ -737,24 +738,12 @@ string emitCudaKernel(
     return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
-  auto bands = detail::ScheduleTree::collect(
-      mscop.schedule(), detail::ScheduleTreeType::Band);
-  size_t maxDepth = 0;
-  for (auto const& node : bands) {
-    auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
-    auto depth = node->scheduleDepth(mscop.schedule()) +
-        bandElem->mupa_.dim(isl::dim_type::set);
-    if (depth > maxDepth) {
-      maxDepth = depth;
-    }
-  }
-
   checkValidIslSchedule(mscop.schedule());
   auto schedule = detail::toIslSchedule(mscop.schedule());
-  auto ctx = schedule.get_ctx();
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);
-  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(ctx, maxDepth));
+  auto root = mscop.schedule();
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
   auto astNode = astBuild.node_from(schedule);
   AstPrinter(CodegenContext(ss, mscop, nodeInfoMap)).emit(astNode);
   ss << "}" << endl;

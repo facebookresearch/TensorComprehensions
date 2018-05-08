@@ -120,15 +120,9 @@ isl::union_set activeDomainPointsHelper(
     } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
-      CHECK(parentSchedule.get() || extension.dim(isl::dim_type::in) == 0)
-          << "expected a zero-dimensional domain of the Extension node "
-             "in absence of parent band nodes";
-      if (parentSchedule.get()) {
-        parentSchedule = parentSchedule.intersect_domain(domain);
-        domain = domain.unite(parentSchedule.range().apply(extension));
-      } else {
-        domain = domain.unite(extension.range());
-      }
+      CHECK(parentSchedule) << "missing root domain node";
+      parentSchedule = parentSchedule.intersect_domain(domain);
+      domain = domain.unite(parentSchedule.range().apply(extension));
     }
   }
   return domain;
@@ -565,8 +559,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
 isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
   auto prefix = prefixScheduleMupa(root, tree);
   auto scheduleSpace = prefix.get_space();
-  auto space = scheduleSpace.params().set_from_params().set_tuple_id(
-      isl::dim_type::set, id);
+  auto space = scheduleSpace.params().named_set_from_params_id(id, 0);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
   return isl::map::universe(extensionSpace);
 }

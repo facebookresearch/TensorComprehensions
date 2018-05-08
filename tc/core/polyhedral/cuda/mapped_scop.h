@@ -25,7 +25,7 @@
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/scop.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -155,6 +155,35 @@ class MappedScop {
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.
   detail::ScheduleTree* separateReduction(detail::ScheduleTree* band);
+
+  // Find best thread sync between st1 and st2 when st2 is scheduled after
+  // st1.
+  // This function should assumes that it is called before block mapping
+  // and that st1 and st2 are already mapped to threads.
+  Scop::SyncLevel findBestSync(
+      detail::ScheduleTree* st1,
+      detail::ScheduleTree* st2);
+
+ public:
+  // Find best configuration of synchronizations in a sequence, minimizing
+  // the number of __syncthreads, and then the number of __syncwarp
+  // bestSync[i][k] == l means that there must be a synchronization at level at
+  // least l between child i and child i + k.
+  // if i + k > nChildren, this means that it correspond to synchronizations
+  // between child i and child (i + k) % nChildren at two different iteration
+  // of the outer sequential member if hasOuterSequentialMember is true.
+  // However, these cells should still exist if hasOuterSequentialMember is
+  // false.
+  static std::vector<std::pair<int, int>> findBestSyncConfigInSeq(
+      std::vector<std::vector<int>> bestSync,
+      size_t nChildren,
+      bool hasOuterSequentialMember);
+
+ private:
+  // Insert the optimal combination of synchronizations in the sequence
+  void insertBestSyncInSeq(detail::ScheduleTree* seq);
+  // Split out reduction bands and insert reduction synchronizations.
+  void splitOutReductionsAndInsertSyncs();
   // Split out reduction member at position "dim" in "band" and
   // insert reduction synchronizations.
   void splitOutReductionAndInsertSyncs(detail::ScheduleTree* band, int dim);

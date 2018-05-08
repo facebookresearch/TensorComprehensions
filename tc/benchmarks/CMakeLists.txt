@@ -32,9 +32,6 @@ foreach(i ${EXAMPLES_FILES})
   add_test(${i} ${i})
   target_link_libraries(
      ${i}
-     tc_autotuner
-     tc_core
-     tc_c2
 
      ${CUDA_CUBLAS_LIBRARIES}
      ${CUDA_CUDNN_LIBRARIES}
@@ -43,5 +40,11 @@ foreach(i ${EXAMPLES_FILES})
      ${GLOG_LIBRARIES}
 
      ${ATEN_LIBRARIES}
+
+     tc_caffe2_test_harness
+     tc_autotuner
+     tc_core
+     tc_c2
+     tc_aten
   )
 endforeach()

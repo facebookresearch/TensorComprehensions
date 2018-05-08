@@ -39,4 +39,10 @@ CudaMappingOptionsCppPrinter& operator<<(
   return prn;
 }
 
+std::ostream& operator<<(std::ostream& out, const CudaMappingOptionsAsCpp& mo) {
+  auto prn = CudaMappingOptionsCppPrinter(out, mo.indent);
+  prn << mo.options;
+  return out;
+}
+
 } // namespace tc

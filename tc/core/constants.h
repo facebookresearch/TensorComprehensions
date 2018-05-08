@@ -22,13 +22,13 @@ namespace polyhedral {
 // General constants to avoid hardcoding
 //
 constexpr auto kStatementLabel = "S_";
-constexpr auto kPartialScheduleLabel = "L_";
 
 constexpr auto kAstNodeIdPrefix = "__node_";
 
 constexpr auto kReadIdName = "read";
 constexpr auto kWriteIdName = "write";
 constexpr auto kSyncIdPrefix = "_sync_";
+constexpr auto kWarpSyncIdPrefix = "_warpSync_";
 
 } // namespace polyhedral
 } // namespace tc

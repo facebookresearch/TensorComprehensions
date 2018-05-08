@@ -22,7 +22,7 @@
 
 #include "tc/external/isl.h"
 
-#include "tc/core/polyhedral/cuda/mapping_types.h"
+#include "tc/core/polyhedral/mapping_types.h"
 
 namespace tc {
 namespace polyhedral {
@@ -147,32 +147,30 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
   ScheduleTreeElemMappingFilter(const ScheduleTreeElemMappingFilter& eb)
       : ScheduleTreeElemFilter(eb.filter_), mappingIds(eb.mappingIds) {}
   ScheduleTreeElemMappingFilter(
-      isl::union_set us,
-      const std::unordered_set<
-          mapping::MappingId,
-          typename mapping::MappingId::Hash>& ids)
-      : ScheduleTreeElemFilter(us), mappingIds(ids) {
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    for (auto id : std::vector<mapping::MappingId>{BX, BY, BZ, TX, TY, TZ}) {
-      if (mappingIds.count(id) > 0) {
-        CHECK_EQ(1u, ids.count(id)) << "id: " << id << " mapped >1 times";
-        for (auto s : us.get_set_list()) {
-          CHECK(s.involves_param(id))
-              << "unexpected missing id: " << id << " in filter: " << s;
-        }
-      } else {
-        if (us.involves_param(id)) {
-          std::stringstream ss;
-          for (auto id : ids) {
-            ss << id.to_str() << " ";
-          }
-          // TODO: will need to relax this if we map the same loop
-          // iteratively without stripmining it beforehand
-          CHECK(false) << "unexpected involved id: " << id
-                       << " in filter: " << us
-                       << " but not present in filter id list: " << ss.str();
-        }
-      }
+      const std::vector<mapping::MappingId>& mappedIds,
+      isl::union_pw_aff_list mappedAffs)
+      : ScheduleTreeElemFilter(isl::union_set()),
+        mappingIds(mappedIds.begin(), mappedIds.end()) {
+    // Check that ids are unique.
+    CHECK_EQ(mappedIds.size(), mappingIds.size())
+        << "some id is used more than once in the mapping";
+
+    CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
+        << "expected as many mapped ids as affs";
+    CHECK_GT(mappedIds.size(), 0u) << "empty mapping filter";
+
+    auto domain = mappedAffs.get(0).domain();
+    for (size_t i = 1, n = mappedAffs.n(); i < n; ++i) {
+      CHECK(domain.is_equal(mappedAffs.get(i).domain()));
+    }
+    filter_ = domain.universe();
+    for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
+      auto upa = mappedAffs.get(i);
+      auto id = mappedIds.at(i);
+      // Create mapping filter by equating the
+      // parameter mappedIds[i] to the "i"-th affine function.
+      upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
+      filter_ = filter_.intersect(upa.zero_union_set());
     }
   }
   virtual ~ScheduleTreeElemMappingFilter() override {}

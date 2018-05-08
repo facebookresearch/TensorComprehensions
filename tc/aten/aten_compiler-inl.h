@@ -19,127 +19,68 @@
 #include <string>
 #include <vector>
 
-#include "tc/core/scope_guard.h"
+#include "tc/aten/aten.h"
+#include "tc/core/compiler.h"
+#include "tc/core/tc_executor.h"
+#include "tc/core/tensor.h"
 
 namespace tc {
-
-template <typename ExecutorType>
-ATenCompilationUnit<ExecutorType>::ATenCompilationUnit() {
-  executionEngine_ = std::unique_ptr<ExecutionEngine<ExecutorType>>(
-      new ExecutionEngine<ExecutorType>());
+namespace aten {
+template <typename Backend>
+std::unique_ptr<typename Backend::ExecutorType> compile(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::vector<at::Tensor>& inputs,
+    const typename Backend::MappingOptionsType& options) {
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  return tc::compile<Backend>(
+      tc, entryPoint, extractRawPtrs(inputDLTensors), options);
 }
 
-template <typename ExecutorType>
-void ATenCompilationUnit<ExecutorType>::define(const std::string& language) {
-  executionEngine_->define(language);
-}
-
-namespace {
-
-// given the tensor shape and DLType, allocate storage for the tensor output
-// type.
-void prepareOutputs(
-    lang::TreeRef func,
-    const std::vector<const DLTensor*> tensorInfo,
-    const at::Backend& backend,
+template <typename Executor>
+void run(
+    const Executor& executor,
+    const std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs) {
-  // prereqs for reusing CUDA memory, just allocate the first time then resize
-  // (if needed). Most of the time should do nothing
-  if (outputs.size() != 0 && outputs.size() != tensorInfo.size()) {
-    throw lang::ErrorReport(func) << "expected " << tensorInfo.size()
-                                  << " outputs but found " << outputs.size();
-  }
-  for (size_t i = 0; i < tensorInfo.size(); ++i) {
-    auto info = tensorInfo[i];
-    auto stype = at::toScalarType(info->dtype);
-    if (outputs.size() < tensorInfo.size()) {
-      outputs.push_back(at::getType(backend, stype)
-                            .tensor(at::IntList(info->shape, info->ndim)));
-      // TODO: we just malloc'ed I guess we can pay a memset
-      outputs.back().zero_();
-    } else {
-      // In-place ATen operators have a trailing _
-      std::vector<int64_t> shape(info->shape, info->shape + info->ndim);
-      outputs[i].resize_(shape);
-      // TODO: zero on shape increase? Not clear it's needed ..
-      // outputs.back().zero_();
-    }
-  }
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  auto outputDLTensors = makeDLTensors(outputs);
+  return executor.run(
+      extractRawPtrs(inputDLTensors), extractRawPtrs(outputDLTensors));
 }
 
-} // namespace
-
-template <typename ExecutorType>
-size_t ATenCompilationUnit<ExecutorType>::compile(
-    const std::string& name,
+template <typename Executor>
+ProfilingInfo profile(
+    const Executor& executor,
     const std::vector<at::Tensor>& inputs,
-    const typename ExecutorType::MappingOptionsType& options) {
-  auto inputDLTensorsPair = toConstDlpackTensors(inputs);
-  ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
-  return executionEngine_->compile(
-      name, inputDLTensorsPair.first, options.toProtobufSerializedString());
+    std::vector<at::Tensor>& outputs) {
+  auto start = std::chrono::system_clock::now();
+  auto inputDLTensors = makeDLConstTensors(inputs);
+  auto outputDLTensors = makeDLTensors(outputs);
+  ProfilingInfo pi(executor.profile(
+      extractRawPtrs(inputDLTensors), extractRawPtrs(outputDLTensors)));
+
+  // The total CPU overhead is the total time minus the (synchronized) kernel
+  // runtime
+  Duration cpuOverhead(Duration::since(start));
+  cpuOverhead = cpuOverhead - pi.kernelRuntime;
+  return ProfilingInfo{cpuOverhead, pi.kernelRuntime};
 }
 
-template <typename ExecutorType>
-std::vector<const DLTensor*>
-ATenCompilationUnit<ExecutorType>::inferOutputTensorInfo(
-    const std::string& name,
-    const std::vector<at::Tensor>& inputs) {
-  auto inputDLTensorsPair = toConstDlpackTensors(inputs);
-  ScopeGuard g([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
-  return executionEngine_->inferOutputTensorInfo(
-      name, inputDLTensorsPair.first);
-}
-
-template <typename ExecutorType>
-Duration ATenCompilationUnit<ExecutorType>::run(
-    const std::string& name,
+template <typename Executor>
+void uncheckedRun(
+    const Executor& executor,
     const std::vector<at::Tensor>& inputs,
-    std::vector<at::Tensor>& outputs,
-    size_t handle,
-    bool profile) {
-  at::Backend backend = inputs[0].type().backend();
-  auto inputDLTensorsPair = toConstDlpackTensors(inputs);
-  ScopeGuard g1([&]() { deleteDlmTensors(inputDLTensorsPair.second); });
-  auto outTensorInfo =
-      executionEngine_->inferOutputTensorInfo(name, inputDLTensorsPair.first);
-  prepareOutputs(
-      executionEngine_->treeForFunction(name), outTensorInfo, backend, outputs);
-  auto outputDLTensorsPair = toDlpackTensors(outputs);
-  ScopeGuard g2([&]() { deleteDlmTensors(outputDLTensorsPair.second); });
-  return executionEngine_->run(
-      handle, inputDLTensorsPair.first, outputDLTensorsPair.first, profile);
-}
-
-template <typename ExecutorType>
-void ATenCompilationUnit<ExecutorType>::uncheckedRun(
-    const std::vector<at::Tensor>& inputs,
-    std::vector<at::Tensor>& outputs,
-    size_t handle) {
-  CHECK_LT(0, outputs.size());
-
-  constexpr auto kReservedSize = 8;
-  std::vector<const void*> I(kReservedSize, nullptr);
-  std::vector<void*> O(kReservedSize, nullptr);
-  size_t i;
-  for (i = 0; i < inputs.size(); ++i) {
-    if (i < kReservedSize) {
-      I[i] = inputs[i].data_ptr();
-    } else {
-      I.push_back(inputs[i].data_ptr());
-    }
+    std::vector<at::Tensor>& outputs) {
+  CHECK_GE(outputs.size(), 1u);
+  std::vector<const void*> rawInputs(inputs.size(), nullptr);
+  std::vector<void*> rawOutputs(outputs.size(), nullptr);
+  for (size_t i = 0; i < inputs.size(); ++i) {
+    rawInputs[i] = inputs[i].data_ptr();
   }
-  I.resize(i);
-  for (i = 0; i < outputs.size(); ++i) {
-    if (i < kReservedSize) {
-      O[i] = outputs[i].data_ptr();
-    } else {
-      O.push_back(outputs[i].data_ptr());
-    }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    rawOutputs[i] = outputs[i].data_ptr();
   }
-  O.resize(i);
-
-  executionEngine_->uncheckedRun(handle, I, O);
+  return executor.uncheckedRun(rawInputs, rawOutputs);
 }
-
+} // namespace aten
 } // namespace tc

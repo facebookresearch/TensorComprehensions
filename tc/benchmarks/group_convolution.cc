@@ -21,12 +21,13 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
-#include "../test/test_harness.h"
+#include "../test/caffe2/cuda/test_harness.h"
+#include "../test/caffe2/test_harness.h"
 #include "../test/test_harness_aten_cuda.h"
 #include "benchmark_fixture.h"
 
@@ -57,7 +58,7 @@ class GroupConvolution : public Benchmark {
       uint32_t KH,
       uint32_t KW,
       const tc::CudaMappingOptions& options,
-      bool useFlags = false);
+      bool use_flags = false);
 };
 
 void GroupConvolution::runGroupConvolution(
@@ -70,57 +71,56 @@ void GroupConvolution::runGroupConvolution(
     uint32_t KH,
     uint32_t KW,
     const tc::CudaMappingOptions& options,
-    bool useFlags) {
+    bool use_flags) {
   Workspace w;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, H, W}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KH, KW}, "W");
   AddInput(w, {G * F}, "B");
 
-  Argument groupArg = MakeArgument<int>("group", G);
-  Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
-  Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef op_def = TestHarness::ConfigureCUDA(
-      "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
+  Argument group_arg = MakeArgument<int>("group", G);
+  Argument kernel_h_arg = MakeArgument<int>("kernel_h", KH);
+  Argument kernel_w_arg = MakeArgument<int>("kernel_w", KW);
+  OperatorDef op_def = MakeOperatorDef<caffe2::CUDABackend>(
+      "Conv", {"I", "W", "B"}, {"O"}, {group_arg, kernel_h_arg, kernel_w_arg});
 
   std::unique_ptr<OperatorBase> net(CreateOperator(op_def, &w));
   ASSERT_TRUE(net.get());
   net->Run();
-  caffe2::Tensor<caffe2::CUDAContext> expectedBlob(
+  caffe2::Tensor<caffe2::CUDAContext> expected_blob(
       w.GetBlob("O")->Get<caffe2::TensorCUDA>());
 
-  at::Tensor refOutput =
-      makeATenTensor(expectedBlob, at::Backend::CUDA, at::kFloat)
+  at::Tensor ref_output =
+      MakeAtenTensor(expected_blob, at::Backend::CUDA, at::kFloat)
           .resize_({N, G, F, H - KH + 1, W - KW + 1});
 
-  auto checkFun = [&, refOutput](
-                      const std::vector<at::Tensor>& inputs,
-                      const std::vector<at::Tensor>& outputs) {
+  auto check_fun = [&, ref_output](
+                       const std::vector<at::Tensor>& inputs,
+                       const std::vector<at::Tensor>& outputs) {
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
     double prec = 1e-6; // relax precision to account for CUDNN Winograd kernels
     std::cout << "Checking expected output relative precision @" << prec;
-    checkRtol(outputs[0].sub(refOutput), inputs, C * KH * KW, prec);
+    checkRtol(outputs[0].sub(ref_output), inputs, C * KH * KW, prec);
     return true;
   };
 
   // Use the underlying C2 tensors CUDA pointers
-  at::Tensor tI = makeATenTensor(
-                      w.GetBlob("I")->Get<caffe2::TensorCUDA>(),
-                      at::Backend::CUDA,
-                      at::kFloat)
-                      .resize_({N, G, C, H, W});
-  at::Tensor tW = makeATenTensor(
-                      w.GetBlob("W")->Get<caffe2::TensorCUDA>(),
-                      at::Backend::CUDA,
-                      at::kFloat)
-                      .resize_({G, F, C, KH, KW});
-  at::Tensor tB = makeATenTensor(
-                      w.GetBlob("B")->Get<caffe2::TensorCUDA>(),
-                      at::Backend::CUDA,
-                      at::kFloat)
-                      .resize_({G, F});
-  std::vector<at::Tensor> inputs = {tI, tW, tB};
+  at::Tensor t_i = MakeAtenTensor(
+                       w.GetBlob("I")->Get<caffe2::TensorCUDA>(),
+                       at::Backend::CUDA,
+                       at::kFloat)
+                       .resize_({N, G, C, H, W});
+  at::Tensor t_w = MakeAtenTensor(
+                       w.GetBlob("W")->Get<caffe2::TensorCUDA>(),
+                       at::Backend::CUDA,
+                       at::kFloat)
+                       .resize_({G, F, C, KH, KW});
+  at::Tensor t_b = MakeAtenTensor(
+                       w.GetBlob("B")->Get<caffe2::TensorCUDA>(),
+                       at::Backend::CUDA,
+                       at::kFloat)
+                       .resize_({G, F});
+  std::vector<at::Tensor> inputs = {t_i, t_w, t_b};
   std::string tc = R"(
 def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
 -> (O)
@@ -137,18 +137,18 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
       std::string("_W_") + std::to_string(FLAGS_W) + std::string("_H_") +
       std::to_string(FLAGS_H) + std::string("_KW_") + std::to_string(FLAGS_KW) +
       std::string("_KH_") + std::to_string(FLAGS_KH);
-  if (useFlags && FLAGS_validate_proto) {
+  if (use_flags && FLAGS_validate_proto) {
     validateProto(
         FLAGS_save_tuner_proto_prefix +
             std::string("/group_convolution_cache") + suffix,
         tc,
         "group_convolution",
         inputs,
-        checkFun);
+        check_fun);
   } else {
     std::vector<at::Tensor> outputs;
-    Check(tc, "group_convolution", options, inputs, outputs, checkFun);
-    if (useFlags) {
+    Check(tc, "group_convolution", options, inputs, outputs, check_fun);
+    if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix +
               std::string("/group_convolution_cache") + suffix,
@@ -158,8 +158,7 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
           "group_convolution",
           inputs,
           options,
-          {options},
-          checkFun);
+          check_fun);
     }
   }
 }
@@ -176,7 +175,7 @@ TEST_F(GroupConvolution, GroupConvolution) {
   // If num threads is too small just get some better default
   auto threads = (W >= 10) ? std::vector<size_t>{W / 4, H / 2}
                            : std::vector<size_t>{4, 8, 4};
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .tile(1, 1, 1)
                      .mapToThreads(threads)
                      .mapToBlocks({32, 32})
@@ -199,7 +198,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .useSharedMemory(true)
           .usePrivateMemory(true)
           .unrollCopyShared(true)
@@ -225,7 +224,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -257,7 +256,7 @@ TEST_F(
   uint32_t KW = 3;
   uint32_t KH = 3;
   auto options =
-      tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
           .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
           .outerScheduleAllowSkewing(false)
           .outerSchedulePositiveOrthant(true)
@@ -288,7 +287,7 @@ TEST_F(
   uint32_t H = 28;
   uint32_t KW = 3;
   uint32_t KH = 3;
-  auto options = tc::CudaMappingOptions::makeNaiveCudaMappingOptions()
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
                      .outerScheduleAllowSkewing(false)
                      .outerSchedulePositiveOrthant(true)
@@ -362,16 +361,15 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
   auto KH = FLAGS_KH;
 
   Workspace w;
-  auto AddInput =
-      TestHarness::AddDeterministicallyRandomInput<float, CUDAContext>;
+  auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, W, H}, "I");
   AddInput(w, vector<TIndex>{G * F, C, KW, KH}, "W");
   AddInput(w, {G * F}, "B");
-  Argument groupArg = MakeArgument<int>("group", G);
-  Argument kernelHArg = MakeArgument<int>("kernel_h", KH);
-  Argument kernelWArg = MakeArgument<int>("kernel_w", KW);
-  OperatorDef ndef = TestHarness::ConfigureCUDA(
-      "Conv", {"I", "W", "B"}, {"O"}, {groupArg, kernelHArg, kernelWArg});
+  Argument group_arg = MakeArgument<int>("group", G);
+  Argument kernel_h_arg = MakeArgument<int>("kernel_h", KH);
+  Argument kernel_w_arg = MakeArgument<int>("kernel_w", KW);
+  OperatorDef ndef = MakeOperatorDef<caffe2::CUDABackend>(
+      "Conv", {"I", "W", "B"}, {"O"}, {group_arg, kernel_h_arg, kernel_w_arg});
   std::unique_ptr<OperatorBase> net(CreateOperator(ndef, &w));
 
   Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
@@ -381,6 +379,6 @@ int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
+  tc::aten::setAtenSeed(tc::initRandomSeed(), at::Backend::CUDA);
   return RUN_ALL_TESTS();
 }

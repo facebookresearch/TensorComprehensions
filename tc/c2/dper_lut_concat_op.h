@@ -33,14 +33,14 @@ class TcDperLutConcatOp : public TcOp<T, Context, Engine> {
       caffe2::Workspace* ws)
       : TcOp<T, Context, Engine>(operator_def, ws) {
     this->tc_ = tc::TC_DPER_LUT_CONCAT;
-    this->tcName_ = tc::TC_DPER_LUT_CONCAT_NAME;
+    this->tc_name_ = tc::TC_DPER_LUT_CONCAT_NAME;
   }
 
   ~TcDperLutConcatOp() override {}
 
  protected:
-  void setupNaiveCudaMappingOptions() override {
-    this->cudaMappingOptions_.tile(1)
+  void SetupNaiveMappingOptions() override {
+    this->mapping_options_.tile(1)
         .mapToThreads(128)
         .mapToBlocks(32)
         .unroll(1)

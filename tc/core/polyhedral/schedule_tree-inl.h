@@ -20,20 +20,18 @@ namespace polyhedral {
 namespace detail {
 template <typename MappingIdType>
 inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
-    isl::union_set filter,
-    const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
-        mappingIds,
+    const std::vector<MappingIdType>& mappedIds,
+    isl::union_pw_aff_list mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
-  // slicing may happen below if not careful
-  std::unordered_set<mapping::MappingId, typename mapping::MappingId::Hash> ids;
-  for (auto id : mappingIds) {
-    CHECK_EQ(1u, mappingIds.count(id)) << "id: " << id << " mapped != 1 times";
-    ids.insert(id);
+  std::vector<mapping::MappingId> ids;
+  for (auto id : mappedIds) {
+    ids.push_back(id);
   }
-  isl::ctx ctx(filter.get_ctx());
+  CHECK_GE(ids.size(), 1u) << "empty mapping";
+  auto ctx = mappedIds[0].get_ctx();
   ScheduleTreeUPtr res(new ScheduleTree(ctx));
   res->elem_ = std::unique_ptr<ScheduleTreeElemMappingFilter>(
-      new ScheduleTreeElemMappingFilter(filter, ids));
+      new ScheduleTreeElemMappingFilter(ids, mappedAffs));
   res->type_ = ScheduleTreeType::MappingFilter;
   res->appendChildren(std::move(children));
   return res;

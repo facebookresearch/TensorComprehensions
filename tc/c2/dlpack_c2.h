@@ -21,7 +21,7 @@
 #include <vector>
 
 #include "tc/c2/context.h"
-#include "tc/core/utils/dlpack.h"
+#include "tc/core/tensor.h"
 
 #include "caffe2/core/common.h"
 
@@ -33,13 +33,13 @@ DLContext getDLContext();
 
 template <>
 inline DLContext getDLContext<CPUContext>() {
-  return tc::dlutils::getCPUDLContext();
+  return tc::getCPUDLContext();
 }
 
 // Can't have a CUDAContext object, how do we get the GPU id of a C2 Tensor?
 template <>
 inline DLContext getDLContext<CUDAContext>() {
-  return tc::dlutils::getGPUDLContext(0 /*ctx ? ctx->cuda_gpu_id() : 0*/);
+  return tc::getGPUDLContext(0 /*ctx ? ctx->cuda_gpu_id() : 0*/);
 }
 
 inline DLDataType getDLDataType(const TypeMeta& meta) {
@@ -58,38 +58,26 @@ inline DLDataType getDLDataType(const TypeMeta& meta) {
 }
 
 template <typename C2Context>
-tc::dlutils::DLTensorUPtr makeConstDLTensor(
-    const caffe2::Tensor<C2Context>& tensor,
-    const vector<TIndex>& shapeOverride = {}) {
-  const auto& dims = shapeOverride.empty() ? tensor.dims() : shapeOverride;
-  if (!shapeOverride.empty()) {
-    auto overrideSize = std::accumulate(
-        dims.begin(),
-        dims.end(),
-        static_cast<TIndex>(1),
-        std::multiplies<TIndex>());
-    CAFFE_ENFORCE_EQ(overrideSize, tensor.size());
-  }
-  tc::dlutils::DLTensorUPtr res(new DLTensor);
-  res->data = const_cast<void*>(tensor.raw_data());
-  res->ctx = getDLContext<C2Context>();
-  auto ndim = dims.size();
-  res->ndim = ndim;
-  res->dtype = getDLDataType(tensor.meta());
-  res->shape = new int64_t[ndim];
-  tc::dlutils::SetSizes(*res, dims);
-  res->strides = new int64_t[ndim];
-  tc::dlutils::SetStridesFromSizes(*res, tensor.dims());
-  res->byte_offset = 0;
-  return res;
+tc::DLConstTensorUPtr makeDLConstTensor(
+    const caffe2::Tensor<C2Context>& tensor) {
+  return tc::makeDLConstTensor(
+      getDLContext<C2Context>(),
+      getDLDataType(tensor.meta()),
+      tensor.dims(),
+      std::vector<TIndex>(),
+      tensor.raw_data(),
+      0);
 }
 
 template <typename C2Context>
-tc::dlutils::DLTensorUPtr makeDLTensor(caffe2::Tensor<C2Context>* tensor) {
-  auto res = makeConstDLTensor(*tensor);
-  res->data = tensor->raw_mutable_data();
-  return res;
+tc::DLTensorUPtr makeDLTensor(caffe2::Tensor<C2Context>& tensor) {
+  return tc::makeDLTensor(
+      getDLContext<C2Context>(),
+      getDLDataType(tensor.meta()),
+      tensor.dims(),
+      std::vector<TIndex>(),
+      tensor.raw_mutable_data(),
+      0);
 }
-
 } // namespace dlpack
 } // namespace caffe2

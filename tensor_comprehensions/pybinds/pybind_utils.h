@@ -21,8 +21,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <ATen/ATen.h>
-#include <ATen/DLConvertor.h>
+#include "tc/aten/aten.h"
 
 namespace tc {
 namespace python {

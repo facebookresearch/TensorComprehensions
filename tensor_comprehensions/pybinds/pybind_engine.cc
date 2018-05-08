@@ -15,13 +15,14 @@
  */
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <Python.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <ATen/ATen.h>
+#include "tc/aten/aten.h"
 
 #include "pybind_utils.h"
 #include "tc/aten/aten_compiler.h"
@@ -36,7 +37,13 @@ namespace python {
 
 namespace py = pybind11;
 
-using ATenCudaCompilationUnit = tc::ATenCompilationUnit<tc::CudaTcExecutor>;
+struct ATenCudaCompilationUnit {
+  void define(const std::string& def) {
+    tc = def;
+  }
+  std::string tc;
+  std::unordered_map<std::string, std::unique_ptr<tc::CudaTcExecutor>> compiled;
+};
 
 PYBIND11_MODULE(tc, m) {
   m.def("set_logtostderr", [](bool logtostderr) {
@@ -74,23 +81,28 @@ PYBIND11_MODULE(tc, m) {
           "compile",
           [dlpack](
               ATenCudaCompilationUnit& instance,
-              const std::string& name,
+              const std::string& entryPoint,
               py::list& inputs,
               const tc::CudaMappingOptions& options) {
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            return instance.compile(name, atInputs, options);
+            instance.compiled[entryPoint] = tc::aten::compile<tc::CudaBackend>(
+                instance.tc,
+                entryPoint,
+                getATenTensors(inputs, dlpack),
+                options);
           })
       .def(
           "run",
           [dlpack](
               ATenCudaCompilationUnit& instance,
-              const std::string& name,
+              const std::string& entryPoint,
               py::list& inputs,
-              py::list& outputs,
-              size_t handle) {
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<at::Tensor> atOutputs = getATenTensors(outputs, dlpack);
-            instance.run(name, atInputs, atOutputs, handle);
+              py::list& outputs) {
+            auto atInputs = getATenTensors(inputs, dlpack);
+            auto atOutputs = (py::len(outputs) > 0)
+                ? getATenTensors(outputs, dlpack)
+                : tc::aten::prepareOutputs(instance.tc, entryPoint, atInputs);
+            tc::aten::run(
+                *instance.compiled.at(entryPoint), atInputs, atOutputs);
             if (py::len(outputs) == 0) {
               convertToPyObjects(atOutputs, dlpack, outputs);
             }
@@ -99,13 +111,15 @@ PYBIND11_MODULE(tc, m) {
           "uncheckedRun",
           [dlpack](
               ATenCudaCompilationUnit& instance,
+              const std::string& entryPoint,
               py::list& inputs,
-              py::list& outputs,
-              size_t handle) {
-            CHECK_LT(0, outputs.size());
-            std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
-            std::vector<at::Tensor> atOutputs = getATenTensors(outputs, dlpack);
-            instance.uncheckedRun(atInputs, atOutputs, handle);
+              py::list& outputs) {
+            CHECK_GE(outputs.size(), 1u);
+            auto atOutputs = getATenTensors(outputs, dlpack);
+            tc::aten::uncheckedRun(
+                *instance.compiled.at(entryPoint),
+                getATenTensors(inputs, dlpack),
+                atOutputs);
           });
 }
 
