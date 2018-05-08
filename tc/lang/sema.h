@@ -294,6 +294,12 @@ struct Sema {
       case '*':
       case '/':
       case '%':
+      case '~':
+      case '|':
+      case '^':
+      case '&':
+      case TK_LS:
+      case TK_RS:
       case TK_MIN:
       case TK_MAX: {
         auto nexp =
