@@ -16,6 +16,7 @@ set(EXAMPLES_FILES
   blockdiagperm
   group_normalization
   tensordot
+  upsample
   wavenet
 )
 foreach(i ${EXAMPLES_FILES})
