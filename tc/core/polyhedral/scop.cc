@@ -332,8 +332,6 @@ isl::schedule_constraints makeScheduleConstraints(
     const Scop& scop,
     const SchedulerOptionsView& schedulerOptions,
     isl::union_set restrictDomain = isl::union_set()) {
-  auto firstChildNode = scop.scheduleRoot()->child({0});
-
   auto constraints = isl::schedule_constraints::on_domain(scop.domain())
                          .set_validity(scop.dependences)
                          .set_proximity(scop.dependences)
@@ -341,9 +339,12 @@ isl::schedule_constraints makeScheduleConstraints(
   if (restrictDomain) {
     constraints = constraints.intersect_domain(restrictDomain);
   }
-  if (auto contextNode =
-          firstChildNode->elemAs<detail::ScheduleTreeElemContext>()) {
-    constraints = constraints.set_context(contextNode->context_);
+  auto root = scop.scheduleRoot();
+  if (root->numChildren() > 0) {
+    if (auto contextNode =
+            root->child({0})->elemAs<detail::ScheduleTreeElemContext>()) {
+      constraints = constraints.set_context(contextNode->context_);
+    }
   }
 
   // Set up "add_schedule_constraints" and "merge_callback"
