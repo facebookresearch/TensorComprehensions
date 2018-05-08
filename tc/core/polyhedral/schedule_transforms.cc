@@ -559,8 +559,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
 isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
   auto prefix = prefixScheduleMupa(root, tree);
   auto scheduleSpace = prefix.get_space();
-  auto space = scheduleSpace.params().set_from_params().set_tuple_id(
-      isl::dim_type::set, id);
+  auto space = scheduleSpace.params().named_set_from_params_id(id, 0);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
   return isl::map::universe(extensionSpace);
 }

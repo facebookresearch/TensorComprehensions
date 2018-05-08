@@ -258,17 +258,15 @@ isl::map extractAccess(
 
   isl::space domainSpace = domain.get_space();
   isl::space paramSpace = domainSpace.params();
-
-  isl::space rangeSpace = paramSpace.add_dims(isl::dim_type::set, args.size());
-
-  rangeSpace = rangeSpace.set_tuple_name(isl::dim_type::set, tensor);
+  isl::id tensorID(paramSpace.get_ctx(), tensor);
+  auto rangeSpace = paramSpace.named_set_from_params_id(tensorID, args.size());
 
   // Add a tag to the domain space so that we can maintain a mapping
   // between each access in the IR and the reads/writes maps.
   std::string tag = "__tc_ref_" + std::to_string(accesses->size());
   isl::id tagID(domain.get_ctx(), tag);
   accesses->emplace(op, tagID);
-  isl::space tagSpace = paramSpace.set_tuple_name(isl::dim_type::set, tag);
+  isl::space tagSpace = paramSpace.named_set_from_params_id(tagID, 0);
   domainSpace = domainSpace.product(tagSpace);
 
   // Start with a totally unconstrained relation - every point in
