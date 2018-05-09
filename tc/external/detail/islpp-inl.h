@@ -30,8 +30,7 @@ inline isl::aff operator*(isl::aff A, int i) {
 }
 
 inline isl::aff operator*(isl::val V, isl::aff A) {
-  isl::aff AV(A.get_local_space().domain(), V);
-  return A.mul(AV);
+  return A.scale(V);
 }
 
 inline isl::aff operator*(isl::aff A, isl::val V) {
