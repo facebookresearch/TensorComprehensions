@@ -152,9 +152,9 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
   }
 
   isl::set footprint = isl::set::universe(space);
-  auto lspace = isl::local_space(space);
+  auto identity = isl::multi_aff::identity(space.map_from_set());
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
-    auto aff = isl::aff(lspace, isl::dim_type::out, i);
+    auto aff = identity.get_aff(i);
     auto size = sizes.get_val(i);
     footprint =
         footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
