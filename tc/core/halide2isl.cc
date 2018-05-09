@@ -153,7 +153,7 @@ inline std::vector<isl::aff> combineSingleAffs(
  * upper bounds
  *   x < min(a,b) <=> x < a AND x < b.
  * Arguments "allowMin" and "allowMax" control whether Min and Max operations,
- * respecitvely, are allowed to be present in the expression. Note that they
+ * respectively, are allowed to be present in the expression. Note that they
  * can only appear before any other operation and cannot appear together in an
  * expression.
  * If a Halide expression cannot be converted into a list of affine expressions,
