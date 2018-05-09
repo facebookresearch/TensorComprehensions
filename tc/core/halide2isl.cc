@@ -333,6 +333,22 @@ std::pair<isl::union_map, isl::union_map> extractAccesses(
   return {finder.reads, finder.writes};
 }
 
+/*
+ * Take a parametric expression "f" and convert it into an expression
+ * on the iteration domains in "domain" by reinterpreting the parameters
+ * as set dimensions according to the corresponding tuples in "map".
+ */
+isl::union_pw_aff
+onDomains(isl::aff f, isl::union_set domain, const IterationDomainMap& map) {
+  auto upa = isl::union_pw_aff::empty(domain.get_space());
+  for (auto set : domain.get_set_list()) {
+    auto tuple = map.at(set.get_tuple_id()).tuple;
+    auto onSet = isl::union_pw_aff(f.unbind_params_insert_domain(tuple));
+    upa = upa.union_add(onSet);
+  }
+  return upa;
+}
+
 } // namespace
 
 /*
@@ -395,20 +411,12 @@ isl::schedule makeScheduleTreeHelper(
 
     // Create an affine function that defines an ordering for all
     // the statements in the body of this loop over the values of
-    // this loop. For each statement in the children we want the
-    // function that maps everything in its space to this
-    // dimension. The spaces may be different, but they'll all have
-    // this loop var at the same index.
-    isl::multi_union_pw_aff mupa;
-    body.get_domain().foreach_set([&](isl::set s) {
-      isl::aff newLoopVar(
-          isl::local_space(s.get_space()), isl::dim_type::set, outer.n());
-      if (mupa) {
-        mupa = mupa.union_add(isl::union_pw_aff(isl::pw_aff(newLoopVar)));
-      } else {
-        mupa = isl::union_pw_aff(isl::pw_aff(newLoopVar));
-      }
-    });
+    // this loop.  Start from a parametric expression equal
+    // to the current loop iterator and then convert it to
+    // a function on the statements in the domain of the body schedule.
+    auto aff = isl::aff::param_on_domain_space(space, id);
+    auto domain = body.get_domain();
+    auto mupa = isl::multi_union_pw_aff(onDomains(aff, domain, *domains));
 
     schedule = body.insert_partial_schedule(mupa);
   } else if (auto op = s.as<Halide::Internal::Block>()) {
