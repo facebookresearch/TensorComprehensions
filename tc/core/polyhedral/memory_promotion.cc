@@ -111,14 +111,14 @@ isl::map TensorReferenceGroup::approximateScopedAccesses() const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
-  auto lspace = isl::local_space(accessed.get_space().range());
 
+  auto identity = isl::multi_aff::identity(space.range().map_from_set());
   for (size_t i = 0; i < approximation.dim(); ++i) {
     auto offset = approximation.lowerBound(i);
     auto stride = approximation.stride(i);
     auto strideOffset = approximation.strideOffset(i);
     auto size = approximation.size(i);
-    auto rhs = isl::aff(lspace, isl::dim_type::set, i);
+    auto rhs = identity.get_aff(i);
     auto lowerBound = offset * stride + strideOffset;
     auto upperBound = (offset + size) * stride + strideOffset;
     auto partial =
