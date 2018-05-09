@@ -4,7 +4,7 @@ Tensor Comprehensions (TC) is a fully-functional C++ library to *automatically* 
 
 This library is designed to be highly portable, machine-learning-framework agnostic and only requires a simple tensor library with memory allocation, offloading and synchronization capabilities.
 
-For now, we have integrated TC with the [Caffe2](https://github.com/caffe2/caffe2) and [PyTorch](https://github.com/pytorch/pytorch/).
+For now, we have integrated TC with [Caffe2](https://github.com/caffe2/caffe2) and [PyTorch](https://github.com/pytorch/pytorch/).
 
 # A simple example
 
