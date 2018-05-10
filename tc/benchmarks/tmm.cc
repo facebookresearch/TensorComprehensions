@@ -90,8 +90,7 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "tmm", options, inputs, outputs, check_fun);
+    Check(tc, "tmm", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
