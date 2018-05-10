@@ -30,6 +30,9 @@ namespace tc {
 namespace autotune {
 
 /// Returns all the powers of 2 up to the first one that is larger than val
+std::vector<std::size_t> powers2(std::size_t val);
+
+/// Returns all the powers of 2 up to the first one that is larger than val
 /// and the result of ceil(val/pow2) for each of those powers of 2 (except for
 /// the larger one)
 std::vector<std::size_t> powers2andCeilDivisors(std::size_t val);

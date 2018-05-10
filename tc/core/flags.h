@@ -39,6 +39,7 @@ DECLARE_uint32(benchmark_warmup);
 DECLARE_uint32(benchmark_iterations);
 
 // Used in autotuning
+DECLARE_uint32(tuner_max_unroll_size);
 DECLARE_uint32(tuner_gen_pop_size);
 DECLARE_uint32(tuner_gen_crossover_rate);
 DECLARE_uint32(tuner_gen_mutation_rate);
