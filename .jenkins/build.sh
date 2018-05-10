@@ -69,5 +69,8 @@ WITH_CAFFE2=ON CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda CLANG_PREFIX=$(${CONDA_PREF
 python setup.py install
 ./test_python/run_test.sh
 
-FILTER_OUT=MLP_model ./test.sh
+FILTER_OUT="MLP_model kronecker" ./test.sh
+# 2LUT can OOM on smaller Maxwells on our CI machines
 ./build/tc/benchmarks/MLP_model --gtest_filter=-*2LUT*
+# Kronecker xxxAsMatMul can OOM
+./build/tc/benchmarks/kronecker --gtest_filter=-*AsMatMul*

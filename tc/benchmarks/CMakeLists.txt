@@ -18,6 +18,7 @@ find_library(CUDA_CUDNN_LIBRARIES cudnn
 set(EXAMPLES_FILES
   batchmatmul
   group_convolution
+  kronecker
   tmm
   MLP_model
 )

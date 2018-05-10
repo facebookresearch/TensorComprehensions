@@ -96,8 +96,10 @@ struct Benchmark : public ::testing::Test {
     }
   }
 
-  template <typename CheckFunction>
-  void Check(
+  using CheckFunction = std::function<bool(
+      const std::vector<at::Tensor>& inputs,
+      const std::vector<at::Tensor>& outputs)>;
+  std::vector<at::Tensor> Check(
       const std::string& tc,
       const std::string& name,
       const tc::CudaMappingOptions& mappingOptions,
@@ -184,6 +186,8 @@ struct Benchmark : public ::testing::Test {
     std::cout << "\n\n";
 
 #undef GET_US
+
+    return outputs;
   }
 
   template <typename InitFunction, typename InplaceFunction>
@@ -230,7 +234,6 @@ struct Benchmark : public ::testing::Test {
 #undef GET_US
   }
 
-  template <typename CheckFunction>
   void validateProto(
       std::string cacheFilename,
       const std::string& tc,
@@ -342,8 +345,7 @@ struct Benchmark : public ::testing::Test {
 #undef GET_US
   }
 
-  template <typename CheckFunction>
-  void autotune(
+  std::vector<tc::CudaMappingOptions> autotune(
       std::string cacheFilename,
       std::string resultsFilename,
       std::string tc,
@@ -442,6 +444,10 @@ struct Benchmark : public ::testing::Test {
           << "\n---------------------------------------------------------";
       std::cout << "\n\n";
 #undef GET_US
+
+      return {bestOptions};
     }
+
+    return {};
   }
 };
