@@ -24,6 +24,7 @@ set(GTEST_LIBS gtest gtest_main)
 set(EXAMPLES_FILES
   batchmatmul
   group_convolution
+  kronecker
   tmm
   MLP_model
 )
