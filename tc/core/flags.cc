@@ -56,6 +56,10 @@ DEFINE_bool(
 
 // Autotuner flags
 DEFINE_uint32(
+    tuner_max_unroll_size,
+    32,
+    "Polyhedral unrolling is expensive, limit to 32 by default");
+DEFINE_uint32(
     tuner_gen_pop_size,
     100,
     "Population size for genetic autotuning");

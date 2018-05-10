@@ -399,7 +399,8 @@ void setupTuningParameters(
   configuration.tilingParams.setRange(nTilesDim, range);
   configuration.blockParams.setRange(range, "b");
   configuration.gridParams.setRange(range, "g");
-  configuration.unrollFactor = RangeParameter({1, 2, 4, 8, 16, 32}, "unroll");
+  configuration.unrollFactor =
+      RangeParameter(powers2(FLAGS_tuner_max_unroll_size), "unroll");
 }
 } // namespace
 

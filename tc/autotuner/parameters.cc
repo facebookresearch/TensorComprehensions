@@ -283,7 +283,11 @@ void TuningConfiguration::fromMappingOptions(
       options.proto.fix_parameters_before_scheduling());
   tilingParams.fromMappingOptions(options.tiling);
   unrollFactor.selectFromValue(
-      (options.proto.has_unroll() ? options.proto.unroll() : 1));
+      (options.proto.has_unroll()
+           ? std::min(
+                 static_cast<uint32_t>(options.proto.unroll()),
+                 FLAGS_tuner_max_unroll_size)
+           : 1));
   tileImperfectlyNested.selectValue(options.proto.tile_imperfectly_nested());
   matchLibraryCalls.selectValue(options.proto.match_library_calls());
 }

@@ -27,9 +27,8 @@
 namespace tc {
 namespace autotune {
 
-std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
+std::vector<std::size_t> powers2(std::size_t val) {
   auto numPowers = static_cast<std::size_t>(std::ceil(std::log2(val)));
-  // 1. generate `numPowers' powers of 2
   std::vector<std::size_t> res(numPowers + 1);
   std::size_t p = 1;
   std::generate(res.begin(), res.end(), [p]() mutable {
@@ -37,7 +36,12 @@ std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
     p *= 2;
     return old_p;
   });
-  // 2. additionally insert ceil(val / powers2)
+  return res;
+}
+
+std::vector<std::size_t> powers2andCeilDivisors(std::size_t val) {
+  std::vector<std::size_t> res = powers2(val);
+  // Additionally insert ceil(val / powers2)
   res.reserve(res.size() * 2);
   for (std::size_t i = 0, s = res.size(); i < s; ++i) {
     if (res[i] > val) {
