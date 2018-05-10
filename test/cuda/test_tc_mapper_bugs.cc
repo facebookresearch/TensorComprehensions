@@ -774,6 +774,65 @@ TEST(Convolution, NestedExpressions) {
   CHECK_EQ(at::Scalar(B[10]).toFloat(), 1);
 }
 
+// Previous versions of TC would map the reduction in the code below
+// to CUB, despite the fact that not every thread gets assigned
+// an instance of the reduction.
+// Check that this no longer happens.
+TEST(GroupNorm, ReductionDeadlockBug) {
+  auto group_norm = "group_norm";
+  auto TC = std::string(R"TC(
+def group_norm(
+    float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
+    -> (O, mean, var)
+{
+    mean(n, g) +=! I(n, g, r_d, r_h, r_w)
+    var(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
+    O(n, g, d, h, w) = gamma(g, d)
+      * ( I(n, g, d, h, w) - mean(n, g) * 1.0 )
+      * rsqrt( var(n, g) * 1.0
+            - mean(n, g) * mean(n, g) * 1.0 * 1.0
+            + 1e-5)
+      + beta(g, d)
+}
+  )TC");
+
+  uint32_t N = 4, C = 8, G = 4, D = C / G, H = 6, W = 6;
+  at::Tensor I = at::CUDA(at::kFloat).rand({N, G, D, H, W});
+  at::Tensor gamma = at::CUDA(at::kFloat).rand({G, D}).fill_(1.0f);
+  at::Tensor beta = at::CUDA(at::kFloat).rand({G, D}).fill_(0.0f);
+  std::vector<at::Tensor> inputs = {I, gamma, beta};
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
+                     .outerScheduleFusionStrategy(tc::FusionStrategy::Min)
+                     .outerScheduleAllowSkewing(false)
+                     .outerSchedulePositiveOrthant(true)
+                     .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+                     .intraTileScheduleAllowSkewing(false)
+                     .intraTileSchedulePositiveOrthant(true)
+                     .tile(2, 6, 8, 48)
+                     .unroll(4)
+                     .tileImperfectlyNested(false)
+                     .matchLibraryCalls(true)
+                     .mapToThreads(6, 12)
+                     .mapToBlocks(8)
+                     .useSharedMemory(true)
+                     .usePrivateMemory(true)
+                     .unrollCopyShared(false);
+  auto pExecutor =
+      tc::aten::compile<tc::CudaBackend>(TC, group_norm, inputs, options);
+  auto outputs = tc::aten::prepareOutputs(TC, group_norm, inputs);
+  tc::aten::run(*pExecutor, inputs, outputs);
+  cudaDeviceSynchronize();
+
+  auto v = I.view({N, G, -1});
+  auto mean = v.mean(-1, true);
+  auto var = v.var(-1, true).view({N, G, 1});
+  auto x = (v - mean) / (var + 1e-5f).sqrt();
+  auto y = x.view({N, G, D, H, W});
+  cudaDeviceSynchronize();
+
+  checkRtol(outputs[0] - y, {I}, D * H * W, 1e-6);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
