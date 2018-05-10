@@ -102,14 +102,14 @@ struct Benchmark : public ::testing::Test {
       const std::string& name,
       const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor>& inputs,
-      std::vector<at::Tensor>& outputs,
       CheckFunction check_fun = [](const std::vector<at::Tensor>& inputs,
-                                   std::vector<at::Tensor>& outputs) {
+                                   const std::vector<at::Tensor>& outputs) {
         return true;
       }) {
     auto pExecutor =
         tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
-    outputs = tc::aten::prepareOutputs(tc, name, inputs);
+    std::vector<at::Tensor> outputs =
+        tc::aten::prepareOutputs(tc, name, inputs);
     tc::aten::run(*pExecutor, inputs, outputs);
     EXPECT_TRUE(check_fun(inputs, outputs));
     for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {

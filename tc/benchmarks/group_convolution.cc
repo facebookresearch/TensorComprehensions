@@ -146,8 +146,7 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "group_convolution", options, inputs, outputs, check_fun);
+    Check(tc, "group_convolution", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix +

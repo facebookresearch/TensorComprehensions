@@ -214,8 +214,7 @@ def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
           inputs,
           check_fun);
     } else {
-      std::vector<at::Tensor> outputs;
-      Check(tc, "_1LUT", options, inputs, outputs, check_fun);
+      Check(tc, "_1LUT", options, inputs, check_fun);
       if (use_flags) {
         autotune(
             FLAGS_save_tuner_proto_prefix + std::string("/1LUT_cache") + suffix,
@@ -328,8 +327,7 @@ def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2
           inputs,
           check_fun);
     } else {
-      std::vector<at::Tensor> outputs;
-      Check(tc, "_2LUT", options, inputs, outputs, check_fun);
+      Check(tc, "_2LUT", options, inputs, check_fun);
       if (use_flags) {
         autotune(
             FLAGS_save_tuner_proto_prefix + std::string("/2LUT_cache") + suffix,
@@ -382,8 +380,7 @@ def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "_C3", options, inputs, outputs, check_fun);
+    Check(tc, "_C3", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/_C3_cache") + suffix,
@@ -438,8 +435,7 @@ def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "mlp1", options, inputs, outputs, check_fun);
+    Check(tc, "mlp1", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/mlp1_cache") + suffix,
@@ -509,9 +505,7 @@ def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3, f
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-
-    Check(tc, "mlp3", options, inputs, outputs, check_fun);
+    Check(tc, "mlp3", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/mlp3_cache") + suffix,
