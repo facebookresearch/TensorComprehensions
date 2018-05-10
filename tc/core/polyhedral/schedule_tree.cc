@@ -212,7 +212,8 @@ ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
   auto domain = root->elemAs<ScheduleTreeElemDomain>();
   CHECK(domain);
   auto space = domain->domain_.get_space().set_from_params();
-  auto zero = isl::multi_union_pw_aff::zero(space);
+  auto mv = isl::multi_val::zero(space);
+  auto zero = isl::multi_union_pw_aff(domain->domain_, mv);
   return ScheduleTree::makeBand(zero);
 }
 
