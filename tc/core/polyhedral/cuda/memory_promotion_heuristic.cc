@@ -29,6 +29,7 @@
 #include <numeric>
 #include <sstream>
 #include <type_traits>
+#include <unordered_map>
 
 namespace tc {
 namespace polyhedral {
@@ -476,6 +477,13 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
   return functional::Map(splitAtDepth, bands);
 }
 
+struct IslIdSizeTHash {
+  size_t operator()(const std::pair<isl::id, size_t>& k) const {
+    return (isl::IslIdIslHash()(k.first) ^ (k.second << 1));
+  }
+};
+} // namespace
+
 /*
  * For every place in the schedule tree where schedule depth (i.e., the number
  * of preceding band members) is "depth", promote tensor reference groups to
@@ -524,89 +532,107 @@ size_t promoteToSharedGreedy(
   // group either features reuse or is accessed in a non-coalesced way, or
   // both.
   size_t remainingMemory = maxMemory;
-  for (auto bandNode : bands) {
-    auto activePoints = activeDomainPoints(root, bandNode);
-    auto partialSched = partialSchedule(root, bandNode);
+  std::vector<isl::union_map> partialScheds;
+  // Pure affine schedule without (mapping) filters.
+  std::vector<isl::multi_union_pw_aff> partialSchedsMupa;
+  std::unordered_map<
+      std::pair<isl::id, size_t>,
+      TensorGroupsInfo,
+      IslIdSizeTHash>
+      groupMap;
 
-    auto groupMap = TensorReferenceGroup::accessedWithin(
-        partialSched.intersect_domain(activePoints), scop.reads, scop.writes);
-    // Pure affine schedule without (mapping) filters.
-    auto partialSchedMupa = partialScheduleMupa(root, bandNode);
+  for (size_t i = 0; i < bands.size(); ++i) {
+    auto activePoints = activeDomainPoints(root, bands[i]);
+    auto groupMapOfSubtree = TensorReferenceGroup::accessedWithin(partialSched.intersect_domain(activePoints), scop.reads, scop.writes);
+    partialScheds.push_back(partialSchedule(root, bands[i]));
+    partialSchedsMupa.push_back(partialScheduleMupa(root, bands[i]));
 
-    // Prepare groups for sorting, to have specified order necessary for
-    // reproducibility and tests.
-    using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
-    std::vector<TensorGroupList> groupLists(
-        std::make_move_iterator(groupMap.begin()),
-        std::make_move_iterator(groupMap.end()));
-
-    // Computes the total number of references in all groups.
-    auto refsCount = [](const TensorGroupsInfo& info) {
-      size_t refs = 0;
-      for (auto const& group : info) {
-        refs += group->referenceIds().size();
-      }
-      return refs;
-    };
-
-    // Sort by the total number of references, then by name.  Because names are
-    // guarenteed to be unique, the order is total.
-    std::sort(
-        groupLists.begin(),
-        groupLists.end(),
-        [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
-          auto r1 = refsCount(l1.second);
-          auto r2 = refsCount(l2.second);
-          return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
-        });
-    for (auto& tensorGroups : groupLists) {
-      auto tensorId = tensorGroups.first;
-      // Sort the reference groups to prioritize groups with more references as
-      // they are more likely to benefit from promotion.
-      std::sort(
-          tensorGroups.second.begin(),
-          tensorGroups.second.end(),
-          [refsCount](
-              const std::unique_ptr<TensorReferenceGroup>& group1,
-              const std::unique_ptr<TensorReferenceGroup>& group2) {
-            return group1->referenceIds().size() >
-                group2->referenceIds().size();
-          });
-
-      for (auto& group : tensorGroups.second) {
-        auto sizes = group->approximationSizes();
-        if (sizes.size() == 0) {
-          throw promotion::PromotionLogicError("cannot promote a scalar");
-        }
-        if (sizes.back() % 2 == 0) {
-          sizes.back() += 1;
-        }
-        auto nApproximationElements = std::accumulate(
-            sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
-        size_t memoryRequirement =
-            nApproximationElements * scop.findArgument(tensorId).type().bytes();
-        if (memoryRequirement > remainingMemory) {
-          continue;
-        }
-        // Do not promote if the group features no reuse and is accessed in a
-        // coalesced way.
-        if (!hasReuseWithin(*group, partialSchedMupa) &&
-            !promotionImprovesCoalescing(root, bandNode, *group, fullSched)) {
-          continue;
-        }
-
-        scop.promoteGroup(
-            Scop::PromotedDecl::Kind::SharedMem,
-            tensorId,
-            std::move(group),
-            bandNode,
-            partialSched,
-            true);
-        remainingMemory -= memoryRequirement;
-      }
+    for (auto& tensorGroup : groupMapOfSubtree) {
+      groupMap[std::make_pair(tensorGroup.first, i)] =
+          std::move(tensorGroup.second);
     }
-    LOG(WARNING) << *root;
-    LOG(WARNING) << *bandNode;
+  }
+
+  // Prepare groups for sorting, to have specified order necessary for
+  // reproducibility and tests.
+  using TensorGroupList =
+      std::pair<std::pair<isl::id, size_t>, TensorGroupsInfo>;
+  std::vector<TensorGroupList> groupLists(
+      std::make_move_iterator(groupMap.begin()),
+      std::make_move_iterator(groupMap.end()));
+
+  // Computes the total number of references in all groups.
+  auto refsCount = [](const TensorGroupsInfo& info) {
+    size_t refs = 0;
+    for (auto const& group : info) {
+      refs += group->referenceIds().size();
+    }
+    return refs;
+  };
+
+  // Sort by the total number of references, then by name.  Because names are
+  // guarenteed to be unique, the order is total.
+  std::sort(
+      groupLists.begin(),
+      groupLists.end(),
+      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
+        auto r1 = refsCount(l1.second);
+        auto r2 = refsCount(l2.second);
+        auto n1 = l1.first.first.get_name();
+        auto n2 = l2.first.first.get_name();
+        return std::tie(r1, n1, l1.first.second) <
+            std::tie(r2, n2, l2.first.second);
+      });
+
+  for (auto& tensorGroups : groupLists) {
+    auto tensorId = tensorGroups.first.first;
+    auto bandNodeId = tensorGroups.first.second;
+    // Sort the reference groups to prioritize groups with more references as
+    // they are more likely to benefit from promotion.
+    std::sort(
+        tensorGroups.second.begin(),
+        tensorGroups.second.end(),
+        [refsCount](
+            const std::unique_ptr<TensorReferenceGroup>& group1,
+            const std::unique_ptr<TensorReferenceGroup>& group2) {
+          return group1->referenceIds().size() > group2->referenceIds().size();
+        });
+
+    for (auto& group : tensorGroups.second) {
+      auto sizes = group->approximationSizes();
+      if (sizes.size() == 0) {
+        throw promotion::PromotionLogicError("cannot promote a scalar");
+      }
+      if (sizes.back() % 2 == 0) {
+        sizes.back() += 1;
+      }
+      auto nApproximationElements = std::accumulate(
+          sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
+      size_t memoryRequirement =
+          nApproximationElements * scop.findArgument(tensorId).type().bytes();
+      if (memoryRequirement > remainingMemory) {
+        continue;
+      }
+      // Do not promote if the group features no reuse and is accessed in a
+      // coalesced way.
+      if (!hasReuseWithin(*group, partialSchedsMupa[bandNodeId]) &&
+          !promotionImprovesCoalescing(
+              root, bands[bandNodeId], *group, fullSched)) {
+        continue;
+      }
+
+      scop.promoteGroup(
+          Scop::PromotedDecl::Kind::SharedMem,
+          tensorId,
+          std::move(group),
+          bands[bandNodeId],
+          partialScheds[bandNodeId],
+          true);
+      remainingMemory -= memoryRequirement;
+    }
+  }
+
+  for (auto bandNode : bands) {
     scop.insertSyncsAroundCopies(bandNode);
   }
   return remainingMemory;
