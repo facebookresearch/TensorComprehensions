@@ -390,7 +390,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   mapThreadsBackward(band);
 
   if (isReduction) {
-    splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);
+    splitOutReductionAndInsertSyncs(band);
   }
 
   return numThreads.view.size();
@@ -946,14 +946,14 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
       mappedScopForCodegen->numThreads);
 }
 
-// Split out reduction member at position "dim" in "band" and
+// Split out reduction member in "band" and
 // insert reduction synchronizations outside this split off band.
 void MappedScop::splitOutReductionAndInsertSyncs(
-    detail::ScheduleTree* band,
-    int dim) {
+    detail::ScheduleTree* band) {
   using namespace polyhedral::detail;
+  size_t n = numThreads.view.size();
 
-  auto tree = bandSplitOut(scop_->scheduleRoot(), band, dim);
+  auto tree = bandSplitOut(scop_->scheduleRoot(), band, n - 1);
   for (auto updateId : reductionBandUpdates_.at(band).ids) {
     scop_->insertReductionSync1D(tree, updateId);
   }
