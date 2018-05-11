@@ -182,8 +182,6 @@ class MappedScop {
  private:
   // Insert the optimal combination of synchronizations in the sequence
   void insertBestSyncInSeq(detail::ScheduleTree* seq);
-  // Split out reduction bands and insert reduction synchronizations.
-  void splitOutReductionsAndInsertSyncs();
   // Split out reduction member at position "dim" in "band" and
   // insert reduction synchronizations.
   void splitOutReductionAndInsertSyncs(detail::ScheduleTree* band, int dim);
