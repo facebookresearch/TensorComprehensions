@@ -42,8 +42,8 @@ class ScheduleTree;
 // Return the remaining memory.
 size_t promoteGreedilyAtDepth(
     MappedScop& scop,
-    detail::ScheduleTree* st,
-    std::size_t depth,
+    std::vector<detail::ScheduleTree*> trees,
+    std::vector<std::size_t> depths,
     std::size_t sharedMemorySize,
     bool unrollCopies);
 

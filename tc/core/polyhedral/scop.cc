@@ -208,6 +208,9 @@ void Scop::promoteGroup(
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
   // Return immediately if nothing was inserted
+  if (tree->numChildren() == 0) {
+    return;
+  }
   auto extensionNode =
       tree->child({0})->elemAs<detail::ScheduleTreeElemExtension>();
   if (!extensionNode) {

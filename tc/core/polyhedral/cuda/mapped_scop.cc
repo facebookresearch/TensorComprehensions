@@ -1155,30 +1155,34 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
           << "requested to unroll copies to shared memory without providing the unroll size";
       bool unroll = cudaOptions.proto().unroll_copy_shared() &&
           generic.proto.has_unroll();
-      for (auto outerBand : tiledBands) {
-        auto band = outerBand->elemAs<ScheduleTreeElemBand>();
 
-        LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
+      std::vector<size_t> depths;
+      std::vector<ScheduleTree*> bandsWithPromotion;
+      for (auto band : tiledBands) {
+        auto bandElem = band->elemAs<ScheduleTreeElemBand>();
+        LOG_IF(WARNING, FLAGS_debug_tc_mapper && bandElem->nMember() == 0)
             << "Aborting memory promotion for one band because it has 0 members (NYI)";
-        if (band->nMember() == 0) {
+        if (bandElem->nMember() == 0) {
           continue;
         }
-
-        sharedMemorySize = promoteGreedilyAtDepth(
-            *mappedScop,
-            outerBand,
-            std::min(
-                band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
-            sharedMemorySize,
-            cudaOptions.proto().unroll_copy_shared() &&
-                generic.proto.has_unroll());
-
-        /*auto bands = ScheduleTree::collectDFSPreorder(
-          scop->scheduleRoot(), ScheduleTreeType::Band);
-          if (bands.size() == 0) { // Sanity check.
-          throw NoBandsException("no bands after promotion");
-          }*/
+        bandsWithPromotion.push_back(band);
+        depths.push_back(std::min(
+            bandElem->nOuterCoincident(), mappedScop->numBlocks.view.size()));
       }
+
+      sharedMemorySize = promoteGreedilyAtDepth(
+          *mappedScop,
+          bandsWithPromotion,
+          depths,
+          sharedMemorySize,
+          cudaOptions.proto().unroll_copy_shared() &&
+              generic.proto.has_unroll());
+
+      /*auto bands = ScheduleTree::collectDFSPreorder(
+        scop->scheduleRoot(), ScheduleTreeType::Band);
+        if (bands.size() == 0) { // Sanity check.
+        throw NoBandsException("no bands after promotion");
+        }*/
     }
   }
 

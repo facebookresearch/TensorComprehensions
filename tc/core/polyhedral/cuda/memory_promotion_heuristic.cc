@@ -490,13 +490,15 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 size_t promoteToSharedGreedy(
     Scop& scop,
     const Block& block,
-    detail::ScheduleTree* tree,
-    size_t depth,
+    std::vector<detail::ScheduleTree*> trees,
+    std::vector<size_t> depths,
     size_t maxMemory) {
   using namespace tc::polyhedral::detail;
 
-  if (depth == 0) {
-    throw promotion::PromotionNYI("promotion before any band");
+  for (auto depth : depths) {
+    if (depth == 0) {
+      throw promotion::PromotionNYI("promotion before any band");
+    }
   }
 
   auto root = scop.scheduleRoot();
@@ -504,8 +506,12 @@ size_t promoteToSharedGreedy(
   // 1. Collect all bands with a member located at the given depth in the
   // overall schedule.  Make sure this is the last member of the band by
   // splitting off the subsequent members into a different band.
-  auto bands = bandsContainingScheduleDepth(tree, depth);
-  bands = bandsSplitAfterDepth(bands, root, depth);
+  std::vector<detail::ScheduleTree*> bands;
+  for (size_t i = 0; i < trees.size(); ++i) {
+    auto treeBands = bandsContainingScheduleDepth(trees[i], depths[i]);
+    treeBands = bandsSplitAfterDepth(treeBands, root, depths[i]);
+    bands.insert(bands.end(), treeBands.begin(), treeBands.end());
+  }
 
   // 2. Compute full schedule without mapping filters.  The filters would make
   // it impossible to test for coalescing by incrementing a member of a band as
@@ -599,6 +605,8 @@ size_t promoteToSharedGreedy(
         remainingMemory -= memoryRequirement;
       }
     }
+    LOG(WARNING) << *root;
+    LOG(WARNING) << *bandNode;
     scop.insertSyncsAroundCopies(bandNode);
   }
   return remainingMemory;
@@ -607,13 +615,13 @@ size_t promoteToSharedGreedy(
 
 size_t promoteGreedilyAtDepth(
     MappedScop& mscop,
-    detail::ScheduleTree* st,
-    size_t depth,
+    std::vector<detail::ScheduleTree*> trees,
+    std::vector<size_t> depths,
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
   sharedMemorySize = promoteToSharedGreedy(
-      mscop.scop(), mscop.numThreads, st, depth, sharedMemorySize);
+      mscop.scop(), mscop.numThreads, trees, depths, sharedMemorySize);
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);
