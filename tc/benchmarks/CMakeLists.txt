@@ -24,6 +24,7 @@ set(GTEST_LIBS gtest gtest_main)
 set(BENCHMARKS
   batchmatmul
   group_convolution
+  group_normalization
   kronecker
   tmm
   MLP_model
