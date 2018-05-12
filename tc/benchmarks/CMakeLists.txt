@@ -19,20 +19,19 @@ include_directories(${PROJECT_SOURCE_DIR}/third-party/googletest/googletest/incl
 set(GTEST_LIBS gtest gtest_main)
 
 ################################################################################
-# Examples
+# Benchmarks
 ################################################################################
-set(EXAMPLES_FILES
+set(BENCHMARKS
   batchmatmul
   group_convolution
   kronecker
   tmm
   MLP_model
 )
-foreach(i ${EXAMPLES_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
+foreach(i ${BENCHMARKS})
+  add_executable(benchmark_${i} ${i}.cc)
   target_link_libraries(
-     ${i}
+     benchmark_${i}
 
      ${CUDA_CUBLAS_LIBRARIES}
      ${CUDA_CUDNN_LIBRARIES}
