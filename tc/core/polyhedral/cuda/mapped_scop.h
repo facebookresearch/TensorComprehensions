@@ -182,11 +182,11 @@ class MappedScop {
  private:
   // Insert the optimal combination of synchronizations in the sequence
   void insertBestSyncInSeq(detail::ScheduleTree* seq);
-  // Split out reduction bands and insert reduction synchronizations.
-  void splitOutReductionsAndInsertSyncs();
-  // Split out reduction member at position "dim" in "band" and
-  // insert reduction synchronizations.
-  void splitOutReductionAndInsertSyncs(detail::ScheduleTree* band, int dim);
+  // Split out a single reduction tile (in the directions other than
+  // the reduction) and insert reduction synchronizations.
+  // Return a pointer to the split off tile.
+  detail::ScheduleTree* splitOutReductionTileAndInsertSyncs(
+      detail::ScheduleTree* band);
   // Map "band" to thread identifiers using as many blockSizes values as outer
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and

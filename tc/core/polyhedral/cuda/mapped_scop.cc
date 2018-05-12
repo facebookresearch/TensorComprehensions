@@ -372,7 +372,8 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     bandSplit(scop_->scheduleRoot(), band, nCanMap - nMappedThreads);
     auto child = band->child({0});
     if (isReduction) {
-      // Update reductionBandUpdates_ such that splitOutReductionAndInsertSyncs
+      // Update reductionBandUpdates_ such that
+      // splitOutReductionTileAndInsertSyncs
       // can find the information it needs.
       reductionBandUpdates_.emplace(child, reductionBandUpdates_.at(band));
       reductionBandUpdates_.erase(band);
@@ -387,11 +388,11 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
 
   CHECK_GT(nMappedThreads, 0u) << "not mapping to threads";
 
-  mapThreadsBackward(band);
-
   if (isReduction) {
-    splitOutReductionAndInsertSyncs(band, nMappedThreads - 1);
+    band = splitOutReductionTileAndInsertSyncs(band);
   }
+
+  mapThreadsBackward(band);
 
   return numThreads.view.size();
 }
@@ -946,17 +947,32 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
       mappedScopForCodegen->numThreads);
 }
 
-// Split out reduction member at position "dim" in "band" and
-// insert reduction synchronizations outside this split off band.
-void MappedScop::splitOutReductionAndInsertSyncs(
-    detail::ScheduleTree* band,
-    int dim) {
+// Split out a single reduction tile (in the directions other than
+// the reduction) and insert reduction synchronizations outside this tile.
+// Return a pointer to the split off tile.
+detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
+    detail::ScheduleTree* band) {
   using namespace polyhedral::detail;
+  size_t n = numThreads.view.size();
 
-  auto tree = bandSplitOut(scop_->scheduleRoot(), band, dim);
-  for (auto updateId : reductionBandUpdates_.at(band).ids) {
-    scop_->insertReductionSync1D(tree, updateId);
+  // The current band contains only full blocks.
+  // Split off a band that iterates over these blocks,
+  // such that only a single block gets mapped to thread identifiers.
+  // The mapping to thread identifier X is allowed to iterate
+  // over multiple blocks, so this direction is not tiled.
+  std::vector<size_t> sizes(n);
+  for (size_t i = 1; i < n; ++i) {
+    sizes[n - 1 - i] = numThreads.view[i];
   }
+  sizes[n - 1] = 0;
+  bandTile(band, sizes, TileOptions::ScaleTileLoops);
+
+  // Insert synchronization outside the single block.
+  auto child = band->child({0});
+  for (auto updateId : reductionBandUpdates_.at(band).ids) {
+    scop_->insertReductionSync1D(child, updateId);
+  }
+  return child;
 }
 
 std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
