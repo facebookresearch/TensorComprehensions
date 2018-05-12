@@ -311,6 +311,11 @@ CudaMappingOptions& CudaMappingOptions::unrollCopyShared(bool b) {
   return *this;
 }
 
+CudaMappingOptions& CudaMappingOptions::useReadOnlyCache(bool b) {
+  ownedProto_.set_use_readonly_cache(b);
+  return *this;
+}
+
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
@@ -341,7 +346,8 @@ CudaMappingOptions CudaMappingOptions::makeUnmappedMappingOptions() {
   mo.genericMappingOptions(MappingOptions::makeUnmappedMappingOptions())
       .useSharedMemory(false)
       .usePrivateMemory(false)
-      .unrollCopyShared(false);
+      .unrollCopyShared(false)
+      .useReadOnlyCache(false);
   return mo;
 }
 

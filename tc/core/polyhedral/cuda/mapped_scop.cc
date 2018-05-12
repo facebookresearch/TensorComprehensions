@@ -908,7 +908,11 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   tc::Block block = mappedScop.numThreads;
   std::tie(grid, block) = tightenLaunchBounds(*scop, grid, block);
   auto res = MappedScop::makeMappedScop(
-      std::move(scop), grid, block, mappedScop.unroll);
+      std::move(scop),
+      grid,
+      block,
+      mappedScop.unroll,
+      mappedScop.useReadOnlyCache);
   res->insertMappingContext();
 
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
@@ -985,7 +989,8 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       std::move(scopUPtr),
       ::tc::Grid(cudaOptions.grid),
       ::tc::Block(cudaOptions.block),
-      generic.proto.unroll()));
+      generic.proto.unroll(),
+      cudaOptions.proto().use_readonly_cache()));
   auto& scop = mappedScop->scop_;
 
   // 1a. Optionally specialize before scheduling...

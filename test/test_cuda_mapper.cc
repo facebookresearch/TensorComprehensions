@@ -80,7 +80,11 @@ struct PolyhedralMapperTest : public ::testing::Test {
 
     // Map to blocks (1 single block here)
     auto mscop = MappedScop::makeMappedScop(
-        std::move(scop), Grid{1}, Block{blockSizes[0], blockSizes[1]}, 0);
+        std::move(scop),
+        Grid{1},
+        Block{blockSizes[0], blockSizes[1]},
+        0,
+        false);
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
 
@@ -102,7 +106,8 @@ struct PolyhedralMapperTest : public ::testing::Test {
         std::move(scop),
         Grid{gridSizes[0], gridSizes[1]},
         Block{blockSizes[0], blockSizes[1]},
-        0);
+        0,
+        false);
 
     // Map to blocks
     auto band = mscop->mapBlocksForward(root->child({0}), 2);
@@ -933,6 +938,18 @@ def perforatedConvolution(float(N, C, H, W) input, float(M, C, KH, KW) weights,
 )TC";
   // This triggers tc2halide conversion and should not throw.
   Prepare(tc);
+}
+
+TEST_F(PolyhedralMapperTest, ReadOnlyCache) {
+  auto tc = R"TC(
+def fun(float(N) I) -> (O) {
+    O(n)      = I(n)
+}
+)TC";
+  auto mappingOptions = DefaultOptions().useReadOnlyCache(true);
+  auto code = codegenMapped(tc, mappingOptions);
+  ASSERT_TRUE(code.find("__ldg(&O") == std::string::npos) << code; // no
+  ASSERT_TRUE(code.find("__ldg(&I") != std::string::npos) << code; // yes
 }
 
 int main(int argc, char** argv) {
