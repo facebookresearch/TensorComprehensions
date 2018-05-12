@@ -18,6 +18,7 @@ find_library(CUDA_CUDNN_LIBRARIES cudnn
 set(BENCHMARKS
   batchmatmul
   group_convolution
+  group_normalization
   kronecker
   moments
   tmm
