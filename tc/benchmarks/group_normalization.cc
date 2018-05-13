@@ -154,7 +154,7 @@ TEST_F(GroupNormalization, ATenGroupNormalizationReference) {
       });
 }
 
-TEST_F(GroupNormalization, DISABLED_C2GroupNormalizationReference) {
+TEST_F(GroupNormalization, C2GroupNormalizationReference) {
   Init(FLAGS_N, FLAGS_C, FLAGS_G, FLAGS_H, FLAGS_W);
   Workspace w;
   auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
