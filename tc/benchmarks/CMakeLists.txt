@@ -19,6 +19,7 @@ set(BENCHMARKS
   batchmatmul
   group_convolution
   kronecker
+  moments
   tmm
   MLP_model
 )
