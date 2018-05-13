@@ -22,6 +22,7 @@ namespace tc {
 CudaMappingOptionsCppPrinter& operator<<(
     CudaMappingOptionsCppPrinter& prn,
     const CudaMappingOptions& cudaOptions) {
+  prn.printString("tc::CudaMappingOptions::makeNaiveMappingOptions()");
   prn.print(cudaOptions.generic);
   prn.printListOption("mapToThreads", cudaOptions.block.extractVector());
   prn.printListOption("mapToBlocks", cudaOptions.grid.extractVector());
