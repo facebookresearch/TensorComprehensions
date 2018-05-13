@@ -42,6 +42,9 @@ MappingOptionsCppPrinter& MappingOptionsCppPrinter::print(
     printSchedulerOptions(
         options.view.intraTileScheduleOptions, "intraTileSchedule");
   }
+  printBooleanOption(
+      "fixParametersBeforeScheduling",
+      options.view.proto.fix_parameters_before_scheduling());
   if (options.view.proto.has_tiling()) {
     printListOption("tile", options.view.tiling.extractVector());
   }
