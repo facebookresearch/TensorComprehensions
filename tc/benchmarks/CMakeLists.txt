@@ -26,6 +26,7 @@ set(BENCHMARKS
   group_convolution
   group_normalization
   kronecker
+  moments
   tmm
   MLP_model
 )
