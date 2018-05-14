@@ -22,6 +22,7 @@ namespace tc {
 CpuMappingOptionsCppPrinter& operator<<(
     CpuMappingOptionsCppPrinter& prn,
     const CpuMappingOptions& options) {
+  prn.printString("tc::CpuMappingOptions::makeNaiveMappingOptions()");
   prn.print(options.generic);
   prn.endStmt();
   return prn;

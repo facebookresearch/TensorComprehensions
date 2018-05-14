@@ -85,8 +85,8 @@ TEST(TestCornerCases, E2) {
   Succeed("def f(float(1) a) -> (b) { b(i) = a(i) }", {F(1)}, {F(1)});
 }
 
-// free(): invalid next size (fast): 0x000000003b2d6230 ***
-TEST(TestCornerCases, DISABLED_E4) {
+// Schedule tree that only consists of domain node
+TEST(TestCornerCases, E4) {
   Succeed("def f(float a) -> (b) { b = a }", {F()}, {F()});
 }
 
@@ -279,6 +279,44 @@ TEST(TestCornerCases, E23) {
       fminf(
           at::Scalar(a[0]).toFloat(),
           fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())),
+      at::Scalar(d[0]).toFloat());
+}
+
+// This tests that the TC parser functions in the presence of arbitrary newlines
+TEST(TestCornerCases, E24) {
+  auto a = F(1);
+  auto b = F(1);
+  auto c = F(1);
+  auto d = F(1);
+  Succeed(
+      R"TC(
+
+def f(float(1)
+a, float(1
+) b, float
+(1) c) -> (d) { d(
+i)
+ =
+
+ min(
+a(i), max(
+b(i), c(
+i)))
+
+d(i) = d(i) + max(b(i),
+
+c(
+i))
+
+}
+)TC",
+      {a, b, c},
+      {d});
+  CHECK_EQ(
+      fminf(
+          at::Scalar(a[0]).toFloat(),
+          fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())) +
+          fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat()),
       at::Scalar(d[0]).toFloat());
 }
 

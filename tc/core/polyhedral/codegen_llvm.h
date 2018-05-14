@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
@@ -27,7 +28,12 @@
 
 namespace tc {
 
-static inline std::string toString(llvm::Value* llvmObject) {
+template <
+    typename T,
+    typename std::enable_if<
+        std::is_base_of<llvm::Value, T>::value ||
+        std::is_base_of<llvm::Type, T>::value>::type* = nullptr>
+static inline std::string toString(T* llvmObject) {
   std::string output;
   llvm::raw_string_ostream rso(output);
   llvmObject->print(rso);

@@ -243,8 +243,26 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       CodeGen_X86::visit(call);
     }
   }
+
   void visit(const Halide::Internal::Variable* op) override {
     value = getValue(iteratorMap_->at(op->name));
+
+    // Generate code for type casting if necessary.
+    llvm::Type* ty = llvm_type_of(op->type);
+    if (value->getType() != ty) {
+      if (op->type.is_int()) {
+        value = builder->CreateIntCast(value, ty, true);
+      } else if (op->type.is_uint()) {
+        value = builder->CreateIntCast(value, ty, false);
+      } else if (op->type.is_float()) {
+        value = builder->CreateFPCast(value, ty);
+      } else {
+        CHECK(false) << "Type inconsistency not handled. "
+                     << "Variable " << op->name << " is " << op->type
+                     << ", but its corresponding llvm::Value is "
+                     << toString(value->getType()) << ".";
+      }
+    }
   }
 
  public:
@@ -606,45 +624,46 @@ struct IslCodegenRes {
   isl::ast_node astNode;
 };
 
+isl::ast_node collectIteratorMaps(
+    isl::ast_node node,
+    isl::ast_build build,
+    IteratorMapsType& iteratorMaps,
+    const Scop& scop,
+    StmtSubscriptExprMapType& stmtSubscripts) {
+  auto user = node.as<isl::ast_node_user>();
+  CHECK(user);
+  auto expr = user.get_expr().as<isl::ast_expr_op>();
+  auto schedule = build.get_schedule();
+  auto scheduleMap = isl::map::from_union_map(schedule);
+
+  auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
+  CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
+  auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
+  auto iterators = scop.halide.iterators.at(stmtId);
+  auto& stmtIteratorMap = iteratorMaps[stmtId];
+  for (size_t i = 0; i < iterators.size(); ++i) {
+    auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
+    stmtIteratorMap.emplace(iterators[i], expr);
+  }
+  auto& subscripts = stmtSubscripts[stmtId];
+  auto provide =
+      scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
+  for (auto e : provide->args) {
+    const auto& map = iteratorMap;
+    auto space = map.get_space().params();
+    auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
+    auto pulled = isl::pw_aff(aff).pullback(map);
+    CHECK_EQ(pulled.n_piece(), 1);
+    subscripts.push_back(build.expr_from(pulled));
+  }
+  return node.set_annotation(stmtId);
+}
+
 IslCodegenRes codegenISL(const Scop& scop) {
   IteratorMapsType iteratorMaps;
   StmtSubscriptExprMapType stmtSubscripts;
   auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
                      isl::ast_node n, isl::ast_build b) -> isl::ast_node {
-    auto collectIteratorMaps =
-        [](isl::ast_node node,
-           isl::ast_build build,
-           IteratorMapsType& iteratorMaps,
-           const Scop& scop,
-           StmtSubscriptExprMapType& stmtSubscripts) -> isl::ast_node {
-      auto user = node.as<isl::ast_node_user>();
-      CHECK(user);
-      auto expr = user.get_expr().as<isl::ast_expr_op>();
-      auto schedule = build.get_schedule();
-      auto scheduleMap = isl::map::from_union_map(schedule);
-
-      auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
-      CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
-      auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-      auto iterators = scop.halide.iterators.at(stmtId);
-      auto& stmtIteratorMap = iteratorMaps[stmtId];
-      for (size_t i = 0; i < iterators.size(); ++i) {
-        auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
-        stmtIteratorMap.emplace(iterators[i], expr);
-      }
-      auto& subscripts = stmtSubscripts[stmtId];
-      auto provide =
-          scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
-      for (auto e : provide->args) {
-        const auto& map = iteratorMap;
-        auto space = map.get_space().params();
-        auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
-        auto pulled = isl::pw_aff(aff).pullback(map);
-        CHECK_EQ(pulled.n_piece(), 1);
-        subscripts.push_back(build.expr_from(pulled));
-      }
-      return node.set_annotation(stmtId);
-    };
 
     auto& uv = iteratorMaps;
     return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);

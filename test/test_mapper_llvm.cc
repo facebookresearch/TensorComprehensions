@@ -216,6 +216,40 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
   checkRtol(output - expected, {I, W1, B}, C * KH * KW, 1e-6);
 }
 
+TEST(LLVMCodegen, Concat) {
+  string tc = R"TC(
+def concat(float(M, N) A, float(M, N) B) -> (O1) {
+    O1(n, i, m) = i == 0 ? A(m, n) : B(m, n) where i in 0:2
+}
+)TC";
+  auto N = 16;
+  auto M = 24;
+
+  auto ctx = isl::with_exceptions::globalIslCtx();
+  auto scop = polyhedral::Scop::makeScop(ctx, tc);
+  auto context = scop->makeContext(
+      std::unordered_map<std::string, int>{{"N", N}, {"M", M}});
+  scop = Scop::makeSpecializedScop(*scop, context);
+
+  Jit jit;
+  jit.codegenScop("concat", *scop);
+  auto fptr = (void (*)(float*, float*, float*))jit.getSymbolAddress("concat");
+
+  at::Tensor A = at::CPU(at::kFloat).rand({M, N});
+  at::Tensor B = at::CPU(at::kFloat).rand({M, N});
+  at::Tensor O1 = at::CPU(at::kFloat).rand({N, 2, M});
+  at::Tensor O1c = at::CPU(at::kFloat).rand({N, 2, M});
+
+  for (int n = 0; n < N; ++n) {
+    for (int m = 0; m < M; ++m) {
+      O1c[n][0][m] = A[m][n];
+      O1c[n][1][m] = B[m][n];
+    }
+  }
+  fptr(A.data<float>(), B.data<float>(), O1.data<float>());
+  checkRtol(O1c - O1, {A, B}, N * M);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
