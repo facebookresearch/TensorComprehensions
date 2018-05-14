@@ -104,36 +104,6 @@ namespace detail {
 //
 // ScheduleTree does NOT impose any structure requirements on the tree, e.g.
 // those of ISL.  A tree with a null child is ill-formed.
-//
-// Note that we do not enforce the isl schedule tree invariants [1] at the API
-// level.  Instead, we provide a function checkValidIslSchedule() to verify
-// whether a schedule that has a given ScheduleTree as root can be converted to
-// an isl::schedule.  Note that, for compatibility reasons, the current
-// implementation may also create isl::schedules that do not maintain isl
-// schedule tree guarantees.  The behavior of isl calls on such schedules is
-// undefined.
-//
-// The following isl invariants can be checked
-// 1. root is domain/extension
-// 2. only sequence/set have multiple children, these children are filters
-// 3. nodes do not refer to parameters that were not previously introduced by a
-//    context or a domain node
-// 4. nodes do not refer to inactive domain points, i.e. those that were
-//    filtered away (warning only)
-// 5. union of filters contains all active domain elements
-// 6. domain of an expansion contains all active domain elements
-// 7. partial schedule of a band node is total for all active domain elements
-// 8. extension nodes do not introduce any elements that are already active
-//    domain elements
-// 9. (not enforced)
-// 10. that anchored nodes match the flattened space of the outer bands
-//
-// TODO(ftynse): implement bool checkValidIslSchedule() to check schedule
-// structure without failing the run.
-//
-//
-// [1] Verdoolaege, Guelton, Grosser & Cohen (2014). "Schedule trees". In
-// IMPACT 2014.
 //////////////////////////////////////////////////////////////////////////////
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
