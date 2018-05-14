@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "group_convolution.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -47,31 +49,35 @@ DEFINE_uint32(KH, 3, "Kernel width (NCHW notation)");
 DEFINE_uint32(KW, 3, "Kernel height (NCHW notation)");
 
 class GroupConvolution : public Benchmark {
+ protected:
+  uint32_t N, G, C, F, H, W, KH, KW;
+
  public:
-  void runGroupConvolution(
-      uint32_t N,
-      uint32_t G,
-      uint32_t C,
-      uint32_t F,
-      uint32_t H,
-      uint32_t W,
-      uint32_t KH,
-      uint32_t KW,
-      const tc::CudaMappingOptions& options,
-      bool use_flags = false);
+  void Init(
+      uint32_t n,
+      uint32_t g,
+      uint32_t c,
+      uint32_t f,
+      uint32_t h,
+      uint32_t w,
+      uint32_t kh,
+      uint32_t kw) {
+    N = n;
+    G = g;
+    C = c;
+    F = f;
+    H = h;
+    W = w;
+    KH = kh;
+    KW = kw;
+  }
+  void runGroupConvolution(const tc::CudaMappingOptions& options);
+  void runATenGroupConvolution();
+  void runCaffe2GroupConvolution();
 };
 
 void GroupConvolution::runGroupConvolution(
-    uint32_t N,
-    uint32_t G,
-    uint32_t C,
-    uint32_t F,
-    uint32_t H,
-    uint32_t W,
-    uint32_t KH,
-    uint32_t KW,
-    const tc::CudaMappingOptions& options,
-    bool use_flags) {
+    const tc::CudaMappingOptions& options) {
   Workspace w;
   auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, H, W}, "I");
@@ -131,188 +137,23 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
       std::string("_W_") + std::to_string(FLAGS_W) + std::string("_H_") +
       std::to_string(FLAGS_H) + std::string("_KW_") + std::to_string(FLAGS_KW) +
       std::string("_KH_") + std::to_string(FLAGS_KH);
-  if (use_flags && FLAGS_validate_proto) {
-    validateProto(
+  std::vector<tc::CudaMappingOptions> bestOptions{options};
+  if (FLAGS_autotune) {
+    bestOptions = autotune(
         FLAGS_save_tuner_proto_prefix +
             std::string("/group_convolution_cache") + suffix,
+        FLAGS_save_tuner_proto_prefix + std::string("/group_convolution_best") +
+            suffix,
         tc,
         "group_convolution",
         inputs,
+        options,
         check_fun);
-  } else {
-    Check(tc, "group_convolution", options, inputs, check_fun);
-    if (use_flags) {
-      autotune(
-          FLAGS_save_tuner_proto_prefix +
-              std::string("/group_convolution_cache") + suffix,
-          FLAGS_save_tuner_proto_prefix +
-              std::string("/group_convolution_best") + suffix,
-          tc,
-          "group_convolution",
-          inputs,
-          options,
-          check_fun);
-    }
   }
+  Check(tc, "group_convolution", options, inputs, check_fun);
 }
 
-TEST_F(GroupConvolution, GroupConvolution) {
-  auto N = FLAGS_N;
-  auto G = FLAGS_G;
-  auto C = FLAGS_C;
-  auto F = FLAGS_F;
-  auto H = FLAGS_H;
-  auto W = FLAGS_W;
-  auto KH = FLAGS_KH;
-  auto KW = FLAGS_KW;
-  // If num threads is too small just get some better default
-  auto threads = (W >= 10) ? std::vector<size_t>{W / 4, H / 2}
-                           : std::vector<size_t>{4, 8, 4};
-  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
-                     .tile(1, 1, 1)
-                     .mapToThreads(threads)
-                     .mapToBlocks({32, 32})
-                     .useSharedMemory(true)
-                     .usePrivateMemory(false)
-                     .unroll(1);
-
-  runGroupConvolution(N, G, C, F, H, W, KH, KW, options, true);
-}
-
-TEST_F(
-    GroupConvolution,
-    GroupConvolution_P100_autotuned_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
-  uint32_t N = 32;
-  uint32_t G = 32;
-  uint32_t C = 16;
-  uint32_t F = 16;
-  uint32_t W = 14;
-  uint32_t H = 14;
-  uint32_t KW = 3;
-  uint32_t KH = 3;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .useSharedMemory(true)
-          .usePrivateMemory(true)
-          .unrollCopyShared(true)
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .fixParametersBeforeScheduling(false)
-          .tile(1, 1)
-          .tileImperfectlyNested(false)
-          .mapToBlocks(3, 32)
-          .mapToThreads(8, 16, 1)
-          .unroll(32);
-  runGroupConvolution(N, G, C, F, H, W, KH, KW, options, true);
-}
-
-TEST_F(
-    GroupConvolution,
-    GroupConvolution_P100_autotuned_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
-  uint32_t N = 32;
-  uint32_t G = 32;
-  uint32_t C = 32;
-  uint32_t F = 32;
-  uint32_t W = 7;
-  uint32_t H = 7;
-  uint32_t KW = 3;
-  uint32_t KH = 3;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .outerScheduleAllowSkewing(false)
-          .outerSchedulePositiveOrthant(true)
-          .intraTileScheduleFusionStrategy(
-              tc::FusionStrategy::Preserve3Coincident)
-          .intraTileScheduleAllowSkewing(false)
-          .intraTileSchedulePositiveOrthant(true)
-          .tile(1, 2, 3)
-          .mapToThreads(8, 7, 4)
-          .mapToBlocks(128, 16, 64)
-          .unroll(16)
-          .tileImperfectlyNested(false)
-          .useSharedMemory(true)
-          .usePrivateMemory(true)
-          .unrollCopyShared(true)
-          .matchLibraryCalls(true);
-  runGroupConvolution(N, G, C, F, H, W, KH, KW, options, true);
-}
-
-TEST_F(
-    GroupConvolution,
-    GroupConvolution_P100_autotuned_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
-  uint32_t N = 32;
-  uint32_t G = 32;
-  uint32_t C = 4;
-  uint32_t F = 4;
-  uint32_t W = 56;
-  uint32_t H = 56;
-  uint32_t KW = 3;
-  uint32_t KH = 3;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .outerScheduleAllowSkewing(false)
-          .outerSchedulePositiveOrthant(true)
-          .intraTileScheduleFusionStrategy(
-              tc::FusionStrategy::Preserve3Coincident)
-          .intraTileScheduleAllowSkewing(false)
-          .intraTileSchedulePositiveOrthant(true)
-          .tile(1, 1, 7, 7)
-          .mapToThreads(56, 7)
-          .mapToBlocks(16, 64, 1)
-          .unroll(2)
-          .tileImperfectlyNested(false)
-          .useSharedMemory(true)
-          .usePrivateMemory(false)
-          .unrollCopyShared(false)
-          .matchLibraryCalls(true);
-  runGroupConvolution(N, G, C, F, H, W, KH, KW, options, true);
-}
-
-TEST_F(
-    GroupConvolution,
-    GroupConvolution_P100_autotuned_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
-  uint32_t N = 32;
-  uint32_t G = 32;
-  uint32_t C = 8;
-  uint32_t F = 8;
-  uint32_t W = 28;
-  uint32_t H = 28;
-  uint32_t KW = 3;
-  uint32_t KH = 3;
-  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
-                     .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
-                     .outerScheduleAllowSkewing(false)
-                     .outerSchedulePositiveOrthant(true)
-                     .intraTileScheduleFusionStrategy(
-                         tc::FusionStrategy::Preserve3Coincident)
-                     .intraTileScheduleAllowSkewing(false)
-                     .intraTileSchedulePositiveOrthant(true)
-                     .tile(1, 1, 256, 14, 16)
-                     .mapToThreads(16, 14)
-                     .mapToBlocks(7, 16)
-                     .unroll(16)
-                     .tileImperfectlyNested(false)
-                     .useSharedMemory(true)
-                     .usePrivateMemory(false)
-                     .unrollCopyShared(true)
-                     .matchLibraryCalls(true);
-  runGroupConvolution(N, G, C, F, H, W, KH, KW, options, true);
-}
-
-// So slow we consider this unimplemented
-TEST_F(GroupConvolution, ATenGroupConvolutionReference) {
-#if 0
-  // this is a bad, too slow implementation, in fact it's NYI atm
-  auto N = FLAGS_N;
-  auto G = FLAGS_G;
-  auto C = FLAGS_C;
-  auto F = FLAGS_F;
-  auto W = FLAGS_W;
-  auto H = FLAGS_H;
-  auto KW = FLAGS_KW;
-  auto KH = FLAGS_KH;
-
+void GroupConvolution::runATenGroupConvolution() {
   Reference(
       [&]() {
         at::Tensor I = at::CUDA(at::kFloat).rand({N, G * C, W, H});
@@ -321,38 +162,15 @@ TEST_F(GroupConvolution, ATenGroupConvolutionReference) {
         return std::vector<at::Tensor>{I, W, B};
       },
       [&](std::vector<at::Tensor>& inputs) {
-        // in order to perform the group conv, we will be looping
-        auto I1 = inputs[0].contiguous();
-        auto W2 = inputs[1];
-        auto B1 = inputs[2];
-        std::vector<at::Tensor> outputs(G);
-        for (int g = 0; g < G; ++g) {
-          // for each group, first partition out the input tensors
-          auto input_g = subtensor(I1, 1, G, g);
-          auto weight_g = subtensor(W2, 0, G, g);
-          auto bias_g = subtensor(B1, 0, G, g);
-          outputs[g] = at::conv2d(input_g, weight_g, bias_g);
-        }
-        // now its time to concatenate the output tensors
-        auto output = outputs[0].type().tensor();
-        at::cat_out(output, outputs, 1);
-        return output;
+        auto I = inputs[0];
+        auto W = inputs[1];
+        auto B = inputs[2];
+        return at::cudnn_convolution(
+            I, W, B, {0, 0}, {1, 1}, {1, 1}, FLAGS_G, true, false);
       });
-#endif
-
-  std::cout << "No ATenGroupConvolutionReference available\n";
 }
 
-TEST_F(GroupConvolution, C2GroupConvolutionReference) {
-  auto N = FLAGS_N;
-  auto G = FLAGS_G;
-  auto C = FLAGS_C;
-  auto F = FLAGS_F;
-  auto W = FLAGS_W;
-  auto H = FLAGS_H;
-  auto KW = FLAGS_KW;
-  auto KH = FLAGS_KH;
-
+void GroupConvolution::runCaffe2GroupConvolution() {
   Workspace w;
   auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w, vector<TIndex>{N, G * C, W, H}, "I");
@@ -364,8 +182,196 @@ TEST_F(GroupConvolution, C2GroupConvolutionReference) {
   OperatorDef ndef = MakeOperatorDef<caffe2::CUDABackend>(
       "Conv", {"I", "W", "B"}, {"O"}, {group_arg, kernel_h_arg, kernel_w_arg});
   std::unique_ptr<OperatorBase> net(CreateOperator(ndef, &w));
-
   Reference([&]() { return true; }, [&](bool flag) { net->Run(); });
+}
+
+// Generic
+TEST_F(GroupConvolution, GroupConvolution) {
+  Init(
+      FLAGS_N, FLAGS_G, FLAGS_C, FLAGS_F, FLAGS_H, FLAGS_W, FLAGS_KH, FLAGS_KW);
+  runGroupConvolution(tc::CudaMappingOptions::makeNaiveMappingOptions());
+}
+
+// P100 TC
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_P100_autotuned_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_P100_autotuned_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_P100_autotuned_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_P100_autotuned_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_P100_autotuned_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_P100_autotuned_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_P100_autotuned_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_P100_autotuned_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3);
+}
+
+// P100 ATen
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_P100_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_P100_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_P100_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_P100_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runATenGroupConvolution();
+}
+
+// P100 Caffe2
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_P100_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_P100_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_P100_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_P100_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+// V100 TC
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_V100_autotuned_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_V100_autotuned_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_V100_autotuned_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_V100_autotuned_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_V100_autotuned_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_V100_autotuned_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3);
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_V100_autotuned_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runGroupConvolution(
+      tc::options_GroupConvolution_V100_autotuned_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3);
+}
+
+// V100 ATen
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_V100_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_V100_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_V100_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runATenGroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_ATen_V100_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runATenGroupConvolution();
+}
+
+// V100 Caffe2
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_V100_N_32_G_32_C_4_F_4_W_56_H_56_KW_3_KH_3) {
+  Init(32, 32, 4, 4, 56, 56, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_V100_N_32_G_32_C_8_F_8_W_28_H_28_KW_3_KH_3) {
+  Init(32, 32, 8, 8, 28, 28, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_V100_N_32_G_32_C_16_F_16_W_14_H_14_KW_3_KH_3) {
+  Init(32, 32, 16, 16, 14, 14, 3, 3);
+  runCaffe2GroupConvolution();
+}
+
+TEST_F(
+    GroupConvolution,
+    GroupConvolution_Caffe2_V100_N_32_G_32_C_32_F_32_W_7_H_7_KW_3_KH_3) {
+  Init(32, 32, 32, 32, 7, 7, 3, 3);
+  runCaffe2GroupConvolution();
 }
 
 int main(int argc, char** argv) {
