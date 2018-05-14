@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "batchmatmul.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -43,23 +45,20 @@ DEFINE_uint32(M, 72, "M dimension in Z(b, n, m) += X(b, n, kk) * Y(b, kk, m)");
 DEFINE_uint32(K, 26, "K dimension in Z(b, n, m) += X(b, n, kk) * Y(b, kk, m)");
 
 class BatchMatMul : public Benchmark {
+ protected:
+  uint32_t B, N, M, K;
+
  public:
-  void runBatchMatMul(
-      uint32_t B,
-      uint32_t N,
-      uint32_t M,
-      uint32_t K,
-      const tc::CudaMappingOptions& options,
-      bool use_flags = false);
+  void Init(uint32_t b, uint32_t n, uint32_t m, uint32_t k) {
+    B = b;
+    N = n;
+    M = m;
+    K = k;
+  }
+  void runBatchMatMul(const tc::CudaMappingOptions& options);
 };
 
-void BatchMatMul::runBatchMatMul(
-    uint32_t B,
-    uint32_t N,
-    uint32_t M,
-    uint32_t K,
-    const tc::CudaMappingOptions& options,
-    bool use_flags) {
+void BatchMatMul::runBatchMatMul(const tc::CudaMappingOptions& options) {
   at::Tensor X = at::CUDA(at::kFloat).rand({B, N, M});
   at::Tensor Y = at::CUDA(at::kFloat).rand({B, M, K});
 
@@ -85,36 +84,24 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
   std::string suffix = std::string("_B_") + std::to_string(FLAGS_B) +
       std::string("_K_") + std::to_string(FLAGS_K) + std::string("_M_") +
       std::to_string(FLAGS_M) + std::string("_N_") + std::to_string(FLAGS_N);
-  if (use_flags && FLAGS_validate_proto) {
-    validateProto(
+  std::vector<tc::CudaMappingOptions> bestOptions{options};
+  if (FLAGS_autotune) {
+    bestOptions = autotune(
         FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
+            suffix,
+        FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_best") +
             suffix,
         tc,
         "batch_matmul",
         inputs,
+        options,
         check_fun);
-  } else {
-    Check(tc, "batch_matmul", options, inputs, check_fun);
-    if (use_flags) {
-      autotune(
-          FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
-              suffix,
-          FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_best") +
-              suffix,
-          tc,
-          "batch_matmul",
-          inputs,
-          options,
-          check_fun);
-    }
   }
+  Check(tc, "batch_matmul", bestOptions[0], inputs, check_fun);
 }
 
 TEST_F(BatchMatMul, TransposedBatchMatMul) {
-  auto B = FLAGS_B;
-  auto N = FLAGS_N;
-  auto M = FLAGS_M;
-  auto K = FLAGS_K;
+  Init(FLAGS_B, FLAGS_N, FLAGS_M, FLAGS_K);
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .tile(1)
                      .mapToThreads({128})
@@ -122,38 +109,17 @@ TEST_F(BatchMatMul, TransposedBatchMatMul) {
                      .useSharedMemory(true)
                      .usePrivateMemory(true)
                      .unroll(256);
-  runBatchMatMul(B, N, M, K, options, true);
+  runBatchMatMul(options);
 }
 
 TEST_F(BatchMatMul, TransposedBatchMatMul_P100_autotuned_B_500_K_26_M_72_N_26) {
-  uint32_t B = 500;
-  uint32_t K = 26;
-  uint32_t M = 72;
-  uint32_t N = 26;
-  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
-                     .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
-                     .outerScheduleAllowSkewing(false)
-                     .outerSchedulePositiveOrthant(true)
-                     .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
-                     .intraTileScheduleAllowSkewing(false)
-                     .intraTileSchedulePositiveOrthant(true)
-                     .tile(3)
-                     .mapToThreads(4, 36, 3)
-                     .mapToBlocks(512)
-                     .unroll(64)
-                     .tileImperfectlyNested(false)
-                     .useSharedMemory(true)
-                     .usePrivateMemory(false)
-                     .unrollCopyShared(true)
-                     .matchLibraryCalls(true);
-  runBatchMatMul(B, N, M, K, options);
+  Init(500, 26, 72, 26);
+  runBatchMatMul(
+      tc::options_TransposedBatchMatMul_P100_autotuned_B_500_K_26_M_72_N_26);
 }
 
 TEST_F(BatchMatMul, ATenTransposedBatchMatMulReference) {
-  auto B = FLAGS_B;
-  auto N = FLAGS_N;
-  auto M = FLAGS_M;
-  auto K = FLAGS_K;
+  Init(FLAGS_B, FLAGS_N, FLAGS_M, FLAGS_K);
   at::Tensor X = at::CUDA(at::kFloat).rand({B, N, M});
   at::Tensor Y = at::CUDA(at::kFloat).rand({B, M, K});
   Reference(
@@ -162,11 +128,7 @@ TEST_F(BatchMatMul, ATenTransposedBatchMatMulReference) {
 }
 
 TEST_F(BatchMatMul, C2TransposedBatchMatMulReference) {
-  int B = FLAGS_B;
-  int N = FLAGS_N;
-  int M = FLAGS_M;
-  int K = FLAGS_K;
-
+  Init(FLAGS_B, FLAGS_N, FLAGS_M, FLAGS_K);
   Workspace w_ref;
   auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
   AddInput(w_ref, {B, N, M}, "X");
