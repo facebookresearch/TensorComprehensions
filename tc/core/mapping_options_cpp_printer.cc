@@ -35,13 +35,14 @@ MappingOptionsCppPrinter& MappingOptionsCppPrinter::printSchedulerOptions(
 
 MappingOptionsCppPrinter& MappingOptionsCppPrinter::print(
     const MappingOptions& options) {
-  printString("tc::MappingOptions::makeNaiveMappingOptions()")
-      .printSchedulerOptions(
-          options.view.outerScheduleOptions, "outerSchedule");
+  printSchedulerOptions(options.view.outerScheduleOptions, "outerSchedule");
   if (options.view.proto.has_intra_tile_schedule_options()) {
     printSchedulerOptions(
         options.view.intraTileScheduleOptions, "intraTileSchedule");
   }
+  printBooleanOption(
+      "fixParametersBeforeScheduling",
+      options.view.proto.fix_parameters_before_scheduling());
   if (options.view.proto.has_tiling()) {
     printListOption("tile", options.view.tiling.extractVector());
   }
