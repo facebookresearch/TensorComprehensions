@@ -159,11 +159,8 @@ class TensorReferenceGroup {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const ScopedFootprint& fp) {
-  int i = 0;
+  os << "{\n";
   for (const auto& f : fp) {
-    if (i++ == 0) {
-      os << "{\n";
-    }
     os << f.lowerBound << " of size " << f.size << "\n";
   }
   os << "}";
