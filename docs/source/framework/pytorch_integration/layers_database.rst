@@ -61,6 +61,16 @@ Simple Convolution
         O(n, m, h, w)  =  O(n, m, h, w) + B(m)
     }
 
+1D Convolution
+^^^^^^^^^^^^^^
+
+.. code::
+
+    def conv1d(float(N, C, L) I, float(M, C, KL) W1, float(M) B) -> (O) {
+        O(n, m, x) +=! I(n, r_c, x + r_x) * W1(m, r_c, r_x)
+        O(n, m, x)  =  O(n, m, x) + B(m)
+    }
+
 Strided Convolution
 ^^^^^^^^^^^^^^^^^^^
 
