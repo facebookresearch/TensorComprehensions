@@ -161,7 +161,7 @@ class MappedScop {
 
   // Find best thread sync between st1 and st2 when st2 is scheduled after
   // st1.
-  // This function should assumes that it is called before block mapping
+  // This function assumes that it is called before block mapping
   // and that st1 and st2 are already mapped to threads.
   Scop::SyncLevel findBestSync(
       detail::ScheduleTree* st1,
@@ -172,7 +172,7 @@ class MappedScop {
   // the number of __syncthreads, and then the number of __syncwarp
   // bestSync[i][k] == l means that there must be a synchronization at level at
   // least l between child i and child i + k.
-  // if i + k > nChildren, this means that it correspond to synchronizations
+  // if i + k > nChildren, this means that it corresponds to synchronizations
   // between child i and child (i + k) % nChildren at two different iteration
   // of the outer sequential member if hasOuterSequentialMember is true.
   // However, these cells should still exist if hasOuterSequentialMember is
