@@ -396,7 +396,7 @@ void setupTuningParameters(
   auto nTilesDim = largestDim(inputs) + 1;
   auto tileRange = range;
   tileRange.push_back(0);
-  configuration.tilingParams.setRange(nTilesDim, range);
+  configuration.tilingParams.setRange(nTilesDim, tileRange);
   configuration.blockParams.setRange(range, "b");
   configuration.gridParams.setRange(range, "g");
   configuration.unrollFactor = RangeParameter({1, 2, 4, 8, 16, 32}, "unroll");
