@@ -36,6 +36,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"
+#include "tc/core/utils/time.h"
 #include "tc/lang/canonicalize.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2
@@ -98,15 +99,20 @@ struct Benchmark : public ::testing::Test {
   using CheckFunction = std::function<bool(
       const std::vector<at::Tensor>& inputs,
       const std::vector<at::Tensor>& outputs)>;
+  using PrologueFunction = std::function<tc::ProfilingInfo()>;
   std::vector<at::Tensor> Check(
       const std::string& tc,
       const std::string& name,
       const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor>& inputs,
-      CheckFunction check_fun = [](const std::vector<at::Tensor>& inputs,
-                                   const std::vector<at::Tensor>& outputs) {
-        return true;
-      }) {
+      CheckFunction check_fun =
+          [](const std::vector<at::Tensor>& inputs,
+             const std::vector<at::Tensor>& outputs) { return true; },
+      PrologueFunction prologue_fun =
+          []() {
+            return tc::ProfilingInfo{tc::Duration::zero(),
+                                     tc::Duration::zero()};
+          }) {
     // 1. Compile, run and check
     auto pExecutor =
         tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
@@ -118,14 +124,17 @@ struct Benchmark : public ::testing::Test {
     std::vector<at::Tensor> outputs2 =
         tc::aten::prepareOutputs(tc, name, inputs);
     RunAndReport(
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
+          prologue_fun();
           tc::aten::run(*pExecutor, inputs, outputs2);
         },
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
+          TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+          auto prologueTimings = prologue_fun();
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           auto timings = tc::aten::profile(*pExecutor, inputs, outputs2);
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-          return timings.kernelRuntime;
+          return prologueTimings.kernelRuntime + timings.kernelRuntime;
         },
         "COMPILED KERNEL");
     // 3. Run and report total compiled time (kernel runtime + CPU overhead)
@@ -133,9 +142,10 @@ struct Benchmark : public ::testing::Test {
         [&pExecutor, &inputs, &outputs2]() {
           tc::aten::run(*pExecutor, inputs, outputs2);
         },
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           auto start(std::chrono::system_clock::now());
+          prologue_fun();
           tc::aten::uncheckedRun(*pExecutor, inputs, outputs2);
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           return tc::Duration::since(start);
