@@ -595,10 +595,10 @@ std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
     bool hasOuterSequentialMember) {
   // Get the least strict synchronization level that is needed in the sequence
   // children[i], ..., children[i+k] to be correct and optimal. If the level
-  // is l, this mean that a synchronization of level l have to be inserted
+  // is l, this mean that a synchronization of level l has to be inserted
   // in this sequence to be correct, and that no synchronizations of level
   // greater than l is needed.
-  // if i + k is greater than nChildren, it represent the child
+  // if i + k is greater than nChildren, it represents the child
   // (i + k) % nChildren at the next iteration of the outer sequential member if
   // it exists.
   std::vector<std::vector<int>> bestSyncInRange(
@@ -633,8 +633,8 @@ std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
 
   // The dynamic programming algorithm to compute the optimal synchronizations
   // To compute the optimal synchronizations for the sequence
-  // children[i] ... children[i + k]
-  // It split the sequence into children[i], ..., children[i + s] and
+  // children[i] ... children[i + k],
+  // it splits the sequence into children[i], ..., children[i + s] and
   // children[i + s + 1], ..., children[i + k] for all possible s, and
   // insert between children[i + s] and children[i + s + 1] the least
   // strict synchronization needed.
