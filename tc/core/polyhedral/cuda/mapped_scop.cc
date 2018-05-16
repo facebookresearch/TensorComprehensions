@@ -299,19 +299,13 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   auto reductionBand = st->elemAs<detail::ScheduleTreeElemBand>();
   TC_CHECK(reductionBand);
 
-  // Drop band members following the reduction dimension and preceding those
-  // mapped to threads.
-  auto reductionSchedule = reductionBand->mupa_;
   auto nMember = reductionBand->nMember();
   auto reductionDim = reductionBand->nOuterCoincident();
   auto nMappedThreads = numThreads.view.size();
   TC_CHECK_GE(nMember, reductionDim + 1);
-  reductionSchedule = reductionSchedule.drop_dims(
-      isl::dim_type::set, reductionDim + 1, nMember - (reductionDim + 1));
-  reductionSchedule = reductionSchedule.drop_dims(
-      isl::dim_type::set, 0, reductionDim - nMappedThreads + 1);
 
-  return reductionSchedule;
+  auto first = reductionDim + 1 - nMappedThreads;
+  return reductionBand->memberRange(first, nMappedThreads);
 }
 
 detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
