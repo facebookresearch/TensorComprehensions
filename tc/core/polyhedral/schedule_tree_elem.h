@@ -17,7 +17,7 @@
 
 #include <memory>
 #include <sstream>
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 #include "tc/external/isl.h"
@@ -139,34 +139,29 @@ struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
+  using Mapping = std::unordered_map<
+      mapping::MappingId,
+      isl::union_pw_aff,
+      typename mapping::MappingId::Hash>;
   static constexpr std::initializer_list<detail::ScheduleTreeType>
       NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::MappingFilter;
   ScheduleTreeElemMappingFilter() = delete;
   ScheduleTreeElemMappingFilter(const ScheduleTreeElemMappingFilter& eb)
-      : ScheduleTreeElemFilter(eb.filter_), mappingIds(eb.mappingIds) {}
-  ScheduleTreeElemMappingFilter(
-      const std::vector<mapping::MappingId>& mappedIds,
-      isl::union_pw_aff_list mappedAffs)
-      : ScheduleTreeElemFilter(isl::union_set()),
-        mappingIds(mappedIds.begin(), mappedIds.end()) {
-    // Check that ids are unique.
-    CHECK_EQ(mappedIds.size(), mappingIds.size())
-        << "some id is used more than once in the mapping";
+      : ScheduleTreeElemFilter(eb.filter_), mapping(eb.mapping) {}
+  ScheduleTreeElemMappingFilter(const Mapping& mapping)
+      : ScheduleTreeElemFilter(isl::union_set()), mapping(mapping) {
+    CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
-    CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
-        << "expected as many mapped ids as affs";
-    CHECK_GT(mappedIds.size(), 0u) << "empty mapping filter";
-
-    auto domain = mappedAffs.get(0).domain();
-    for (size_t i = 1, n = mappedAffs.n(); i < n; ++i) {
-      CHECK(domain.is_equal(mappedAffs.get(i).domain()));
+    auto domain = mapping.cbegin()->second.domain();
+    for (auto& kvp : mapping) {
+      CHECK(domain.is_equal(kvp.second.domain()));
     }
     filter_ = domain.universe();
-    for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
-      auto upa = mappedAffs.get(i);
-      auto id = mappedIds.at(i);
+    for (auto& kvp : mapping) {
+      auto upa = kvp.second;
+      auto id = kvp.first;
       // Create mapping filter by equating the
       // parameter mappedIds[i] to the "i"-th affine function.
       upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
@@ -183,9 +178,8 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
     return NodeType;
   }
 
-  const std::
-      unordered_set<mapping::MappingId, typename mapping::MappingId::Hash>
-          mappingIds;
+  // Mapping from identifiers to affine functions on domain elements.
+  const Mapping mapping;
 };
 
 struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {

@@ -202,8 +202,8 @@ std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
 std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "mapping_filter(ids(";
-  for (const auto& id : mappingIds) {
-    os << id << ", ";
+  for (auto& kvp : mapping) {
+    os << kvp.first << ", ";
   }
   os << ")";
   for (const auto& u : filter_.get_set_list()) {
