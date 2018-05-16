@@ -77,14 +77,6 @@ ScopedFootprint outputRanges(isl::map access) {
   footprint.box = access.get_range_simple_fixed_box_hull();
   return footprint;
 }
-
-// Given a set space, construct a map space with the input as domain and
-// a range of the given size.
-isl::space addRange(isl::space space, unsigned dim) {
-  auto range = space.params().unnamed_set_from_params(dim);
-  return space.map_from_domain_and_range(range);
-}
-
 } // namespace
 
 // Access has the shape :: [S -> ref] -> O
