@@ -46,8 +46,8 @@ bool isThreadMapping(const detail::ScheduleTree* tree) {
   using namespace detail;
 
   if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
-    for (auto id : filterNode->mappingIds) {
-      if (isThreadId(id)) {
+    for (auto& kvp : filterNode->mapping) {
+      if (isThreadId(kvp.first)) {
         return true;
       }
     }

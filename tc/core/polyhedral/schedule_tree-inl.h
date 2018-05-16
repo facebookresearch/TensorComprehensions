@@ -23,15 +23,19 @@ inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
     const std::vector<MappingIdType>& mappedIds,
     isl::union_pw_aff_list mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
-  std::vector<mapping::MappingId> ids;
-  for (auto id : mappedIds) {
-    ids.push_back(id);
+  CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
+      << "expected as many mapped ids as affs";
+  ScheduleTreeElemMappingFilter::Mapping mapping;
+  for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
+    mapping.emplace(mappedIds.at(i), mappedAffs.get(i));
   }
-  CHECK_GE(ids.size(), 1u) << "empty mapping";
+  CHECK_GE(mapping.size(), 1u) << "empty mapping";
+  CHECK_EQ(mappedIds.size(), mapping.size())
+      << "some id is used more than once in the mapping";
   auto ctx = mappedIds[0].get_ctx();
   ScheduleTreeUPtr res(new ScheduleTree(ctx));
   res->elem_ = std::unique_ptr<ScheduleTreeElemMappingFilter>(
-      new ScheduleTreeElemMappingFilter(ids, mappedAffs));
+      new ScheduleTreeElemMappingFilter(mapping));
   res->type_ = ScheduleTreeType::MappingFilter;
   res->appendChildren(std::move(children));
   return res;
