@@ -501,7 +501,8 @@ std::vector<detail::ScheduleTree*> obtainOuterCoincidentBands(
     auto domain = root->elemAs<ScheduleTreeElemDomain>();
     CHECK(domain);
     auto band = ScheduleTree::makeEmptyBand(root);
-    if (nChildren == 0 || root == tree) {
+    if (nChildren == 0 || tree->elemAs<ScheduleTreeElemDomain>() ||
+        tree->elemAs<ScheduleTreeElemFilter>()) {
       return {setPermutable(insertNodeBelow(tree, std::move(band)))};
     } else {
       return {setPermutable(insertNodeAbove(root, tree, std::move(band)))};

@@ -1077,7 +1077,8 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // 4. Optionally reschedule if point loops need a different strategy than
   // tile loops
   for (auto outerBand : tiledBands) {
-    if (generic.outerScheduleOptions != generic.intraTileScheduleOptions) {
+    if (generic.outerScheduleOptions != generic.intraTileScheduleOptions &&
+        outerBand->numChildren() != 0) {
       scop->reschedule(outerBand->child({0}), generic.intraTileScheduleOptions);
     }
   }
@@ -1166,8 +1167,12 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
           continue;
         }
         bandsWithPromotion.push_back(band);
-        depths.push_back(std::min(
-            bandElem->nOuterCoincident(), mappedScop->numBlocks.view.size()));
+        auto depthBefore = band->scheduleDepth(scop->scheduleRoot());
+        depths.push_back(
+            depthBefore +
+            std::min(
+                bandElem->nOuterCoincident(),
+                mappedScop->numBlocks.view.size()));
       }
 
       sharedMemorySize = promoteGreedilyAtDepth(
