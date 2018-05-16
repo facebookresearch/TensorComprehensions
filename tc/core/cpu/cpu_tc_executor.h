@@ -39,7 +39,8 @@ class CpuTcExecutor : public TcExecutor<CpuBackend> {
   /// doesn't then segfault will likely occur.
   void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const;
+      const std::vector<void*>& outputs,
+      typename CpuBackend::RuntimeInformation info) const;
 
   /// Calls uncheckedRun and profiles the cpu overhead and kernel runtime
   /// (microseconds).
