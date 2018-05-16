@@ -37,9 +37,12 @@ class CudaTcExecutor : public TcExecutor<CudaBackend> {
   /// No tensor-related information can be checked so it is the user's
   /// responsibility to ensure that shapes and strides match. If the user
   /// doesn't then segfault will likely occur.
+  /// May need to reconsider whether use pass by value or by reference
   void uncheckedRun(
       const std::vector<const void*>& inputs,
-      const std::vector<void*>& outputs) const;
+      const std::vector<void*>& outputs,
+      typename CudaBackend::RuntimeInformation info =
+          CudaBackend::RuntimeInformation()) const;
 
   /// Calls uncheckedRun and profiles the cpu overhead and kernel runtime
   /// (microseconds).

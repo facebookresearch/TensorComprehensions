@@ -52,7 +52,8 @@ CpuCompilationResult CpuBackend::compileWithTcMapper(
 
 void CpuTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
-    const std::vector<void*>& outputs) const {
+    const std::vector<void*>& outputs,
+    typename CpuBackend::RuntimeInformation info) const {
   LOG(ERROR) << "NYI: CpuTcExecutor::uncheckedRun";
 }
 

@@ -88,7 +88,8 @@ class TcExecutor {
   /// advanced aliasing) properties of the input and output tensors.
   void run(
       const std::vector<const DLConstTensor*>& inputs,
-      const std::vector<const DLTensor*>& outputs) const;
+      const std::vector<const DLTensor*>& outputs,
+      typename Backend::RuntimeInformation info = {}) const;
 
   /// Calls run and profiles the cpu overhead and kernel runtime (microseconds).
   /// \returns profiling information

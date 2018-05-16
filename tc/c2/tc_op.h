@@ -119,11 +119,15 @@ class TcOp : public Operator<Context> {
       compiled_ = true;
     }
 
+    // Get CUDA stream id from C2
+    tc::CudaBackend::RuntimeInformation info;
+    info.stream = context_.cuda_stream();
+
     // run
     if (!check_sizes_) {
-      executor_->uncheckedRun(input_void_ptrs_, output_void_ptrs_);
+      executor_->uncheckedRun(input_void_ptrs_, output_void_ptrs_, info);
     } else {
-      executor_->run(raw_input_dl_tensors_, raw_output_dl_tensors_);
+      executor_->run(raw_input_dl_tensors_, raw_output_dl_tensors_, info);
     }
     return true;
   }

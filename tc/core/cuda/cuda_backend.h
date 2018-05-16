@@ -44,7 +44,11 @@ struct CudaCompilationResult {
  * synchronization information of a kernel.
  */
 struct CudaRuntimeInformation {
-  cudaStream_t stream{0};
+ public:
+  CudaRuntimeInformation() : stream(0) {}
+
+ public:
+  cudaStream_t stream;
 };
 
 struct CudaTcExecutor;
