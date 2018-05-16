@@ -285,14 +285,14 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       }
 
       auto ref = oneGroup->references[0].get();
-      ASSERT_EQ(oneGroup->approximation.size(), 2u)
+      ASSERT_EQ(oneGroup->approximation.dim(), 2u)
           << "Could not compute footprint for" << ref->scopedAccess;
 
       EXPECT_EQ(
-          oneGroup->approximation[0].size,
+          oneGroup->approximation.size(0),
           isl::val(ctx, std::min(tile1, problemSize1)));
       EXPECT_EQ(
-          oneGroup->approximation[1].size,
+          oneGroup->approximation.size(1),
           isl::val(ctx, std::min(tile2, problemSize2)));
       auto footprint =
           oneGroup->approximateFootprint().intersect_params(blockZero);
@@ -350,12 +350,12 @@ def fun(float(N, M) A) -> (B, C) {
 
     const auto& groupsB = groups.at(idB);
     ASSERT_EQ(groupsB.size(), 1u) << "expected B refereces to be grouped";
-    ASSERT_EQ(groupsB[0]->approximation.size(), 2u) << "B should be a 2D array";
+    ASSERT_EQ(groupsB[0]->approximation.dim(), 2u) << "B should be a 2D array";
     EXPECT_EQ(
-        groupsB[0]->approximation[0].size,
+        groupsB[0]->approximation.size(0),
         isl::val(ctx, std::min(tile1, problemSize1)));
     EXPECT_EQ(
-        groupsB[0]->approximation[1].size,
+        groupsB[0]->approximation.size(1),
         isl::val(ctx, std::min(tile2, problemSize2)));
 
     auto t = scop.scheduleRoot()->child(childPos);
