@@ -109,8 +109,8 @@ bool TensorReferenceGroup::isReadOnly() const {
 
 isl::set TensorReferenceGroup::promotedFootprint() const {
   auto space = scopedAccesses().get_space().range();
-  auto sizes = approximationSizes();
-  if (sizes.size() != space.dim(isl::dim_type::set)) {
+  auto sizes = approximation.box.get_size();
+  if (!sizes.get_space().has_equal_tuples(space)) {
     throw promotion::GroupingError("unexpected dimensionality mismatch");
   }
 
@@ -118,8 +118,9 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
   auto lspace = isl::local_space(space);
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
     auto aff = isl::aff(lspace, isl::dim_type::out, i);
+    auto size = sizes.get_val(i);
     footprint =
-        footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < sizes[i]);
+        footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
   }
   return footprint;
 }
