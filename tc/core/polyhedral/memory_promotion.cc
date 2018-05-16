@@ -80,7 +80,7 @@ ScopedFootprint outputRanges(isl::map access) {
 
 // Given a set space, construct a map space with the input as domain and
 // a range of the given size.
-isl::space add_range(isl::space space, unsigned dim) {
+isl::space addRange(isl::space space, unsigned dim) {
   auto range = space.params().unnamed_set_from_params(dim);
   return space.map_from_domain_and_range(range);
 }
@@ -456,7 +456,7 @@ isl::multi_aff dropDummyTensorDimensions(
     }
   }
 
-  space = add_range(space, list.size());
+  space = addRange(space, list.size());
   return isl::multi_aff(space, list);
 }
 
