@@ -8,7 +8,6 @@ if ! test ${CLANG_PREFIX}; then
     exit 1
 fi
 
-WITH_CAFFE2=${WITH_CAFFE2:=ON}
 WITH_CUDA=${WITH_CUDA:=ON}
 if [ "${WITH_CUDA,,}" = "off" -o "${WITH_CUDA,,}" = "no" -o "${WITH_CUDA}" = "0" ]; then
   ATEN_NO_CUDA=1
@@ -240,7 +239,7 @@ function install_aten() {
       if should_reconfigure .. .build_cache; then
         echo "Reconfiguring ATen"
         export PYTORCH_PYTHON=${PYTHON}
-        ${CMAKE_VERSION} .. -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DHAS_C11_ATOMICS=OFF -DNO_CUDA=${ATEN_NO_CUDA} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC}
+        ${CMAKE_VERSION} .. -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DHAS_C11_ATOMICS=OFF -DNO_CUDA=${ATEN_NO_CUDA} -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} -DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR}
       fi
       make -j $CORES -s || exit 1
 
@@ -255,12 +254,12 @@ function install_aten() {
 }
 
 function install_caffe2() {
-  mkdir -p ${TC_DIR}/third-party/caffe2/build || exit 1
-  cd       ${TC_DIR}/third-party/caffe2/build || exit 1
+  mkdir -p ${TC_DIR}/third-party/pytorch/build || exit 1
+  cd       ${TC_DIR}/third-party/pytorch/build || exit 1
 
   if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${INSTALL_PREFIX}/include/caffe2" ]; then
 
-  if should_rebuild ${TC_DIR}/third-party/caffe2 ${CAFFE2_BUILD_CACHE}; then
+  if should_rebuild ${TC_DIR}/third-party/pytorch ${CAFFE2_BUILD_CACHE}; then
   echo "Installing Caffe2"
   if should_reconfigure .. .build_cache; then
     echo "Reconfiguring Caffe2"
@@ -279,14 +278,14 @@ function install_caffe2() {
       CMAKE_ARGS+=("-DCUDA_NVCC_EXECUTABLE=${CCACHE_WRAPPER_DIR}/nvcc")
     fi
 
-    ${CMAKE_VERSION} "${TC_DIR}/third-party/caffe2" ${CMAKE_ARGS[*]}
+    ${CMAKE_VERSION} "${TC_DIR}/third-party/pytorch" ${CMAKE_ARGS[*]}
 
   fi
 
   make -j $CORES install -s || exit 1
 
   set_cache .. .build_cache
-  set_bcache ${TC_DIR}/third-party/caffe2 ${CAFFE2_BUILD_CACHE}
+  set_bcache ${TC_DIR}/third-party/pytorch ${CAFFE2_BUILD_CACHE}
   fi
 
   echo "Successfully installed caffe2"
@@ -401,7 +400,7 @@ function install_tc() {
   if should_reconfigure .. .build_cache; then
     echo "Reconfiguring TC"
     rm -rf *
-    VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DWITH_CAFFE2=${WITH_CAFFE2} \
+    VERBOSE=${VERBOSE} ${CMAKE_VERSION} -DWITH_CAFFE2=ON \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
         -DWITH_TAPIR=${WITH_TAPIR} \
         -DPYTHON_EXECUTABLE=${PYTHON} \
@@ -493,13 +492,11 @@ if ! test -z $aten || ! test -z $all; then
 fi
 
 if ! test -z $caffe2 || ! test -z $all ; then
-    if [ "$WITH_CAFFE2" == "ON" ]; then
-        if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libcaffe2_gpu.so) ]]; then
-            echo "caffe2 found"
-        else
-            echo "no files found"
-            install_caffe2
-        fi
+    if [[ ! -z "$CONDA_PREFIX" && $(find $CONDA_PREFIX -name libcaffe2_gpu.so) ]]; then
+        echo "caffe2 found"
+    else
+        echo "no files found"
+        install_caffe2
     fi
 fi
 

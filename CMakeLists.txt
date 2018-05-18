@@ -111,7 +111,17 @@ link_directories(${LLVM_LIBDIR})
 
 # protobuf
 # TODO: check if this respects CMAKE_PREFIX_PATH
-find_package(Protobuf REQUIRED)
+#set(PROTOBUF_ROOT_DIR ${CMAKE_INSTALL_PREFIX})
+#find_package(Protobuf
+#             REQUIRED
+#             PATHS ${CMAKE_INSTALL_PREFIX}
+#             PATH_SUFFIXES lib lib64
+#             NO_SYSTEM_ENVIRONMENT_PATH)
+
+set(PROTOBUF_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libprotobufd.a)
+set(PROTOBUF_PROTOC_LIBRARY ${CMAKE_INSTALL_PREFIX}/lib/libprotobufcd.a)
+set(PROTOBUF_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include/google)
+set(PROTOBUF_PROTOC_EXECUTABLE ${CMAKE_INSTALL_PREFIX}/bin/protoc)
 
 ################################################################################
 
@@ -169,7 +179,7 @@ if (WITH_CAFFE2)
   # eigen - needed inside Caffe2 only
   # Caffe2 probably used its bundled Eigen (which it didn't install) in this case.
   message(WARNING "Couldn't find Eigen headers, assuming caffe2 used in-tree headers")
-  include_directories(third-party/caffe2/third_party/eigen)
+  include_directories(third-party/pytorch/third_party/eigen)
 
   find_path(CAFFE2_INCLUDE_DIR NAMES caffe2)
   include_directories(SYSTEM ${CAFFE2_INCLUDE_DIR})

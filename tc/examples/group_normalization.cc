@@ -69,28 +69,25 @@ def group_normalization(
     float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
     -> (O, mean, var)
 {
+# This first implementation uses the formula var = E((x - mean)^2).
+# On P100, the autotuner finds a 2.6ms best version
+#   mean(n, g) +=! I(n, g, r_d, r_h, r_w)
+#   mean(n, g)  = mean(n, g) / (D * H * W)
+#    var(n, g) +=! (I(n, g, r_d, r_h, r_w) - mean(n, g))
+#                * (I(n, g, r_d, r_h, r_w) - mean(n, g))
+#    var(n, g)  =  var(n, g) / (D * H * W)
+#   O(n, g, d, h, w) =
+#       gamma(g, d) * (I(n, g, d, h, w) - mean(n, g)) * rsqrt(var(n, g) + 1e-5) + beta(g, d)
+
+# This second implementation uses the formula var = E(x^2) - mean^2.
+# This time, on a P100, the autotuner finds a 1.6ms best version.
     mean(n, g) +=! I(n, g, r_d, r_h, r_w)
+    mean(n,g)   = mean(n,g) / (D * H * W)
      var(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
-
-# Literal translation from paper (https://arxiv.org/pdf/1803.08494.pdf)
-#    mean(n, g)    = mean(n, g) * <scale>
-#    var(n, g)  = rsqrt(var(n, g) * <scale> - mean(n, g) * mean(n, g) + 1e-5)
-#    O(n, g, d, h, w) =
-#        gamma(g, d) * (I(n, g, d, h, w) - mean(n, g)) * var(n, g) + beta(g, d)
-
-# Simulate forced inlining and write it as follows results in better schedules
-# for the default sizes on the particular GPU: Quadro GP100.
-# This is possible only if mean and var are temporary tensors: they do not get
-# updated.
-# Note that even in the original TC var is not really computed either:
-#   first, a sum of squares is computed
-#   then 1 / sqrt(var + eps) is computed.
-# Therefore our inlining assumption should be correct.
+     var(n, g)  =  var(n, g) / (D * H * W) - mean(n,g) * mean(n,g)
     O(n, g, d, h, w) = gamma(g, d)
-      * ( I(n, g, d, h, w) - mean(n, g) * <scale> )
-      * rsqrt( var(n, g) * <scale>
-            - mean(n, g) * mean(n, g) * <scale> * <scale>
-            + 1e-5)
+      * ( I(n, g, d, h, w) - mean(n, g) )
+      * rsqrt( var(n, g) + 1e-5 )
       + beta(g, d)
 }
   )TC";
@@ -100,18 +97,8 @@ def group_normalization(
   at::Tensor I = makeATenTensor<Backend>({N, G, D, H, W});
   at::Tensor gamma = makeATenTensor<Backend>({G, D});
   at::Tensor beta = makeATenTensor<Backend>({G, D});
-  auto scale = 1.0f / (D * H * W);
 
-  // 3. Inject "template" value of scale in computation
-  while (true) {
-    auto pos = tc.find(std::string("<scale>"));
-    if (pos == std::string::npos) {
-      break;
-    }
-    tc = tc.replace(pos, std::string("<scale>").size(), std::to_string(scale));
-  }
-
-  // 4. Run autotuning with evolutionary search starting from a naive option.
+  // 3. Run autotuning with evolutionary search starting from a naive option.
   auto baseOptions = FLAGS_use_best_options
       ? previouslyTunedBestOptions
       : Backend::MappingOptionsType::makeNaiveMappingOptions();
@@ -121,7 +108,7 @@ def group_normalization(
       "group_normalization", {I, gamma, beta}, baseOptions, FLAGS_proto_path);
   CHECK_GT(bestOption.size(), 0u);
 
-  // 5. Compile and run the TC with the best option.
+  // 4. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
   auto pExecutor = tc::aten::compile<Backend>(
       tc, "group_normalization", {I, gamma, beta}, bestOption[0]);

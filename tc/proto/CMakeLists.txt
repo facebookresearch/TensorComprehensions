@@ -1,5 +1,3 @@
-find_package(Protobuf REQUIRED)
-
 #Default protobuf function err'd with python,
 #  borrowing caffe2 function to generate
 function(tc_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
@@ -63,8 +61,8 @@ endfunction()
 tc_protobuf_generate_cpp_py(${PROJECT_SOURCE_DIR}/tc/proto PROTO_SRCS PROTO_HDRS PROTO_PY mapping_options.proto compcache.proto)
 
 add_library(tc_proto SHARED ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(tc_proto ${PROTOBUF_LIBRARIES})
-target_include_directories(tc_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${PROTOBUF_HDRS})
+target_link_libraries(tc_proto ${PROTOBUF_LIBRARY})
+target_include_directories(tc_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${PROTOBUF_INCLUDE_DIR})
 
 install(
     PROGRAMS

@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "tmm.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -42,21 +44,20 @@ DEFINE_uint32(M, 32, "M dimension in C(m, n) += A(m, kk) * B(n, kk)");
 DEFINE_uint32(K, 256, "K dimension in C(m, n) += A(m, kk) * B(n, kk)");
 
 class TransposedMatMul : public Benchmark {
+ protected:
+  uint32_t M, N, K;
+
  public:
-  void runTransposedMatMul(
-      uint32_t N,
-      uint32_t M,
-      uint32_t K,
-      const tc::CudaMappingOptions& options,
-      bool use_flags = false);
+  void Init(uint32_t m, uint32_t n, uint32_t k) {
+    M = m;
+    N = n;
+    K = k;
+  }
+  void runTransposedMatMul(const tc::CudaMappingOptions& options);
 };
 
 void TransposedMatMul::runTransposedMatMul(
-    uint32_t N,
-    uint32_t M,
-    uint32_t K,
-    const tc::CudaMappingOptions& options,
-    bool use_flags) {
+    const tc::CudaMappingOptions& options) {
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({N, K});
 
@@ -82,33 +83,23 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
   std::string suffix = std::string("_M_") + std::to_string(FLAGS_M) +
       std::string("_N_") + std::to_string(FLAGS_N) + std::string("_K_") +
       std::to_string(FLAGS_K);
-  if (use_flags && FLAGS_validate_proto) {
-    validateProto(
+  std::vector<tc::CudaMappingOptions> bestOptions{options};
+  if (FLAGS_autotune) {
+    bestOptions = autotune(
         FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
+        FLAGS_save_tuner_proto_prefix + std::string("/tmm_best") + suffix,
         tc,
         "tmm",
         inputs,
+        options,
         check_fun);
-  } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "tmm", options, inputs, outputs, check_fun);
-    if (use_flags) {
-      autotune(
-          FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
-          FLAGS_save_tuner_proto_prefix + std::string("/tmm_best") + suffix,
-          tc,
-          "tmm",
-          inputs,
-          options,
-          check_fun);
-    }
+    CHECK_GE(bestOptions.size(), 1u);
   }
+  Check(tc, "tmm", bestOptions[0], inputs, check_fun);
 }
 
 TEST_F(TransposedMatMul, TransposedMatMul) {
-  auto N = FLAGS_N;
-  auto M = FLAGS_M;
-  auto K = FLAGS_K;
+  Init(FLAGS_M, FLAGS_N, FLAGS_K);
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
                      .fixParametersBeforeScheduling(true)
                      .tile(32, 32, 32)
@@ -117,88 +108,29 @@ TEST_F(TransposedMatMul, TransposedMatMul) {
                      .useSharedMemory(true)
                      .usePrivateMemory(true)
                      .unroll(256);
-  runTransposedMatMul(N, M, K, options, true);
+  runTransposedMatMul(options);
 }
 
 TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_1024_K_1024) {
-  uint32_t M = 128;
-  uint32_t N = 1024;
-  uint32_t K = 1024;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .outerScheduleAllowSkewing(false)
-          .outerSchedulePositiveOrthant(true)
-          .intraTileScheduleFusionStrategy(
-              tc::FusionStrategy::Preserve3Coincident)
-          .intraTileScheduleAllowSkewing(false)
-          .intraTileSchedulePositiveOrthant(true)
-          .tile(1, 32)
-          .mapToThreads(64, 4)
-          .mapToBlocks(256, 32)
-          .unroll(256)
-          .tileImperfectlyNested(false)
-          .useSharedMemory(true)
-          .usePrivateMemory(false)
-          .unrollCopyShared(true)
-          .matchLibraryCalls(true);
-  runTransposedMatMul(N, M, K, options);
+  Init(128, 1024, 1024);
+  runTransposedMatMul(
+      tc::options_TransposedMatMul_P100_autotuned_M_128_N_1024_K_1024);
 }
 
 TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_256_K_32) {
-  uint32_t M = 128;
-  uint32_t N = 256;
-  uint32_t K = 32;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .outerScheduleAllowSkewing(false)
-          .outerSchedulePositiveOrthant(true)
-          .intraTileScheduleFusionStrategy(
-              tc::FusionStrategy::Preserve3Coincident)
-          .intraTileScheduleAllowSkewing(false)
-          .intraTileSchedulePositiveOrthant(true)
-          .tile(8, 32)
-          .mapToThreads(64)
-          .mapToBlocks(64, 32, 64)
-          .unroll(64)
-          .tileImperfectlyNested(false)
-          .useSharedMemory(true)
-          .usePrivateMemory(true)
-          .unrollCopyShared(false)
-          .matchLibraryCalls(false);
-  runTransposedMatMul(N, M, K, options);
+  Init(128, 256, 32);
+  runTransposedMatMul(
+      tc::options_TransposedMatMul_P100_autotuned_M_128_N_256_K_32);
 }
 
 TEST_F(TransposedMatMul, TransposedMatMul_P100_autotuned_M_128_N_16384_K_4096) {
-  uint32_t M = 128;
-  uint32_t N = 16384;
-  uint32_t K = 4096;
-  auto options =
-      tc::CudaMappingOptions::makeNaiveMappingOptions()
-          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
-          .outerScheduleAllowSkewing(false)
-          .outerSchedulePositiveOrthant(true)
-          .intraTileScheduleFusionStrategy(
-              tc::FusionStrategy::Preserve3Coincident)
-          .intraTileScheduleAllowSkewing(false)
-          .intraTileSchedulePositiveOrthant(true)
-          .tile(32, 32, 2)
-          .mapToThreads(32)
-          .mapToBlocks(4, 128)
-          .unroll(8)
-          .tileImperfectlyNested(false)
-          .useSharedMemory(true)
-          .usePrivateMemory(true)
-          .unrollCopyShared(false)
-          .matchLibraryCalls(false);
-  runTransposedMatMul(N, M, K, options);
+  Init(128, 16384, 4096);
+  runTransposedMatMul(
+      tc::options_TransposedMatMul_P100_autotuned_M_128_N_16384_K_4096);
 }
 
 TEST_F(TransposedMatMul, ATenTransposedMatMulReference) {
-  auto N = FLAGS_N;
-  auto M = FLAGS_M;
-  auto K = FLAGS_K;
+  Init(FLAGS_M, FLAGS_N, FLAGS_K);
   at::Tensor A = at::CUDA(at::kFloat).rand({M, K});
   at::Tensor B = at::CUDA(at::kFloat).rand({N, K});
   Reference(
@@ -207,10 +139,7 @@ TEST_F(TransposedMatMul, ATenTransposedMatMulReference) {
 }
 
 TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
-  auto N = FLAGS_N;
-  auto M = FLAGS_M;
-  auto K = FLAGS_K;
-
+  Init(FLAGS_M, FLAGS_N, FLAGS_K);
   auto ws_init_func = [&](Workspace& w) {
     auto AddInput = AddDeterministicallyRandomInput<caffe2::CUDABackend, float>;
     AddInput(w, {M, K}, "I");
@@ -221,7 +150,6 @@ TEST_F(TransposedMatMul, C2TransposedMatMulReference) {
   float precision = 0.0;
   std::unique_ptr<OpTester> reference(new OpTester(op_def, precision));
   reference->InitializeReference(ws_init_func, {{"trans_b", 1}});
-
   Reference(
       [&]() { return true; }, [&](bool flag) { reference->RunReference(); });
 }
