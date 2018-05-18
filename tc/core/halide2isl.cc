@@ -559,6 +559,7 @@ std::vector<Reduction> findReductions(const Stmt& s) {
           auto n = initVars[op->name].size();
           p.dims.resize(vars.size() - n);
           std::iota(p.dims.begin(), p.dims.end(), n);
+          result.insert(make_pair(op->name, reductions[op->name]));
         } else {
           reductions.erase(op->name);
         }
@@ -573,11 +574,12 @@ std::vector<Reduction> findReductions(const Stmt& s) {
     // For each init node, the names of its outer For nodes.
     std::map<std::string, std::vector<std::string>> initVars;
     std::map<std::string, Reduction> reductions;
+    std::map<std::string, Reduction> result;
   } finder;
   s.accept(&finder);
 
   std::vector<Reduction> result;
-  for (auto p : finder.reductions) {
+  for (auto p : finder.result) {
     result.push_back(p.second);
   }
   return result;
