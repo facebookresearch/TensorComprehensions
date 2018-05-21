@@ -843,7 +843,9 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
     using IRMutator2::visit;
     Stmt visit(const Block* op) override {
       const For* first = op->first.as<For>();
-      const For* rest = op->rest.as<For>();
+      const Block* restAsBlock = op->rest.as<Block>();
+      const For* rest =
+          restAsBlock ? restAsBlock->first.as<For>() : op->rest.as<For>();
       if (first && rest && equal(first->min, rest->min) &&
           equal(first->extent, rest->extent) &&
           first->for_type == rest->for_type &&
@@ -852,6 +854,17 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
         body =
             substitute(rest->name, Variable::make(Int(32), first->name), body);
         body = mutate(Block::make(first->body, body));
+        if (restAsBlock) {
+          return Block::make(
+              For::make(
+                  first->name,
+                  first->min,
+                  first->extent,
+                  first->for_type,
+                  first->device_api,
+                  body),
+              restAsBlock->rest);
+        }
         return For::make(
             first->name,
             first->min,
