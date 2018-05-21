@@ -94,8 +94,7 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
         inputs,
         check_fun);
   } else {
-    std::vector<at::Tensor> outputs;
-    Check(tc, "batch_matmul", options, inputs, outputs, check_fun);
+    Check(tc, "batch_matmul", options, inputs, check_fun);
     if (use_flags) {
       autotune(
           FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
