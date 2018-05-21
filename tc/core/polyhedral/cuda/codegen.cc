@@ -367,7 +367,15 @@ void emitReductionInit(
 namespace {
 template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
+  bool readOnly =
+      context.readOnlySet.count(access.get_tuple_id(isl::dim_type::out)) > 0;
+  if (readOnly) {
+    context.ss << "__ldg(&";
+  }
   context.ss << context.build().access_from(access).to_C_str();
+  if (readOnly) {
+    context.ss << ")";
+  }
 }
 } // namespace
 
@@ -584,11 +592,26 @@ void emitMappedTensorAccess(
 
   // Not promoted, emitting just the mapped subscript.
   if (!promotionInfo.groupId) {
+    // Almost certainly not the proper way but how do we get to a proper
+    // isl::id here?
+    bool readOnly = false;
+    for (auto id : context.readOnlySet) {
+      if (id.to_str() == name) {
+        readOnly = true;
+        break;
+      }
+    }
+    if (readOnly) {
+      context.ss << "__ldg(&";
+    }
     context.ss << name;
     for (auto e : subscripts) {
       context.ss << "[";
       emitHalideExpr(e, context);
       context.ss << "]";
+    }
+    if (readOnly) {
+      context.ss << ")";
     }
     return;
   }
@@ -681,6 +704,38 @@ size_t& nAstNodes() {
   return n;
 }
 
+std::unordered_set<isl::id, isl::IslIdIslHash> gatherReadOnlySet(
+    const MappedScop& mscop) {
+  auto root = mscop.schedule();
+  const auto& scop = mscop.scop();
+  std::unordered_set<isl::id, isl::IslIdIslHash> readOnlySet;
+  if (mscop.useReadOnlyCache) {
+    // TensorReferenceGroup::accessedBySubtree seems to require a
+    // MappingFilter. It does not gather references on the root only, so we
+    // iterate on all MappingFilter but ideally scubtrees == root
+    auto subtrees = detail::ScheduleTree::collect(
+        root, detail::ScheduleTreeType::MappingFilter);
+    std::unordered_map<isl::id, bool, isl::IslIdIslHash> isReadOnly;
+    for (auto t : subtrees) {
+      auto groupMap = TensorReferenceGroup::accessedBySubtree(t, scop);
+      for (const auto& kvp : groupMap) {
+        if (isReadOnly.count(kvp.first) == 0) {
+          isReadOnly[kvp.first] = true;
+        }
+        for (const auto& group : kvp.second) {
+          isReadOnly[kvp.first] &= group->isReadOnly();
+        }
+      }
+    }
+    for (auto kvp : isReadOnly) {
+      if (kvp.second) {
+        readOnlySet.emplace(kvp.first);
+      }
+    }
+  }
+  return readOnlySet;
+}
+
 string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
@@ -745,7 +800,9 @@ string emitCudaKernel(
   auto root = mscop.schedule();
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
   auto astNode = astBuild.node_from(schedule);
-  AstPrinter(CodegenContext(ss, mscop, nodeInfoMap)).emit(astNode);
+
+  AstPrinter(CodegenContext(ss, mscop, nodeInfoMap, gatherReadOnlySet(mscop)))
+      .emit(astNode);
   ss << "}" << endl;
 
   return ss.str();
