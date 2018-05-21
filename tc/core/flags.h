@@ -29,6 +29,7 @@ DECLARE_bool(debug_tc_mapper);
 DECLARE_bool(debug_cuda);
 DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
+DECLARE_bool(dump_ptx);
 
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
