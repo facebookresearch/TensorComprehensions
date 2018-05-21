@@ -26,6 +26,7 @@
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
+#include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -357,7 +358,14 @@ void emitReductionInit(
   auto call = provide->values[0].as<Halide::Internal::Call>();
   CHECK(call && call->is_intrinsic(tc2halide::kReductionUpdate));
   auto assoc = prove_associativity(provide->name, provide->args, call->args);
-  CHECK(assoc.associative());
+  if (!assoc.associative()) {
+    std::stringstream ss;
+    ss << "Not associative: " << provide->name << ", provide: ";
+    Halide::Internal::IRPrinter p(ss);
+    p.print(Halide::Internal::Stmt(provide));
+    ss << "\nGenerated so far:\n" << context.ss.str();
+    throw codegen::NotAssociativeError(ss.str());
+  }
   auto statementContext = CodegenStatementContext(context, stmtId);
   CHECK_EQ(assoc.pattern.identities.size(), 1u);
   detail::emitHalideExpr(assoc.pattern.identities[0], statementContext);
