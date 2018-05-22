@@ -166,6 +166,8 @@ void MappedScop::mapToBlocksAndScaleBand(
   bandScale(band, tileSizes);
 }
 
+namespace {
+
 /*
  * Given a node in the schedule tree of a mapped scop,
  * insert a mapping filter underneath (if needed) that fixes
@@ -185,6 +187,8 @@ void fixThreadsBelow(
   auto bandTree = insertNodeBelow(tree, std::move(band));
   mscop.mapThreadsBackward(bandTree);
 }
+
+} // namespace
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   bool found = false;
