@@ -69,6 +69,7 @@ struct Scop {
     res->halide = scop.halide;
     res->body = scop.body;
     res->dependences = scop.dependences;
+    res->reductionDependences = scop.reductionDependences;
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
@@ -473,6 +474,8 @@ struct Scop {
  public:
   // Do the simplest possible dependence analysis.
   // Compute all RAW, WAR, and WAW dependences, and save them in dependences.
+  // Additionally, compute the set of reduction dependences and
+  // save them in reductionDependences.
   void computeAllDependences();
   // Return the set of dependences that are active
   // at the given position.
@@ -509,6 +512,9 @@ struct Scop {
 
   // RAW, WAR, and WAW dependences
   isl::union_map dependences;
+  // Pairs of instances from the same reduction update statement
+  // that write to the same tensor element.
+  isl::union_map reductionDependences;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise

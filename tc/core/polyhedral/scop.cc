@@ -304,8 +304,14 @@ isl::schedule_constraints makeScheduleConstraints(
     const Scop& scop,
     const SchedulerOptionsView& schedulerOptions,
     isl::union_set restrictDomain = isl::union_set()) {
+  // Ignore reduction dependences for validity.
+  // That is, allow the order of the update statement instances
+  // to be changed.
+  // This assumes that reduction update statements only write
+  // to the tensor element that stores the result of the reduction.
+  auto validity = scop.dependences.subtract(scop.reductionDependences);
   auto constraints = isl::schedule_constraints::on_domain(scop.domain())
-                         .set_validity(scop.dependences)
+                         .set_validity(validity)
                          .set_proximity(scop.dependences)
                          .set_coincidence(scop.dependences);
   if (restrictDomain) {
@@ -349,6 +355,27 @@ isl::schedule_constraints makeScheduleConstraints(
 }
 } // namespace
 
+/*
+ * Construct the dependences between pairs of statement instances
+ * that belong to the same reduction, as identified by "reductions".
+ * Assuming that the reduction update statements
+ * only write to the tensor element that stores the result of the reduction,
+ * this corresponds to all dependences that may occur between
+ * such pairs of instances.
+ *
+ * In particular, combine "reductions" with itself
+ * to obtain pairs of statement instances mapping to (the same) reductions
+ *
+ *  [D -> D'] -> R
+ *
+ * and then simply project out the reductions.
+ */
+static isl::union_map computeReductionDependences(isl::union_map reductions) {
+  auto sameReduction = reductions.domain_product(reductions);
+  auto reductionDependences = sameReduction.domain().unwrap();
+  return reductionDependences;
+}
+
 void Scop::computeAllDependences() {
   auto schedule = toIslSchedule(scheduleRoot());
   auto allReads = body.reads.domain_factor_domain();
@@ -358,6 +385,8 @@ void Scop::computeAllDependences() {
   // WAR and WAW
   auto falseDeps =
       computeDependences(allWrites.unite(allReads), allWrites, schedule);
+
+  reductionDependences = computeReductionDependences(body.reductions);
 
   dependences = flowDeps.unite(falseDeps).coalesce();
 }
