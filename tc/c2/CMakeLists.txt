@@ -12,8 +12,7 @@ target_link_libraries(
   tc_c2
 
   ${PROTOBUF_LIBRARIES}
-  ${CAFFE2_CPU_LIBRARIES}
-  ${CAFFE2_GPU_LIBRARIES}
+  ${CAFFE2_LIBRARIES}
 
   tc_cuda
 )
