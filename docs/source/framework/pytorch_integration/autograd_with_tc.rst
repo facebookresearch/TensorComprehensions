@@ -49,7 +49,7 @@ Examples
     is done, then the grad will be available for the `Variable.cuda()` and not the actual `Variable/Tensor`.
 
 
-Specifying Mapping Options
+Specifying CudaMappingOptions
 --------------------------
 
 We highly recommend passing the mapping options when running the kernel.
@@ -77,7 +77,7 @@ them, the example for that would be:
      convolution = tc.define(CONV_LANG, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
      I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
      W = Parameter(torch.randn(O, C, kH, kW).cuda())
-     out = convolution(I, W, options=[tc.Options("conv"), tc.Options("group_conv")])
+     out = convolution(I, W, options=[tc.CudaMappingOptions("conv"), tc.CudaMappingOptions("group_conv")])
      out[0].sum().backward()
 
 In order to obtain options via autotuning for backward and forward layer, keep reading further.

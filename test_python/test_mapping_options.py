@@ -14,13 +14,13 @@
 ##############################################################################
 
 import unittest
-from tensor_comprehensions.mapping_options import Options
+from tensor_comprehensions.tc import CudaMappingOptions
 
 
 class TestOptions(unittest.TestCase):
     def test_options(self):
         print('\nCreating mapping_options')
-        options = Options("naive")
+        options =CudaMappingOptions("naive")
         options.useSharedMemory(True)
         options.unrollCopyShared(False)
         options.mapToBlocks([256, 8])

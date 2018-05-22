@@ -18,9 +18,5 @@ target_link_libraries(
 
   tc_core
 )
-install(
-  TARGETS
-  tc_aten
 
-  DESTINATION lib
-)
+install(TARGETS tc_aten DESTINATION lib)

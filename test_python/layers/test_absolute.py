@@ -30,7 +30,7 @@ class TestAbsolute(unittest.TestCase):
         """
         absolute = tc.define(LANG, name="abs")
         A = -1 * torch.randn(3, 4).cuda()
-        out = absolute(A, options=tc.Options("pointwise"))
+        out = absolute(A, options=tc.CudaMappingOptions("pointwise"))
 
 
 if __name__ == '__main__':

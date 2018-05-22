@@ -13,12 +13,6 @@ find_library(CUDA_CUDNN_LIBRARIES cudnn
   PATH_SUFFIXES lib lib64)
 
 ################################################################################
-# Don't ask ... TODO: cleanup gtest
-################################################################################
-include_directories(${PROJECT_SOURCE_DIR}/third-party/googletest/googletest/include)
-set(GTEST_LIBS gtest gtest_main)
-
-################################################################################
 # Examples
 ################################################################################
 set(EXAMPLES_FILES
@@ -35,10 +29,7 @@ foreach(i ${EXAMPLES_FILES})
 
      ${CUDA_CUBLAS_LIBRARIES}
      ${CUDA_CUDNN_LIBRARIES}
-     ${GTEST_LIBS}
-     ${GFLAGS_LIBRARIES}
-     ${GLOG_LIBRARIES}
-
+     ${GTEST_LIBRARIES}
      ${ATEN_LIBRARIES}
 
      tc_caffe2_test_harness

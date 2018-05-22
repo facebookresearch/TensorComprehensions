@@ -1,5 +1,3 @@
-find_package(Protobuf REQUIRED)
-
 #Default protobuf function err'd with python,
 #  borrowing caffe2 function to generate
 function(tc_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
@@ -66,18 +64,10 @@ add_library(tc_proto SHARED ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tc_proto ${PROTOBUF_LIBRARIES})
 target_include_directories(tc_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${PROTOBUF_HDRS})
 
-install(
-    PROGRAMS
-    ${PROTO_PY}
-
-    DESTINATION
-    tc
-)
-
-install(
-    TARGETS
-    tc_proto
-
-    DESTINATION
-    lib
-)
+install(TARGETS tc_proto DESTINATION lib)
+# "Install" to source_dir/tensor_comprehensions for easy inclusion in python
+# package with setuptools. Without this, setuptools is hell.
+install(PROGRAMS ${PROTO_PY}
+  DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)
+install(PROGRAMS mapping_options.proto compcache.proto
+  DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)

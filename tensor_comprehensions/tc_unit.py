@@ -18,11 +18,9 @@ import os, sys, pdb, uuid, logging, subprocess
 import torch
 from torch.autograd import Variable
 
-from tensor_comprehensions.tc import ATenCompilationUnit
+from tensor_comprehensions.tc import ATenCudaTuner, ATenCompilationUnit, CudaMappingOptions
 from tensor_comprehensions.tc import set_logtostderr, set_debug_lang, set_debug_halide, set_debug_tc_mapper, set_debug_cuda, set_debug_tuner, set_dump_cuda
 from tensor_comprehensions.torch_tc.tc_function import TCFunction, unpack_variables, get_tensors, make_contiguous
-from tensor_comprehensions.autotuner import ATenAutotuner
-from tensor_comprehensions.mapping_options import Options
 
 FORMAT = '[%(levelname)s]: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
@@ -112,10 +110,10 @@ def get_options_from_kwargs(name, *inputs, **kwargs):
         logger.info("Tuned kernel options found, using those options")
 
     if options is None:
-        options = Options("naive")
+        options =CudaMappingOptions("naive")
         logger.warning("No mapping options passed, 'naive' type mapping options will be used and will likely have bad performance. See help(your_layer.__call__) for setting mapping options.")
-    if not isinstance(options, Options):
-        options = Options(options)
+    if not isinstance(options,CudaMappingOptions):
+        options =CudaMappingOptions(options)
     return options
 
 
@@ -171,10 +169,10 @@ def get_options_from_kwargs_and_tuner_cache(name, cache_file, options_cache, *in
         logger.info("Kernel was previously tuned, seeding the current tuning with those mapping options")
 
     if options is None:
-        options = Options("naive")
+        options =CudaMappingOptions("naive")
         logger.warning("Using 'naive' type mapping options for autotuning. See help(your_layer.autotune) for how to set mapping options.")
-    if not isinstance(options, Options):
-        options = Options(options)
+    if not isinstance(options,CudaMappingOptions):
+        options =CudaMappingOptions(options)
     return options
 
 ###############################################################################
@@ -187,7 +185,7 @@ class TcAutotuner(object):
         self.tuner_cache = {}
         self.kwargs = kwargs
         self.tc_lang = tc_lang
-        self.autotuner = ATenAutotuner(tc_lang)
+        self.autotuner = ATenCudaTuner(tc_lang)
         self.set_autotuner_parameters(**kwargs)
 
     def set_autotuner_parameters(
@@ -221,8 +219,8 @@ class TcAutotuner(object):
     # if the cache_file is not "" then the tuning results would be saved to file
     def tune_and_store(self, tc_name, inputs, mapping_options, cache_file=""):
         options = mapping_options
-        if not isinstance(options, Options):
-            options = Options(options)
+        if not isinstance(options,CudaMappingOptions):
+            options =CudaMappingOptions(options)
         try:
             best_options = self.autotuner.tune(tc_name, inputs, options, cache_file)
             return best_options
@@ -246,7 +244,7 @@ class TcAutotuner(object):
             options_cache = {}
 
         # we give priority to the options user might have passed via file, or
-        # Options object.
+        #CudaMappingOptions object.
         cache_file = ""
         if "cache" in kwargs and kwargs["cache"]:
             if isinstance(kwargs["cache"], bool):
@@ -369,7 +367,7 @@ class TcUnit(object):
                 are also passed in the definition of TC language.
 
             options (optional):
-                Kernel mapping options of type :attr:`tc.Options`. These options
+                Kernel mapping options of type :attr:`tc.CudaMappingOptions`. These options
                 provide mapping for kernel like grid, blocks, memory etc. It
                 is recommended to always pass kernel options. The options can be
                 obtained by:
@@ -381,7 +379,7 @@ class TcUnit(object):
                  .. code::
 
                      import tensor_comprehensions as tc
-                     options = tc.Options(type)
+                     options = tc.CudaMappingOptions(type)
 
                 where :attr:`type` is a string with value one of below:
 
@@ -509,7 +507,7 @@ class TcUnit(object):
                 .. code::
 
                     import tensor_comprehensions as tc
-                    options = tc.Options(type)
+                    options = tc.CudaMappingOptions(type)
 
                 where :attr:`type` is a string with value one of below:
 
@@ -649,7 +647,7 @@ def decode(filepath):
     """
     assert os.path.exists(filepath), "The filepath specific doesn't exist."
     cwd = os.path.realpath(os.path.dirname(__file__))
-    cmd = 'protoc --decode tc.OptionsCacheProto {cwd}/compilation_cache.proto -I {cwd} < {filepath} >> {filepath}.decoded'
+    cmd = 'protoc --decode tc.CudaMappingOptionsCacheProto {cwd}/compilation_cache.proto -I {cwd} < {filepath} >> {filepath}.decoded'
     cmd = cmd.format(cwd=cwd, filepath=filepath)
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     stdout = process.communicate()

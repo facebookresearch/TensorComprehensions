@@ -8,30 +8,19 @@ source:
 
 requirements:
   build:
-    - isl-tc==0.1.0
-    - llvm-tapir50==0.1.0
-    - halide==0.1.0
-    - gflags==2.4.4
-    - glog==0.3.9
-    - protobuf==3.4.1
-    # we install pytorch since we want compatibility of TC with it for the release
-    - pytorch==0.3.1
-    - gmp>=5.0.1,<7
+    - llvm-tapir50==1.0.0
+    - halide==1.0.0
+    - caffe2==1.0.0
+    - pytorch==0.4.0
+    - pyyaml
     - cmake
     - setuptools
-    - pyyaml
-    - cudatoolkit
 
   run:
-    - isl-tc==0.1.0
-    - llvm-tapir50==0.1.0
-    - halide==0.1.0
-    - gflags==2.4.4
-    - glog==0.3.9
-    - protobuf==3.4.1
-    - pytorch==0.3.1
-    - gmp>=5.0.1,<7
-    - cudatoolkit
+    - llvm-tapir50==1.0.0
+    - halide==1.0.0
+    - caffe2==1.0.0
+    - pytorch==0.4.0
     - pyyaml
     - cmake
     - setuptools
@@ -47,8 +36,6 @@ test:
     - torch.utils
     - tensor_comprehensions
     - tensor_comprehensions.tc
-    - tensor_comprehensions.autotuner
-    - tensor_comprehensions.mapping_options
 
   source_files:
     - test_python
@@ -60,13 +47,13 @@ test:
     - test -f $PREFIX/lib/libtc_lang.so
     - test -f $PREFIX/lib/libtc_proto.so
 
-    - test -f $PREFIX/lib*/libgmock_main.a
-    - test -f $PREFIX/lib*/libgmock.a
+    - test -f $PREFIX/lib*/libgflags.a
+    - test -f $PREFIX/lib*/libglog.a
     - test -f $PREFIX/lib*/libgtest_main.a
     - test -f $PREFIX/lib*/libgtest.a
+    - test -f $PREFIX/lib*/libgprotobuf.a
 
     - test -d $PREFIX/include/dlpack
-    - test -d $PREFIX/include/gmock
     - test -d $PREFIX/include/gtest
     - test -d $PREFIX/include/cub
 
@@ -79,4 +66,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - prigoyal
+    - nicolasvasilache

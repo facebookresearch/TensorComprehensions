@@ -5,6 +5,7 @@ import setuptools.command.build_py
 import distutils.command.build
 from shutil import copyfile
 import subprocess, os
+import glob
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 
@@ -13,7 +14,6 @@ print('TOP_DIR: ', TOP_DIR)
 ###############################################################################
 # Version and build number
 ###############################################################################
-
 git_version = subprocess.check_output(
     ['git', 'rev-parse', 'HEAD'], cwd=TOP_DIR
 ).decode('ascii').strip()
@@ -36,89 +36,41 @@ print('git_version: {} tc_version: {} tc_build_number: {}'.format(
 ))
 
 ################################################################################
-# Copy the proto files only
-################################################################################
-copyfile("tc/proto/compcache.proto", "tensor_comprehensions/compilation_cache.proto")
-copyfile("tc/proto/mapping_options.proto", "tensor_comprehensions/mapping_options.proto")
-
-################################################################################
 # Custom override commands
 ################################################################################
-
-class build_py(setuptools.command.build_py.build_py):
-    def run(self):
-        self.create_version_file()
-        setuptools.command.build_py.build_py.run(self)
-
-    @staticmethod
-    def create_version_file():
-        global tc_version, tc_build_number, git_version
-        print('BUILD git_version: {} tc_version: {} tc_build_number: {}'.format(
-            git_version, tc_version, tc_build_number
-        ))
-        with open(
-            os.path.join(TOP_DIR, 'tensor_comprehensions', 'version.py'), 'w'
-        ) as fopen:
-            fopen.write("__version__ = '{}'\n".format(str(tc_version)))
-            fopen.write("build_number = {}\n".format(int(tc_build_number)))
-            fopen.write("git_version = '{}'\n".format(str(git_version)))
-        print('Version file written.')
-
-
 class install(setuptools.command.install.install):
     def run(self):
         setuptools.command.install.install.run(self)
 
-
-class develop(setuptools.command.develop.develop):
-    def run(self):
-        build_py.create_version_file()
-        setuptools.command.develop.develop.run(self)
-
 ################################################################################
 # Extensions
 ################################################################################
-
-# we have build extensions in the cmake command so no extensions left to build
-print('All extension module were build with cmake')
+# Extensions built with cmake
 ext_modules = []
 
 ################################################################################
 # Command line options
 ################################################################################
-
 cmdclass = {
-    'develop': develop,
-    'build_py': build_py,
     'install': install,
 }
 
 ###############################################################################
-# Pure python packages
-###############################################################################
-# don't include the tests in the conda package, we run these tests when building
-# the package
-packages = find_packages(exclude=('test_python', 'test_python.*'))
-
-###############################################################################
 # Main
 ###############################################################################
-
-
 setup(
     name="tensor_comprehensions",
     version=tc_version,
     ext_modules=ext_modules,
     cmdclass=cmdclass,
-    packages=packages,
+    packages=find_packages(),
     package_data={'tensor_comprehensions': [
         '*.so',
         '*.proto',
-        'library/*.yaml',
     ]},
     install_requires=['pyyaml', 'numpy'],
-    author='prigoyal',
-    author_email='prigoyal@fb.com',
+    author='Tensor Comprehensions Team',
+    author_email='tensorcomp@fb.com',
     url='https://github.com/facebookresearch/TensorComprehensions',
     license="Apache 2.0",
     description=("Framework-Agnostic Abstractions for High-Performance Machine Learning"),

@@ -45,7 +45,7 @@ tc.define
 
 .. _must_pass_options:
 
-Specifying Mapping Options
+Specifying CudaMappingOptions
 --------------------------
 
 TC is transformed into :code:`CUDA` kernel by using the :code:`Options` which
@@ -78,7 +78,7 @@ An example for how to pass options:
     """
     matmul = tc.define(lang, name="matmul")
     mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-    out = matmul(mat1, mat2, options=tc.Options("mlp"))
+    out = matmul(mat1, mat2, options=tc.CudaMappingOptions("mlp"))
 
 .. note::
 

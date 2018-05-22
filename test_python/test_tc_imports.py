@@ -23,9 +23,7 @@ import unittest
 class TestCase(unittest.TestCase):
 
     def test_imports(self):
-        from tensor_comprehensions.tc import ATenCompilationUnit
-        from tensor_comprehensions.mapping_options import Options
-        from tensor_comprehensions.autotuner import ATenAutotuner
+        from tensor_comprehensions.tc import ATenCudaTuner, ATenCompilationUnit, CudaMappingOptions
         print('\nImported TC, mapping_options and Autotuner successfully')
 
 

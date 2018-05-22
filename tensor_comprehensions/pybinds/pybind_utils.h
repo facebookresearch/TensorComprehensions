@@ -28,7 +28,9 @@ namespace python {
 
 namespace py = pybind11;
 
-std::vector<at::Tensor> getATenTensors(py::list& pyTensors, py::object dlpack) {
+inline std::vector<at::Tensor> getATenTensors(
+    py::list& pyTensors,
+    py::object dlpack) {
   std::vector<at::Tensor> atTensors;
   for (auto& inp : pyTensors) {
     py::object obj = dlpack.attr("to_dlpack")(inp);
@@ -39,7 +41,7 @@ std::vector<at::Tensor> getATenTensors(py::list& pyTensors, py::object dlpack) {
   return atTensors;
 }
 
-void convertToPyObjects(
+inline void convertToPyObjects(
     std::vector<at::Tensor>& inputs,
     py::object dlpack,
     py::list& outputs) {

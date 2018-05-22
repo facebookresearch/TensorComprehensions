@@ -14,4 +14,7 @@ find build -name "test_*" -type f -executable -name "*${FILTER}*" | grep -v ${FI
 find build -name "example_*" -type f -executable -name "*${FILTER}*" | grep -v ${FILTER_OUT} | xargs -n 1 -P ${NPAR} -i bash -c 'echo Running {}; CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:=$((RANDOM % '"${NGPU}"'))} ./{} --benchmark_warmup=0 --benchmark_iterations=1"'"$@"'" --disable_version_checks || exit 255' \
     || (echo "$(tput setaf 1)Some tests are broken $(tput sgr 0)" && exit 1)
 
+find build/tc/benchmarks -name "*" -type f -executable -name "*${FILTER}*" | grep -v ${FILTER_OUT} | xargs -n 1 -P ${NPAR} -i bash -c 'echo Running {}; CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:=$((RANDOM % '"${NGPU}"'))} ./{} "'"$@"'" || exit 255' \
+    || (echo "$(tput setaf 1)Some tests are broken $(tput sgr 0)" && exit 1)
+
 echo SUCCESS

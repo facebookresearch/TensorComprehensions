@@ -91,7 +91,7 @@ kernel timing. You can adopt the following parameter settings as starters for au
      }
 
 
-Initial Mapping Options
+Initial CudaMappingOptions
 -----------------------
 
 At the beginning of autotuning, the kernel is mapped to whatever :code:`mapping options`
@@ -114,7 +114,7 @@ An example for how to pass options:
     """
     matmul = tc.define(lang, name="matmul")
     mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-    options = Options("mlp")
+    options =CudaMappingOptions("mlp")
     matmul.autotune(mat1, mat2, options=options, **tc.autotuner_settings)
     out = matmul(mat1, mat2)
 

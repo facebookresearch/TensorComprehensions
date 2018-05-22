@@ -3,12 +3,12 @@
 set -e
 
 # code gets checked out at below:
-# $SOURCE_DIR ===> <anaconda_root>/conda-bld/clang+llvm-tapir5.0_<timestamp>/work
+# $SOURCE_DIR ===> <anaconda_root>/conda-bld/llvm-tapir50_<timestamp>/work
 #
 # build directory gets created at $SOURCE_DIR/build
 #
 # CONDA environment for debugging:
-# cd <anaconda_root>/conda-bld/clang+llvm-tapir5.0_<timestamp>
+# cd <anaconda_root>/conda-bld/llvm-tapir50_<timestamp>
 # source activate ./_h_env_......    # long placeholders
 #
 # $CONDA_PREFIX and $PREFIX are set to the same value i.e. the environment value
@@ -17,7 +17,7 @@ set -e
 # to that
 #
 # For tests, a new environment _test_env_.... is created
-# During the tests, you will see that the clang+llvm-tapir5.0 package gets checked out
+# During the tests, you will see that the llvm-tapir50 package gets checked out
 # NOTE: once the build finished, the packaging and unpackaging step takes long
 # and might seem like it's stuck but it's not.
 
@@ -28,7 +28,7 @@ export INSTALL_PREFIX=$PREFIX
 echo "CONDA_PREFIX: ${CONDA_PREFIX}"
 echo "PREFIX: ${PREFIX}"
 
-echo "Building clang+llvm-tapir5.0 conda package"
+echo "Building llvm-tapir50 conda package"
 
 echo "Clean up existing build packages if any"
 rm -rf llvm_build || true
@@ -36,7 +36,7 @@ rm -rf llvm_build || true
 mkdir -p llvm_build
 cd llvm_build
 
-echo "Configuring clang+llvm-tapir5.0"
+echo "Configuring llvm-tapir50"
 VERBOSE=${VERBOSE}  ${CMAKE_VERSION} \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
     -DCOMPILER_RT_BUILD_CILKTOOLS=OFF \
@@ -53,11 +53,11 @@ VERBOSE=${VERBOSE}  ${CMAKE_VERSION} \
     -DLLVM_OCAML_INSTALL_PATH=/tmp \
     -DLLVM_ENABLE_RTTI=ON .. || exit 1
 
-echo "Installing clang+llvm-tapir5.0"
+echo "Installing llvm-tapir50"
 VERBOSE=${VERBOSE}  make -j"$(nproc)" -s || exit 1
 
 VERBOSE=${VERBOSE}  make install -j"$(nproc)" -s || exit 1
 
 echo SUCCESS || echo FAILURE
 
-echo "Successfully built clang+llvm-tapir5.0 conda package"
+echo "Successfully built llvm-tapir50 conda package"

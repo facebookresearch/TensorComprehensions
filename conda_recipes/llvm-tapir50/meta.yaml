@@ -1,10 +1,10 @@
 package:
   name: llvm-tapir50
-  version: "{{ environ.get('CLANG_LLVM_BUILD_VERSION') }}"
+  version: "{{ environ.get('LLVM_TAPIR_BUILD_VERSION') }}"
 
 source:
   git_url: https://github.com/wsmoses/Tapir-LLVM
-  git_rev: "{{ environ.get('CLANG_LLVM_GIT_HASH') }}"
+  git_rev: "{{ environ.get('LLVM_TAPIR_GIT_HASH') }}"
 
 requirements:
   build:
@@ -13,7 +13,7 @@ requirements:
     - cmake
 
 build:
-  number: {{ environ.get('CLANG_LLVM_BUILD_NUMBER') }}
+  number: {{ environ.get('LLVM_TAPIR_BUILD_NUMBER') }}
   skip: True   # [win]
 
 test:
@@ -37,4 +37,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - prigoyal
+    - nicolasvasilache

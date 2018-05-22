@@ -17,10 +17,6 @@ set -ex
 
 source /etc/lsb-release
 
-# condition: if 14.04 and conda, conda install pytorch and build
-# condition: if 16.04 and conda, conda install pytorch and build
-# condition: if any and non-conda, simply build TC from scratch
-
 # note: printf is used instead of echo to avoid backslash
 # processing and to properly handle values that begin with a '-'.
 echo "ENTERED_USER_LAND"
@@ -55,42 +51,23 @@ declare -f -t trap_add
 
 trap_add cleanup EXIT
 
-if which ccache > /dev/null; then
-  # Report ccache stats for easier debugging
-  ccache --zero-stats
-  ccache --show-stats
-  function ccache_epilogue() {
-    ccache --show-stats
-  }
-  trap_add ccache_epilogue EXIT
-fi
+# Check we indeed have GPUs and list them in the log file
+nvidia-smi
 
-if [[ "$DISTRIB_RELEASE" == 14.04 ]]; then
-  if [[ $(conda --version | wc -c) -ne 0 ]]; then
-    echo "Building TC in conda env"
-    conda create -y --name tc-env python=3.6
-    source activate tc-env
-    conda install -y pyyaml mkl-include
-    conda install -yc conda-forge pytest
-    conda install -y pytorch -c pytorch
-    WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
-  else
-    echo "Building TC in non-conda env"
-    WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
-  fi
-fi
+# Just install missing conda dependencies, build and run tests
+cd /var/lib/jenkins/workspace
+. /opt/conda/anaconda/bin/activate
+git submodule update --init --recursive
 
-if [[ "$DISTRIB_RELEASE" == 16.04 ]]; then
-  if [[ $(conda --version | wc -c) -ne 0 ]]; then
-    echo "Building TC in conda env"
-    conda create -y --name tc-env python=3.6
-    source activate tc-env
-    conda install -y pyyaml mkl-include
-    conda install -yc conda-forge pytest
-    conda install -y pytorch cuda90 -c pytorch
-    WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
-  else
-    echo "Building TC in non-conda env"
-    WITH_PYTHON_C2=OFF CORES=$(nproc) CLANG_PREFIX=/usr/local/clang+llvm-tapir5.0 BUILD_TYPE=Release ./build.sh --all
-  fi
-fi
+source activate tc_build
+conda install -y -c nicolasvasilache llvm-tapir50 halide
+conda install -y -c conda-forge eigen
+conda install -y -c nicolasvasilache caffe2
+
+WITH_CAFFE2=ON CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda CLANG_PREFIX=$(${CONDA_PREFIX}/bin/llvm-config --prefix) BUILD_TYPE=Release ./build.sh
+
+python setup.py install
+./test_python/run_test.sh
+
+FILTER_OUT=MLP_model ./test.sh
+./build/tc/benchmarks/MLP_model --gtest_filter=-*2LUT*

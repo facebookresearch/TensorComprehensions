@@ -21,7 +21,7 @@ from torch.autograd import Variable
 from torch.nn.parameter import Parameter
 
 import tensor_comprehensions as tc
-from tensor_comprehensions.mapping_options import Options
+from tensor_comprehensions.tc import CudaMappingOptions
 from common import TestCase, run_tests
 
 tc.SetDebugFlags(dump_cuda=False)
@@ -93,7 +93,7 @@ class TestTC(unittest.TestCase):
         lang = MATMUL_LANG
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-        options = Options("naive")
+        options =CudaMappingOptions("naive")
         out = matmul(mat1, mat2, options=options)
 
     def test_different_input_sizes(self):
@@ -157,7 +157,7 @@ class TestTC(unittest.TestCase):
         convolution = tc.define(lang, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
         I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
         W = Parameter(torch.randn(O, C, kH, kW).cuda())
-        out = convolution(I, W, options=[tc.Options("conv"), tc.Options("group_conv")])
+        out = convolution(I, W, options=[tc.CudaMappingOptions("conv"), tc.CudaMappingOptions("group_conv")])
         out.sum().backward()
 
 ###########################################################################
