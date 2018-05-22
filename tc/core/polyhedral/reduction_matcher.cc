@@ -39,7 +39,8 @@ namespace {
 bool isSupportedReduction(Halide::Internal::Stmt stmt) {
   auto provide = stmt.as<Halide::Internal::Provide>();
   auto call = provide->values[0].as<Halide::Internal::Call>();
-  if (call && call->args[0].as<Halide::Internal::Add>()) {
+  if (call && call->args.size() > 0 &&
+      call->args[0].as<Halide::Internal::Add>()) {
     return true;
   }
   return false;
