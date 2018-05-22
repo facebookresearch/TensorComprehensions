@@ -20,11 +20,13 @@ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O mi
 conda create -y --name tc_build python=3.6
 conda activate tc_build
 conda install -y gflags glog protobuf gtest
-conda install -y pyyaml mkl-include
+conda install -y pyyaml mkl-include pytest
+conda install -y -c nicolasvasilache llvm-tapir50 halide
 conda install pytorch torchvision cuda90 -c pytorch
 ```
 
 # Activate preinstalled conda in your current terminal
+Generally this [conda cheatsheet](https://conda.io/docs/_downloads/conda-cheatsheet.pdf) is useful.
 ```
 . ~/conda/miniconda/bin/activate
 conda activate tc_build
@@ -33,7 +35,7 @@ conda activate tc_build
 # Build TC
 The following assumes a predefined location for `CUDA_TOOLKIT_ROOT_DIR`, `CUDNN_ROOT_DIR` and `CLANG_PREFIX`, adapt to your needs.
 ```
-CUDA_TOOLKIT_ROOT_DIR=/public/apps/cuda/9.0/ CUDNN_ROOT_DIR=/public/apps/cudnn/v7.0/cuda/ CLANG_PREFIX=$($HOME/clang+llvm-tapir5.0/bin/llvm-config --prefix) ./build.sh --all
+CUDA_TOOLKIT_ROOT_DIR=/public/apps/cuda/9.0/ CUDNN_ROOT_DIR=/public/apps/cudnn/v7.0/cuda/ CLANG_PREFIX=$(${CONDA_PREFIX}/bin/llvm-config --prefix) ./build.sh --all
 ```
 
 # Test locally
@@ -46,7 +48,7 @@ PYTHONPATH=$(pwd)/install/lib:$(pwd)/install/tc:${PYTHONPATH} python -c 'import 
 
 # Install
 The following commands will install TC into ${CONDA_PREFIX}.
-This is a bit final and creates circular dependencies when subsenquently building TC.
+This is a bit final and creates circular dependencies when subsequently building TC.
 To test locally without installing, better to `export PYTHONPATH` as above.
 
 If you build with `BUILD_TYPE=Release`:

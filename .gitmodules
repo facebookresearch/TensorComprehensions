@@ -7,9 +7,6 @@
 	path = third-party/cub
         url = https://github.com/nicolasvasilache/cub.git
 	branch = nvrtc-cub
-[submodule "third-party/halide"]
-	path = third-party/halide
-	url = https://github.com/halide/Halide.git
 
 # Mainstream branches, we don't modify those
 [submodule "third-party/dlpack"]
