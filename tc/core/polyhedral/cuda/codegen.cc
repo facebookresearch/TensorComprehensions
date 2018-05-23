@@ -365,8 +365,32 @@ void emitReductionInit(
 }
 
 namespace {
+// RAII-style wrapper around CodegenStatementContext that wraps the output
+// streamed to context.ss into an "__ldg()" intrinsic, if the tensor
+// with the given identifier is known to be read-only.
+struct LdgWrapper {
+ public:
+  LdgWrapper(const CodegenStatementContext& context, isl::id id)
+      : readOnly_(context.readOnlySet.count(id) > 0), out_(context.ss) {
+    if (readOnly_) {
+      out_ << "__ldg(&";
+    }
+  }
+
+  ~LdgWrapper() {
+    if (readOnly_) {
+      out_ << ")";
+    }
+  }
+
+ private:
+  bool readOnly_;
+  std::ostream& out_;
+};
+
 template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
+  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
   context.ss << context.build().access_from(access).to_C_str();
 }
 } // namespace
@@ -584,6 +608,8 @@ void emitMappedTensorAccess(
 
   // Not promoted, emitting just the mapped subscript.
   if (!promotionInfo.groupId) {
+    auto ctx = context.scop().domain().get_ctx();
+    LdgWrapper ldgWrapper(context, isl::id(ctx, name));
     context.ss << name;
     for (auto e : subscripts) {
       context.ss << "[";
@@ -681,6 +707,29 @@ size_t& nAstNodes() {
   return n;
 }
 
+namespace {
+// Collect ids of tensors that are only read on the Scop.
+std::unordered_set<isl::id, isl::IslIdIslHash> gatherReadOnlySet(
+    const MappedScop& mscop) {
+  std::unordered_set<isl::id, isl::IslIdIslHash> readOnlySet;
+
+  if (!mscop.useReadOnlyCache) {
+    return readOnlySet;
+  }
+
+  const auto& scop = mscop.scop();
+
+  auto read = scop.reads.universe().range();
+  auto written = scop.writes.universe().range();
+  auto readOnly = read.subtract(written);
+  for (auto s : readOnly.get_set_list()) {
+    readOnlySet.emplace(s.get_tuple_id());
+  }
+
+  return readOnlySet;
+}
+} // namespace
+
 string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
@@ -745,7 +794,9 @@ string emitCudaKernel(
   auto root = mscop.schedule();
   astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
   auto astNode = astBuild.node_from(schedule);
-  AstPrinter(CodegenContext(ss, mscop, nodeInfoMap)).emit(astNode);
+
+  AstPrinter(CodegenContext(ss, mscop, nodeInfoMap, gatherReadOnlySet(mscop)))
+      .emit(astNode);
   ss << "}" << endl;
 
   return ss.str();

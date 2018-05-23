@@ -75,6 +75,8 @@ The following options are currently available:
 
 * :code:`.unrollCopyShared(<boolean>)`: Also unroll the copies to and from shared memory introduced by the :code:`TC` mapper. If :code:`unroll` value is not provided, has no effect.
 
+* :code:`.useReaOnlyCache(<boolean>)`: Emit loads to the readonly cache when appropriate.
+
 * :code:`.matchLibraryCalls(<boolean>)`: Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS) when possible.
 
 * :code:`.fixParametersBeforeScheduling(<boolean>)`: Perform automatic loop scheduling taking into account specific tensor sizes. May produce faster kernels but significantly increases compilation time. Note that the *mapping* will be performed for specific tensor sizes anyway.

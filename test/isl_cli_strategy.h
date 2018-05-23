@@ -32,6 +32,7 @@
 #define DEFAULT_USE_SHARED_MEMORY true
 #define DEFAULT_USE_PRIVATE_MEMORY true
 #define DEFAULT_UNROLL_COPY_SHARED false
+#define DEFAULT_USE_READONLY_CACHE false
 
 DEFINE_string(
     fusion_strategy,
@@ -58,6 +59,10 @@ DEFINE_bool(
     unroll_copy_shared,
     DEFAULT_UNROLL_COPY_SHARED,
     "Unroll copy to/from shared");
+DEFINE_bool(
+    use_readonly_cache,
+    DEFAULT_USE_READONLY_CACHE,
+    "Use the readonly cache (i.e. emit __ldg loads)");
 DEFINE_string(tile, DEFAULT_TILE, "Tile sizes (comma-separated list)");
 DEFINE_bool(
     tile_imperfectly_nested,
@@ -83,7 +88,8 @@ tc::CudaMappingOptions makeBaseCliStrategy() {
           .mapToBlocks(DEFAULT_GRID)
           .useSharedMemory(DEFAULT_USE_SHARED_MEMORY)
           .usePrivateMemory(DEFAULT_USE_PRIVATE_MEMORY)
-          .unrollCopyShared(DEFAULT_UNROLL_COPY_SHARED);
+          .unrollCopyShared(DEFAULT_UNROLL_COPY_SHARED)
+          .useReadOnlyCache(DEFAULT_USE_READONLY_CACHE);
   options.scheduleFusionStrategy(fs)
       .fixParametersBeforeScheduling(DEFAULT_FIX_PARAMETERS_BEFORE_SCHEDULING)
       .tile(DEFAULT_TILE)
@@ -135,6 +141,9 @@ tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
   }
   if (FLAGS_unroll_copy_shared != DEFAULT_UNROLL_COPY_SHARED) {
     options.unrollCopyShared(FLAGS_unroll_copy_shared);
+  }
+  if (FLAGS_use_readonly_cache != DEFAULT_USE_READONLY_CACHE) {
+    options.useReadOnlyCache(FLAGS_use_readonly_cache);
   }
   if (FLAGS_unroll != DEFAULT_UNROLL_FACTOR) {
     options.unroll(FLAGS_unroll);

@@ -80,6 +80,10 @@ PYBIND11_MODULE(mapping_options, m) {
           "Also unroll the copies to and from shared memory. If an unroll "
           "value is not provided, has no effect")
       .def(
+          "useReadOnlyCache",
+          &tc::CudaMappingOptions::useReadOnlyCache,
+          "Use the readonly cache (i.e. emit __ldg loads)")
+      .def(
           "scheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.scheduleFusionStrategy(type);

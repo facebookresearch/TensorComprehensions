@@ -235,6 +235,7 @@ void TuningConfiguration::applyToParameters(
   useSharedMemory.apply(f);
   usePrivateMemory.apply(f);
   unrollCopyShared.apply(f);
+  useReadOnlyCache.apply(f);
   matchLibraryCalls.apply(f);
 }
 
@@ -268,6 +269,7 @@ std::vector<ParameterView> TuningConfiguration::collectParameters() {
   params.emplace_back(useSharedMemory);
   params.emplace_back(usePrivateMemory);
   params.emplace_back(unrollCopyShared);
+  params.emplace_back(useReadOnlyCache);
   params.emplace_back(matchLibraryCalls);
 
   return params;
@@ -298,6 +300,7 @@ void TuningConfiguration::fromCudaMappingOptions(
   useSharedMemory.selectValue(options.proto().use_shared_memory());
   usePrivateMemory.selectValue(options.proto().use_private_memory());
   unrollCopyShared.selectValue(options.proto().unroll_copy_shared());
+  useReadOnlyCache.selectValue(options.proto().use_readonly_cache());
 }
 
 void TuningConfiguration::fromCpuMappingOptions(
@@ -325,6 +328,7 @@ void TuningConfiguration::applyToCudaMappingOptions(
   options.useSharedMemory(useSharedMemory.value());
   options.usePrivateMemory(usePrivateMemory.value());
   options.unrollCopyShared(unrollCopyShared.value());
+  options.useReadOnlyCache(useReadOnlyCache.value());
 }
 
 void TuningConfiguration::applyToCpuMappingOptions(
@@ -338,6 +342,7 @@ TuningConfiguration::TuningConfiguration()
       useSharedMemory("use shared memory"),
       usePrivateMemory("use private memory"),
       unrollCopyShared("unroll copy shared"),
+      useReadOnlyCache("use readonly cache (i.e. emit __ldg loads)"),
       matchLibraryCalls("match library calls") {
   addValidator([](const TuningConfiguration& conf) {
     auto b0v = conf.blockParams.dims.at(0).value();
@@ -419,6 +424,7 @@ void TuningConfiguration::fixParameters(
   maybeFixScalar(fixedParams.useSharedMemory, useSharedMemory);
   maybeFixScalar(fixedParams.usePrivateMemory, usePrivateMemory);
   maybeFixScalar(fixedParams.unrollCopyShared, unrollCopyShared);
+  maybeFixScalar(fixedParams.useReadOnlyCache, useReadOnlyCache);
   maybeFixScalar(fixedParams.matchLibraryCalls, matchLibraryCalls);
 }
 
@@ -565,6 +571,11 @@ TuningParameterFixer& TuningParameterFixer::fixUsePrivateMemory(bool val) {
 
 TuningParameterFixer& TuningParameterFixer::fixUnrollCopyShared(bool val) {
   unrollCopyShared = val;
+  return *this;
+}
+
+TuningParameterFixer& TuningParameterFixer::fixUseReadOnlyCache(bool val) {
+  useReadOnlyCache = val;
   return *this;
 }
 
