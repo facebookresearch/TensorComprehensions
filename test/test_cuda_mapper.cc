@@ -926,6 +926,78 @@ def fun(float(N, K) I, float(N) O0) -> (O) {
 )TC");
 }
 
+/*
+ * Check that a 2D mean with these parameters does not produce a library call.
+ * The call is not produced because the band is tiled by 32 and 512 threads are
+ * mapped to the band.
+ * In practice, check that the library call does not appear in the code.
+ */
+TEST_F(PolyhedralMapperTest, Mean2DNonParametric_512threads) {
+  string tc = R"TC(
+def fun(float(36864, 1024) I) -> (O) {
+    O(n) +=! I(n, r_n)
+    O(n) = O(n) / (1024)
+}
+)TC";
+  auto mappingOptions =
+      DefaultOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .fixParametersBeforeScheduling(false)
+          .tile(18, 32)
+          .unroll(16)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads({512})
+          .mapToBlocks({16384})
+          .useSharedMemory(true)
+          .usePrivateMemory(false)
+          .unrollCopyShared(true);
+
+  auto code = codegenMapped(tc, mappingOptions);
+  using tc::code::cuda::kCUBReductionName;
+  EXPECT_TRUE(code.find(kCUBReductionName) == std::string::npos);
+}
+
+/*
+ * Check that a 2D mean with these parameters produce a reduction library call.
+ * In practice, check that the library call appears in the code.
+ */
+TEST_F(PolyhedralMapperTest, Mean2DNonParametric_32threads) {
+  string tc = R"TC(
+def fun(float(36864, 1024) I) -> (O) {
+    O(n) +=! I(n, r_n)
+    O(n) = O(n) / (1024)
+}
+)TC";
+  auto mappingOptions =
+      DefaultOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .fixParametersBeforeScheduling(false)
+          .tile(18, 32)
+          .unroll(16)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads({32})
+          .mapToBlocks({16384})
+          .useSharedMemory(true)
+          .usePrivateMemory(false)
+          .unrollCopyShared(true);
+
+  auto code = codegenMapped(tc, mappingOptions);
+  using tc::code::cuda::kCUBReductionName;
+  EXPECT_TRUE(code.find(kCUBReductionName) != std::string::npos);
+}
+
 static const string kTcMM = R"TC(
 def fun(float(M, K) A, float(K, N) B) -> (C) {
     C(m, n) +=! A(m, r_k) * B(r_k, n)
