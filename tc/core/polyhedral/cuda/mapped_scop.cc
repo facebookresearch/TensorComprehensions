@@ -926,23 +926,28 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
 }
 
 // Split out a single reduction tile (in the directions other than
-// the reduction) and insert reduction synchronizations outside this tile.
+// the reduction members) and insert reduction synchronizations outside
+// this tile.
 // Return a pointer to the split off tile.
 detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
     detail::ScheduleTree* band) {
   using namespace polyhedral::detail;
   size_t n = numThreads.view.size();
+  auto bandNode = band->elemAs<ScheduleTreeElemBand>();
+  auto nReduction = bandNode->nMember() - bandNode->nOuterCoincident();
 
   // The current band contains only full blocks.
   // Split off a band that iterates over these blocks,
   // such that only a single block gets mapped to thread identifiers.
-  // The mapping to thread identifier X is allowed to iterate
-  // over multiple blocks, so this direction is not tiled.
+  // The mapping of reduction members is allowed to iterate
+  // over multiple blocks, so these directions are not tiled.
   std::vector<size_t> sizes(n);
-  for (size_t i = 1; i < n; ++i) {
+  for (size_t i = nReduction; i < n; ++i) {
     sizes[n - 1 - i] = numThreads.view[i];
   }
-  sizes[n - 1] = 0;
+  for (size_t i = 0; i < nReduction; ++i) {
+    sizes[n - 1 - i] = 0;
+  }
   bandTile(band, sizes, TileOptions::ScaleTileLoops);
 
   // Insert synchronization outside the single block.
