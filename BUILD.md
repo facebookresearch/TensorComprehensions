@@ -21,8 +21,8 @@ conda create -y --name tc_build python=3.6
 conda activate tc_build
 conda install -y gflags glog protobuf gtest
 conda install -y pyyaml mkl-include pytest
-conda install -y -c nicolasvasilache llvm-tapir50 halide
-conda install pytorch torchvision cuda90 -c pytorch
+conda install -y -c nicolasvasilache llvm-tapir50 halide caffe2
+conda install -y pytorch torchvision cuda90 -c pytorch
 ```
 
 # Activate preinstalled conda in your current terminal

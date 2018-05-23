@@ -30,11 +30,9 @@ mkdir -p ${INSTALL_PREFIX}
 WITH_CAFFE2=${WITH_CAFFE2:=OFF}
 WITH_TAPIR=${WITH_TAPIR:=ON}
 PYTHON=${PYTHON:="`which python3`"}
-PROTOC=${PROTOC:="`which protoc`"}
 CORES=${CORES:=32}
 VERBOSE=${VERBOSE:=0}
 CMAKE_VERSION=${CMAKE_VERSION:="`which cmake3 || which cmake`"}
-CAFFE2_BUILD_CACHE=${CAFFE2_BUILD_CACHE:=${TC_DIR}/third-party/.caffe2_build_cache}
 CC=${CC:="`which gcc`"}
 CXX=${CXX:="`which g++`"}
 
@@ -47,13 +45,6 @@ if [[ $* == *--clean* ]]
 then
     echo "Forcing clean"
     clean="1"
-fi
-
-caffe2=""
-if [[ $* == *--caffe2* ]]
-then
-    echo "Building Caffe2"
-    caffe2="1"
 fi
 
 tc=""
@@ -135,46 +126,6 @@ function should_rebuild() {
     fi
 }
 
-function install_caffe2() {
-  mkdir -p ${TC_DIR}/third-party/pytorch/build || exit 1
-  cd       ${TC_DIR}/third-party/pytorch/build || exit 1
-
-  if ! test ${USE_CONTBUILD_CACHE} || [ ! -d "${THIRD_PARTY_INSTALL_PREFIX}/include/caffe2" ]; then
-
-  if should_rebuild ${TC_DIR}/third-party/pytorch ${CAFFE2_BUILD_CACHE}; then
-  echo "Installing Caffe2"
-  if should_reconfigure .. .build_cache; then
-    echo "Reconfiguring Caffe2"
-    rm -rf * || exit 1
-
-    CMAKE_ARGS=("-DBUILD_BINARY=OFF -DCMAKE_CXX_FLAGS='-fno-var-tracking-assignments' -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DUSE_GLOG=OFF -DUSE_GFLAGS=OFF -DUSE_GLOO=OFF -DUSE_NCCL=OFF -DUSE_LMDB=OFF -DUSE_LEVELDB=OFF -DBUILD_TEST=OFF -DUSE_OPENCV=OFF -DUSE_OPENMP=OFF -DCMAKE_INSTALL_MESSAGE=NEVER")
-    CMAKE_ARGS+=("-DCMAKE_PREFIX_PATH=${THIRD_PARTY_INSTALL_PREFIX} -DCMAKE_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DBUILD_PYTHON=OFF -DUSE_NNPACK=OFF -DPROTOBUF_PROTOC_EXECUTABLE=${THIRD_PARTY_INSTALL_PREFIX}/bin/protoc -DUSE_CUDA=${WITH_CUDA} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX}")
-
-    if ! test ${USE_CONTBUILD_CACHE}; then
-      CMAKE_ARGS+=("-DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR}")
-    else
-      CMAKE_ARGS+=("-DCUDA_ARCH_NAME='Maxwell'")
-    fi
-
-    if [[ -L ${CCACHE_WRAPPER_DIR}/nvcc && $($(readlink ${CCACHE_WRAPPER_DIR}/nvcc) --version | grep ccache | wc -c) -ne 0 ]]; then
-      CMAKE_ARGS+=("-DCUDA_NVCC_EXECUTABLE=${CCACHE_WRAPPER_DIR}/nvcc")
-    fi
-
-    ${CMAKE_VERSION} "${TC_DIR}/third-party/pytorch" ${CMAKE_ARGS[*]}
-
-  fi
-
-  make -j $CORES install -s || exit 1
-
-  set_cache .. .build_cache
-  set_bcache ${TC_DIR}/third-party/pytorch ${CAFFE2_BUILD_CACHE}
-  fi
-
-  echo "Successfully installed caffe2"
-
-  fi
-}
-
 function install_tc() {
   mkdir -p ${TC_DIR}/build || exit 1
   cd       ${TC_DIR}/build || exit 1
@@ -192,7 +143,7 @@ function install_tc() {
         -DCMAKE_PREFIX_PATH=${THIRD_PARTY_INSTALL_PREFIX}/lib/cmake \
         -DTHIRD_PARTY_INSTALL_PREFIX=${THIRD_PARTY_INSTALL_PREFIX} \
         -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-        -DPROTOBUF_PROTOC_EXECUTABLE=${PROTOC} \
+        -DPROTOBUF_PROTOC_EXECUTABLE=${THIRD_PARTY_INSTALL_PREFIX}/bin/protoc \
         -DCLANG_PREFIX=${CLANG_PREFIX} \
         -DCUDA_TOOLKIT_ROOT_DIR=${CUDA_TOOLKIT_ROOT_DIR} \
         -DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR} \
@@ -208,17 +159,6 @@ function install_tc() {
 
   echo "Successfully installed TC"
 }
-
-if ! test -z $caffe2 || ! test -z $all ; then
-    if [[ $(find ${THIRD_PARTY_INSTALL_PREFIX} -name libcaffe2_gpu.so) ]]; then
-        echo "caffe2 found"
-    else
-        echo "no files found"
-        if test ${WITH_CAFFE2} == ON; then
-            install_caffe2
-        fi
-    fi
-fi
 
 if ! test -z $tc || ! test -z $all; then
     install_tc

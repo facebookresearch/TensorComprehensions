@@ -15,6 +15,3 @@
 [submodule "third-party/pybind11"]
  	path = third-party/pybind11
 	url = https://github.com/pybind/pybind11.git
-[submodule "pytorch"]
-	path = third-party/pytorch
-	url = git@github.com:pytorch/pytorch.git

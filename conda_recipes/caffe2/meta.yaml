@@ -3,8 +3,8 @@ package:
   version: "{{ environ.get('CAFFE2_BUILD_VERSION') }}"
 
 source:
-  git_url: https://github.com/caffe2/caffe2.git
-  git_rev: "{{ environ.get('CAFFE2_GIT_HASH') }}"
+  git_url: https://github.com/pytorch/pytorch.git
+  git_rev: "{{ environ.get('PYTORCH_GIT_HASH') }}"
 
 build:
   number: {{ environ.get('CAFFE2_BUILD_NUMBER') }}
@@ -14,28 +14,20 @@ requirements:
   build:
     - cmake
     - future
-    - gflags==2.4.4
-    - glog==0.3.9
-    - protobuf==3.4.1
+    - gflags==2.2.1
+    - glog==0.3.5
+    - protobuf==3.5.2
     - numpy
     - six
   run:
     - future
-    - gflags==2.4.4
-    - glog==0.3.9
-    - protobuf==3.4.1
+    - gflags==2.2.1
+    - glog==0.3.5
+    - protobuf==3.5.2
     - numpy
     - six
-
-test:
-  imports:
-    - caffe2.python.core
 
 about:
   home: https://caffe2.ai/
   license: BSD
   summary: Caffe2 is a lightweight, modular, and scalable deep learning framework.
-
-extra:
-  recipe-maintainers:
-    - prigoyal
