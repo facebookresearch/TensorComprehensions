@@ -298,6 +298,42 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// TensorAddStrided
+//   O(n, m) += I0_view(n, m) * I1_view(n, m)
+///////////////////////////////////////////////////////////////////////////////
+TEST_F(TcCudaMapperTest, TensorAddStrided) {
+  N = 64;
+  M = 64;
+  at::Tensor I0 = at::CUDA(at::kFloat).rand({N, M});
+  at::Tensor I0_view =
+      I0.type().tensor().set_(*I0.storage(), 0, {N, M}, {1, 16});
+  at::Tensor I1 = at::CUDA(at::kFloat).rand({N, M});
+  at::Tensor I1_view =
+      I1.type().tensor().set_(*I1.storage(), 0, {N, M}, {1, 16});
+  std::vector<at::Tensor> inputs = {I0_view, I1_view};
+
+  static constexpr auto TC = R"TC(
+def tensoraddstrided(float(N, M) I0_view, float(N, M) I1_view) -> (O) {
+    O(n, m) += I0_view(n, m) + I1_view(n, m)
+}
+  )TC";
+
+  auto checkFun = [](const std::vector<at::Tensor>& ins,
+                     std::vector<at::Tensor>& outs) { return true; };
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  auto name = "tensoraddstrided";
+  auto res = Check(TC, name, options, inputs, checkFun);
+  // This test should be modified  when strided tensors are handled
+  std::string expected =
+      "const float32 (*I0_view)[64] = "
+      "reinterpret_cast<const float32 (*)[64]>(pI0_view)";
+
+  ASSERT_NE(std::string::npos, res.second.find(expected))
+      << "In resulting code:\n"
+      << res.second << "\nfound unexpected: " << expected;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Lookup Table
 //   O(b, n) +=! LUT(I(b, n), r_r)
 ///////////////////////////////////////////////////////////////////////////////
