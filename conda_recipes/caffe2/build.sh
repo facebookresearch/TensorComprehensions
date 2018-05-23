@@ -24,34 +24,39 @@ set -e
 echo "Installing caffe2 to ${PREFIX}"
 CMAKE_VERSION=${CMAKE_VERSION:="`which cmake3 || which cmake`"}
 PYTHON=${PYTHON:="`which python3`"}
-PROTOC=${PROTOC:="`which protoc`"}
+THIRD_PARTY_INSTALL_PREFIX=${CONDA_PREFIX}
+
+# The following hardcoding is very ugly but I don't know of many solutions to build
+# conda packages with GPU support.
+# Ohai, turns out we're not the only ones doing this..:
+# https://github.com/pytorch/pytorch/blob/master/conda/caffe2/full/build.sh#L38
+CUDA_TOOLKIT_ROOT_DIR=/public/apps/cuda/9.0/
+CUDNN_ROOT_DIR=/public/apps/cudnn/v7.0/cuda/
 
 PYTHON_ARGS="$(python ./scripts/get_python_cmake_flags.py)"
 CMAKE_ARGS=()
 
 # Build with minimal required libraries
-CMAKE_ARGS+=("-DUSE_LEVELDB=OFF")
-CMAKE_ARGS+=("-DUSE_MPI=OFF")
-
-CMAKE_ARGS+=("-DBUILD_BINARY=OFF")
-CMAKE_ARGS+=("-DUSE_GLOG=ON")
-CMAKE_ARGS+=("-DUSE_GFLAGS=ON")
-CMAKE_ARGS+=("-DUSE_NNPACK=OFF")
+CMAKE_ARGS=("-DBUILD_BINARY=OFF")
+CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS='-fno-var-tracking-assignments'")
+CMAKE_ARGS+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
+CMAKE_ARGS+=("-DUSE_GLOG=OFF")
+CMAKE_ARGS+=("-DUSE_GFLAGS=OFF")
 CMAKE_ARGS+=("-DUSE_GLOO=OFF")
+CMAKE_ARGS+=("-DUSE_NCCL=OFF")
 CMAKE_ARGS+=("-DUSE_LMDB=OFF")
+CMAKE_ARGS+=("-DUSE_LEVELDB=OFF")
+CMAKE_ARGS+=("-DBUILD_TEST=OFF")
 CMAKE_ARGS+=("-DUSE_OPENCV=OFF")
 CMAKE_ARGS+=("-DUSE_OPENMP=OFF")
 CMAKE_ARGS+=("-DCMAKE_INSTALL_MESSAGE=NEVER")
-CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS='-fno-var-tracking-assignments'")
-CMAKE_ARGS+=("-DBUILD_TEST=OFF")
-CMAKE_ARGS+=("-DPROTOBUF_PROTOC_EXECUTABLE=${PROTOC}")
-CMAKE_ARGS+=("-DCMAKE_EXPORT_COMPILE_COMMANDS=ON")
-CMAKE_ARGS+=("-DPYTHON_EXECUTABLE=${PYTHON}")
-
-
-# Build with CUDA
+CMAKE_ARGS+=("-DCMAKE_BUILD_TYPE=Release")
+CMAKE_ARGS+=("-DBUILD_PYTHON=OFF")
+CMAKE_ARGS+=("-DUSE_NNPACK=OFF")
+CMAKE_ARGS+=("-DPROTOBUF_PROTOC_EXECUTABLE=${THIRD_PARTY_INSTALL_PREFIX}/bin/protoc")
 CMAKE_ARGS+=("-DUSE_CUDA=ON")
-CMAKE_ARGS+=("-DUSE_NCCL=OFF")
+CMAKE_ARGS+=("-DCUDNN_ROOT_DIR=${CUDNN_ROOT_DIR}")
+CMAKE_ARGS+=("-DCUDA_TOOLKIT_ROOT_DIR=${CUDA_TOOLKIT_ROOT_DIR}")
 
 # Install under specified prefix
 CMAKE_ARGS+=("-DCMAKE_INSTALL_PREFIX=$PREFIX")

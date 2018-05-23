@@ -1,5 +1,3 @@
-find_package(Protobuf REQUIRED)
-
 #Default protobuf function err'd with python,
 #  borrowing caffe2 function to generate
 function(tc_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
