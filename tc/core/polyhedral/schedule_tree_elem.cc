@@ -193,8 +193,8 @@ bool ScheduleTreeElemBand::operator==(const ScheduleTreeElemBand& other) const {
   // further comparison.  Compare its explicit domains instead.  Note that
   // .domain() returns a zero-dimensional union set (in purely parameter space)
   // if there is no explicit domain.
-  bool mupaIs0D = mupa_.dim(isl::dim_type::set) == 0;
-  bool otherMupaIs0D = other.mupa_.dim(isl::dim_type::set) == 0;
+  bool mupaIs0D = nMember() == 0;
+  bool otherMupaIs0D = other.nMember() == 0;
   if (mupaIs0D ^ otherMupaIs0D) {
     return false;
   }
