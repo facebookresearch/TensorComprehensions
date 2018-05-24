@@ -192,7 +192,7 @@ size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
     if (!bandElem) {
       continue;
     }
-    depth += bandElem->mupa_.dim(isl::dim_type::set);
+    depth += bandElem->nMember();
   }
   return depth;
 }
