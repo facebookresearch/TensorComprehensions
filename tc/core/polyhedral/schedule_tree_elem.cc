@@ -127,7 +127,7 @@ std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
   isl::ctx ctx(mupa.get_ctx());
   std::unique_ptr<ScheduleTreeElemBand> band(new ScheduleTreeElemBand);
   band->mupa_ = mupa.floor();
-  size_t n = band->mupa_.dim(isl::dim_type::set);
+  size_t n = band->mupa_.size();
   band->coincident_ = vector<bool>(n, false);
   band->unroll_ = vector<bool>(n, false);
   return band;
@@ -135,7 +135,7 @@ std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
 
 // Return the number of scheduling dimensions in the band
 size_t ScheduleTreeElemBand::nMember() const {
-  size_t res = mupa_.dim(isl::dim_type::set);
+  size_t res = mupa_.size();
   CHECK_EQ(res, coincident_.size());
   CHECK_EQ(res, unroll_.size());
   return res;
