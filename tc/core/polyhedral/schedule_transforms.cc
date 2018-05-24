@@ -293,8 +293,8 @@ ScheduleTree*
 bandSplitOut(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
   auto band = tree->elemAs<ScheduleTreeElemBand>();
   CHECK(band);
-  auto schedule = band->mupa_;
-  if (pos != schedule.dim(isl::dim_type::set) - 1) {
+  auto size = band->nMember();
+  if (pos != size - 1) {
     tree = bandSplit(relativeRoot, tree, pos + 1);
   }
   if (pos != 0) {
