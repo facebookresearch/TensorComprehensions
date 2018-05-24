@@ -188,6 +188,7 @@ class TuningConfiguration {
   BoolParameter useSharedMemory;
   BoolParameter usePrivateMemory;
   BoolParameter unrollCopyShared;
+  BoolParameter useReadOnlyCache;
   BoolParameter matchLibraryCalls;
 
  private:
@@ -209,6 +210,7 @@ class TuningParameterFixer {
   TuningParameterFixer& fixUseSharedMemory(bool val);
   TuningParameterFixer& fixUsePrivateMemory(bool val);
   TuningParameterFixer& fixUnrollCopyShared(bool val);
+  TuningParameterFixer& fixUseReadOnlyCache(bool val);
   TuningParameterFixer& fixMatchLibraryCalls(bool val);
 
  private:
@@ -223,6 +225,7 @@ class TuningParameterFixer {
   llvm::Optional<bool> useSharedMemory;
   llvm::Optional<bool> usePrivateMemory;
   llvm::Optional<bool> unrollCopyShared;
+  llvm::Optional<bool> useReadOnlyCache;
   llvm::Optional<bool> matchLibraryCalls;
 
   friend class TuningConfiguration;

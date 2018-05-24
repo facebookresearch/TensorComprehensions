@@ -61,25 +61,28 @@ class MappedScop {
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
       ::tc::Block block,
-      uint64_t unroll_)
+      uint64_t unroll_,
+      bool useReadOnlyCache_)
       : scop_(std::move(scop)),
         numBlocks(grid),
         numThreads(block),
-        unroll(unroll_) {}
+        unroll(unroll_),
+        useReadOnlyCache(useReadOnlyCache_) {}
 
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
     return std::unique_ptr<MappedScop>(new MappedScop(
-        std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1));
+        std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
   }
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
       ::tc::Block block,
-      uint64_t unroll) {
+      uint64_t unroll,
+      bool useReadOnlyCache) {
     return std::unique_ptr<MappedScop>(
-        new MappedScop(std::move(scop), grid, block, unroll));
+        new MappedScop(std::move(scop), grid, block, unroll, useReadOnlyCache));
   }
 
   // Apply the hand-written OuterBlockInnerThread mapping strategy.
@@ -206,6 +209,7 @@ class MappedScop {
   const ::tc::Grid numBlocks;
   const ::tc::Block numThreads;
   const uint64_t unroll;
+  const bool useReadOnlyCache;
 
  private:
   // Information about a detected reduction that can potentially

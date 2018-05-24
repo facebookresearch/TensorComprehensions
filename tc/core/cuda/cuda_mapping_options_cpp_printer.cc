@@ -32,6 +32,8 @@ CudaMappingOptionsCppPrinter& operator<<(
       "usePrivateMemory", cudaOptions.proto().use_private_memory());
   prn.printBooleanOption(
       "unrollCopyShared", cudaOptions.proto().unroll_copy_shared());
+  prn.printBooleanOption(
+      "useReadOnlyCache", cudaOptions.proto().use_readonly_cache());
   if (cudaOptions.proto().has_max_shared_memory()) {
     prn.printValueOption(
         "maxSharedMemory", cudaOptions.proto().max_shared_memory());
