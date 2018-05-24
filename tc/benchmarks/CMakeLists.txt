@@ -17,6 +17,7 @@ find_library(CUDA_CUDNN_LIBRARIES cudnn
 ################################################################################
 set(BENCHMARKS
   batchmatmul
+  convolution
   group_convolution
   group_normalization
   kronecker
