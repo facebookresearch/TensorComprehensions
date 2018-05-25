@@ -731,6 +731,25 @@ ScheduleTreeUPtr gistedFilter(isl::union_set filter, ScheduleTreeUPtr child) {
 
 } // namespace
 
+bool canOrderBefore(
+    ScheduleTree* root,
+    ScheduleTree* tree,
+    isl::union_set filter,
+    isl::union_map dependences) {
+  // Create an ordering schedule function filter -> 0; other -> 1.
+  auto other = activeDomainPoints(root, tree).subtract(filter);
+  auto ctx = root->ctx_;
+  auto space = isl::space(ctx, 0).unnamed_set_from_params(1);
+  auto zero = isl::multi_val::zero(space);
+  auto one = zero.set_val(0, isl::val::one(ctx));
+  auto order = isl::multi_union_pw_aff(filter, zero);
+  order = order.union_add(isl::multi_union_pw_aff(other, one));
+
+  // Check that this ordering preserves all dependences.
+  auto preserved = dependences.lex_lt_at(order).unite(dependences.eq_at(order));
+  return dependences.is_subset(preserved);
+}
+
 void orderBefore(
     ScheduleTree* root,
     ScheduleTree* tree,

@@ -118,52 +118,19 @@ bool isAlmostIdentityReduction(isl::pw_aff pa, const Scop& scop) {
   return false;
 }
 
-/*
- * Return the identifier that maps to "stmt".
- */
-isl::id statementId(const Scop& scop, const Halide::Internal::Stmt& stmt) {
-  for (auto kvp : scop.halide.statements) {
-    if (kvp.second.same_as(stmt)) {
-      return kvp.first;
-    }
-  }
-  CHECK(false) << "no id recorded for statement" << stmt;
-  return isl::id();
-}
-
 } // namespace
 
-std::pair<isl::union_set, isl::union_set> reductionInitsUpdates(
-    isl::union_set domain,
-    const Scop& scop) {
-  auto initUnion = isl::union_set::empty(domain.get_space());
-  auto update = initUnion;
-  std::unordered_set<isl::id, isl::IslIdIslHash> init;
-  std::vector<isl::set> nonUpdate;
-  // First collect all the update statements,
-  // the corresponding init statement and all non-update statements.
-  domain.foreach_set([&init, &update, &nonUpdate, &scop](isl::set set) {
+isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop) {
+  auto update = isl::union_set::empty(domain.get_space());
+  domain.foreach_set([&update, &scop](isl::set set) {
     auto setId = set.get_tuple_id();
     Halide::Internal::Stmt initStmt;
     std::vector<size_t> reductionDims;
     if (isReductionUpdateId(setId, scop, initStmt, reductionDims)) {
       update = update.unite(set);
-      init.emplace(statementId(scop, initStmt));
-    } else {
-      nonUpdate.emplace_back(set);
     }
   });
-  // Then check if all the non-update statements are init statements
-  // that correspond to the update statements found.
-  // If not, return an empty list of update statements.
-  for (auto set : nonUpdate) {
-    if (init.count(set.get_tuple_id()) != 1) {
-      return std::pair<isl::union_set, isl::union_set>(
-          initUnion, isl::union_set::empty(domain.get_space()));
-    }
-    initUnion = initUnion.unite(set);
-  }
-  return std::pair<isl::union_set, isl::union_set>(initUnion, update);
+  return update;
 }
 
 bool isReductionMember(

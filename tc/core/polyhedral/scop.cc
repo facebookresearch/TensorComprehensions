@@ -390,6 +390,16 @@ void Scop::computeAllDependences() {
   dependences = flowDeps.unite(falseDeps).coalesce();
 }
 
+isl::union_map Scop::activeDependences(detail::ScheduleTree* tree) {
+  auto prefix = prefixScheduleMupa(scheduleRoot(), tree);
+  auto domain = activeDomainPoints(scheduleRoot(), tree);
+  auto active = dependences;
+  active = active.intersect_domain(domain);
+  active = active.intersect_range(domain);
+  active = active.eq_at(prefix);
+  return active;
+}
+
 std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
     isl::schedule_constraints constraints,
     const SchedulerOptionsView& schedulerOptions) {
