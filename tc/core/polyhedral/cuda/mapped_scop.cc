@@ -215,9 +215,8 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   // a single reduction for now.
   // Support for multiple reductions would require a check
   // that these reductions do not interfere with each other.
-  auto initsUpdates = reductionInitsUpdates(band->mupa_.domain(), scop());
-  auto inits = initsUpdates.first;
-  auto updates = initsUpdates.second;
+  auto domain = band->mupa_.domain();
+  auto updates = reductionUpdates(domain, scop());
   if (updates.n_set() != 1) {
     return false;
   }
@@ -232,12 +231,19 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   if (!isReductionMember(member, updates, scop())) {
     return false;
   }
-  // Order the init statements (if any) before the update statements
+  // Order the other statements (if any) before the update statements
   // to ensure the band from which the reduction band has been split off
   // only contains update statements.
-  // Note that this relies on the outer members being coincident.
-  if (!inits.is_empty()) {
-    orderBefore(scop_->scheduleRoot(), tree, inits);
+  // Only do this if it doesn't violate any dependences.
+  // TODO (#454): order statements before or after the reduction based on
+  // dependences.
+  auto other = domain.subtract(updates);
+  if (!other.is_empty()) {
+    auto dependences = scop_->activeDependences(tree);
+    if (!canOrderBefore(scop_->scheduleRoot(), tree, other, dependences)) {
+      return false;
+    }
+    orderBefore(scop_->scheduleRoot(), tree, other);
   }
   reductionBandUpdates_.emplace(tree, Reduction(updateIds));
   return true;

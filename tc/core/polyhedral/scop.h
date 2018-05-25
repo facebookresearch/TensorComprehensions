@@ -471,6 +471,9 @@ struct Scop {
   // Do the simplest possible dependence analysis.
   // Compute all RAW, WAR, and WAW dependences, and save them in dependences.
   void computeAllDependences();
+  // Return the set of dependences that are active
+  // at the given position.
+  isl::union_map activeDependences(detail::ScheduleTree* tree);
 
  public:
   // Halide stuff
