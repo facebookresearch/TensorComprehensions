@@ -11,8 +11,7 @@ target_include_directories(tc_version INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 if (WITH_CUDA)
   find_library(CUDA_LIBDEVRT_PATH libcudadevrt.a
     HINTS ${CUDA_TOOLKIT_ROOT_DIR}
-    PATH_SUFFIXES lib lib64)
-  SET(CUDA_LIBDEVRT_PATH ${CUDA_LIBDEVRT_PATH})
+    PATH_SUFFIXES lib lib64 targets/x86_64-linux/lib targets/x86_64-linux/lib/stubs)
   configure_file(cuda_version.cc.in cuda_version.cc)
   add_library(tc_cuda_version STATIC ${CMAKE_CURRENT_BINARY_DIR}/cuda_version.cc)
   SET_TARGET_PROPERTIES(tc_cuda_version PROPERTIES LINKER_LANGUAGE CXX)

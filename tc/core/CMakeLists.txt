@@ -45,12 +45,18 @@ target_link_libraries(
   -lLLVM
 
   tc_lang
-  tc_cuda_version
+  tc_version
   tc_proto
 )
+
 if (WITH_BINDINGS)
   add_dependencies(tc_core generate_isl_cpp_h)
 endif()
+
+if(WITH_CUDA)
+ target_link_libraries(tc_cuda_version)
+endif()
+
 install(
   TARGETS
   tc_core
