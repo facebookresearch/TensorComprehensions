@@ -108,8 +108,8 @@ isl::space add_range(isl::space space, unsigned dim) {
 
 } // namespace
 
-// Access has the shape :: [D -> ref] -> O
-// Extract the reference ID, store it separatly and simplify the access.
+// Access has the shape :: [S -> ref] -> O
+// Extract the reference ID, store it separately and simplify the access.
 std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
     isl::map originalAccess,
     isl::map scopedAccess,
