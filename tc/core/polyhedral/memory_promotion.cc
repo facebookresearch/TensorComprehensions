@@ -117,8 +117,9 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
   auto refId = scopedAccess.get_space().domain().unwrap().get_tuple_id(
       isl::dim_type::out);
+  scopedAccess = scopedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
-  ref->scopedAccess = scopedAccess.domain_factor_domain();
+  ref->scopedAccess = scopedAccess;
   ref->type = type;
   ref->refId = refId;
   auto group = std::unique_ptr<TensorReferenceGroup>(new TensorReferenceGroup);
