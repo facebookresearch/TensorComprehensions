@@ -416,6 +416,10 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
       O1[c0][c1] = 0.000000f;
+    }
+  }
+  for (int c0 = 0; c0 < N; c0 += 1) {
+    for (int c1 = 0; c1 < N; c1 += 1) {
       for (int c2 = 0; c2 < N; c2 += 1) {
         for (int c3 = 0; c3 < N; c3 += 1) {
           O1[c0][c1] = (O1[c0][c1] + (A[c0][c1][c2][c3]*B[c0][c1]));

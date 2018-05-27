@@ -834,38 +834,6 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
     s = tagReduction.mutate(s);
   }
 
-  // Temporary hack: Fuse reduction initializations into the
-  // updates. Shouldn't matter because we're going to reschedule
-  // everything anyway, but starting at this point is more similar to
-  // the code this replaces. Only correct because we only currently
-  // create update definitions when there are reductions.
-  class FuseReductions : public IRMutator2 {
-    using IRMutator2::visit;
-    Stmt visit(const Block* op) override {
-      const For* first = op->first.as<For>();
-      const For* rest = op->rest.as<For>();
-      if (first && rest && equal(first->min, rest->min) &&
-          equal(first->extent, rest->extent) &&
-          first->for_type == rest->for_type &&
-          replace_all(first->name, ".s0.", ".s1.") == rest->name) {
-        Stmt body = rest->body;
-        body =
-            substitute(rest->name, Variable::make(Int(32), first->name), body);
-        body = mutate(Block::make(first->body, body));
-        return For::make(
-            first->name,
-            first->min,
-            first->extent,
-            first->for_type,
-            first->device_api,
-            body);
-      } else {
-        return IRMutator2::visit(op);
-      }
-    }
-  } fuser;
-  s = fuser.mutate(s);
-
   // Trim ProducerConsumer annotations. TC doesn't use them.
   class RemoveProducerConsumer : public IRMutator2 {
     using IRMutator2::visit;
