@@ -16,7 +16,6 @@
 #include "tc/core/halide2isl.h"
 
 #include <algorithm>
-#include <numeric>
 #include <unordered_set>
 
 #include "tc/core/constants.h"
@@ -499,33 +498,11 @@ std::vector<Reduction> findReductions(const Stmt& s) {
       }
     }
 
-    // Keep track of any reduction variable name for use in isValidReduction
+    // Keep track of any reduction variable name for use in visit(Provide*)
     void visit(const Variable* op) {
       if (op->reduction_domain.defined()) {
         reductionVars.insert(op->name);
       }
-    }
-
-    // Check that the given update node, together with the corresponding
-    // init node form a proper reduction pair.
-    // In particular, check that they share some outer For nodes and
-    // that the variables of the additional For nodes surrounding
-    // the update node are all reduction variables.
-    bool isValidReductionUpdate(const Provide* op) {
-      const auto& opInitVars = initVars[op->name];
-      auto n = opInitVars.size();
-      if (vars.size() <= n) {
-        return false;
-      }
-      if (!std::equal(opInitVars.begin(), opInitVars.end(), vars.begin())) {
-        return false;
-      }
-      for (auto i = vars.begin() + n; i != vars.end(); ++i) {
-        if (reductionVars.count(*i) == 0) {
-          return false;
-        }
-      }
-      return true;
     }
 
     // Keep track of the names of the outer For nodes.
@@ -535,32 +512,28 @@ std::vector<Reduction> findReductions(const Stmt& s) {
       vars.pop_back();
     }
 
-    // Check if the node is an init node, keeping track of it,
-    // or an update node corresponding to init node that was found before,
-    // updating the information about the reduction.
-    // In particular, double-check that the pair are in the right
-    // relative positions and collect the positions of the reduction
+    // Check if the node is an update node with at least one reduction
+    // dimension, keeping track of the information about the reduction.
+    // In particular, collect the positions of the reduction
     // dimensions in the update statement domain.
     // Visit the children first to ensure that all relevant
     // reduction variables have been found first.
     void visit(const Provide* op) {
       IRVisitor::visit(op);
-      if (isReductionInit(op)) {
-        reductions[op->name].init = op;
-        initVars[op->name] = vars;
-      } else if (isReductionUpdate(op)) {
-        if (isValidReductionUpdate(op)) {
+      if (isReductionUpdate(op)) {
+        std::vector<size_t> dims;
+        auto n = vars.size();
+        for (size_t i = 0; i < n; ++i) {
+          if (reductionVars.count(vars[i]) != 0) {
+            dims.emplace_back(i);
+          }
+        }
+        if (dims.size() > 0) {
           auto& p = reductions[op->name];
-          CHECK(p.init.defined())
-              << "Missing reduction init or (unsupported) multiple updates";
           CHECK(!p.update.defined())
               << "Multiple reduction updates not yet implemented";
           p.update = op;
-          auto n = initVars[op->name].size();
-          p.dims.resize(vars.size() - n);
-          std::iota(p.dims.begin(), p.dims.end(), n);
-        } else {
-          reductions.erase(op->name);
+          p.dims = dims;
         }
       }
     }
@@ -570,8 +543,6 @@ std::vector<Reduction> findReductions(const Stmt& s) {
     std::unordered_set<std::string> reductionVars;
     // The names of the outer For nodes, outermost to innermost.
     std::vector<std::string> vars;
-    // For each init node, the names of its outer For nodes.
-    std::map<std::string, std::vector<std::string>> initVars;
     std::map<std::string, Reduction> reductions;
   } finder;
   s.accept(&finder);
