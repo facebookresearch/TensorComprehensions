@@ -61,6 +61,13 @@ struct PolyhedralMapperTest : public ::testing::Test {
     joinBandsIterative(scop->scheduleRoot()->child({0}), true);
     return scop;
   }
+  std::unique_ptr<Scop> PrepareAndJoinBandsMatMul() {
+    auto scop = Prepare(makeMatmulTc());
+    scop = Scop::makeScheduled(*scop, SchedulerOptions().view);
+    auto root = scop->scheduleRoot();
+    bandSplit(root, root->child({0}), 2);
+    return scop;
+  }
 
   std::unique_ptr<MappedScop> makeUnmapped(std::string tc) {
     return MappedScop::makeOneBlockOneThread(Prepare(tc));
@@ -511,7 +518,7 @@ constexpr auto kExpectedMatmul_64_64_64 =
 )CUDA";
 
 TEST_F(PolyhedralMapperTest, MergedContexts) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
 
   // Unit test claims to use scop->globalParameterContext properly
   auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
@@ -526,16 +533,16 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
 }
 
 TEST_F(PolyhedralMapperTest, Match1) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
   auto schedule = scop->scheduleRoot();
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto f = match(
-      sequence(
+      band(sequence(
           filter([](isl::union_set f) {
             return f.get_space().dim(isl::dim_type::param) == 3;
           }),
-          filter(band())),
+          filter())),
       schedule);
   EXPECT_EQ(1u, f.size());
 }
@@ -553,37 +560,31 @@ def fun(float(M, N) I) -> (O) {
 }
 
 TEST_F(PolyhedralMapperTest, MatmulTC) {
-  string tc = R"TC(
-def fun(float(M, K) A, float(K, N) B) -> (C) {
-    C(m, n) +=! A(m, r_k) * B(r_k, n)
-}
-)TC";
-
-  auto scop = PrepareAndJoinBands(tc);
+  auto scop = PrepareAndJoinBandsMatMul();
   auto tileOptions = TileOptions::ShiftPointLoops | TileOptions::ScaleTileLoops;
   TileAndCheckStructuralEquality(*scop, tileOptions, {3ul, 4ul});
 }
 
 TEST_F(PolyhedralMapperTest, MatmulShiftScale) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
   auto tileOptions = TileOptions::ShiftPointLoops | TileOptions::ScaleTileLoops;
   TileAndCheckStructuralEquality(*scop, tileOptions, {3ul, 4ul});
 }
 
 TEST_F(PolyhedralMapperTest, MatmulShift) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
   auto tileOptions = TileOptions::ShiftPointLoops;
   TileAndCheckStructuralEquality(*scop, tileOptions, {3ul, 4ul});
 }
 
 TEST_F(PolyhedralMapperTest, MatmulScale) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
   auto tileOptions = TileOptions::ScaleTileLoops;
   TileAndCheckStructuralEquality(*scop, tileOptions, {3ul, 4ul});
 }
 
 TEST_F(PolyhedralMapperTest, MatmulNoshiftNoscale) {
-  auto scop = PrepareAndJoinBands(makeMatmulTc());
+  auto scop = PrepareAndJoinBandsMatMul();
   auto tileOptions = TileOptions();
   TileAndCheckStructuralEquality(*scop, tileOptions, {3ul, 4ul});
 }
