@@ -248,52 +248,68 @@ void TuningHarness<Backend>::runOneIteration(
       CHECK(executors_.empty());
       CHECK(configurations_.empty());
       auto& candidates = searchStrategy.candidatesOfStep(step);
-      // Initialize for this round
-      currentCompilationJob_.store(0);
-      numEvaluations_.store(0);
-      Printer printer(
-          iteration,
-          step,
-          candidates.size(),
-          currentCompilationJob_,
-          numEvaluations_);
-      auto logIterations = FLAGS_tuner_gen_log_generations;
-      ScopeGuard sgPrinter([logIterations, &printer]() {
-        printer.stop();
-        if (logIterations) {
-          printer.printAll();
-        }
+      auto firstNew = std::partition(
+          candidates.begin(),
+          candidates.end(),
+          [](const std::unique_ptr<CandidateConfiguration>& c) {
+            return c->runtime != Duration::zero();
+          });
+      GeneticSearch::Population newCandidates(
+          std::distance(firstNew, candidates.end()));
+      std::move(firstNew, candidates.end(), newCandidates.begin());
+      ScopeGuard candidatesSG([&]() {
+        std::move(newCandidates.begin(), newCandidates.end(), firstNew);
       });
 
-      // Just spawn and join new threads for each iteration
-      std::vector<std::thread> cpuCompilationThreads;
-      cpuCompilationThreads.reserve(FLAGS_tuner_threads);
-      ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
-        for (auto& cpuCompilationThread : cpuCompilationThreads) {
-          cpuCompilationThread.join();
-        }
-      });
-      for (size_t i = 0; i < FLAGS_tuner_threads; ++i) {
-        cpuCompilationThreads.emplace_back(
-            [this, &candidates]() { this->doCompile(candidates); });
-      }
-
-      // Just spawn and join new threads for each device
-      std::vector<std::thread> workerThreads;
-      workerThreads.reserve(devices.size());
-      LOG_IF(INFO, tc::FLAGS_debug_tuner)
-          << "Start evaluation: " << devices.size() << " " << executors_.size()
-          << " " << configurations_.size();
-      ScopeGuard sgDeviceWorkerThreads([&workerThreads]() {
-        for (auto& workerThread : workerThreads) {
-          workerThread.join();
-        }
-      });
-      auto populationSize = candidates.size();
-      for (auto device : devices) {
-        workerThreads.emplace_back([this, device, populationSize, &printer]() {
-          this->doEvaluate(device, populationSize, printer);
+      if (not newCandidates.empty()) {
+        auto populationSize = newCandidates.size();
+        // Initialize for this round
+        currentCompilationJob_.store(0);
+        numEvaluations_.store(0);
+        Printer printer(
+            iteration,
+            step,
+            populationSize,
+            currentCompilationJob_,
+            numEvaluations_);
+        auto logIterations = FLAGS_tuner_gen_log_generations;
+        ScopeGuard sgPrinter([logIterations, &printer]() {
+          printer.stop();
+          if (logIterations) {
+            printer.printAll();
+          }
         });
+
+        // Just spawn and join new threads for each iteration
+        std::vector<std::thread> cpuCompilationThreads;
+        cpuCompilationThreads.reserve(FLAGS_tuner_threads);
+        ScopeGuard sgCompilationThreads([&cpuCompilationThreads]() {
+          for (auto& cpuCompilationThread : cpuCompilationThreads) {
+            cpuCompilationThread.join();
+          }
+        });
+        for (size_t i = 0; i < FLAGS_tuner_threads; ++i) {
+          cpuCompilationThreads.emplace_back(
+              [this, &newCandidates]() { this->doCompile(newCandidates); });
+        }
+
+        // Just spawn and join new threads for each device
+        std::vector<std::thread> workerThreads;
+        workerThreads.reserve(devices.size());
+        LOG_IF(INFO, tc::FLAGS_debug_tuner)
+            << "Start evaluation: " << devices.size() << " "
+            << executors_.size() << " " << configurations_.size();
+        ScopeGuard sgDeviceWorkerThreads([&workerThreads]() {
+          for (auto& workerThread : workerThreads) {
+            workerThread.join();
+          }
+        });
+        for (auto device : devices) {
+          workerThreads.emplace_back(
+              [this, device, populationSize, &printer]() {
+                this->doEvaluate(device, populationSize, printer);
+              });
+        }
       }
     }
     searchStrategy.finishStep(step);

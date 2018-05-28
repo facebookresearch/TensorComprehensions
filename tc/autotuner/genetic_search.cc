@@ -348,7 +348,6 @@ void GeneticSearch::generateSelectionPool() {
   if (resetPopulationIfNotEnoughCandidates()) {
     return;
   }
-  breed();
   selectionPool.clear();
   selectionPool.emplace_back(make_unique<CandidateConfiguration>(lastBestConf));
   breed();
@@ -366,7 +365,8 @@ void GeneticSearch::selectSurvivors() {
       selectionPool.begin() + std::min(selectionPool.size(), maxPopulationSize),
       std::back_inserter(population),
       [](const std::unique_ptr<CandidateConfiguration>& c) {
-        return make_unique<CandidateConfiguration>(c->configuration);
+        CHECK(c);
+        return make_unique<CandidateConfiguration>(*c);
       });
 
   if (selectionPool.size() < maxPopulationSize) {

@@ -70,6 +70,10 @@ struct Duration {
     return lhs.val_ == rhs.val_;
   }
 
+  friend inline bool operator!=(const Duration& lhs, const Duration& rhs) {
+    return lhs.val_ != rhs.val_;
+  }
+
  private:
   std::chrono::microseconds val_;
 };
