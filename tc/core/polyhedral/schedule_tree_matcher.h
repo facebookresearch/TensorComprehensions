@@ -25,15 +25,9 @@
 namespace tc {
 namespace polyhedral {
 
-// Return the union of the reduction init statements as well as
-// the union of the reduction update statements
-// that appear in "domain", assuming "domain" only contains
-// reduction init and update statements.
-// If "domain" contains any other statements, then return an empty set
-// of reduction update statements.
-std::pair<isl::union_set, isl::union_set> reductionInitsUpdates(
-    isl::union_set domain,
-    const Scop& scop);
+// Return the union of the reduction update statements
+// that appear in "domain".
+isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop);
 
 // Does the band member with the given partial schedule correspond
 // to a reduction on all statements with a domain in "domain"?

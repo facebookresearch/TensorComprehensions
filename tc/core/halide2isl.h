@@ -94,12 +94,11 @@ ScheduleTreeAndAccesses makeScheduleTree(
 /// Enumerate all reductions in a statement, by looking for the
 /// ReductionInit and ReductionUpdate markers inserted during lowering
 /// (see tc2halide.h).
-/// Each reduction object stores a reference to the init and
-/// the update statement, although the init statement is probably
-/// not strictly needed, and a list of reduction dimensions
+/// Each reduction object stores a reference to
+/// the update statement, and a list of reduction dimensions
 /// in the domain of the update statement.
 struct Reduction {
-  Halide::Internal::Stmt init, update;
+  Halide::Internal::Stmt update;
   std::vector<size_t> dims;
 };
 std::vector<Reduction> findReductions(const Halide::Internal::Stmt& s);
