@@ -203,9 +203,11 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   }
 
   // For now, only support reductions with a sufficient number
-  // of coincident outer band members for the remaining thread identifiers.
+  // of coincident outer band members for the remaining thread identifiers and
+  // at least one non-coincident member.
   auto nCoincident = band->nOuterCoincident();
-  if (nCoincident < numThreads.view.size() - 1) {
+  auto nMember = band->nMember();
+  if (nCoincident < numThreads.view.size() - 1 || nCoincident >= nMember) {
     return found;
   }
 
