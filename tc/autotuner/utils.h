@@ -47,6 +47,7 @@ class Printer {
  public:
   Printer(
       size_t iteration,
+      size_t step,
       size_t total,
       const std::atomic_size_t& currentCompilationJob,
       const std::atomic_size_t& numEvaluations);
@@ -61,6 +62,7 @@ class Printer {
   void printLoop();
 
   size_t iteration_;
+  size_t step_;
   std::vector<Duration> runtimes_;
   mutable std::mutex runtimesMtx_;
 

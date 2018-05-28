@@ -64,7 +64,7 @@ void Printer::printLoop() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
     std::stringstream ss;
-    ss << "Iteration " << iteration_;
+    ss << "Iteration.Step " << iteration_ << '.' << step_;
     ss << "\tJobs(Compiled, Evaluated)/total  ("
        << std::min(total_, currentCompilationJob_.load()) << ", "
        << std::min(total_, numEvaluations_.load()) << ")/" << total_;
@@ -100,10 +100,12 @@ void Printer::printLoop() {
 
 Printer::Printer(
     size_t iteration,
+    size_t step,
     size_t total,
     const std::atomic_size_t& currentCompilationJob,
     const std::atomic_size_t& numEvaluations)
     : iteration_(iteration),
+      step_(step),
       printerThread_([this]() { printLoop(); }),
       total_(total),
       currentCompilationJob_(currentCompilationJob),

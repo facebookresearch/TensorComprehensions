@@ -79,16 +79,16 @@ TuningHarness<Backend>::bestMappingOptions() const {
   }
 
 template <typename Backend>
-template <typename SearchStrategy>
-void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
+template <typename Candidates>
+void TuningHarness<Backend>::doCompile(Candidates& candidates) {
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
-    if (current >= searchStrategy.population.size()) {
+    if (current >= candidates.size()) {
       break;
     }
     std::unique_ptr<typename Backend::ExecutorType> pExecutor(nullptr);
-    auto pConf = searchStrategy.population.at(current).get();
+    auto pConf = candidates.at(current).get();
     auto options = makeOptions<Backend>(baseMapping_, *pConf);
     try {
       if (FLAGS_debug_tuner) {
@@ -245,14 +245,15 @@ void TuningHarness<Backend>::runOneIteration(
   auto devices = detail::parseDevices<Backend>(FLAGS_tuner_devices);
   CHECK(executors_.empty());
   CHECK(configurations_.empty());
-
-  {
+  for (uint64_t step = 0; step < searchStrategy.stepsPerIteration; ++step) {
+    auto& candidates = searchStrategy.candidatesOfStep(step);
     // Initialize for this round
     currentCompilationJob_.store(0);
     numEvaluations_.store(0);
     Printer printer(
         iteration,
-        searchStrategy.population.size(),
+        step,
+        candidates.size(),
         currentCompilationJob_,
         numEvaluations_);
     auto logIterations = FLAGS_tuner_gen_log_generations;
@@ -273,7 +274,7 @@ void TuningHarness<Backend>::runOneIteration(
     });
     for (size_t i = 0; i < FLAGS_tuner_threads; ++i) {
       cpuCompilationThreads.emplace_back(
-          [this, &searchStrategy]() { this->doCompile(searchStrategy); });
+          [this, &candidates]() { this->doCompile(candidates); });
     }
 
     // Just spawn and join new threads for each device
@@ -287,12 +288,13 @@ void TuningHarness<Backend>::runOneIteration(
         workerThread.join();
       }
     });
-    auto populationSize = searchStrategy.population.size();
+    auto populationSize = candidates.size();
     for (auto device : devices) {
       workerThreads.emplace_back([this, device, populationSize, &printer]() {
         this->doEvaluate(device, populationSize, printer);
       });
     }
+    searchStrategy.finishStep(step);
   }
 
   // At this point everything is synchronized because out of scope, done

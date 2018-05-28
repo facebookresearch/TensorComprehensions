@@ -92,6 +92,9 @@ class GeneticSearch {
 
   using Population = std::vector<std::unique_ptr<CandidateConfiguration>>;
 
+  Population& candidatesOfStep(uint64_t);
+  void finishStep(uint64_t) {}
+
   Population population;
   TuningConfiguration lastBestConf;
   const size_t numGenerations;
@@ -99,6 +102,7 @@ class GeneticSearch {
   const uint8_t crossOverRate;
   const uint8_t mutationRate;
   const size_t numberElites;
+  const size_t stepsPerIteration = 1;
 
   /*
    * c++11 seeding is (apparently) not of the highest quality:

@@ -307,6 +307,13 @@ void GeneticSearch::updateParameters() {
   }
 }
 
+GeneticSearch::Population& GeneticSearch::candidatesOfStep(uint64_t step) {
+  if (step != 0) {
+    throw std::invalid_argument("GeneticSearch has only one step");
+  }
+  return population;
+}
+
 } // namespace autotune
 } // namespace tc
 
