@@ -234,9 +234,7 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       auto addr = builder->CreateInBoundsGEP(baseAddr, args);
       value = builder->CreateLoad(addr);
       return;
-    } else if (
-        call->is_intrinsic(tc2halide::kReductionInit) ||
-        call->is_intrinsic(tc2halide::kReductionUpdate)) {
+    } else if (call->is_intrinsic(tc2halide::kReductionUpdate)) {
       call->args[0].accept(this);
       return;
     } else {

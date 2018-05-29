@@ -40,8 +40,7 @@ struct HalideComponents {
 };
 
 // For TC reductions, the right-hand-sides of the corresponding
-// Provide nodes are tagged with intrinsics with the following names.
-Halide::Internal::Call::ConstString kReductionInit = "ReductionInit";
+// Provide nodes are tagged with intrinsics with the following name.
 Halide::Internal::Call::ConstString kReductionUpdate = "ReductionUpdate";
 
 // Translate a TC parse tree into equivalent Halide imperative IR with

@@ -484,10 +484,6 @@ void forwardBoundsInference(
   }
 }
 
-Expr reductionInit(Expr e) {
-  return Call::make(e.type(), kReductionInit, {e}, Call::Intrinsic);
-}
-
 Expr reductionUpdate(Expr e) {
   return Call::make(e.type(), kReductionUpdate, {e}, Call::Intrinsic);
 }
@@ -819,8 +815,7 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
                 op->name, {reductionUpdate(op->values[0])}, op->args);
           } else {
             found_init = true;
-            return Provide::make(
-                op->name, {reductionInit(op->values[0])}, op->args);
+            return op;
           }
         } else {
           return op;
