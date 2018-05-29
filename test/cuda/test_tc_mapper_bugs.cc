@@ -24,6 +24,7 @@
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/exceptions.h"
+#include "tc/library/matmul.h"
 
 #include "test_harness_aten_cuda.h"
 
@@ -38,6 +39,37 @@ using namespace tc;
 // When they are fixed, they graduate to legit unit tests, they shed their
 // "Bug" suffix and fly away in the sun.
 ///////////////////////////////////////////////////////////////////////////////
+
+TEST(A, B) {
+  auto TC = makeMatmulTc();
+auto options =
+tc::CudaMappingOptions::makeNaiveMappingOptions()
+    .outerScheduleFusionStrategy(tc::FusionStrategy::Max)
+    .outerScheduleAllowSkewing(false)
+    .outerSchedulePositiveOrthant(true)
+    .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+    .intraTileScheduleAllowSkewing(false)
+    .intraTileSchedulePositiveOrthant(true)
+    .fixParametersBeforeScheduling(false)
+    .tile(56, 32, 4, 14, 16)
+    .unroll(16)
+    .tileImperfectlyNested(false)
+    .matchLibraryCalls(false)
+    .mapToThreads(4, 128)
+    .mapToBlocks(1, 32, 32)
+    .useSharedMemory(false)
+    .usePrivateMemory(true)
+    .unrollCopyShared(false)
+    .useReadOnlyCache(false);
+  uint32_t N = 100, K = 400, M = 500;
+  at::Tensor A = at::CUDA(at::kFloat).rand({N, K});
+  at::Tensor B = at::CUDA(at::kFloat).rand({K, M});
+  std::vector<at::Tensor> inputs = {A, B};
+  auto pExecutor =
+      tc::aten::compile<tc::CudaBackend>(TC, "matmul", inputs, options);
+  auto outputs = tc::aten::prepareOutputs(TC, "matmul", inputs);
+  tc::aten::run(*pExecutor, inputs, outputs);
+}
 
 std::string makeUniqueName(const std::string& name) {
   static int count = 0;
