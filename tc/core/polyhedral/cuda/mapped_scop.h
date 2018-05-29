@@ -186,6 +186,14 @@ class MappedScop {
       size_t nChildren,
       bool hasOuterSequentialMember);
 
+  // Extract a mapping from the domain elements active at "tree"
+  // to the thread identifiers, where all branches in "tree"
+  // are assumed to have been mapped to thread identifiers.
+  // "nThread" is the number of thread identifiers.
+  // The result lives in a space of the form block[x, ...].
+  isl::multi_union_pw_aff threadMappingSchedule(
+      const detail::ScheduleTree* tree) const;
+
  private:
   // Insert the optimal combination of synchronizations in the sequence
   void insertBestSyncInSeq(detail::ScheduleTree* seq);
