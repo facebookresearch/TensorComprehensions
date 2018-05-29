@@ -516,6 +516,220 @@ void promoteToSharedGreedy(
     scop.insertSyncsAroundCopies(bandNode);
   }
 }
+
+isl::union_pw_aff unionOfZerosOnDomain(isl::union_set domain) {
+  auto upa = isl::union_pw_aff::empty(domain.get_space());
+  for (auto d : domain.get_set_list()) {
+    // Create a zero piecewise function and restrict it to the domain "d".
+    auto pa = isl::pw_aff(isl::aff::zero_on_domain(d.get_space()))
+                  .intersect_domain(d);
+    upa = upa.union_add(isl::union_pw_aff(pa));
+  }
+  return upa;
+}
+
+isl::union_pw_aff_list listOfNZerosOnUnionDomain(isl::union_set domain, int n) {
+  auto upa = unionOfZerosOnDomain(domain);
+  auto list = isl::union_pw_aff_list(domain.get_ctx(), n);
+  for (int i = 0; i < n; ++i) {
+    list = list.add(upa);
+  }
+  return list;
+}
+
+isl::multi_val multiValFromVector(
+    isl::space space,
+    const std::vector<size_t>& elts) {
+  auto valList = isl::val_list(space.get_ctx(), elts.size());
+  for (size_t elt : elts) {
+    valList = valList.add(isl::val(space.get_ctx(), elt));
+  }
+  return isl::multi_val(space, valList);
+}
+
+// Compute the mapping of domain elements to thread identifiers.  The size of
+// the mapping multi-expression is the same as the size of scop.numThreads.
+// TODO: unfinished, use mapping from #444.
+isl::multi_union_pw_aff threadMapping(const MappedScop& scop) {
+  using namespace polyhedral::detail;
+
+  auto root = scop.schedule();
+  auto markers =
+      ScheduleTree::collect(root, ScheduleTreeType::ThreadSpecificMarker);
+  auto domain = scop.scop().domain();
+  auto nThreads = scop.numThreads.view.size();
+  auto space = isl::space(domain.get_ctx(), 0, nThreads)
+                   .align_params(domain.get_space());
+  auto result = isl::multi_union_pw_aff(
+      space,
+      listOfNZerosOnUnionDomain(
+          isl::union_set::empty(domain.get_space()), nThreads));
+  for (auto tr : markers) {
+    auto ancestors = tr->ancestors(root);
+    // Must have root, at least one mapping filter, and optionally a band.
+    CHECK_GE(ancestors.size(), 2ul);
+    auto band = ancestors.back()->elemAs<ScheduleTreeElemBand>();
+
+    isl::union_pw_aff_list upaList;
+    if (band) {
+      CHECK_GE(ancestors.size(), 3ul);
+      auto subdomain =
+          activeDomainPoints(root, ancestors.at(ancestors.size() - 3));
+      upaList = band->mupa_.get_union_pw_aff_list().reverse();
+      CHECK_GE(nThreads, static_cast<size_t>(upaList.n()));
+      auto n = nThreads - static_cast<size_t>(upaList.n());
+      upaList = upaList.concat(listOfNZerosOnUnionDomain(subdomain, n));
+    } else {
+      auto subdomain =
+          activeDomainPoints(root, ancestors.at(ancestors.size() - 2));
+      upaList = listOfNZerosOnUnionDomain(domain, nThreads);
+    }
+    result = result.union_add(isl::multi_union_pw_aff(space, upaList));
+    result = result.mod(
+        multiValFromVector(space, scop.numThreads.view.extractVector()));
+  }
+
+  return isl::multi_union_pw_aff();
+}
+
+bool isThreadPrivate(
+    const TensorReferenceGroup& group,
+    isl::multi_union_pw_aff prefixSchedule,
+    isl::multi_union_pw_aff threadSchedule) {
+  auto accesses = group.originalAccesses(); // D -> A
+  auto prefixScheduleUmap = isl::union_map::from(prefixSchedule); // D -> Sp
+  auto accessesWithinScope =
+      accesses.range_product(prefixScheduleUmap); // D -> (Sp -> A)
+  auto threadScheduleUmap = isl::union_map::from(threadSchedule); // D -> St
+  auto threadAccesses =
+      accessesWithinScope.apply_domain(threadScheduleUmap); // T -> (Sp -> A)
+  return threadAccesses.is_injective();
+}
+
+// Check if the band was mapped to threads.
+// We currently map entire bands to threads and insert a thread-specific marker
+// immediately after such bands.
+inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
+  return matchOne(band(threadSpecific(any())), tree);
+}
+
+// Check that only unrolled loops may appear in access subscripts.
+// Because the scoping point can be above a branching tree, descend into each
+// leaf of the subtree below the scoping point.  For each leaf, construct an
+// affine multi-expression containing only those band members between the
+// scoping point and the leaf that are fully unrolled.  If band members are
+// mapped to threads, do not take into account the parts that will appear in
+// subscripts as thread identifiers, i.e. subtract the mapped affine functions
+// from the schedule affine functions.
+//
+// Within each instance of the scope, check that loops that are either unrolled
+// or mapped to threads access a single tensor element in the group (other loop
+// indices will then not appear in the subscripts, making register promotion
+// possible).  In other words, check that the relation between the flat product
+// of prefix, thread-mapped, and unrolled loop indices and accesed elements is
+// single-valued.
+// TODO: note that if a group is formed from partially overlapping references,
+// one must consider per-reference access relation for single-valuedness as
+// different references may have different values, but all of them remain
+// independent of non-unrolled loop iterators.
+bool accessSubscriptsAreUnrolledLoops(
+    const TensorReferenceGroup& group,
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* scope,
+    isl::multi_union_pw_aff threadSchedule) {
+  using namespace detail;
+
+  auto prefixSchedule = partialScheduleMupa(root, scope);
+
+  auto nodes = ScheduleTree::collect(scope);
+  auto leaves = functional::Filter(
+      [](const ScheduleTree* tree) { return tree->numChildren() == 0; }, nodes);
+
+  auto domainNode = root->elemAs<detail::ScheduleTreeElemDomain>();
+  CHECK(domainNode);
+  auto domain = domainNode->domain_;
+
+  // Descend into every leaf.
+  for (auto leaf : leaves) {
+    auto ancestors = leaf->ancestors(root);
+    ancestors.push_back(leaf);
+    auto subdomain = activeDomainPointsBelow(root, leaf);
+
+    auto unrolledDims = isl::union_pw_aff_list(leaf->ctx_, 1);
+    for (auto node : ancestors) {
+      auto band = node->elemAs<detail::ScheduleTreeElemBand>();
+      if (!band) {
+        continue;
+      }
+
+      isl::multi_union_pw_aff schedule = band->mupa_;
+      if (isThreadMappedBand(node)) {
+        // Band members are mapped to threads in inverse order.  There may be
+        // less members than thread dimensions (the remaining thread dimensions
+        // are mapped to 0).  Transform the thread schedule accordingly before
+        // subtracting it from the band schedule.
+        auto bandCompatibleThreadSchedule =
+            isl::union_pw_aff_list(schedule.get_ctx(), band->nMember());
+        auto threadScheduleDims =
+            threadSchedule.get_union_pw_aff_list().reverse();
+        CHECK_LE(band->nMember(), static_cast<size_t>(threadScheduleDims.n()));
+        for (int i = 0; i < band->nMember(); ++i) {
+          bandCompatibleThreadSchedule =
+              bandCompatibleThreadSchedule.add(threadScheduleDims.get(i));
+        }
+
+        schedule = schedule.sub(isl::multi_union_pw_aff(
+            schedule.get_space(), bandCompatibleThreadSchedule));
+      }
+      schedule = schedule.intersect_domain(subdomain);
+
+      for (size_t i = 0, e = band->nMember(); i < e; ++i) {
+        if (!band->unroll_[i]) {
+          continue;
+        }
+        unrolledDims = unrolledDims.add(schedule.get_union_pw_aff(i));
+      }
+    }
+
+    auto space = isl::space(leaf->ctx_, 0, unrolledDims.n())
+                     .align_params(subdomain.get_space());
+    auto unrolledDimsMupa = isl::multi_union_pw_aff(space, unrolledDims);
+
+    // It is possible that no loops are unrolled, in which case
+    // unrolledDimsMupa is zero-dimensional and needs an explicit domain
+    // to be convertible to a union_map.
+    unrolledDimsMupa =
+        unrolledDimsMupa.intersect_domain(group.originalAccesses().domain());
+
+    auto accesses = group.originalAccesses();
+    auto schedule = prefixSchedule.flat_range_product(threadSchedule)
+                        .flat_range_product(unrolledDimsMupa);
+    accesses = accesses.apply_domain(isl::union_map::from(schedule));
+
+    if (!accesses.is_single_valued()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Check if the tensor reference group "group" can be promoted to registers at
+// the given "scope" in the schedule tree of "scop".
+// In particular, check that no elements in this group are accessed by
+// different threads and that all loop indices that may appear in subscripts
+// correpond to unrolled loops.
+bool isPromotableToRegistersBelow(
+    const TensorReferenceGroup& group,
+    const MappedScop& scop,
+    const detail::ScheduleTree* scope) {
+  auto prefixSchedule = partialScheduleMupa(scop.schedule(), scope);
+  auto threadSchedule = scop.threadMappingSchedule(scop.schedule());
+  return isThreadPrivate(group, prefixSchedule, threadSchedule) &&
+      accessSubscriptsAreUnrolledLoops(
+             group, scop.schedule(), scope, threadSchedule);
+}
+
 } // namespace
 
 void promoteGreedilyAtDepth(
