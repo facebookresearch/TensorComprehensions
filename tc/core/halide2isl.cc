@@ -482,14 +482,6 @@ std::vector<Reduction> findReductions(const Stmt& s) {
   class FindReductions : public IRVisitor {
     using IRVisitor::visit;
 
-    bool isReductionInit(const Provide* op) {
-      if (const Call* call = op->values[0].as<Call>()) {
-        return call->is_intrinsic(tc2halide::kReductionInit);
-      } else {
-        return false;
-      }
-    }
-
     bool isReductionUpdate(const Provide* op) {
       if (const Call* call = op->values[0].as<Call>()) {
         return call->is_intrinsic(tc2halide::kReductionUpdate);
