@@ -62,6 +62,12 @@ inline ScheduleTreeMatcher context(Args... children) {
 }
 
 template <typename... Args>
+inline ScheduleTreeMatcher threadSpecific(Args... children) {
+  return ScheduleTreeMatcher(
+      detail::ScheduleTreeType::ThreadSpecificMarker, children...);
+}
+
+template <typename... Args>
 inline ScheduleTreeMatcher filter(
     std::function<bool(isl::union_set)> propertyMatcher,
     Args... children) {
