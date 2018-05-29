@@ -445,29 +445,13 @@ constexpr auto kWarp = "warp";
  */
 isl::multi_union_pw_aff extractDomainToThread(
     const detail::ScheduleTree* tree,
-    size_t nThread) {
-  using namespace polyhedral::detail;
-
-  auto space = isl::space(tree->ctx_, 0);
-  auto empty = isl::union_set::empty(space);
-  auto id = isl::id(tree->ctx_, kBlock);
-  space = space.named_set_from_params_id(id, nThread);
-  auto zero = isl::multi_val::zero(space);
-  auto domainToThread = isl::multi_union_pw_aff(empty, zero);
-
-  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
-    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
-    auto list = isl::union_pw_aff_list(tree->ctx_, nThread);
-    for (size_t i = 0; i < nThread; ++i) {
-      auto threadId = mapping::ThreadId::makeId(i);
-      auto threadMap = mappingNode->mapping.at(threadId);
-      list = list.add(threadMap);
-    }
-    auto nodeToThread = isl::multi_union_pw_aff(space, list);
-    domainToThread = domainToThread.union_add(nodeToThread);
+    int nThreads) {
+  std::vector<mapping::MappingId> ids;
+  for (int i = 0; i < nThreads; ++i) {
+    ids.emplace_back(mapping::ThreadId::makeId(i));
   }
-
-  return domainToThread;
+  auto tupleId = isl::id(tree->ctx_, kBlock);
+  return extractDomainToIds(tree, ids, tupleId);
 }
 
 /*
