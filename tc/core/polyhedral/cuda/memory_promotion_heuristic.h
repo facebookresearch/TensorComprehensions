@@ -25,6 +25,10 @@ namespace polyhedral {
 class MappedScop;
 class Scop;
 
+namespace detail {
+class ScheduleTree;
+}
+
 // In the given mapped scop "mscop",
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
 // Map copies between global and shared memory to threads and unroll those
@@ -37,6 +41,8 @@ void promoteGreedilyAtDepth(
     std::size_t depth,
     std::size_t sharedMemorySize,
     bool unrollCopies);
+
+void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope);
 
 void promoteToRegistersBelowThreads(MappedScop& scop, std::size_t nRegisters);
 } // namespace polyhedral

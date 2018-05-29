@@ -649,27 +649,55 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
-namespace {
-
 /*
- * Perform promotion to registers below the thread specific marker "marker"
- * in the schedule tree of "mscop".
+ * Perform promotion to registers below the node "scope" in the schedule tree
+ * of "mscop".  Throw if promotion would violate the well-formedness of the
+ * schedule tree, in particular in cases of promotion immediately below
+ * a set/sequence node or immediately above a thread-specific marker node.
  */
-void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* marker) {
+void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
+  // Cannot promote below a sequence or a set node.  Promotion may insert an
+  // extension node, but sequence/set must be followed by filters.
+  if (scope->elemAs<detail::ScheduleTreeElemSequence>() ||
+      scope->elemAs<detail::ScheduleTreeElemSet>()) {
+    throw promotion::IncorrectScope("cannot promote under a sequence/set node");
+  }
+  // Cannot promote between a thread-mapped band and a thread-specific marker
+  // node because the latter is used to identify thread-mapped bands as
+  // immediate ancestors.
+  if (scope->numChildren() == 1 &&
+      scope->child({0})
+          ->elemAs<detail::ScheduleTreeElemThreadSpecificMarker>()) {
+    throw promotion::IncorrectScope(
+        "cannot promote above a thread-specific marker node");
+  }
+
   auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
-  auto threadMapping = mscop.threadMappingSchedule(root);
 
-  auto partialSched = prefixSchedule(root, marker);
-  // Pure affine schedule without (mapping) filters.
-  auto partialSchedMupa = partialScheduleMupa(root, marker);
-
-  // Because this function is called below the thread mapping marker,
-  // partialSched has been intersected with both the block and the thread
-  // mapping filters.   Therefore, groups will be computed relative to
-  // blocks and threads.
+  // Compute groups specific to threads and block by including the mappings
+  // into the domain of the partials schedule.
+  auto blockMapping = collectMappingsTo<mapping::BlockId>(scop);
+  auto mapping =
+      collectMappingsTo<mapping::ThreadId>(scop).intersect(blockMapping);
+  auto schedule = partialSchedule(scop.scheduleRoot(), scope);
   auto groupMap = TensorReferenceGroup::accessedWithin(
-      partialSched, scop.reads, scop.writes);
+      schedule.intersect_domain(mapping), scop.reads, scop.writes);
+
+  auto threadSchedule = mscop.threadMappingSchedule(mscop.schedule());
+  auto blockSchedule = mscop.blockMappingSchedule(mscop.schedule());
+
+  // Pure affine schedule without (mapping) filters.
+  auto partialSchedMupa = partialScheduleMupa(root, scope);
+  // Schedule with block mapping filter.
+  auto partialSched =
+      isl::union_map::from(partialSchedMupa).intersect_domain(blockMapping);
+  // The following promotion validity and profitability checks need to be
+  // performed with respect to the block mapping, so append the block schedule.
+  // If the partial schedule contains it already, it will just end up with
+  // identical dimensions without affecting the result of the checks.
+  partialSchedMupa = partialSchedMupa.flat_range_product(blockSchedule);
+
   for (auto& tensorGroups : groupMap) {
     auto tensorId = tensorGroups.first;
 
@@ -682,12 +710,15 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* marker) {
         continue;
       }
       if (!isPromotableToRegistersBelow(
-              *group, root, marker, partialSchedMupa, threadMapping)) {
+              *group, root, scope, partialSchedMupa, threadSchedule)) {
         continue;
       }
-      if (!hasReuseWithin(*group, partialSchedMupa)) {
+      // Check reuse within threads.
+      auto schedule = partialSchedMupa.flat_range_product(threadSchedule);
+      if (!hasReuseWithin(*group, schedule)) {
         continue;
       }
+
       // TODO: if something is already in shared, but reuse it within one
       // thread only, there is no point in keeping it in shared _if_ it
       // gets promoted into a register.
@@ -695,13 +726,11 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* marker) {
           Scop::PromotedDecl::Kind::Register,
           tensorId,
           std::move(group),
-          marker,
+          scope,
           partialSched);
     }
   }
 }
-
-} // namespace
 
 // Promote at the positions of the thread specific markers.
 void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
