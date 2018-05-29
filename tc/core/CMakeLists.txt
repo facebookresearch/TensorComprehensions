@@ -10,6 +10,7 @@ add_library(
   SHARED
 
   flags.cc
+  check.cc
   mapping_options.cc
   mapping_options_cpp_printer.cc
   islpp.cc
