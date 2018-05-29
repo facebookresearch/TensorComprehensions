@@ -649,58 +649,70 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
+namespace {
+
+/*
+ * Perform promotion to registers below the thread specific marker "marker"
+ * in the schedule tree of "mscop".
+ */
+void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* marker) {
+  auto& scop = mscop.scop();
+  auto root = scop.scheduleRoot();
+  auto threadMapping = mscop.threadMappingSchedule(root);
+
+  auto partialSched = prefixSchedule(root, marker);
+  // Pure affine schedule without (mapping) filters.
+  auto partialSchedMupa = partialScheduleMupa(root, marker);
+
+  // Because this function is called below the thread mapping marker,
+  // partialSched has been intersected with both the block and the thread
+  // mapping filters.   Therefore, groups will be computed relative to
+  // blocks and threads.
+  auto groupMap = TensorReferenceGroup::accessedWithin(
+      partialSched, scop.reads, scop.writes);
+  for (auto& tensorGroups : groupMap) {
+    auto tensorId = tensorGroups.first;
+
+    // TODO: sorting of groups and counting the number of promoted elements
+
+    for (auto& group : tensorGroups.second) {
+      auto sizes = group->approximationSizes();
+      // No point in promoting a scalar that will go to a register anyway.
+      if (sizes.size() == 0) {
+        continue;
+      }
+      if (!isPromotableToRegistersBelow(
+              *group, root, marker, partialSchedMupa, threadMapping)) {
+        continue;
+      }
+      if (!hasReuseWithin(*group, partialSchedMupa)) {
+        continue;
+      }
+      // TODO: if something is already in shared, but reuse it within one
+      // thread only, there is no point in keeping it in shared _if_ it
+      // gets promoted into a register.
+      scop.promoteGroup(
+          Scop::PromotedDecl::Kind::Register,
+          tensorId,
+          std::move(group),
+          marker,
+          partialSched);
+    }
+  }
+}
+
+} // namespace
+
 // Promote at the positions of the thread specific markers.
 void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
   using namespace tc::polyhedral::detail;
 
   auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
-  auto threadMapping = mscop.threadMappingSchedule(root);
+  auto markers = findThreadSpecificMarkers(root);
 
-  {
-    auto markers = findThreadSpecificMarkers(root);
-
-    for (auto marker : markers) {
-      auto partialSched = prefixSchedule(root, marker);
-      // Pure affine schedule without (mapping) filters.
-      auto partialSchedMupa = partialScheduleMupa(root, marker);
-
-      // Because this function is called below the thread mapping marker,
-      // partialSched has been intersected with both the block and the thread
-      // mapping filters.   Therefore, groups will be computed relative to
-      // blocks and threads.
-      auto groupMap = TensorReferenceGroup::accessedWithin(
-          partialSched, scop.reads, scop.writes);
-      for (auto& tensorGroups : groupMap) {
-        auto tensorId = tensorGroups.first;
-
-        // TODO: sorting of groups and counting the number of promoted elements
-
-        for (auto& group : tensorGroups.second) {
-          auto sizes = group->approximationSizes();
-          // No point in promoting a scalar that will go to a register anyway.
-          if (sizes.size() == 0) {
-            continue;
-          }
-          if (!isPromotableToRegistersBelow(
-                  *group, root, marker, partialSchedMupa, threadMapping)) {
-            continue;
-          }
-          if (!hasReuseWithin(*group, partialSchedMupa)) {
-            continue;
-          }
-          // TODO: if something is already in shared, but reuse it within one
-          // thread only, there is no point in keeping it in shared _if_ it
-          // gets promoted into a register.
-          scop.promoteGroup(
-              Scop::PromotedDecl::Kind::Register,
-              tensorId,
-              std::move(group),
-              marker,
-              partialSched);
-        }
-      }
-    }
+  for (auto marker : markers) {
+    promoteToRegistersBelow(mscop, marker);
   }
 }
 
