@@ -163,9 +163,13 @@ class MappedScop {
   // st1.
   // This function assumes that it is called before block mapping
   // and that st1 and st2 are already mapped to threads.
+  // "domainToThread" and "domainToWarp" map the domain elements
+  // of st1 and st2 to thread and warp identifiers, respectively.
   Scop::SyncLevel findBestSync(
       detail::ScheduleTree* st1,
-      detail::ScheduleTree* st2);
+      detail::ScheduleTree* st2,
+      isl::multi_union_pw_aff domainToThread,
+      isl::multi_union_pw_aff domainToWarp);
 
  public:
   // Find best configuration of synchronizations in a sequence, minimizing

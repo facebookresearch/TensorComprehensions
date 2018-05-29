@@ -431,167 +431,107 @@ bool hasOuterSequentialMember(
   return false;
 }
 
-// Intersect the union set with all the mapping
-// filters params in the given schedule tree
-isl::union_set intersectMappingFilterParams(
-    detail::ScheduleTree* st,
-    isl::union_set us) {
-  if (auto filter = st->elemAsBase<detail::ScheduleTreeElemFilter>()) {
-    us = us.intersect(filter->filter_);
-  }
+// Name of the space of threads inside a block
+constexpr auto kBlock = "block";
+// Name of the space of warps
+constexpr auto kWarp = "warp";
 
-  auto children = st->children();
-  auto nChildren = children.size();
-  if (nChildren == 1) {
-    us = intersectMappingFilterParams(children[0], us);
-  } else if (nChildren > 1) {
-    auto usParent = us;
-    us = intersectMappingFilterParams(children[0], us);
-    for (size_t i = 1; i < nChildren; ++i) {
-      us = us.unite(intersectMappingFilterParams(children[i], usParent));
+/*
+ * Extract a mapping from the domain elements active at "tree"
+ * to the thread identifiers, where all branches in "tree"
+ * are assumed to have been mapped to thread identifiers.
+ * "nThread" is the number of thread identifiers.
+ * The result lives in a space of the form block[x, ...].
+ */
+isl::multi_union_pw_aff extractDomainToThread(
+    const detail::ScheduleTree* tree,
+    size_t nThread) {
+  using namespace polyhedral::detail;
+
+  auto space = isl::space(tree->ctx_, 0);
+  auto empty = isl::union_set::empty(space);
+  auto id = isl::id(tree->ctx_, kBlock);
+  space = space.named_set_from_params_id(id, nThread);
+  auto zero = isl::multi_val::zero(space);
+  auto domainToThread = isl::multi_union_pw_aff(empty, zero);
+
+  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
+    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
+    auto list = isl::union_pw_aff_list(tree->ctx_, nThread);
+    for (size_t i = 0; i < nThread; ++i) {
+      auto threadId = mapping::ThreadId::makeId(i);
+      auto threadMap = mappingNode->mapping.at(threadId);
+      list = list.add(threadMap);
     }
+    auto nodeToThread = isl::multi_union_pw_aff(space, list);
+    domainToThread = domainToThread.union_add(nodeToThread);
   }
 
-  return us;
+  return domainToThread;
 }
 
-// Change the name of the isl ids tied to threads and blocks
-// by adding a suffix
-isl::union_set modifyMappingNames(
-    isl::union_set set,
-    const std::string suffix) {
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::unordered_set<isl::id, isl::IslIdIslHash> identifiers{
-      BX, BY, BZ, TX, TY, TZ};
-
-  auto space = set.get_space();
-  for (auto id : identifiers) {
-    auto name = id.get_name();
-    auto dim = space.find_dim_by_name(isl::dim_type::param, id.get_name());
-    CHECK_LE(0, dim);
-    space = space.set_dim_name(isl::dim_type::param, dim, name + suffix);
-  }
-  auto newSet = isl::union_set::empty(space);
-  set.foreach_set([&newSet, &identifiers, &suffix](isl::set setInFun) {
-    for (auto id : identifiers) {
-      auto name = id.get_name();
-      auto dim =
-          setInFun.get_space().find_dim_by_name(isl::dim_type::param, name);
-      CHECK_LE(0, dim);
-      setInFun =
-          setInFun.set_dim_name(isl::dim_type::param, dim, name + suffix);
-    }
-    newSet = newSet.unite(setInFun);
-  });
-  return newSet;
-}
-
-// Get the formula computing the linearized index of a thread in a block.
-isl::aff getLinearizedThreadIdxFormula(
-    isl::space space,
-    const Block& block,
-    const std::string& suffix = "") {
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::vector<std::pair<isl::id, unsigned>> mappingIds{
-      {TX, TX.mappingSize(block)},
-      {TY, TY.mappingSize(block)},
-      {TZ, TZ.mappingSize(block)}};
-
-  isl::aff formula = isl::aff(isl::local_space(space));
-
-  for (int i = (int)mappingIds.size() - 1; i >= 0; --i) {
-    auto name = mappingIds[i].first.to_str();
-    auto dim = space.find_dim_by_name(isl::dim_type::param, name + suffix);
-    CHECK_LE(0, dim);
-    auto id = space.get_dim_id(isl::dim_type::param, dim);
-    isl::aff aff(isl::aff::param_on_domain_space(space, id));
-    formula = formula * mappingIds[i].second + aff;
-  }
-
-  return formula;
-}
-
-// Return the constraints ensuring that the points with parameters
-// [t0,t1,t2] and [t0',t1',t2'] are in the same warp.
-// (where t0 is "t0" + suffix1 and t0' is "t0" + suffix2)
-// if suffix1 is "_1" and suffix2 is "_2", the constraint is in the form
-// ((t0_1 + a * t1_1 + b * t2_1) / warpSize).floor()
-// == ((t0_2 + a' * t1_2 + b' * t1_2) / warpSize).floor()
-// with t0_1 + a * t1_1 + b * t2_1 the linearized formula of the thread index.
-// This function returns a set because it might change in the future,
-// and take into account the blocks.
-isl::set getSameWarpConstraints(
-    isl::space space,
-    const std::string& suffix1,
-    const std::string& suffix2,
+/*
+ * Construct a mapping
+ *
+ *  block[x] -> warp[floor((x)/warpSize)]
+ *  block[x, y] -> warp[floor((x + s_x * (y))/warpSize)]
+ *  block[x, y, z] -> warp[floor((x + s_x * (y + s_y * (z)))/warpSize)]
+ *
+ * uniquely mapping thread identifiers that belong to the same warp
+ * (of size "warpSize") to a warp identifier,
+ * based on the thread sizes s_x, s_y up to s_z in "block".
+ */
+isl::multi_aff constructThreadToWarp(
+    isl::ctx ctx,
     const unsigned warpSize,
     const Block& block) {
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  std::vector<std::pair<isl::id, unsigned>> mappingIds{
-      {TX, TX.mappingSize(block)},
-      {TY, TY.mappingSize(block)},
-      {TZ, TZ.mappingSize(block)}};
+  auto space = isl::space(ctx, 0);
+  auto id = isl::id(ctx, kBlock);
+  auto blockSpace = space.named_set_from_params_id(id, block.view.size());
+  auto warpSpace = space.named_set_from_params_id(isl::id(ctx, kWarp), 1);
+  auto aff = isl::aff::zero_on_domain(blockSpace);
 
-  auto formula1 = getLinearizedThreadIdxFormula(space, block, suffix1);
-  auto formula2 = getLinearizedThreadIdxFormula(space, block, suffix2);
+  auto nThread = block.view.size();
+  auto identity = isl::multi_aff::identity(blockSpace.map_from_set());
+  for (int i = nThread - 1; i >= 0; --i) {
+    aff = aff.scale(isl::val(ctx, block.view[i]));
+    aff = aff.add(identity.get_aff(i));
+  }
 
-  return (
-      isl::aff_set((formula1 / warpSize).floor()) ==
-      (formula2 / warpSize).floor());
+  aff = aff.scale_down(isl::val(ctx, warpSize)).floor();
+  auto mapSpace = blockSpace.product(warpSpace).unwrap();
+  return isl::multi_aff(mapSpace, isl::aff_list(aff));
 }
 } // namespace
 
 Scop::SyncLevel MappedScop::findBestSync(
     detail::ScheduleTree* st1,
-    detail::ScheduleTree* st2) {
+    detail::ScheduleTree* st2,
+    isl::multi_union_pw_aff domainToThread,
+    isl::multi_union_pw_aff domainToWarp) {
   // Active points in the two schedule trees
   auto stRoot = scop_->scheduleRoot();
   auto activePoints1 = activeDomainPointsBelow(stRoot, st1);
   auto activePoints2 = activeDomainPointsBelow(stRoot, st2);
 
   // The dependences between the two schedule trees
-  auto dependences =
-      isl::union_map::from_domain_and_range(activePoints1, activePoints2);
-  dependences = dependences.intersect(scop_->dependences);
+  auto dependences = scop_->dependences;
+  dependences = dependences.intersect_domain(activePoints1);
+  dependences = dependences.intersect_range(activePoints2);
   if (dependences.is_empty()) {
     return Scop::SyncLevel::None;
   }
 
-  // The domain and the context of the root schedule tree
-  auto domainAndContext = scop_->domain();
   CHECK_LE(1u, scop_->scheduleRoot()->children().size());
   auto contextSt = scop_->scheduleRoot()->children()[0];
   auto contextElem = contextSt->elemAs<detail::ScheduleTreeElemContext>();
   CHECK(nullptr != contextElem);
-  domainAndContext = domainAndContext.intersect_params(contextElem->context_);
+  dependences = dependences.intersect_params(contextElem->context_);
 
-  // The domain of both schedule trees filtered by mapping filters,
-  // and then modified to have different threads and blocks names.
-  auto domain1 = intersectMappingFilterParams(st1, domainAndContext);
-  auto domain2 = intersectMappingFilterParams(st2, domainAndContext);
-  auto suffix1 = "_1";
-  auto suffix2 = "_2";
-  domain1 = modifyMappingNames(domain1, suffix1);
-  domain2 = modifyMappingNames(domain2, suffix2);
-
-  // The dependences between the two schedule trees
-  // with mapping from threads and blocks
-  auto mappedDependences =
-      isl::union_map::from_domain_and_range(domain1, domain2);
-  mappedDependences = mappedDependences.intersect(dependences);
-
-  auto space = mappedDependences.get_space();
-  auto sameThreadConstraint =
-      getSameWarpConstraints(space, suffix1, suffix2, 1, numThreads);
-  auto sameWarpConstraints =
-      getSameWarpConstraints(space, suffix1, suffix2, 32, numThreads);
-
-  if (mappedDependences ==
-      mappedDependences.intersect_params(sameThreadConstraint)) {
+  if (dependences.is_subset(dependences.eq_at(domainToThread))) {
     return Scop::SyncLevel::None;
-  } else if (
-      mappedDependences ==
-      mappedDependences.intersect_params(sameWarpConstraints)) {
+  }
+  if (dependences.is_subset(dependences.eq_at(domainToWarp))) {
     return Scop::SyncLevel::Warp;
   }
   return Scop::SyncLevel::Block;
@@ -754,6 +694,10 @@ void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
 
   auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), seq);
 
+  auto domainToThread = extractDomainToThread(seq, numThreads.view.size());
+  auto threadToWarp = constructThreadToWarp(seq->ctx_, 32, numThreads);
+  auto domainToWarp = domainToThread.apply(threadToWarp);
+
   std::vector<std::vector<int>> bestSync(
       nChildren, std::vector<int>(nChildren + 1));
   // Get the synchronization needed between children[i] and children[i+k]
@@ -765,7 +709,8 @@ void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
   for (size_t i = 0; i < nChildren; ++i) {
     for (size_t k = 0; k < nChildren; ++k) {
       auto ik = (i + k) % nChildren;
-      bestSync[i][k] = (int)findBestSync(children[i], children[ik]);
+      bestSync[i][k] = (int)findBestSync(
+          children[i], children[ik], domainToThread, domainToWarp);
     }
   }
 
