@@ -488,13 +488,15 @@ Expr reductionUpdate(Expr e) {
   return Call::make(e.type(), kReductionUpdate, {e}, Call::Intrinsic);
 }
 
+// Note that the function definitions created by translateComprehension may
+// contain kReductionUpdate intrinsics.  These may have to be removed
+// in order to be able to apply internal Halide analysis passes on them.
 void translateComprehension(
     const lang::Comprehension& c,
     const map<string, Parameter>& params,
     bool throwWarnings,
     map<string, Function>* funcs,
-    FunctionBounds* bounds,
-    vector<Function>* reductions) {
+    FunctionBounds* bounds) {
   Function f;
   auto it = funcs->find(c.ident().name());
   if (it != funcs->end()) {
@@ -589,8 +591,9 @@ void translateComprehension(
                                  << c.assignment()->range().text() << "\n";
   }
 
+  // Tag reductions as such
   if (c.assignment()->kind() != '=') {
-    reductions->push_back(f);
+    rhs = reductionUpdate(rhs);
   }
 
   // Bind any scalar params on the rhs to their parameter objects.
@@ -739,13 +742,12 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   components.def = def;
   FunctionBounds bounds;
 
-  vector<Function> reductions;
   for (auto p : def.params()) {
     translateParam(p, &components.params, &components.inputs);
   }
   for (auto c : def.statements()) {
     translateComprehension(
-        c, components.params, throwWarnings, &funcs, &bounds, &reductions);
+        c, components.params, throwWarnings, &funcs, &bounds);
   }
   vector<Function> outputs;
   for (auto p : def.returns()) {
@@ -802,32 +804,6 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   // Collect the arguments (inputs and outputs)
   s = uniquify_variable_names(s);
   s = simplify(s);
-
-  // Tag reductions as such
-  for (const Function& f : reductions) {
-    class TagReduction : public IRMutator2 {
-      using IRMutator2::visit;
-      bool found_init = false;
-      Stmt visit(const Provide* op) override {
-        if (op->name == f.name()) {
-          if (found_init) {
-            return Provide::make(
-                op->name, {reductionUpdate(op->values[0])}, op->args);
-          } else {
-            found_init = true;
-            return op;
-          }
-        } else {
-          return op;
-        }
-      }
-      const Function& f;
-
-     public:
-      TagReduction(const Function& f) : f(f) {}
-    } tagReduction(f);
-    s = tagReduction.mutate(s);
-  }
 
   // Trim ProducerConsumer annotations. TC doesn't use them.
   class RemoveProducerConsumer : public IRMutator2 {
