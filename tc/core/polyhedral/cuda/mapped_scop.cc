@@ -467,24 +467,6 @@ constexpr auto kBlock = "block";
 constexpr auto kWarp = "warp";
 
 /*
- * Extract a mapping from the domain elements active at "tree"
- * to the thread identifiers, where all branches in "tree"
- * are assumed to have been mapped to thread identifiers.
- * "nThread" is the number of thread identifiers.
- * The result lives in a space of the form block[x, ...].
- */
-isl::multi_union_pw_aff extractDomainToThread(
-    const detail::ScheduleTree* tree,
-    size_t nThread) {
-  std::vector<mapping::MappingId> ids;
-  for (size_t i = 0; i < nThread; ++i) {
-    ids.emplace_back(mapping::ThreadId::makeId(i));
-  }
-  auto tupleId = isl::id(tree->ctx_, kBlock);
-  return extractDomainToIds(tree, ids, tupleId);
-}
-
-/*
  * Construct a mapping
  *
  *  block[x] -> warp[floor((x)/warpSize)]
@@ -517,6 +499,16 @@ isl::multi_aff constructThreadToWarp(
   return isl::multi_aff(mapSpace, isl::aff_list(aff));
 }
 } // namespace
+
+isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
+    const detail::ScheduleTree* tree) const {
+  std::vector<mapping::MappingId> ids;
+  for (size_t i = 0; i < numThreads.view.size(); ++i) {
+    ids.emplace_back(mapping::ThreadId::makeId(i));
+  }
+  auto tupleId = isl::id(tree->ctx_, kBlock);
+  return extractDomainToIds(tree, ids, tupleId);
+}
 
 Scop::SyncLevel MappedScop::findBestSync(
     detail::ScheduleTree* st1,
@@ -708,7 +700,7 @@ void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
 
   auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), seq);
 
-  auto domainToThread = extractDomainToThread(seq, numThreads.view.size());
+  auto domainToThread = threadMappingSchedule(seq);
   auto threadToWarp = constructThreadToWarp(seq->ctx_, 32, numThreads);
   auto domainToWarp = domainToThread.apply(threadToWarp);
 
