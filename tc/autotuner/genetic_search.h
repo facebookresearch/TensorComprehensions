@@ -74,12 +74,19 @@ class GeneticSearch {
       size_t populationSize,
       uint8_t crossOverRate,
       uint8_t mutationRate,
-      size_t numberElites);
+      size_t matingPoolSize,
+      size_t selectionPoolSize);
 
-  void updateParameters();
+  void generateSelectionPool();
+  void selectSurvivors();
 
  private:
+  std::vector<TuningConfiguration> stochasticUniversalSampling(
+      const std::vector<double>& fitness) const;
+
   void breed();
+
+  bool resetPopulationIfNotEnoughCandidates();
 
   TuningConfiguration crossover(
       TuningConfiguration&,
@@ -92,13 +99,19 @@ class GeneticSearch {
 
   using Population = std::vector<std::unique_ptr<CandidateConfiguration>>;
 
+  Population& candidatesOfStep(uint64_t);
+  void finishStep(uint64_t);
+
   Population population;
+  Population selectionPool;
   TuningConfiguration lastBestConf;
   const size_t numGenerations;
   const size_t maxPopulationSize;
+  const size_t matingPoolSize;
+  const size_t selectionPoolSize;
   const uint8_t crossOverRate;
   const uint8_t mutationRate;
-  const size_t numberElites;
+  const size_t stepsPerIteration = 2;
 
   /*
    * c++11 seeding is (apparently) not of the highest quality:
