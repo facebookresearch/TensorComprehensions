@@ -196,6 +196,18 @@ inline isl::map operator<=(isl::aff_map A, isl::aff B) {
   return A < B + 1;
 }
 
+inline isl::map operator==(isl::aff_map A, isl::aff B) {
+  auto pwA = isl::pw_aff(A.aff);
+  auto pwB = isl::pw_aff(B);
+  return pwA.eq_map(pwB);
+}
+
+inline isl::map operator==(isl::aff A, isl::aff_map B) {
+  auto pwA = isl::pw_aff(A);
+  auto pwB = isl::pw_aff(B.aff);
+  return pwA.eq_map(pwB);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::multi_aff
 ///////////////////////////////////////////////////////////////////////////////

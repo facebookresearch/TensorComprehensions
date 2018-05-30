@@ -178,6 +178,8 @@ isl::map operator>=(isl::aff_map A, isl::aff B);
 isl::map operator<=(isl::aff_map A, isl::aff B);
 isl::map operator>(isl::aff_map A, isl::aff B);
 isl::map operator<(isl::aff_map A, isl::aff B);
+isl::map operator==(isl::aff_map A, isl::aff B);
+isl::map operator==(isl::map A, isl::aff_map B);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::multi_aff
