@@ -52,7 +52,6 @@ struct ScopedFootprintDim {
 // ScheduleTree*), the user is responsible for maintaining the correspondance
 // between schedule tree positions and footprints.
 struct ScopedFootprint : std::vector<ScopedFootprintDim> {
-  isl::set footprint(isl::set domain) const;
   isl::multi_aff lowerBounds() const;
 };
 
@@ -134,9 +133,7 @@ class TensorReferenceGroup {
 
   // Rectangular overapproximation of the set of tensor elements accessed below
   // the scoping point.
-  isl::set approximateFootprint() const {
-    return approximation.footprint(scopedAccesses().domain());
-  }
+  isl::set approximateFootprint() const;
 
   isl::multi_aff promotion() const;
   isl::set promotedFootprint() const;

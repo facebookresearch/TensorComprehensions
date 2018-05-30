@@ -135,13 +135,12 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::set ScopedFootprint::footprint(isl::set domain) const {
-  auto space = add_range(domain.get_space(), size());
-  auto accessed = isl::map::universe(space).intersect_domain(domain);
+isl::set TensorReferenceGroup::approximateFootprint() const {
+  auto accessed = scopedAccesses();
   auto lspace = isl::local_space(accessed.get_space().range());
 
-  for (size_t i = 0; i < size(); ++i) {
-    auto dim = at(i);
+  for (size_t i = 0; i < approximation.size(); ++i) {
+    auto dim = approximation.at(i);
     auto rhs = isl::aff(lspace, isl::dim_type::set, i);
     isl::map partial = (isl::aff_map(dim.lowerBound) <= rhs) &
         (isl::aff_map(dim.lowerBound + dim.size) > rhs);
