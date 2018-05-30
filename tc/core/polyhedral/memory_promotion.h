@@ -49,7 +49,6 @@ struct ScopedFootprint {
     return box.get_offset().get_aff(pos);
   }
   isl::fixed_box box;
-  isl::set footprint(isl::set domain) const;
   isl::multi_aff lowerBounds() const;
 };
 
@@ -131,9 +130,7 @@ class TensorReferenceGroup {
 
   // Rectangular overapproximation of the set of tensor elements accessed below
   // the scoping point.
-  isl::set approximateFootprint() const {
-    return approximation.footprint(scopedAccesses().domain());
-  }
+  isl::set approximateFootprint() const;
 
   isl::multi_aff promotion() const;
   isl::set promotedFootprint() const;

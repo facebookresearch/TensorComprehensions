@@ -77,16 +77,17 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::set ScopedFootprint::footprint(isl::set domain) const {
-  auto space = box.get_space();
-  auto accessed = isl::map::universe(space).intersect_domain(domain);
+isl::set TensorReferenceGroup::approximateFootprint() const {
+  auto scopedDomain = scopedAccesses().domain();
+  auto space = approximation.box.get_space();
+  auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
   auto lspace = isl::local_space(accessed.get_space().range());
 
-  for (size_t i = 0; i < dim(); ++i) {
-    auto dimLowerBound = lowerBound(i);
+  for (size_t i = 0; i < approximation.dim(); ++i) {
+    auto dimLowerBound = approximation.lowerBound(i);
     auto rhs = isl::aff(lspace, isl::dim_type::set, i);
     isl::map partial = (isl::aff_map(dimLowerBound) <= rhs) &
-        (isl::aff_map(dimLowerBound + size(i)) > rhs);
+        (isl::aff_map(dimLowerBound + approximation.size(i)) > rhs);
     accessed = accessed & partial;
   }
   return accessed.range();
