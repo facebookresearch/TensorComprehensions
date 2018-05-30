@@ -193,6 +193,17 @@ inline isl::map operator<=(isl::aff_map A, isl::aff B) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Operations on isl::multi_aff
+///////////////////////////////////////////////////////////////////////////////
+inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
+  auto resultList = isl::aff_list(left.get_ctx(), left.size());
+  for (int i = 0, n = left.size(); i < n; ++i) {
+    resultList = resultList.add(left.get_aff(i) / right.get_val(i));
+  }
+  return isl::multi_aff(left.get_space(), resultList);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
 inline isl::set operator&(isl::set S1, isl::set S2) {
