@@ -35,15 +35,25 @@ enum class AccessType : short { Read, Write };
 // ScheduleTree*), the user is responsible for maintaining the correspondance
 // between schedule tree positions and footprints.
 // Overapproximates one dimension by its lower bound, affine function of
-// parameters and schedule dimensions visible around the scope, and by a
-// constant size.
+// parameters and schedule dimensions visible around the scope, by a
+// constant size, and by a pair offset/stride for strided accesses.  If the
+// access is not strided, then "offset" is a zero expression and "stride" is 1.
+// The lowerBound and the size are computed after removing the eventual stride.
 struct ScopedFootprintDim {
  public:
-  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s) {}
+  ScopedFootprintDim(
+      isl::aff lowerBound,
+      isl::val size,
+      isl::aff offset,
+      isl::val stride)
+      : lowerBound(lowerBound), size(size), offset(offset), stride(stride) {}
 
  public:
   isl::aff lowerBound;
   isl::val size;
+
+  isl::aff offset;
+  isl::val stride;
 };
 
 // Rectangular overapproximation of a tensor elements accessed through a single
@@ -53,6 +63,8 @@ struct ScopedFootprintDim {
 // between schedule tree positions and footprints.
 struct ScopedFootprint : std::vector<ScopedFootprintDim> {
   isl::multi_aff lowerBounds() const;
+  isl::multi_aff offsets() const;
+  isl::multi_val strides() const;
 };
 
 // Descriptor of tensor reference in a Scop.
