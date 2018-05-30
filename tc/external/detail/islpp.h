@@ -186,6 +186,8 @@ isl::map operator==(isl::map A, isl::aff_map B);
 ///////////////////////////////////////////////////////////////////////////////
 isl::multi_aff operator-(isl::multi_aff left, isl::multi_aff right);
 
+isl::multi_aff operator*(isl::multi_aff left, isl::multi_val right);
+
 isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
 
 ///////////////////////////////////////////////////////////////////////////////

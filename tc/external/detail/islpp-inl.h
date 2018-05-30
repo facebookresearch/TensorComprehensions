@@ -215,6 +215,10 @@ inline isl::multi_aff operator-(isl::multi_aff left, isl::multi_aff right) {
   return left.sub(right);
 }
 
+inline isl::multi_aff operator*(isl::multi_aff left, isl::multi_val right) {
+  return left.scale(right);
+}
+
 inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
   auto resultList = isl::aff_list(left.get_ctx(), left.size());
   for (int i = 0, n = left.size(); i < n; ++i) {
