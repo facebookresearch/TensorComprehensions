@@ -211,6 +211,10 @@ inline isl::map operator==(isl::aff A, isl::aff_map B) {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::multi_aff
 ///////////////////////////////////////////////////////////////////////////////
+inline isl::multi_aff operator-(isl::multi_aff left, isl::multi_aff right) {
+  return left.sub(right);
+}
+
 inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
   auto resultList = isl::aff_list(left.get_ctx(), left.size());
   for (int i = 0, n = left.size(); i < n; ++i) {
