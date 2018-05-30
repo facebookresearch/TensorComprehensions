@@ -241,6 +241,14 @@ bool canOrderBefore(
     detail::ScheduleTree* tree,
     isl::union_set filter,
     isl::union_map dependences);
+// Is it possible to order the elements in the given filter
+// after the other active elements without violating
+// any of the given dependences?
+bool canOrderAfter(
+    detail::ScheduleTree* root,
+    detail::ScheduleTree* tree,
+    isl::union_set filter,
+    isl::union_map dependences);
 
 // Insert a sequence to ensure that the active domain elements
 // in the given filter are executed before the other active domain elements.

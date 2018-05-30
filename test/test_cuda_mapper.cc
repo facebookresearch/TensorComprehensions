@@ -867,7 +867,8 @@ struct ReductionTest : public PolyhedralMapperTest {
         .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
         .outerScheduleAllowSkewing(false)
         .outerSchedulePositiveOrthant(true)
-        .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+        .intraTileScheduleFusionStrategy(
+            tc::FusionStrategy::Preserve3Coincident)
         .intraTileScheduleAllowSkewing(false)
         .intraTileSchedulePositiveOrthant(true)
         .fixParametersBeforeScheduling(false)

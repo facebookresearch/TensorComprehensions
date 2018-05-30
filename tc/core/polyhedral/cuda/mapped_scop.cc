@@ -190,10 +190,10 @@ void fixThreadsBelow(
 
 /*
  * Try and order the other statements in "domain" (if any)
- * before the "updates" statements, returning true is the operation succeeds.
+ * away from the "updates" statements, returning true is the operation succeeds.
  * In particular, only do this if it doesn't violate any dependences.
- * TODO (#454): order statements before or after the reduction based on
- * dependences.
+ * Anything that depends on an update statement is ordered after
+ * the update statements.  Anything else is ordered before.
  */
 bool separatedOut(
     Scop& scop,
@@ -205,10 +205,19 @@ bool separatedOut(
     return true;
   }
   auto dependences = scop.activeDependences(tree);
-  if (!canOrderBefore(scop.scheduleRoot(), tree, other, dependences)) {
+  auto after =
+      dependences.intersect_domain(updates).intersect_range(other).range();
+  auto before = other.subtract(after);
+  if (!canOrderBefore(scop.scheduleRoot(), tree, before, dependences) ||
+      !canOrderAfter(scop.scheduleRoot(), tree, after, dependences)) {
     return false;
   }
-  orderBefore(scop.scheduleRoot(), tree, other);
+  if (!before.is_empty()) {
+    orderBefore(scop.scheduleRoot(), tree, before);
+  }
+  if (!after.is_empty()) {
+    orderAfter(scop.scheduleRoot(), tree, after);
+  }
   return true;
 }
 

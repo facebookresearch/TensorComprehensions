@@ -729,6 +729,31 @@ ScheduleTreeUPtr gistedFilter(isl::union_set filter, ScheduleTreeUPtr child) {
   return ScheduleTree::makeFilter(filter, std::move(child));
 }
 
+/*
+ * Given a partition of the (active) domain elements into "first" and "second",
+ * is it possible to order the "first" elements before the "second"
+ * without violating any of the (active) "dependences"?
+ */
+bool canOrder(
+    isl::union_set first,
+    isl::union_set second,
+    isl::union_map dependences) {
+  if (first.is_empty() || second.is_empty()) {
+    return true;
+  }
+  // Create an ordering schedule function first -> 0; second -> 1.
+  auto ctx = dependences.get_ctx();
+  auto space = isl::space(ctx, 0).unnamed_set_from_params(1);
+  auto zero = isl::multi_val::zero(space);
+  auto one = zero.set_val(0, isl::val::one(ctx));
+  auto order = isl::multi_union_pw_aff(first, zero);
+  order = order.union_add(isl::multi_union_pw_aff(second, one));
+
+  // Check that this ordering preserves all dependences.
+  auto preserved = dependences.lex_lt_at(order).unite(dependences.eq_at(order));
+  return dependences.is_subset(preserved);
+}
+
 } // namespace
 
 bool canOrderBefore(
@@ -736,18 +761,17 @@ bool canOrderBefore(
     ScheduleTree* tree,
     isl::union_set filter,
     isl::union_map dependences) {
-  // Create an ordering schedule function filter -> 0; other -> 1.
   auto other = activeDomainPoints(root, tree).subtract(filter);
-  auto ctx = root->ctx_;
-  auto space = isl::space(ctx, 0).unnamed_set_from_params(1);
-  auto zero = isl::multi_val::zero(space);
-  auto one = zero.set_val(0, isl::val::one(ctx));
-  auto order = isl::multi_union_pw_aff(filter, zero);
-  order = order.union_add(isl::multi_union_pw_aff(other, one));
+  return canOrder(filter, other, dependences);
+}
 
-  // Check that this ordering preserves all dependences.
-  auto preserved = dependences.lex_lt_at(order).unite(dependences.eq_at(order));
-  return dependences.is_subset(preserved);
+bool canOrderAfter(
+    ScheduleTree* root,
+    ScheduleTree* tree,
+    isl::union_set filter,
+    isl::union_map dependences) {
+  auto other = activeDomainPoints(root, tree).subtract(filter);
+  return canOrder(other, filter, dependences);
 }
 
 void orderBefore(
