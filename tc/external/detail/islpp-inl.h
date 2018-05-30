@@ -38,10 +38,14 @@ inline isl::aff operator*(isl::aff A, isl::val V) {
   return V * A;
 }
 
+inline isl::aff operator/(isl::aff A, isl::val V) {
+  isl::aff T(isl::local_space(A.get_space().domain()), V);
+  return A.div(T);
+}
+
 inline isl::aff operator/(isl::aff A, int i) {
   isl::ctx ctx = A.get_ctx();
-  isl::aff T(isl::local_space(A.get_space().domain()), isl::val(ctx, i));
-  return A.div(T);
+  return A / isl::val(ctx, i);
 }
 
 inline isl::aff operator+(int i, isl::aff A) {
