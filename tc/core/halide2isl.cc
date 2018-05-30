@@ -529,11 +529,10 @@ std::vector<Reduction> findReductions(const Stmt& s) {
           }
         }
         if (dims.size() > 0) {
-          auto& p = reductions[op->name];
-          CHECK(!p.update.defined())
-              << "Multiple reduction updates not yet implemented";
+          Reduction p;
           p.update = op;
           p.dims = dims;
+          reductions.emplace_back(p);
         }
       }
     }
@@ -543,15 +542,11 @@ std::vector<Reduction> findReductions(const Stmt& s) {
     std::unordered_set<std::string> reductionVars;
     // The names of the outer For nodes, outermost to innermost.
     std::vector<std::string> vars;
-    std::map<std::string, Reduction> reductions;
+    std::vector<Reduction> reductions;
   } finder;
   s.accept(&finder);
 
-  std::vector<Reduction> result;
-  for (auto p : finder.reductions) {
-    result.push_back(p.second);
-  }
-  return result;
+  return finder.reductions;
 }
 
 } // namespace halide2isl
