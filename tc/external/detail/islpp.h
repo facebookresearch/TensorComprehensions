@@ -123,6 +123,8 @@ isl::aff operator*(isl::val V, isl::aff A);
 isl::aff operator/(isl::aff A, int i);
 isl::aff operator/(isl::aff A, isl::val V);
 
+isl::aff operator%(isl::aff A, isl::val V);
+
 isl::aff operator+(int i, isl::aff A);
 isl::aff operator+(isl::aff A, isl::aff B);
 isl::aff operator+(isl::aff A, int i);

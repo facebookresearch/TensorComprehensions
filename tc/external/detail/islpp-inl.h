@@ -48,6 +48,10 @@ inline isl::aff operator/(isl::aff A, int i) {
   return A / isl::val(ctx, i);
 }
 
+inline isl::aff operator%(isl::aff A, isl::val V) {
+  return A.mod(V);
+}
+
 inline isl::aff operator+(int i, isl::aff A) {
   isl::ctx ctx = A.get_ctx();
   return A + isl::val(ctx, i);
