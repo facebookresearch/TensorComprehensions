@@ -33,8 +33,10 @@ enum class AccessType : short { Read, Write };
 // Rectangular overapproximation of a tensor elements accessed through a single
 // reference.
 // Each dimension is overapproximated by a lower bound, an affine function of
-// parameters and schedule dimensions visible around the scope, and by a
-// constant size.
+// parameters and schedule dimensions visible around the scope, by a
+// constant size, and by a pair offset/stride for strided accesses.  If the
+// access is not strided, then "offset" is a zero expression and "stride" is 1.
+// The lowerBound and the size are computed after removing the potential stride.
 // The scope is defined by a specific position in a schedule tree (const
 // ScheduleTree*), the user is responsible for maintaining the correspondance
 // between schedule tree positions and footprints.
@@ -48,7 +50,17 @@ struct ScopedFootprint {
   isl::aff lowerBound(size_t pos) const {
     return box.get_offset().get_aff(pos);
   }
+  isl::val stride(size_t pos) const {
+    return strideValues.get_val(pos);
+  }
+  isl::aff strideOffset(size_t pos) const {
+    return strideOffsets.get_aff(pos);
+  }
+
   isl::fixed_box box;
+  isl::multi_val strideValues;
+  isl::multi_aff strideOffsets;
+
   isl::multi_aff lowerBounds() const;
 };
 

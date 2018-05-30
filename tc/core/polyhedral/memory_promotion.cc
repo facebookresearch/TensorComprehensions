@@ -31,10 +31,50 @@ namespace polyhedral {
 using detail::ScheduleTree;
 
 namespace {
-ScopedFootprint outputRanges(isl::map access) {
-  ScopedFootprint footprint;
+// Remove strides specified by "strides" and "offsets" from the range of
+// "relation".  In particular, relation has a shape
+//
+//   D -> O: o_i = offset_i + stride_i * f(D)
+//
+// transform it into
+//
+//   D -> O: o_i = f(D)
+//
+// by subtracting "offsets" and by dividing the result by "strides".
+isl::map removeRangeStrides(
+    isl::map relation,
+    isl::multi_val strides,
+    isl::multi_aff offsets) {
+  CHECK_EQ(strides.size(), offsets.size());
 
-  // TODO: also compute strides
+  auto space = relation.get_space();
+  auto stridesMA = isl::multi_aff::identity(space.range().map_from_set());
+  stridesMA = stridesMA / strides;
+
+  return relation.sum(isl::map(offsets.neg())).apply_range(isl::map(stridesMA));
+}
+
+// Compute a box approximation of the range of the given relation,
+// including the lower bounds, the box sizes, and the strides.
+// If the range has strides, remove them first.
+ScopedFootprint outputRanges(isl::map access) {
+  auto ctx = access.get_ctx();
+  int nSubscripts = access.dim(isl::dim_type::out);
+
+  auto strides = isl::val_list(ctx, nSubscripts);
+  auto strideOffsets = isl::aff_list(ctx, nSubscripts);
+  for (int i = 0; i < nSubscripts; ++i) {
+    auto si = access.get_range_stride_info(i);
+    strides = strides.add(si.get_stride());
+    strideOffsets = strideOffsets.add(si.get_offset());
+  }
+
+  ScopedFootprint footprint;
+  footprint.strideValues = isl::multi_val(access.get_space().range(), strides);
+  footprint.strideOffsets = isl::multi_aff(access.get_space(), strideOffsets);
+
+  access = removeRangeStrides(
+      access, footprint.strideValues, footprint.strideOffsets);
 
   footprint.box = access.get_range_simple_fixed_box_hull();
   return footprint;
@@ -84,10 +124,16 @@ isl::set TensorReferenceGroup::approximateFootprint() const {
   auto lspace = isl::local_space(accessed.get_space().range());
 
   for (size_t i = 0; i < approximation.dim(); ++i) {
-    auto dimLowerBound = approximation.lowerBound(i);
+    auto offset = approximation.lowerBound(i);
+    auto stride = approximation.stride(i);
+    auto strideOffset = approximation.strideOffset(i);
+    auto size = approximation.size(i);
     auto rhs = isl::aff(lspace, isl::dim_type::set, i);
-    isl::map partial = (isl::aff_map(dimLowerBound) <= rhs) &
-        (isl::aff_map(dimLowerBound + approximation.size(i)) > rhs);
+    auto lowerBound = offset * stride + strideOffset;
+    auto upperBound = (offset + size) * stride + strideOffset;
+    auto partial =
+        (isl::aff_map(lowerBound) <= rhs) & (isl::aff_map(upperBound) > rhs);
+
     accessed = accessed & partial;
   }
   return accessed.range();
@@ -304,7 +350,9 @@ TensorGroups TensorReferenceGroup::accessedBySubtree(
 
 // Compute the relation between schedule dimensions, original and promoted array
 // subscripts, in the space
-//   [S -> O] -> P
+//   [S -> O] -> O.
+// The caller is in charge of updating the tuple of the target space with the
+// group identifier.
 // The mapping depends on the original schedule dimensions because the same
 // elements of the promoted array get assigned different values of the original
 // array in different outer loop iterations; it's impossible to project out the
@@ -314,10 +362,20 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   isl::map map = scopedAccesses();
   auto accessSpace = map.get_space();
 
-  // lower bounds space is S -> P; which we transform into [S -> O] -> P
-  auto lowerBounds = approximation.lowerBounds().pullback(
-      isl::multi_aff::domain_map(accessSpace));
-  auto promotion = isl::multi_aff::range_map(accessSpace) - lowerBounds;
+  // Construct a projection multi-aff in [S -> O] -> S
+  // for further precomposition.
+  auto originalSpaceInserter = isl::multi_aff::domain_map(accessSpace);
+
+  // Lower bounds and offsets space is S -> O; transform into [S -> O] -> O.
+  auto lowerBounds =
+      approximation.lowerBounds().pullback(originalSpaceInserter);
+  auto offsets = approximation.strideOffsets.pullback(originalSpaceInserter);
+
+  // Create promotion starting by identity in [S -> O] -> O.
+  auto original = isl::multi_aff::range_map(accessSpace);
+  auto promotion =
+      (original - offsets) / approximation.strideValues - lowerBounds;
+
   return promotion;
 }
 
