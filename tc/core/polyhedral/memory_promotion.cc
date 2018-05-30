@@ -96,6 +96,11 @@ std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
 // TODO: replace this with a call to isl_map_range_box_hull when available.
 ScopedFootprint outputRanges(isl::map access) {
   int nSubscripts = access.dim(isl::dim_type::out);
+
+  if (access.get_space().domain().is_wrapping()) {
+    access = access.domain_factor_domain();
+  }
+
   ScopedFootprint footprint;
   for (int i = 0; i < nSubscripts; ++i) {
     auto singleDim =
