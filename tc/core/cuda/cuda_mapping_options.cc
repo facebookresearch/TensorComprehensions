@@ -287,6 +287,11 @@ CudaMappingOptions& CudaMappingOptions::useReadOnlyCache(bool b) {
   return *this;
 }
 
+CudaMappingOptions& CudaMappingOptions::timeout(uint32_t ms) {
+  ownedProto_.set_timeout(ms);
+  return *this;
+}
+
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);
@@ -318,7 +323,8 @@ CudaMappingOptions CudaMappingOptions::makeUnmappedMappingOptions() {
       .useSharedMemory(false)
       .usePrivateMemory(false)
       .unrollCopyShared(false)
-      .useReadOnlyCache(false);
+      .useReadOnlyCache(false)
+      .timeout(FLAGS_timeout);
   return mo;
 }
 

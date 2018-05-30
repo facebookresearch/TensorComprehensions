@@ -62,27 +62,35 @@ class MappedScop {
       ::tc::Grid grid,
       ::tc::Block block,
       uint64_t unroll_,
-      bool useReadOnlyCache_)
+      bool useReadOnlyCache_,
+      bool useTimeout_)
       : scop_(std::move(scop)),
         numBlocks(grid),
         numThreads(block),
         unroll(unroll_),
-        useReadOnlyCache(useReadOnlyCache_) {}
+        useReadOnlyCache(useReadOnlyCache_),
+        useTimeout(useTimeout_) {}
 
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
     return std::unique_ptr<MappedScop>(new MappedScop(
-        std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+        std::move(scop),
+        ::tc::Grid{1, 1, 1},
+        ::tc::Block{1, 1, 1},
+        1,
+        false,
+        false));
   }
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
       ::tc::Block block,
       uint64_t unroll,
-      bool useReadOnlyCache) {
-    return std::unique_ptr<MappedScop>(
-        new MappedScop(std::move(scop), grid, block, unroll, useReadOnlyCache));
+      bool useReadOnlyCache,
+      bool useTimeout) {
+    return std::unique_ptr<MappedScop>(new MappedScop(
+        std::move(scop), grid, block, unroll, useReadOnlyCache, useTimeout));
   }
 
   // Apply the hand-written OuterBlockInnerThread mapping strategy.
@@ -194,6 +202,11 @@ class MappedScop {
   // Return a pointer to the split off tile.
   detail::ScheduleTree* splitOutReductionTileAndInsertSyncs(
       detail::ScheduleTree* band);
+
+  void insertTimeoutChecks(
+      detail::ScheduleTree* st,
+      unsigned timeoutCheckFrequency);
+
   // Map "band" to thread identifiers using as many blockSizes values as outer
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and
@@ -214,6 +227,7 @@ class MappedScop {
   const ::tc::Block numThreads;
   const uint64_t unroll;
   const bool useReadOnlyCache;
+  const bool useTimeout;
 
  private:
   // Information about a detected reduction that can potentially

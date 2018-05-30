@@ -95,14 +95,23 @@ struct AstPrinter {
   bool inReduction_ = false;
 };
 
-vector<string> emitParams(const Scop& scop) {
+vector<string> emitParams(const MappedScop& mappedScop) {
   vector<string> res;
+  const auto& scop = mappedScop.scop();
   res.reserve(scop.halide.params.size());
   // Halide params. One of these two vectors will be empty.
   for (auto p : scop.halide.params) {
     stringstream ss;
     ss << p.type() << " " << p.name();
     res.push_back(ss.str());
+  }
+  if (mappedScop.useTimeout != 0) {
+    stringstream ssStartTime;
+    ssStartTime << "unsigned long long* startTime";
+    res.push_back(ssStartTime.str());
+    stringstream ssTimeout;
+    ssTimeout << "unsigned long long timeout";
+    res.push_back(ssTimeout.str());
   }
   return res;
 }
@@ -136,9 +145,10 @@ vector<string> emitTypedTensorNames(const vector<Halide::ImageParam>& tensors) {
   return res;
 }
 
-void emitArgs(stringstream& ss, const Scop& scop) {
+void emitArgs(stringstream& ss, const MappedScop& mappedScop) {
   // Order is: params, outs, ins
-  auto sigVec = emitParams(scop);
+  const auto& scop = mappedScop.scop();
+  auto sigVec = emitParams(mappedScop);
   sigVec = sigVec + emitTypedTensorNames(scop.halide.outputs);
   sigVec = sigVec + emitTypedTensorNames(scop.halide.inputs);
   for (auto& s : sigVec) {
@@ -152,10 +162,10 @@ void emitArgs(stringstream& ss, const Scop& scop) {
 void emitKernelSignature(
     stringstream& ss,
     const std::string& specializedName,
-    const Scop& scop) {
+    const MappedScop& mappedScop) {
   CHECK_NE(specializedName, "") << "name not provided";
   ss << "__global__ void " << specializedName << "(";
-  emitArgs(ss, scop);
+  emitArgs(ss, mappedScop);
   ss << ") {" << endl;
 }
 
@@ -452,6 +462,10 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   } else if (
       stmtId.get_name() == kReadIdName || stmtId.get_name() == kWriteIdName) {
     emitCopyStmt(statementContext);
+  } else if (context_.scop().isTimeoutCheckId(stmtId)) {
+    context_.ss << "if(__timestamp() - startns > timeout) {\n";
+    context_.ss << ws.tab() << ws.tab() << "return;\n";
+    context_.ss << ws.tab() << "}" << std::endl;
   } else { // regular statement
     auto mappedStmtId = statementContext.statementId();
     CHECK_EQ(stmtId, mappedStmtId)
@@ -668,6 +682,22 @@ void emitThreadIdInit(stringstream& ss, const MappedScop& scop) {
   ss << "int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;\n";
 }
 
+void emitTimestampInit(stringstream& ss) {
+  WS ws;
+  ss << ws.tab();
+  ss << "unsigned long long startns = __timestamp();\n";
+  ss << ws.tab();
+  ss << "unsigned long long old_startns = startns;\n";
+  ss << ws.tab();
+  ss << "old_startns = atomicCAS(startTime, 0, startns);\n";
+  ss << ws.tab();
+  ss << "if(old_startns < startns && startns - old_startns > timeout && old_startns != 0) {\n";
+  ss << ws.tab() << ws.tab();
+  ss << "return;\n";
+  ss << ws.tab();
+  ss << "}\n";
+}
+
 void emitTmpDecl(stringstream& ss, const Scop& scop) {
   for (const auto& kvp : scop.treeSyncUpdateMap) {
     WS ws;
@@ -752,12 +782,15 @@ string emitCudaKernel(
   }
 
   stringstream ss;
-  emitKernelSignature(ss, specializedName, scop);
+  emitKernelSignature(ss, specializedName, mscop);
   emitThreadIdInit(ss, mscop);
   emitTensorViews(ss, scop.halide.outputs, paramValues);
   emitTensorViews(ss, scop.halide.inputs, paramValues);
   emitTmpDecl(ss, scop);
   emitPromotedArrayViewsHalide(ss, scop);
+  if (mscop.useTimeout) {
+    emitTimestampInit(ss);
+  }
   NodeInfoMapType nodeInfoMap;
   auto collect = [&nodeInfoMap](
                      isl::ast_node n, isl::ast_build b) -> isl::ast_node {

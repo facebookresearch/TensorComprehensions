@@ -43,6 +43,13 @@ constexpr auto defines = R"C(
 #define inf __longlong_as_double(0x7ff0000000000000LL)
 )C";
 
+constexpr auto timestampFunction = R"C(
+__device__ unsigned long long __timestamp() {
+  unsigned long long startns;
+  asm volatile("mov.u64 %0,%%globaltimer;" : "=l"(startns));
+  return startns;
+})C";
+
 constexpr auto warpSyncFunctions = R"C(
 // Before CUDA 9, syncwarp is a noop since warps are always synchronized.
 #if __CUDACC_VER_MAJOR__ < 9

@@ -57,6 +57,7 @@ class CudaRTCFunction {
       std::vector<long> params,
       std::vector<void*> outputs,
       std::vector<const void*> inputs,
+      uint32_t timeout,
       bool profile = false) const;
 
   void clear();
@@ -64,6 +65,7 @@ class CudaRTCFunction {
  private:
   mutable std::unordered_map<size_t, CUmodule> perGpuModule_;
   mutable std::unordered_map<size_t, CUfunction> perGpuKernel_;
+  unsigned long long* startTimeDev;
   std::string specializedName;
   std::vector<char> nvrtc_ptx;
   bool cleared_;

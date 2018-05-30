@@ -91,6 +91,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         Grid{1},
         Block{blockSizes[0], blockSizes[1]},
         0,
+        false,
         false);
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
     bandScale(band, tileSizes);
@@ -114,6 +115,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         Grid{gridSizes[0], gridSizes[1]},
         Block{blockSizes[0], blockSizes[1]},
         0,
+        false,
         false);
 
     // Map to blocks
@@ -364,13 +366,15 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   auto res = mscop->codegen(specializedName);
 
-  std::string expected(
+  std::string expectedIds(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
-  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*C)[M] = reinterpret_cast<float32 (*)[M]>(pC);
+  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;)RES");
+  std::string expectedDeclarations(
+      R"RES(float32 (*C)[M] = reinterpret_cast<float32 (*)[M]>(pC);
   const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
-  const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
-  for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
+  const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);)RES");
+  std::string expectedCompute(
+      R"RES(for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t0 + c1 + 1) {
       C[(t1 + 16 * b0)][(t0 + c1)] = (A[(t1 + 16 * b0)][(t0 + c1)] + B[(t1 + 16 * b0)][(t0 + c1)]);
     }
@@ -378,7 +382,11 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 }
 )RES");
 
-  ASSERT_NE(std::string::npos, std::get<0>(res).find(expected))
+  ASSERT_NE(std::string::npos, std::get<0>(res).find(expectedIds))
+      << std::get<0>(res);
+  ASSERT_NE(std::string::npos, std::get<0>(res).find(expectedDeclarations))
+      << std::get<0>(res);
+  ASSERT_NE(std::string::npos, std::get<0>(res).find(expectedCompute))
       << std::get<0>(res);
   ASSERT_EQ(32u, std::get<1>(res).view[0])
       << "Improper dim in: " << std::get<1>(res).view;
@@ -399,17 +407,21 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
   // Don't intersect context with the domain and see what happens
   auto res = std::get<0>(mscop->codegen(specializedName));
 
-  std::string expected(
+  std::string expectedIds(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
-  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O1)[N] = reinterpret_cast<float32 (*)[N]>(pO1);
+  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;)RES");
+
+  std::string expectedDeclarations(
+      R"RES(float32 (*O1)[N] = reinterpret_cast<float32 (*)[N]>(pO1);
   float32 (*O2)[N] = reinterpret_cast<float32 (*)[N]>(pO2);
   float32 (*O3)[N] = reinterpret_cast<float32 (*)[N]>(pO3);
   const float32 (*A)[N][N][N] = reinterpret_cast<const float32 (*)[N][N][N]>(pA);
   const float32 (*B)[N] = reinterpret_cast<const float32 (*)[N]>(pB);
   const float32 (*C)[N] = reinterpret_cast<const float32 (*)[N]>(pC);
-  const float32 (*D)[N] = reinterpret_cast<const float32 (*)[N]>(pD);
-  for (int c0 = 0; c0 < N; c0 += 1) {
+  const float32 (*D)[N] = reinterpret_cast<const float32 (*)[N]>(pD);)RES");
+
+  std::string expectedCompute(
+      R"RES(for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
       O1[c0][c1] = 0.000000f;
     }
@@ -436,7 +448,9 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
 }
 )RES");
 
-  ASSERT_NE(std::string::npos, res.find(expected)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedIds)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedDeclarations)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedCompute)) << res;
 }
 
 TEST_F(PolyhedralMapperTest, BareVariables) {
@@ -450,13 +464,11 @@ def fun(float(N, N) A) -> (O)
   auto mscop = makeUnmapped(tc);
   auto res = std::get<0>(mscop->codegen(specializedName));
 
-  string expected(
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA) {
-  int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
-  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
-  const float32 (*A)[N] = reinterpret_cast<const float32 (*)[N]>(pA);
-  for (int c0 = 0; c0 < N; c0 += 1) {
+  string expected1(
+      R"RES(float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
+  const float32 (*A)[N] = reinterpret_cast<const float32 (*)[N]>(pA);)RES");
+  string expected2(
+      R"RES(for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
       O[c0][c1] = (((A[c0][c1] + float32(c0)) + float32(c1)) + float32(N));
     }
@@ -464,7 +476,8 @@ def fun(float(N, N) A) -> (O)
 }
 )RES");
 
-  ASSERT_NE(std::string::npos, res.find(expected)) << res;
+  ASSERT_NE(std::string::npos, res.find(expected1)) << res;
+  ASSERT_NE(std::string::npos, res.find(expected2)) << res;
 }
 
 TEST_F(PolyhedralMapperTest, CudaFunctions) {
@@ -479,15 +492,18 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
   mscop->fixParameters<int>({{"N", 512}});
   auto res = std::get<0>(mscop->codegen(specializedName));
 
-  string expected =
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
-  int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
-  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
+  string expectedIds =
+      R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
+  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;)RES";
+
+  string expectedDeclarations =
+      R"RES(float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
   const float32 (*A)[512] = reinterpret_cast<const float32 (*)[512]>(pA);
   const float32 (*B)[512] = reinterpret_cast<const float32 (*)[512]>(pB);
-  const float32 (*C) = reinterpret_cast<const float32 (*)>(pC);
-  for (int c0 = 0; c0 <= 511; c0 += 1) {
+  const float32 (*C) = reinterpret_cast<const float32 (*)>(pC);)RES";
+
+  string expectedCompute =
+      R"RES(for (int c0 = 0; c0 <= 511; c0 += 1) {
     for (int c1 = 0; c1 <= 511; c1 += 1) {
       O[c0][c1] = (nextafter(C[c0], exp(A[c0][c1])) + log(B[c1][c0]));
     }
@@ -495,16 +511,32 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
 }
 )RES";
 
-  ASSERT_NE(std::string::npos, res.find(expected)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedIds)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedDeclarations)) << res;
+  ASSERT_NE(std::string::npos, res.find(expectedCompute)) << res;
 }
 
-constexpr auto kExpectedMatmul_64_64_64 =
-    R"CUDA(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
-  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[64] = reinterpret_cast<float32 (*)[64]>(pO);
+TEST_F(PolyhedralMapperTest, MergedContexts) {
+  auto scop = PrepareAndJoinBandsMatMul();
+
+  // Unit test claims to use the specialized context properly
+  scop->fixParameters<int>({{"M", 64}, {"N", 64}, {"K", 64}});
+  scop->specializeToContext();
+
+  auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
+  auto res = std::get<0>(mscop->codegen(specializedName));
+
+  string expectedIds =
+      R"CUDA(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
+  int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;)CUDA";
+
+  string expectedDeclarations =
+      R"CUDA(float32 (*O)[64] = reinterpret_cast<float32 (*)[64]>(pO);
   const float32 (*A)[64] = reinterpret_cast<const float32 (*)[64]>(pA);
-  const float32 (*B)[64] = reinterpret_cast<const float32 (*)[64]>(pB);
-  for (int c0 = 0; c0 <= 63; c0 += 16) {
+  const float32 (*B)[64] = reinterpret_cast<const float32 (*)[64]>(pB);)CUDA";
+
+  string expectedCompute =
+      R"CUDA(for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
         O[(c0 + c2)][(t0 + c1)] = 0.000000f;
@@ -517,16 +549,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
 }
 )CUDA";
 
-TEST_F(PolyhedralMapperTest, MergedContexts) {
-  auto scop = PrepareAndJoinBandsMatMul();
-
-  // Unit test claims to use the specialized context properly
-  scop->fixParameters<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  scop->specializeToContext();
-
-  auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
-  auto res = std::get<0>(mscop->codegen(specializedName));
-  ASSERT_TRUE(std::string::npos != res.find(kExpectedMatmul_64_64_64)) << res;
+  ASSERT_TRUE(std::string::npos != res.find(expectedIds)) << res;
+  ASSERT_TRUE(std::string::npos != res.find(expectedDeclarations)) << res;
+  ASSERT_TRUE(std::string::npos != res.find(expectedCompute)) << res;
 }
 
 TEST_F(PolyhedralMapperTest, Match1) {

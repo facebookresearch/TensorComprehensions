@@ -894,14 +894,14 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
       grid,
       block,
       mappedScop.unroll,
-      mappedScop.useReadOnlyCache);
+      mappedScop.useReadOnlyCache,
+      mappedScop.useTimeout);
   res->insertMappingContext();
 
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "Codegen with tightened bounds [blocks:" << grid
       << ", threads:" << block << "] for tree:\n"
       << *res->schedule();
-
   return res;
 }
 } // namespace
@@ -918,6 +918,9 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   std::stringstream code;
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
   code << code::c::warpSyncFunctions;
+  if (useTimeout) {
+    code << code::c::timestampFunction;
+  }
   code << std::endl;
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
     code << code::cuda::common;
@@ -961,6 +964,151 @@ detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
   return child;
 }
 
+namespace {
+
+// Computes a lower bound of the maximum number of loop iterations in the given
+// schedule tree. Returns infinity if there is a parametric band.
+isl::val boundInstances(detail::ScheduleTree* st, isl::union_map prefix) {
+  // If the tree is a leaf, there is only one iteration.
+  if (st->children().size() == 0) {
+    return isl::val::one(st->ctx_);
+  }
+  auto childrenPrefix = extendSchedule(st, prefix);
+
+  // If the tree has multiple children, we take the maximum of the number
+  // of iterations of the children.
+  auto bound = isl::val::one(st->ctx_);
+  for (const auto& c : st->children()) {
+    auto childrenBound = boundInstances(c, childrenPrefix);
+    bound = bound.max(childrenBound);
+  }
+
+  // If the tree is a band, we take the number of iterations of the child,
+  // multiplied by the number of iterations of the band.
+  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+    if (bound.is_null()) {
+      bound = isl::val::one(st->ctx_);
+    }
+    auto partial = band->mupa_;
+    auto n = band->nMember();
+    for (int i = n - 1; i >= 0; --i) {
+      auto member = partial.get_union_pw_aff(i);
+      auto outerMap = prefix;
+      if (i > 0) {
+        auto outer = partial.drop_dims(isl::dim_type::set, i, n - i);
+        outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
+      }
+      bound = bound.mul(relativeRange(outerMap, member));
+    }
+  }
+  return bound;
+}
+
+// Computes a lower bound of the maximum number of loop iterations in the given
+// schedule tree. Returns infinity if there is a parametric band, or if timeout
+// checks are inserted in the tree.
+// Timeout checks are inserted after the innermosts sequences or loops
+// containing more than timeoutCheckFrequency instances.
+// extensionSet is the union of all extension sets that needs to be filtered
+// out. This is needed because it is not allowed to add an extension in a tree
+// which has an ancestor filtering a subset of the extension.
+isl::val boundInstancesAndInsertTimeoutChecks(
+    MappedScop* mappedScop,
+    detail::ScheduleTree* st,
+    isl::union_map prefix,
+    isl::val timeoutCheckFrequency,
+    isl::union_set extensionSet) {
+  // If the tree is a leaf, there is only one iteration.
+  if (st->children().size() == 0) {
+    return isl::val::one(st->ctx_);
+  }
+
+  auto childrenPrefix = extendSchedule(st, prefix);
+
+  // If the tree is a filter, we check if it filters an ancestor extension.
+  // If it does, we don't insert timeout checks in the subtree.
+  auto isFilter = st->elemAs<detail::ScheduleTreeElemFilter>();
+  if (isFilter && !isFilter->filter_.intersect(extensionSet).is_empty()) {
+    auto bound = boundInstances(st->child({0}), childrenPrefix);
+  }
+
+  // If the tree is an extension, we unite the extension set with the
+  // previous ones.
+  if (auto extension = st->elemAs<detail::ScheduleTreeElemExtension>()) {
+    extensionSet = extension->extension_.range().unite(extensionSet);
+  }
+
+  // For every children, compute a lower bound of their instance, and take
+  // the maximum value.
+  auto bound = isl::val::one(st->ctx_);
+  for (const auto& c : st->children()) {
+    auto childrenBound = boundInstancesAndInsertTimeoutChecks(
+        mappedScop, c, childrenPrefix, timeoutCheckFrequency, extensionSet);
+    bound = bound.max(childrenBound);
+  }
+
+  // If there is already a timeout check in the children, there is no need to
+  // add more.
+  if (bound.is_infty()) {
+    return bound;
+  }
+
+  // If the tree is a sequence and a timeout should be inserted, insert it
+  // at the end of the sequence.
+  if (bound.gt(timeoutCheckFrequency) &&
+      st->elemAs<detail::ScheduleTreeElemSequence>()) {
+    mappedScop->scop().insertTimeoutCheck(st, st->numChildren());
+    return isl::val::infty(st->ctx_);
+  }
+
+  // If the tree is a band, check at every level if a timeout check should be
+  // inserted. Insert it if needed.
+  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+    auto partial = band->mupa_;
+    auto n = band->nMember();
+
+    for (int i = n - 1; i >= 0; --i) {
+      auto member = partial.get_union_pw_aff(i);
+      auto outerMap = prefix;
+      if (i > 0) {
+        auto outer = partial.drop_dims(isl::dim_type::set, i, n - i);
+        outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
+      }
+      bound = bound.mul(relativeRange(outerMap, member));
+      if (bound.gt(timeoutCheckFrequency)) {
+        if (i > 0) {
+          bandSplit(mappedScop->scop().scheduleRoot(), st, i);
+          mappedScop->scop().insertTimeoutCheckAfter(st->child({0}));
+        } else {
+          mappedScop->scop().insertTimeoutCheckAfter(st);
+        }
+        return isl::val::infty(st->ctx_);
+      }
+    }
+  }
+  return bound;
+}
+
+} // namespace
+
+void MappedScop::insertTimeoutChecks(
+    detail::ScheduleTree* st,
+    unsigned timeoutCheckFrequency) {
+  using namespace polyhedral::detail;
+  CHECK_GT(timeoutCheckFrequency, 0);
+
+  auto timeoutCheckFrequencyVal = isl::val(st->ctx_, timeoutCheckFrequency);
+  auto root = scop().scheduleRoot();
+  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  auto prefix = prefixSchedule(root, root->child({0}));
+  boundInstancesAndInsertTimeoutChecks(
+      this,
+      st,
+      prefix,
+      timeoutCheckFrequencyVal,
+      isl::union_set::empty(domain->domain_.get_space().params()));
+}
+
 std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     std::unique_ptr<Scop>&& scopUPtr,
     const CudaMappingOptions& cudaOptions) {
@@ -972,7 +1120,8 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       ::tc::Grid(cudaOptions.grid),
       ::tc::Block(cudaOptions.block),
       generic.proto.unroll(),
-      cudaOptions.proto().use_readonly_cache()));
+      cudaOptions.proto().use_readonly_cache(),
+      cudaOptions.proto().timeout() != 0));
   auto& scop = mappedScop->scop_;
 
   // 1a. Optionally specialize before scheduling...
@@ -1082,6 +1231,11 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "After outerBlockInnerThread strategy:" << std::endl
       << *mappedScop->schedule();
+
+  if (mappedScop->useTimeout) {
+    mappedScop->insertTimeoutChecks(
+        mappedScop->scop().scheduleRoot(), FLAGS_timeout_check_frequency);
+  }
 
   return mappedScop;
 }
