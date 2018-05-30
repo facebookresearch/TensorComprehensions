@@ -188,6 +188,30 @@ void fixThreadsBelow(
   mscop.mapThreadsBackward(bandTree);
 }
 
+/*
+ * Try and order the other statements in "domain" (if any)
+ * before the "updates" statements, returning true is the operation succeeds.
+ * In particular, only do this if it doesn't violate any dependences.
+ * TODO (#454): order statements before or after the reduction based on
+ * dependences.
+ */
+bool separatedOut(
+    Scop& scop,
+    detail::ScheduleTree* tree,
+    isl::union_set domain,
+    isl::union_set updates) {
+  auto other = domain.subtract(updates);
+  if (other.is_empty()) {
+    return true;
+  }
+  auto dependences = scop.activeDependences(tree);
+  if (!canOrderBefore(scop.scheduleRoot(), tree, other, dependences)) {
+    return false;
+  }
+  orderBefore(scop.scheduleRoot(), tree, other);
+  return true;
+}
+
 } // namespace
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
@@ -238,16 +262,8 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   // Order the other statements (if any) before the update statements
   // to ensure the band from which the reduction band has been split off
   // only contains update statements.
-  // Only do this if it doesn't violate any dependences.
-  // TODO (#454): order statements before or after the reduction based on
-  // dependences.
-  auto other = domain.subtract(updates);
-  if (!other.is_empty()) {
-    auto dependences = scop_->activeDependences(tree);
-    if (!canOrderBefore(scop_->scheduleRoot(), tree, other, dependences)) {
-      return false;
-    }
-    orderBefore(scop_->scheduleRoot(), tree, other);
+  if (!separatedOut(scop(), tree, domain, updates)) {
+    return false;
   }
   reductionBandUpdates_.emplace(tree, Reduction(updateIds));
   return true;
