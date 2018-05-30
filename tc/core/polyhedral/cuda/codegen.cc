@@ -550,9 +550,7 @@ void emitHalideExpr(
           op->call_type == Halide::Internal::Call::CallType::Image) {
         tc::polyhedral::detail::emitMappedTensorAccess(
             op->name, op, op->args, context);
-      } else if (
-          op->is_intrinsic(tc2halide::kReductionInit) ||
-          op->is_intrinsic(tc2halide::kReductionUpdate)) {
+      } else if (op->is_intrinsic(tc2halide::kReductionUpdate)) {
         op->args[0].accept(this);
       } else {
         IRPrinter::visit(op);

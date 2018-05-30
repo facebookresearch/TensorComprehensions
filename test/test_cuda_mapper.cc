@@ -861,6 +861,77 @@ def fun(float(N) I) -> (O) {
   EXPECT_TRUE(code.find("O[0] = (O") != std::string::npos);
 }
 
+struct ReductionTest : public PolyhedralMapperTest {
+  static CudaMappingOptions reductionTestMappingOptions() {
+    return DefaultOptions()
+        .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+        .outerScheduleAllowSkewing(false)
+        .outerSchedulePositiveOrthant(true)
+        .intraTileScheduleFusionStrategy(tc::FusionStrategy::Min)
+        .intraTileScheduleAllowSkewing(false)
+        .intraTileSchedulePositiveOrthant(true)
+        .fixParametersBeforeScheduling(false)
+        .tile(18, 32)
+        .unroll(16)
+        .tileImperfectlyNested(false)
+        .matchLibraryCalls(true)
+        .mapToThreads({512})
+        .mapToBlocks({16384})
+        .useSharedMemory(true)
+        .usePrivateMemory(false)
+        .unrollCopyShared(true);
+  }
+
+  void Check(const string& tc) {
+    auto code = codegenMapped(tc, reductionTestMappingOptions());
+    using tc::code::cuda::kCUBReductionName;
+    EXPECT_TRUE(code.find(kCUBReductionName) != std::string::npos);
+  }
+};
+
+/*
+ * Check that a reduction library call is produced when the reduction
+ * instruction is before an instruction modifying the same tensor.
+ */
+TEST_F(ReductionTest, BeforeInstruction) {
+  Check(R"TC(
+def fun(float(N, K) I) -> (O) {
+    O(n) +=! I(n, r_n)
+    O(n) = O(n) / (K)
+}
+)TC");
+}
+
+/*
+ * Check that a reduction library call is produced when the reduction
+ * instruction is after an instruction modifying the same tensor.
+ */
+TEST_F(ReductionTest, AfterInstruction) {
+  Check(R"TC(
+def fun(float(N, K) I, float(N) O0) -> (O) {
+    O(n) = 0.0 where n in 0:N
+    O(n) += O0(n)
+    O(n) += I(n, r_n)
+}
+)TC");
+}
+
+/*
+ * Check that a reduction library call is produced when the reduction
+ * instruction is placed after an instruction modifying the same tensor and
+ * before an instruction modifying the same tensor.
+ */
+TEST_F(ReductionTest, BetweenInstructions) {
+  Check(R"TC(
+def fun(float(N, K) I, float(N) O0) -> (O) {
+    O(n) = 0.0 where n in 0:N
+    O(n) += O0(n)
+    O(n) += I(n, r_n)
+    O(n) = O(n) / (K)
+}
+)TC");
+}
+
 static const string kTcMM = R"TC(
 def fun(float(M, K) A, float(K, N) B) -> (C) {
     C(m, n) +=! A(m, r_k) * B(r_k, n)
