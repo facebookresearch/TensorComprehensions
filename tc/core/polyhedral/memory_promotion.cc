@@ -55,6 +55,14 @@ std::pair<isl::val, isl::aff> outputRange(
   return emptyRange;
 }
 
+// Compute the bounds of the single output dimension of the given relation.
+// The lower bound is an affine function defined in terms of input dimensions
+// and parameters, and the upper bound has the same shape but shifted by a
+// constant value.  Look for bounds of the same shape as lower bound
+// constraints present in the "access" relation, and pick the one with the
+// smallest constant distance between the lower and the upper bound.
+//
+// TODO: replace this with a call to isl_map_range_box_hull when available.
 std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
   CHECK_EQ(access.dim(isl::dim_type::out), 1u)
       << "expected 1-dim output, call outputRanges instead";
@@ -83,6 +91,9 @@ std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
   return std::make_pair(minRange, lowerBoundWithMinRange);
 }
 
+// Compute the box approximation of the range of the given relation,
+// including the lower bounds and the box sizes.
+// TODO: replace this with a call to isl_map_range_box_hull when available.
 ScopedFootprint outputRanges(isl::map access) {
   int nSubscripts = access.dim(isl::dim_type::out);
   ScopedFootprint footprint;
