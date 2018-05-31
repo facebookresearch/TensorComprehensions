@@ -21,7 +21,8 @@
 namespace tc {
 
 struct InvalidStrideException : public std::runtime_error {
-  explicit InvalidStrideException(const std::string& s) : std::runtime_error(s) {}
+  explicit InvalidStrideException(const std::string& s)
+      : std::runtime_error(s) {}
 };
 
 } // namespace tc

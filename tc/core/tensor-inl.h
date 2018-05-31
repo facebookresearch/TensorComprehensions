@@ -63,6 +63,25 @@ void DLTensorDeleter::operator()(const DLTensorType* t) {
   delete t;
 };
 
+template <typename DLTensorType>
+std::string printSizesAndStrides(const DLTensorType* t) {
+  std::ostringstream sizesandshapes;
+  sizesandshapes << "Dimensions of the tensor are: ";
+  if (t->shape) {
+    for (size_t i = 0; i < t->ndim; ++i) {
+      sizesandshapes << t->shape[i] << "  ";
+    }
+  }
+  sizesandshapes << std::endl;
+  sizesandshapes << "strides in the tensor are: ";
+  if (t->strides) {
+    for (size_t i = 0; i < t->ndim; ++i) {
+      sizesandshapes << t->strides[i] << "  ";
+    }
+  }
+  return sizesandshapes.str();
+}
+
 namespace detail {
 template <typename DLTensorType, typename T>
 inline std::unique_ptr<DLTensorType, DLTensorDeleter> makeDLTensor(

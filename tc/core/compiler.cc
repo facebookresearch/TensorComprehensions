@@ -72,16 +72,9 @@ void checkInputsCompliant(
     lang::ErrorReport ep =
         lang::ErrorReport(halideComponents.getDef().params()[i]);
     std::ostringstream err_c;
-    err_c << ep.what() << "invalid strides for compilations in tensor "
+    err_c << ep.what() << "invalid strides for compilation in tensor "
           << std::endl;
-    err_c << "dimensions of tensor are: ";
-    for (size_t j = 0; j < dldim; ++j) {
-      err_c << dlsizes[j] << " ";
-    }
-    err_c << std::endl << "strides in tensor are: ";
-    for (size_t j = 0; j < dldim; ++j) {
-      err_c << dlstrides[j] << " ";
-    }
+    err_c << printSizesAndStrides(inputsInfo[i]);
     err_c << std::endl;
     for (size_t j = 0; j < dldim - 1; ++j) {
       if (dlstrides[j] < dlstrides[j + 1] * dlsizes[j + 1]) {

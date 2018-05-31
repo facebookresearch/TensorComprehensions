@@ -110,6 +110,8 @@ struct TensorInfo {
 /// values multiple times).
 template <typename T>
 std::vector<T> makeStridesFromSizes(const std::vector<T>& sizes);
+template <typename DLTensorType>
+std::string printSizesAndStrides(const DLTensorType* t);
 
 // Specializes for DLTensor, DLConstTensor
 template <typename DLTensorPtrType>
