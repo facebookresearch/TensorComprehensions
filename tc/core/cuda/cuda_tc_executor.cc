@@ -78,8 +78,7 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   auto scop = polyhedral::Scop::makeScop(
       isl::with_exceptions::globalIslCtx(), halideComponents);
   auto globalParameterContext = scop->makeContextFromInputs(inputs);
-  scop = polyhedral::Scop::makeSpecializedScop(
-      *scop, globalParameterContext.intersect(scop->globalParameterContext));
+  scop = polyhedral::Scop::makeSpecializedScop(*scop, globalParameterContext);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << options;
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original schedule:\n"
                                       << *(scop->scheduleRoot());

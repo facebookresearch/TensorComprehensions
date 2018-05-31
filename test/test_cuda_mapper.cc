@@ -361,8 +361,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   auto scopPtr = scop.get();
   auto context =
       scopPtr->makeContext(std::unordered_map<std::string, int>{{"N", 512}});
-  scop = Scop::makeSpecializedScop(
-      *scop, context.intersect(scop->globalParameterContext));
+  scop = Scop::makeSpecializedScop(*scop, context);
   auto mscop = TileAndMapBlocksAndThreads(
       std::move(scop), {16ul, 16ul}, {256ul, 256ul}, {16ul, 16ul});
 
