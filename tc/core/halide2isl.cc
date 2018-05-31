@@ -482,14 +482,6 @@ std::vector<Reduction> findReductions(const Stmt& s) {
   class FindReductions : public IRVisitor {
     using IRVisitor::visit;
 
-    bool isReductionInit(const Provide* op) {
-      if (const Call* call = op->values[0].as<Call>()) {
-        return call->is_intrinsic(tc2halide::kReductionInit);
-      } else {
-        return false;
-      }
-    }
-
     bool isReductionUpdate(const Provide* op) {
       if (const Call* call = op->values[0].as<Call>()) {
         return call->is_intrinsic(tc2halide::kReductionUpdate);
@@ -529,11 +521,10 @@ std::vector<Reduction> findReductions(const Stmt& s) {
           }
         }
         if (dims.size() > 0) {
-          auto& p = reductions[op->name];
-          CHECK(!p.update.defined())
-              << "Multiple reduction updates not yet implemented";
+          Reduction p;
           p.update = op;
           p.dims = dims;
+          reductions.emplace_back(p);
         }
       }
     }
@@ -543,15 +534,11 @@ std::vector<Reduction> findReductions(const Stmt& s) {
     std::unordered_set<std::string> reductionVars;
     // The names of the outer For nodes, outermost to innermost.
     std::vector<std::string> vars;
-    std::map<std::string, Reduction> reductions;
+    std::vector<Reduction> reductions;
   } finder;
   s.accept(&finder);
 
-  std::vector<Reduction> result;
-  for (auto p : finder.reductions) {
-    result.push_back(p.second);
-  }
-  return result;
+  return finder.reductions;
 }
 
 } // namespace halide2isl

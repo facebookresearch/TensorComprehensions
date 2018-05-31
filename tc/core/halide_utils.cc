@@ -123,8 +123,7 @@ std::string halideCodegenC(const Stmt& stmt) {
     using IRPrinter::visit;
 
     void visit(const Call* op) override {
-      if (op->is_intrinsic(tc2halide::kReductionInit) ||
-          op->is_intrinsic(tc2halide::kReductionUpdate)) {
+      if (op->is_intrinsic(tc2halide::kReductionUpdate)) {
         op->args[0].accept(this);
       } else if (
           op->call_type == Call::Halide || op->call_type == Call::Image) {

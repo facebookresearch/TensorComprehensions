@@ -76,9 +76,11 @@ void checkInputsCompliant(
           << std::endl;
     err_c << printSizesAndStrides(inputsInfo[i]);
     err_c << std::endl;
-    for (size_t j = 0; j < dldim - 1; ++j) {
-      if (dlstrides[j] < dlstrides[j + 1] * dlsizes[j + 1]) {
-        throw InvalidStrideException(err_c.str());
+    if (dldim) {
+      for (size_t j = 0; j < dldim - 1; ++j) {
+        if (dlstrides[j] < dlstrides[j + 1] * dlsizes[j + 1]) {
+          throw InvalidStrideException(err_c.str());
+        }
       }
       if (dlstrides[dldim - 1] < 1) {
         throw InvalidStrideException(err_c.str());
