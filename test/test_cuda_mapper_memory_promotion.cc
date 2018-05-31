@@ -349,7 +349,7 @@ def fun(float(N, M) A) -> (B, C) {
     EXPECT_EQ(groups.count(idC), 1u) << "could not group C references";
 
     const auto& groupsB = groups.at(idB);
-    ASSERT_EQ(groupsB.size(), 1u) << "expected B refereces to be grouped";
+    ASSERT_EQ(groupsB.size(), 1u) << "expected B references to be grouped";
     ASSERT_EQ(groupsB[0]->approximation.size(), 2u) << "B should be a 2D array";
     EXPECT_EQ(
         groupsB[0]->approximation[0].size,
