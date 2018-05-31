@@ -17,7 +17,6 @@
 
 #include <chrono>
 #include <string>
-#include <unordered_set>
 #include <vector>
 
 #include "tc/core/tc2halide.h"
