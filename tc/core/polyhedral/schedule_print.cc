@@ -184,7 +184,12 @@ std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
 
 std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
   WS w;
-  os << w.tab() << "extension(" << extension_ << ")";
+  os << w.tab() << "extension(";
+  for (const auto& e : extension_.wrap().get_set_list()) {
+    WS w2;
+    os << std::endl << w2.tab() << e.unwrap();
+  }
+  os << ")";
   return os;
 }
 
