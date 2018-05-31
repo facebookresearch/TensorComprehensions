@@ -135,13 +135,6 @@ struct Scop {
     return makeSpecializationSet(s, sizes);
   }
 
-  // Compute the values of parameters based on the effective sizes of the
-  // tensors provided as arguments and their parametric expressions stored in
-  // halide ImageParams.  We only know input sizes, output sizes are inferred.
-  // Result is an isl set directly usable as context.
-  isl::set makeContextFromInputs(
-      const std::vector<const DLConstTensor*>& inputs) const;
-
   // Fix the values of the specified parameters in the context
   // to the corresponding specified values.
   template <typename T>

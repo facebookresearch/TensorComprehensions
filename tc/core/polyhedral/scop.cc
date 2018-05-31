@@ -262,32 +262,6 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   insertSyncsAroundCopies(tree);
 }
 
-// Compute the values of parameters based on the effective sizes of the
-// tensors provided as arguments and their parametric expressions stored in
-// Halide InputImage.  We only know input sizes, output sizes are inferred.
-// Result is an isl set directly usable as context.
-//
-// TODO(ntv)
-isl::set Scop::makeContextFromInputs(
-    const std::vector<const DLConstTensor*>& inputs) const {
-  CHECK_EQ(halide.inputs.size(), inputs.size());
-
-  auto paramSpace = domain().get_space().params();
-  auto paramSet = isl::set::universe(paramSpace);
-  for (size_t i = 0, ei = inputs.size(); i < ei; ++i) {
-    CHECK_EQ(halide.inputs[i].dimensions(), inputs[i]->ndim);
-    for (size_t j = 0, ej = halide.inputs[i].dimensions(); j < ej; ++j) {
-      auto parametricAff = halide2isl::makeIslAffFromExpr(
-          paramSpace, halide.inputs[i].parameter().extent_constraint(j));
-      paramSet =
-          paramSet & (isl::aff_set(parametricAff) == inputs[i]->shape[j]);
-    }
-  }
-  CHECK(paramSet.is_equal(paramSet.sample()))
-      << "could not infer the values of parameters";
-  return paramSet;
-}
-
 std::vector<long> Scop::getParameterValues(isl::set context) const {
   auto ctx = context.get_ctx();
   auto longMax = isl::val(ctx, std::numeric_limits<long>::max());

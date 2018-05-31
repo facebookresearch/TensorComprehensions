@@ -77,7 +77,8 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   // context to specialize the scop..
   auto scop = polyhedral::Scop::makeScop(
       isl::with_exceptions::globalIslCtx(), halideComponents);
-  auto globalParameterContext = scop->makeContextFromInputs(inputs);
+  auto pvm = computeParamValueMap(halideComponents, inputs);
+  auto globalParameterContext = scop->makeContext(pvm);
   scop = polyhedral::Scop::makeSpecializedScop(*scop, globalParameterContext);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << options;
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original schedule:\n"
