@@ -262,25 +262,17 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   insertSyncsAroundCopies(tree);
 }
 
-std::vector<long> Scop::getParameterValues(isl::set context) const {
-  auto ctx = context.get_ctx();
-  auto longMax = isl::val(ctx, std::numeric_limits<long>::max());
-  auto space = context.get_space();
-  auto p = context.sample_point();
-  CHECK(context.is_equal(p));
-
+std::vector<long> Scop::getParameterValues(
+    const std::unordered_map<std::string, int>& sizes) const {
   // Scop holds a vector of Variables.
   // Iterate over parameters in order, checking if the
   // context contains a parameter whose name corresponds to that
   // Variable and push respective parameter values.
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
-    isl::id id(ctx, param.name());
-    CHECK(context.involves_param(id));
-    auto val = isl::aff::param_on_domain_space(space, id).eval(p);
-    CHECK(val.is_int()) << "fractional parameters unsupported";
-    CHECK(val.le(longMax)) << "parameter value overflows long";
-    paramValues.push_back(val.get_num_si());
+    auto name = param.name();
+    CHECK(sizes.count(name) == 1);
+    paramValues.push_back(sizes.at(name));
   }
   return paramValues;
 }

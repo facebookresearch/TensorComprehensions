@@ -142,10 +142,12 @@ struct Scop {
     intersectContext(makeContext(sizes));
   }
 
-  // Given the context set, return the list of parameter values in the same
+  // Given a map between TC parametric tensor sizes, represented as strings,
+  // and their numerical values, return the list of parameter values in the same
   // order as codegen places them in the function signature, i.e. following the
   // order of scop.params.
-  std::vector<long> getParameterValues(isl::set context) const;
+  std::vector<long> getParameterValues(
+      const std::unordered_map<std::string, int>& sizes) const;
 
   isl::id nextGroupIdForTensor(isl::id tensorId) {
     auto ctx = domain().get_ctx();
