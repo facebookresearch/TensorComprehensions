@@ -16,6 +16,7 @@
 #include "tc/core/halide_utils.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "tc/core/flags.h"
@@ -36,10 +37,10 @@ DLDataType fromHalideType(const Halide::Type& type) {
   return dtype;
 }
 
-std::map<std::string, int> computeParamValueMap(
+std::unordered_map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& halide,
     const std::vector<const DLConstTensor*>& inputsDLT) {
-  std::map<std::string, int> pvm;
+  std::unordered_map<std::string, int> pvm;
   if (halide.inputs.size() != inputsDLT.size()) {
     throw lang::ErrorReport(halide.getDef())
         << "expected " << halide.inputs.size() << " inputs but got "

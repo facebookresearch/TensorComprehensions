@@ -17,6 +17,7 @@
 
 #include <chrono>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "tc/core/tc2halide.h"
@@ -28,7 +29,7 @@ namespace tc {
 /// (metadata of) input tensors with specific shapes, compute a map between TC
 /// parametric tensor sizes, represented as strings, and their numerical values
 /// with given input sizes.
-std::map<std::string, int> computeParamValueMap(
+std::unordered_map<std::string, int> computeParamValueMap(
     const tc2halide::HalideComponents& components,
     const std::vector<const DLConstTensor*>& inputsDLT);
 
