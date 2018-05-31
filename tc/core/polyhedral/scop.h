@@ -93,9 +93,6 @@ struct Scop {
   static std::unique_ptr<Scop> makeSpecializedScop(
       const Scop& scop,
       isl::set extraGlobalParameterContext) {
-    CHECK(extraGlobalParameterContext.is_subset(scop.globalParameterContext))
-        << "expected extra context " << extraGlobalParameterContext
-        << " to be more specialized than " << scop.globalParameterContext;
     auto res = makeScop(scop);
     res->intersectContext(extraGlobalParameterContext);
     // **WARNING** if called before scheduling, this could result in a
