@@ -48,8 +48,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context = scop->makeContext<int>({{"N", N}, {"M", M}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(*scop, {{"N", N}, {"M", M}});
   SchedulerOptionsProto sop;
   SchedulerOptionsView sov(sop);
   scop = Scop::makeScheduled(*scop, sov);

@@ -45,7 +45,7 @@ class TestMapper : public ::testing::Test {
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     auto scop = Scop::makeScop(ctx, tc);
-    scop = Scop::makeSpecializedScop(*scop, scop->makeContext(problemSizes));
+    scop = Scop::makeSpecializedScop(*scop, problemSizes);
     scop->domain() =
         scop->domain().intersect_params(scop->globalParameterContext);
     return MappedScop::makeWithOuterBlockInnerThreadStrategy(

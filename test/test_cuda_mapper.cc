@@ -358,9 +358,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 )TC";
 
   auto scop = PrepareAndJoinBands(tc);
-  auto scopPtr = scop.get();
-  auto context = scopPtr->makeContext<int>({{"N", 512}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(*scop, {{"N", 512}});
   auto mscop = TileAndMapBlocksAndThreads(
       std::move(scop), {16ul, 16ul}, {256ul, 256ul}, {16ul, 16ul});
 

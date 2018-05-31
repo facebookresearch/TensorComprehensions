@@ -84,22 +84,24 @@ struct Scop {
     globalParameterContext = context;
   }
 
-  // Specialize a Scop with extra globalParameterContext information
+  // Specialize a Scop by fixing the given parameters to the given sizes.
   // If you want to intersect the support domain with the
-  // extraGlobalParameterContext then you need to do it explicitly.
+  // resulting context then you need to do it explicitly.
   // Otherwise ambiguities will ensue.
   // TODO: this is still subject to interpretation but intersecting seems a
   // bit final here so probably we're right not doing it.
+  template <typename T>
   static std::unique_ptr<Scop> makeSpecializedScop(
       const Scop& scop,
-      isl::set extraGlobalParameterContext) {
+      const std::unordered_map<std::string, T>& sizes) {
     auto res = makeScop(scop);
+    auto extraGlobalParameterContext = scop.makeContext(sizes);
     res->intersectContext(extraGlobalParameterContext);
     // **WARNING** if called before scheduling, this could result in a
     // (partially) specialized schedule, i.e. force
     // strategy.proto.fix_parameters_before_scheduling to true.
-    // If you want to intersect the support domain with the
-    // extraGlobalParameterContext then you need to do it explicitly.
+    // If you want to fix the parameters in the support domain,
+    // then you need to do it explicitly.
     // Note that the access relations must be intersect with the context as
     // well to obtain consistent dependences.
     // TODO: this is still subject to interpretation but intersecting seems

@@ -45,8 +45,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context = scop->makeContext<int>({{"N", N}, {"M", M}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(*scop, {{"N", N}, {"M", M}});
 
   Jit jit;
   jit.codegenScop("kernel_anon", *scop);
@@ -80,9 +79,8 @@ TEST(LLVMCodegen, MultiStmt) {
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context =
-      scop->makeContext<int>({{"N", N}, {"M", M}, {"K", K}, {"L", L}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(
+      *scop, {{"N", N}, {"M", M}, {"K", K}, {"L", L}});
 
   at::Tensor A = at::CPU(at::kFloat).rand({N, M, K, L});
   at::Tensor B = at::CPU(at::kFloat).rand({N, M});
@@ -152,9 +150,8 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context =
-      scop->makeContext<int>({{"N", N}, {"M", M}, {"K", K}, {"B", B}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(
+      *scop, {{"N", N}, {"M", M}, {"K", K}, {"B", B}});
 
   Jit jit;
   jit.codegenScop("batch_matmul", *scop);
@@ -187,14 +184,15 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context = scop->makeContext<int>({{"N", NN},
-                                         {"O", O},
-                                         {"H", H},
-                                         {"KH", KH},
-                                         {"W", W},
-                                         {"KW", KW},
-                                         {"C", C}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(
+      *scop,
+      {{"N", NN},
+       {"O", O},
+       {"H", H},
+       {"KH", KH},
+       {"W", W},
+       {"KW", KW},
+       {"C", C}});
 
   Jit jit;
   jit.codegenScop("convolution", *scop);
@@ -225,8 +223,7 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
 
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
-  auto context = scop->makeContext<int>({{"N", N}, {"M", M}});
-  scop = Scop::makeSpecializedScop(*scop, context);
+  scop = Scop::makeSpecializedScop<int>(*scop, {{"N", N}, {"M", M}});
 
   Jit jit;
   jit.codegenScop("concat", *scop);
