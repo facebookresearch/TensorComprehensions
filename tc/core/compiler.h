@@ -21,6 +21,7 @@
 
 #include "tc/core/mapping_options.h"
 #include "tc/core/tensor.h"
+#include "tc/core/exceptions.h"
 #include "tc/lang/tree.h"
 
 /**

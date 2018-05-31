@@ -322,19 +322,44 @@ def tensoraddstrided(float(N, M) I0_view, float(N, M) I1_view) -> (O) {
                      std::vector<at::Tensor>& outs) { return true; };
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "tensoraddstrided";
+  auto res = Check(TC, name, options, inputs, checkFun);
+  // This test should be modified  when strided tensors are handled
+  std::string expected =
+      "const float32 (*I0_view)[64] = "
+      "reinterpret_cast<const float32 (*)[64]>(pI0_view)";
+  ASSERT_NE(std::string::npos, res.second.find(expected))
+      << "In resulting code:\n"
+      << res.second << "\nfound unexpected: " << expected;
+}
 
-  try {
-    auto res = Check(TC, name, options, inputs, checkFun);
-    // This test should be modified  when strided tensors are handled
-    std::string expected =
-        "const float32 (*I0_view)[64] = "
-        "reinterpret_cast<const float32 (*)[64]>(pI0_view)";
-    ASSERT_NE(std::string::npos, res.second.find(expected))
-        << "In resulting code:\n"
-        << res.second << "\nfound unexpected: " << expected;
-  } catch (lang::ErrorReport e) {
-    std::cerr << "INCORRECT STRIDE INFORMATION: " << e.what();
-  }
+///////////////////////////////////////////////////////////////////////////////
+// TensorAddInvalidStrides
+//   O(n, m) += I0_view(n, m) * I1_view(n, m)
+///////////////////////////////////////////////////////////////////////////////
+TEST_F(TcCudaMapperTest, TensorAddInvalidStrides) {
+  N = 64;
+  M = 64;
+  at::Tensor I0 = at::CUDA(at::kFloat).rand({N, M});
+  at::Tensor I0_view =
+      I0.type().tensor().set_(*I0.storage(), 0, {N, M}, {16, 1});
+  at::Tensor I1 = at::CUDA(at::kFloat).rand({N, M});
+  at::Tensor I1_view =
+      I1.type().tensor().set_(*I1.storage(), 0, {N, M}, {16, 1});
+  std::vector<at::Tensor> inputs = {I0_view, I1_view};
+
+  static constexpr auto TC = R"TC(
+def tensoraddstrided(float(N, M) I0_view, float(N, M) I1_view) -> (O) {
+    O(n, m) += I0_view(n, m) + I1_view(n, m)
+}
+  )TC";
+
+  auto checkFun = [](const std::vector<at::Tensor>& ins,
+                     std::vector<at::Tensor>& outs) { return true; };
+  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  auto name = "tensoraddstrided";
+
+  EXPECT_THROW(
+      Check(TC, name, options, inputs, checkFun), tc::InvalidStrideException);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
