@@ -107,6 +107,48 @@ bool TensorInfo::operator!=(const TensorInfo& t) const {
   return !(*this == t);
 }
 
+std::ostream& operator<<(std::ostream& os, const TensorInfo& t) {
+  auto ndim = t.shape.size();
+  if (ndim == 0) {
+    return os;
+  }
+  os << "Dimensions: [";
+  if (ndim) {
+    for (size_t i = 0; i < ndim - 1; ++i) {
+      os << t.shape[i] << ", ";
+    }
+    os << t.shape[ndim - 1] << "]";
+    os << " Strides: [";
+    if (t.strides.size()) {
+      for (size_t i = 0; i < ndim - 1; ++i) {
+        os << t.strides[i] << ", ";
+      }
+      os << t.strides[ndim - 1] << "] ";
+    }
+  }
+  os << "Type: ";
+  os << toString(t.dtype) << " ";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const DLTensor& t) {
+  auto t_info = TensorInfo(&t);
+  os << t_info;
+  os << "Byte Offset: ";
+  os << t.byte_offset << " ";
+  os << "Base Pointer: " << t.data << " ";
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const DLConstTensor& t) {
+  auto t_info = TensorInfo(&t);
+  os << t_info;
+  os << "Byte Offset: ";
+  os << t.byte_offset << " ";
+  os << "Base Pointer: " << t.data << " ";
+  return os;
+}
+
 std::vector<TensorInfo> makeTensorInfoVector(
     const google::protobuf::RepeatedPtrField<TensorInfoProto>& buf) {
   std::vector<TensorInfo> iis;
