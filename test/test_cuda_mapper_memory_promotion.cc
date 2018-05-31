@@ -612,6 +612,22 @@ def strided(float(N,M) I) -> (O) {
   makeScopAndCheck(tc, {{"N", 42}, {"M", 420}}, 32, 5, 0);
 }
 
+// Check that strided accesses that access different elements but whose
+// footprints overlap after stride removal get grouped.
+TEST_F(Strided, DISABLED_Join) {
+  std::string tc = R"TC(
+def strided(float(N,M) I) -> (O1, O2) {
+  O1(i, j) = I(j, 2 * i + 1)
+  O2(i, j) = I(j, 2 * i)
+}
+)TC";
+
+  // Expect the promoted size to be 32x64 (coming from both references), with
+  // stride 1 and offset 0 along the second dimension.
+  // We effectively read the elements necessary for both statements together.
+  makeScopAndCheck(tc, {{"N", 42}, {"M", 420}}, 64, 1, 0);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
