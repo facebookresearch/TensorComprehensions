@@ -103,7 +103,7 @@ Now that TC is registered, we will create the input tensors and run it.
     N, C1, C2, C3, H, W = 32, 512, 8, 2, 28, 28
     I0, I1 = torch.randn(N, C1, C2, H, W).cuda(), torch.randn(N, C2, C3, H, W).cuda()
     # choose the options that resemble the operation and run
-    out = tensordot(I0, I1, options=tc.Options("conv"))
+    out = tensordot(I0, I1, options=tc.CudaMappingOptions("conv"))
 
 The :code:`options` can be obtained by autotuning the kernel using Autotuner
 (next step) or you can chose defaults provided. We strongly recommend to run

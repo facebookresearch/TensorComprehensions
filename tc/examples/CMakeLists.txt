@@ -4,12 +4,6 @@ include_directories(..)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 ################################################################################
-# Don't ask ... TODO: cleanup gtest
-################################################################################
-include_directories(${PROJECT_SOURCE_DIR}/third-party/googletest/googletest/include)
-set(GTEST_LIBS gtest gtest_main)
-
-################################################################################
 # Examples
 ################################################################################
 set(EXAMPLES_FILES
@@ -24,10 +18,7 @@ foreach(i ${EXAMPLES_FILES})
   target_link_libraries(
      ${i}
 
-     ${GTEST_LIBS}
-     ${GFLAGS_LIBRARIES}
-     ${GLOG_LIBRARIES}
-
+     ${GTEST_LIBRARIES}
      ${ATEN_LIBRARIES}
 
      tc_autotuner

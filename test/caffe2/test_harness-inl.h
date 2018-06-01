@@ -76,20 +76,17 @@ caffe2::Tensor<typename Caffe2Backend::Context> GetNamedTensor(
 // helper functions to construct an ATen tensor from a caffe2 tensor
 template <typename Caffe2TensorType>
 at::Tensor MakeAtenTensor(
-    const Caffe2TensorType& tensor,
+    Caffe2TensorType& tensor,
     at::Backend backend,
     at::ScalarType type) {
-  auto dims = tensor.dims();
-  auto ndim = dims.size();
-  auto shape = new int64_t[ndim];
-  for (size_t i = 0; i < ndim; ++i) {
-    shape[i] = dims[i];
-  }
-  at::Tensor out =
-      at::getType(backend, type)
-          .tensorFromBlob(
-              const_cast<void*>(tensor.raw_data()), at::IntList(shape, ndim));
-  return out;
+  auto t = at::getType(backend, type)
+               .tensorFromBlob(
+                   tensor.raw_mutable_data(), at::IntList(tensor.dims()));
+  // TODO: without retain there seems to be a memory corruption happening
+  // when creating a tensorFromBlob and calling the (noop) deleter. Punt for
+  // now until we get a clean official PyTorch + ATen + Caffe2 package.
+  t.storage()->retain();
+  return t;
 }
 
 template <

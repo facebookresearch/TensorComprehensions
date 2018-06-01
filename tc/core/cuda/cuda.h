@@ -30,6 +30,7 @@
 #include <cuda_profiler_api.h>
 #include <cuda_runtime.h>
 
+#include <gflags/gflags.h>
 #include <glog/logging.h>
 
 #define TC_CUDA_DRIVERAPI_ENFORCE(condition)                            \

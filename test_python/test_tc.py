@@ -37,12 +37,12 @@ class TensorDotTest(TestCase):
         tc_name = "tensordot"
         tc_type = "conv"
 
-        N = 32
-        C1 = 512
+        N = 4
+        C1 = 16
         C2 = 8
         C3 = 2
-        H = 28
-        W = 28
+        H = 13
+        W = 15
         cache_filename = "{}/tensordot_cache_N_{}_C1_{}_C2_{}_C3_{}_H_{}_W{}".format(
             PATH_PREFIX, N, C1, C2, C3, H, W)
         I0 = torch.randn(N, C1, C2, H, W).cuda()

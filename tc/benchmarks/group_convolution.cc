@@ -105,21 +105,15 @@ void GroupConvolution::runGroupConvolution(
   };
 
   // Use the underlying C2 tensors CUDA pointers
-  at::Tensor t_i = MakeAtenTensor(
-                       w.GetBlob("I")->Get<caffe2::TensorCUDA>(),
-                       at::Backend::CUDA,
-                       at::kFloat)
+  auto tI = GetNamedTensor<CUDABackend>(w, "I");
+  at::Tensor t_i = MakeAtenTensor(tI, at::Backend::CUDA, at::kFloat)
                        .resize_({N, G, C, H, W});
-  at::Tensor t_w = MakeAtenTensor(
-                       w.GetBlob("W")->Get<caffe2::TensorCUDA>(),
-                       at::Backend::CUDA,
-                       at::kFloat)
+  auto tW = GetNamedTensor<CUDABackend>(w, "W");
+  at::Tensor t_w = MakeAtenTensor(tW, at::Backend::CUDA, at::kFloat)
                        .resize_({G, F, C, KH, KW});
-  at::Tensor t_b = MakeAtenTensor(
-                       w.GetBlob("B")->Get<caffe2::TensorCUDA>(),
-                       at::Backend::CUDA,
-                       at::kFloat)
-                       .resize_({G, F});
+  auto tB = GetNamedTensor<CUDABackend>(w, "B");
+  at::Tensor t_b =
+      MakeAtenTensor(tB, at::Backend::CUDA, at::kFloat).resize_({G, F});
   std::vector<at::Tensor> inputs = {t_i, t_w, t_b};
   std::string tc = R"(
 def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)

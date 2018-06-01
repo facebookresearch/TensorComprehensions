@@ -38,7 +38,7 @@ class TestLayerNorm(unittest.TestCase):
         """
         layernorm = tc.define(lang, name="layernorm", constants={"eps": 1e-5})
         inp = torch.randn(7, 32, 64).cuda()
-        options = tc.Options("mlp")
+        options = tc.CudaMappingOptions("mlp")
         options = layernorm.autotune(inp, **tc.autotuner_settings)
         out = layernorm(inp, options=options)
 

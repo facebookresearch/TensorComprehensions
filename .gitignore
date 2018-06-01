@@ -18,7 +18,9 @@ conda
 tensor_comprehensions.egg-info/
 tensor_comprehensions/version.py
 tensor_comprehensions/*.proto
+tensor_comprehensions/*_pb2.py
 slurm-*
 examples/results*
 *.pyc
 test_python/tc_test/*
+install

@@ -22,11 +22,10 @@ from tensor_comprehensions.tc_unit import SetDebugFlags
 from tensor_comprehensions.tc_unit import autotuner_settings
 from tensor_comprehensions.tc_unit import small_sizes_autotuner_settings
 from tensor_comprehensions.tc_unit import ATenCompilationUnit
-from tensor_comprehensions.mapping_options import Options
-from tensor_comprehensions.library import database
+from tensor_comprehensions.tc import CudaMappingOptions
 
 __all__ = [
     'define', 'TcUnit', 'TcAutotuner', 'TcCompilationUnit', 'autotuner_settings',
     'small_sizes_autotuner_settings', 'SetDebugFlags', 'ATenCompilationUnit',
-    'Options', 'database', 'decode',
+    'CudaMappingOptions', 'decode',
 ]

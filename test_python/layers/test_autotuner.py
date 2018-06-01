@@ -14,7 +14,7 @@
 ##############################################################################
 
 import tensor_comprehensions as tc
-from tensor_comprehensions.mapping_options import Options
+from tensor_comprehensions.tc import CudaMappingOptions
 
 import torch
 import torch.cuda
@@ -122,7 +122,7 @@ class TestAutotuner(unittest.TestCase):
         lang = MATMUL_LANG
         matmul = tc.define(lang, name="matmul")
         mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-        options = Options("mlp")
+        options =CudaMappingOptions("mlp")
         best_options = matmul.autotune(mat1, mat2, cache=True, options=options, **tc.autotuner_settings)
         out = matmul(mat1, mat2, options=best_options)
 
