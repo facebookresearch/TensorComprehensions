@@ -525,7 +525,7 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
   auto& globalParameterContext =
       const_cast<isl::set&>(scop->globalParameterContext);
   globalParameterContext = globalParameterContext.intersect(context);
-  scop->domain() = scop->domain().intersect(globalParameterContext);
+  scop->domain() = scop->domain().intersect_params(globalParameterContext);
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto res = std::get<0>(mscop->codegen(specializedName));
