@@ -602,6 +602,15 @@ void promoteToSharedGreedy(
     scop.insertSyncsAroundCopies(bandNode);
   }
 }
+
+/*
+ * Check if "tree" is a band node mapped to threads.  In particular, check that
+ * "tree" is a band and a thread-specific node appears as its only child.
+ */
+inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
+  return matchOne(band(threadSpecific(any())), tree) ||
+      matchOne(band(threadSpecific()), tree);
+}
 } // namespace
 
 void promoteGreedilyAtDepth(
@@ -717,6 +726,50 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto ancestors = scope->ancestors(root);
   if (functional::Filter(isMappingTo<mapping::ThreadId>, ancestors).empty()) {
     scop.insertSyncsAroundSeqChildren(scope->child({0, 0}));
+  }
+}
+
+/*
+ * Promote to registers below "depth" schedule dimensions.  Split bands if
+ * necessary to create promotion scopes.  Do not promote if it would require
+ * splitting the band mapped to threads as we assume only one band can be
+ * mapped.
+ */
+void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
+  using namespace detail;
+
+  auto root = mscop.scop().scheduleRoot();
+
+  // 1. Collect all bands with a member located at the given depth in the
+  // overall schedule.  Make sure this is the last member of the band by
+  // splitting off the subsequent members into a different band.  Ignore bands
+  // mapped to threads if splitting is required as it would break the invariant
+  // of a single band being mapped to threads in a subtree.
+  // TODO: allow splitting the thread-mapped bands; for example, tile them
+  // explicitly with block size, use the point loops for thread mapping
+  // but ignore them in depth computation.
+  auto bands = bandsContainingScheduleDepth(root, depth);
+  bands = functional::Filter(
+      [root, depth](ScheduleTree* tree) {
+        auto band = tree->elemAs<ScheduleTreeElemBand>();
+        return !isThreadMappedBand(tree) ||
+            tree->scheduleDepth(root) + band->nMember() == depth;
+      },
+      bands);
+  bands = bandsSplitAfterDepth(bands, root, depth);
+
+  // 2. We don't want copies inserted between thread-mapped bands and the
+  // thread-specific marker, but rather below that marker.  If any of the bands
+  // are mapped to threads, take their first children as promotion scope
+  // instead of the band itself.
+  std::function<ScheduleTree*(ScheduleTree*)> findScope =
+      [](ScheduleTree* tree) {
+        return isThreadMappedBand(tree) ? tree->child({0}) : tree;
+      };
+  auto scopes = functional::Map(findScope, bands);
+
+  for (auto scope : scopes) {
+    promoteToRegistersBelow(mscop, scope);
   }
 }
 
