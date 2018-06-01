@@ -459,6 +459,11 @@ isl::multi_aff dropDummyTensorDimensions(
   space = add_range(space, list.n());
   return isl::multi_aff(space, list);
 }
+
+inline void unrollAllMembers(detail::ScheduleTreeElemBand* band) {
+  band->unroll_ = std::vector<bool>(band->nMember(), true);
+}
+
 } // namespace
 
 ScheduleTree* insertCopiesUnder(
@@ -466,7 +471,8 @@ ScheduleTree* insertCopiesUnder(
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
     isl::id tensorId,
-    isl::id groupId) {
+    isl::id groupId,
+    bool unrollAllCopies) {
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
   isl::id readId = isl::id(ctx, std::string(kReadIdName));
@@ -493,6 +499,11 @@ ScheduleTree* insertCopiesUnder(
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
+
+  if (unrollAllCopies) {
+    unrollAllMembers(readBandNode->elemAs<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(writeBandNode->elemAs<detail::ScheduleTreeElemBand>());
+  }
 
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();
