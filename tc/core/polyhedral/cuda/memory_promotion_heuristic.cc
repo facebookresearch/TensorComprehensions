@@ -745,16 +745,66 @@ void promoteGreedilyAtDepth(
   mapCopiesToThreads(mscop, unrollCopies);
 }
 
+void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
+  auto& scop = mscop.scop();
+  auto groupMap = TensorReferenceGroup::accessedBySubtree(scope, scop);
+
+  // FIXME: this schedule is also copmuted in
+  // isPromotableToRegistersBelow
+  auto threadSchedule = mscop.threadMappingSchedule(mscop.schedule());
+
+  for (auto& tensorGroups : groupMap) {
+    auto tensorId = tensorGroups.first;
+
+    // TODO: sort using heuristic and count the total number of registers
+
+    // FIXME: this schedule is also computed in
+    // isPromotableToRegistersBelow
+    auto partialSched = partialScheduleMupa(scop.scheduleRoot(), scope);
+    auto partialSchedUM = partialSchedule(scop.scheduleRoot(), scope);
+
+    for (auto& group : tensorGroups.second) {
+      auto sizes = group->approximationSizes();
+      // No point in promoting a scalar that will go to a register anyway.
+      if (sizes.size() == 0) {
+        continue;
+      }
+      if (!isPromotableToRegistersBelow(*group, mscop, scope)) {
+        continue;
+      }
+      // Check reuse within threads.
+      auto schedule = partialSched.flat_range_product(threadSchedule);
+      if (!hasReuseWithin(*group, schedule)) {
+        continue;
+      }
+
+      // TODO: if something is already in shared, but reuse it within one
+      // thread only, there is no point in keeping it in shared _if_ it
+      // gets promoted into a register.
+
+      scop.promoteGroup(
+          Scop::PromotedDecl::Kind::Register,
+          tensorId,
+          std::move(group),
+          scope,
+          partialSchedUM);
+    }
+  }
+}
+
 // Promote at the positions of the thread specific markers.
-void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
+void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
   using namespace tc::polyhedral::detail;
 
+  auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
 
   {
     auto markers = findThreadSpecificMarkers(root);
 
     for (auto marker : markers) {
+      promoteToRegistersBelow(mscop, marker);
+#if 0
       auto partialSched = prefixSchedule(root, marker);
       // Pure affine schedule without (mapping) filters.
       auto mapping = findThreadMappingAncestor(root, marker);
@@ -792,6 +842,7 @@ void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
               partialSched);
         }
       }
+#endif
     }
   }
 }
