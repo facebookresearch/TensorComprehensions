@@ -799,10 +799,17 @@ isl::multi_union_pw_aff extractDomainToIds(
   for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
     auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
     auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
+    bool hasIds = true;
     for (auto id : ids) {
-      CHECK_GT(mappingNode->mapping.count(id), 0) << "no mapping to id " << id;
+      if (mappingNode->mapping.count(id) == 0) {
+        hasIds = false;
+        break;
+      }
       auto idMap = mappingNode->mapping.at(id);
       list = list.add(idMap);
+    }
+    if (!hasIds) {
+      continue;
     }
     auto nodeToIds = isl::multi_union_pw_aff(space, list);
     domainToIds = domainToIds.union_add(nodeToIds);
