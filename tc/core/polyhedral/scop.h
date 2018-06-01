@@ -95,8 +95,7 @@ struct Scop {
       const Scop& scop,
       const std::unordered_map<std::string, T>& sizes) {
     auto res = makeScop(scop);
-    auto extraGlobalParameterContext = scop.makeContext(sizes);
-    res->intersectContext(extraGlobalParameterContext);
+    res->fixParameters(sizes);
     // **WARNING** if called before scheduling, this could result in a
     // (partially) specialized schedule, i.e. force
     // strategy.proto.fix_parameters_before_scheduling to true.
