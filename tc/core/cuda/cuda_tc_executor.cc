@@ -111,16 +111,16 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
 
 void CudaTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
-    const std::vector<void*>& outputs) const {
+    const std::vector<void*>& outputs,
+    typename CudaBackend::RuntimeInformation info) const {
   CHECK(rtcFun_) << "No rtcFun_ attached, cannot launch";
-  cudaStream_t stream = 0;
   CHECK_NE(grid_.view[0], 0u) << "Grid dims are not set up";
   CHECK_NE(block_.view[0], 0u) << "Block dims are not set up";
   rtcFun_->Launch(
       grid_.view.extractDefaultedArray(),
       block_.view.extractDefaultedArray(),
       0,
-      stream,
+      info.stream,
       parameters_,
       outputs,
       inputs);

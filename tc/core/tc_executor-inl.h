@@ -109,7 +109,8 @@ inline std::pair<std::vector<const void*>, std::vector<void*>> prepareRun(
 template <typename Backend>
 void TcExecutor<Backend>::run(
     const std::vector<const DLConstTensor*>& inputs,
-    const std::vector<const DLTensor*>& outputs) const {
+    const std::vector<const DLTensor*>& outputs,
+    typename Backend::RuntimeInformation info) const {
   std::vector<const void*> rawInputs;
   std::vector<void*> rawOutputs;
   std::tie(rawInputs, rawOutputs) = detail::prepareRun(
@@ -117,7 +118,7 @@ void TcExecutor<Backend>::run(
 
   // Static dispatch instead of virtual functions requires this cast.
   static_cast<const typename Backend::ExecutorType&>(*this).uncheckedRun(
-      rawInputs, rawOutputs);
+      rawInputs, rawOutputs, info);
 }
 
 template <typename Backend>
