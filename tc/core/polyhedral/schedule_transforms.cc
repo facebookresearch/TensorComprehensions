@@ -486,9 +486,9 @@ isl::multi_union_pw_aff prefixScheduleMupa(
 isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
+  auto prefix = prefixScheduleMupa(root, tree);
   auto band = tree->elemAs<ScheduleTreeElemBand>();
-  TC_CHECK(band);
-  return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
+  return band ? prefix.flat_range_product(band->mupa_) : prefix;
 }
 
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
