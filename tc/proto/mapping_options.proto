@@ -44,13 +44,12 @@ message MappingOptionsProto {
   optional TilingProto tiling = 4;
   // Unroll innermost loops to until at most "unroll" copies.  If not provided,
   // do not unroll.
-  optional uint64 unroll = 7;
-  // Apply tiling to imperfectly nested loops if possible.  Same tilesizes are
-  // used.
-  required bool tile_imperfectly_nested = 8;
-  // reserved 5, 6, 9 to 13; can only activate with proto3
-  // Reserved: 5, 6, 9-13 -> factored out into CudaMappingOptionsProto
-  required bool match_library_calls = 14;
+  optional uint64 unroll = 5;
+  // Apply tiling to imperfectly nested loops if possible.
+  // Same tile sizes are used.
+  required bool tile_imperfectly_nested = 6;
+  // Match library calls when possible (CUB reductions for now)
+  required bool match_library_calls = 7;
 }
 
 message CudaMappingOptionsProto {
