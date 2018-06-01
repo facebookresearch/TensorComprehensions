@@ -521,10 +521,8 @@ TEST_F(PolyhedralMapperTest, MergedContexts) {
   auto scop = PrepareAndJoinBandsMatMul();
 
   // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  auto& globalParameterContext =
-      const_cast<isl::set&>(scop->globalParameterContext);
-  globalParameterContext = globalParameterContext.intersect(context);
+  scop->fixParameters<int>({{"M", 64}, {"N", 64}, {"K", 64}});
+  auto globalParameterContext = scop->globalParameterContext;
   scop->domain() = scop->domain().intersect_params(globalParameterContext);
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
