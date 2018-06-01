@@ -509,7 +509,7 @@ isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
     ids.emplace_back(mapping::ThreadId::makeId(i));
   }
   auto tupleId = isl::id(tree->ctx_, kBlock);
-  return extractDomainToIds(tree, ids, tupleId);
+  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
 isl::multi_union_pw_aff MappedScop::blockMappingSchedule(

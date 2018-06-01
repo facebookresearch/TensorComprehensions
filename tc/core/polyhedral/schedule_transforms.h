@@ -326,11 +326,12 @@ isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
-// Extract a mapping from the domain elements active at "tree"
-// to identifiers "ids", where all branches in "tree"
-// are assumed to have been mapped to these identifiers.
-// The result lives in a space of the form "tupleId"["ids"...].
+// Extract a mapping from the domain elements active at "tree" (in a tree
+// rooted at "root") to identifiers "ids", where all branches in "tree" are
+// assumed to have been mapped to these identifiers.  The result lives in a
+// space of the form "tupleId"["ids"...].
 isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,
     isl::id tupleId);

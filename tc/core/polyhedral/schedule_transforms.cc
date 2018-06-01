@@ -806,6 +806,7 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
  * The result lives in a space of the form "tupleId"["ids"...].
  */
 isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,
     isl::id tupleId) {
@@ -821,13 +822,23 @@ isl::multi_union_pw_aff extractDomainToIds(
     auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
     auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
     for (auto id : ids) {
-      CHECK_GT(mappingNode->mapping.count(id), 0) << "no mapping to id " << id;
+      if (mappingNode->mapping.count(id) == 0) {
+        break;
+      }
       auto idMap = mappingNode->mapping.at(id);
       list = list.add(idMap);
+    }
+    // Ignore this node if it does not map to all required ids.
+    if (static_cast<size_t>(list.n()) != ids.size()) {
+      continue;
     }
     auto nodeToIds = isl::multi_union_pw_aff(space, list);
     domainToIds = domainToIds.union_add(nodeToIds);
   }
+
+  TC_CHECK(activeDomainPoints(root, tree).is_subset(domainToIds.domain()))
+      << "not all domain points of" << activeDomainPoints(root, tree)
+      << "were mapped to the required ids";
 
   return domainToIds;
 }
