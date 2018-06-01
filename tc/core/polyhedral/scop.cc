@@ -191,7 +191,13 @@ void Scop::promoteGroup(
     sizes.back() += 1;
   }
   promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
-  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+  insertCopiesUnder(
+      *this,
+      tree,
+      *gr,
+      tensorId,
+      groupId,
+      kind == PromotedDecl::Kind::Register);
 
   // FIXME: we can now store a unique pointer...
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
