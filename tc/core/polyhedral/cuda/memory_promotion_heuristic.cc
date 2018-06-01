@@ -809,6 +809,44 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   }
 }
 
+void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
+  using namespace detail;
+
+  auto root = mscop.scop().scheduleRoot();
+
+  // 1a. Collect all bands with a member located at the given depth in the
+  // overall schedule.  Make sure this is the last member of the band by
+  // splitting off the subsequent members into a different band.  Ignore bands
+  // mapped to threads if splitting is required as it would break invariant of
+  // a single band being mapped to threads in a subtree.
+  // TODO: allow splitting the thread-mapped bands; for example, tile them
+  // explicitly with block size, use the point loops for thread mapping
+  // but ignore them in depth computation.
+  auto bands = bandsContainingScheduleDepth(root, depth);
+  bands = functional::Filter(
+      [root, depth](ScheduleTree* tree) {
+        auto band = tree->elemAs<ScheduleTreeElemBand>();
+        return !isThreadMappedBand(tree) ||
+            tree->scheduleDepth(root) + band->nMember() == depth;
+      },
+      bands);
+  bands = bandsSplitAfterDepth(bands, root, depth);
+
+  // 1b. We don't want copies inserted between thread-mapped bands and the
+  // thread-specific marker, but rather below that marker.  If any of the bands
+  // are mapped to threads, take their first children as promotion scope
+  // instead of the band itself.
+  std::function<ScheduleTree*(ScheduleTree*)> findScope =
+      [](ScheduleTree* tree) {
+        return isThreadMappedBand(tree) ? tree->child({0}) : tree;
+      };
+  auto scopes = functional::Map(findScope, bands);
+
+  for (auto scope : scopes) {
+    promoteToRegistersBelow(mscop, scope);
+  }
+}
+
 // Promote at the positions of the thread specific markers.
 void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
   using namespace tc::polyhedral::detail;
