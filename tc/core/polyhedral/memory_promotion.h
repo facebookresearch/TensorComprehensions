@@ -116,7 +116,8 @@ class TensorReferenceGroup {
  public:
   static TensorGroups accessedBySubtree(
       const detail::ScheduleTree* tree,
-      const Scop& scop);
+      const Scop& scop,
+      isl::union_set threadMapping = isl::union_set());
 
   bool isReadOnly() const;
 
