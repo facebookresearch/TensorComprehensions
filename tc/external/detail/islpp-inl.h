@@ -215,4 +215,28 @@ inline isl::set operator&(isl::point P1, isl::set S2) {
   return S2 & P1;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////////////////////////
+
+inline isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
+  auto ctx = f.get_ctx();
+  auto umap = isl::union_map::from(isl::multi_union_pw_aff(f));
+  umap = umap.apply_domain(fixed);
+  if (umap.is_empty()) {
+    return isl::val::zero(ctx);
+  }
+
+  umap = umap.range_product(umap);
+  umap = umap.range().unwrap();
+  umap = umap.project_out_all_params();
+  auto delta = isl::map::from_union_map(umap).deltas();
+  auto hull = delta.simple_hull();
+  auto stride = isl::set(hull).get_stride(0);
+  hull = isl::set(hull).polyhedral_hull();
+  auto bound = hull.dim_max_val(0);
+  bound = bound.div(stride);
+  bound = bound.add(isl::val::one(ctx));
+  return bound;
+}
 } // namespace isl

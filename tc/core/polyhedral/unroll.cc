@@ -23,47 +23,6 @@ namespace tc {
 namespace polyhedral {
 
 namespace {
-/*
- * Return a bound on the range of values attained by "f" for fixed
- * values of "fixed", taking into account basic strides
- * in the range of values attained by "f".
- *
- * First construct a map from values of "fixed" to corresponding
- * values of "f".  If this map is empty, then "f" cannot attain
- * any values and the bound is zero.
- * Otherwise, consider pairs of "f" values for the same value
- * of "fixed" and take their difference over all possible values
- * of the parameters and of the "fixed" values.
- * Take a simple overapproximation as a convex set and
- * determine the stride is the value differences.
- * The possibly quasi-affine set is then overapproximated by an affine set.
- * At this point, the set is a possibly infinite, symmetrical interval.
- * Take the maximal value of the difference divided by the stride plus one as
- * a bound on the number of possible values of "f".
- * That is, take M/s + 1.  Note that 0 is always an element of
- * the difference set, so no offset needs to be taken into account
- * during the stride computation and M is an integer multiple of s.
- */
-isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
-  auto ctx = f.get_ctx();
-  auto umap = isl::union_map::from(isl::multi_union_pw_aff(f));
-  umap = umap.apply_domain(fixed);
-  if (umap.is_empty()) {
-    return isl::val::zero(ctx);
-  }
-
-  umap = umap.range_product(umap);
-  umap = umap.range().unwrap();
-  umap = umap.project_out_all_params();
-  auto delta = isl::map::from_union_map(umap).deltas();
-  auto hull = delta.simple_hull();
-  auto stride = isl::set(hull).get_stride(0);
-  hull = isl::set(hull).polyhedral_hull();
-  auto bound = hull.dim_max_val(0);
-  bound = bound.div(stride);
-  bound = bound.add(isl::val::one(ctx));
-  return bound;
-}
 
 /*
  * Compute a bound on the number of instances executed by "band" and
