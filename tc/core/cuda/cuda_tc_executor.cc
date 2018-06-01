@@ -90,7 +90,7 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
 
-  auto parameters = mappedScop->scop().getParameterValues(pvm);
+  auto parameters = mappedScop->scop().getParameterValues();
   auto specializedName = specializeKernelName(tcName, parameters);
 
   // This updates the launch bounds with the actual result from compilation

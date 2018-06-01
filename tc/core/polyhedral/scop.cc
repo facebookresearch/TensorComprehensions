@@ -262,17 +262,17 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   insertSyncsAroundCopies(tree);
 }
 
-std::vector<long> Scop::getParameterValues(
-    const std::unordered_map<std::string, int>& sizes) const {
+std::vector<long> Scop::getParameterValues() const {
   // Scop holds a vector of Variables.
   // Iterate over parameters in order, checking if the
-  // context contains a parameter whose name corresponds to that
+  // map of known parameter values contains a parameter
+  // whose name corresponds to that
   // Variable and push respective parameter values.
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
     auto name = param.name();
-    CHECK(sizes.count(name) == 1);
-    paramValues.push_back(sizes.at(name));
+    CHECK(parameterValues.count(name) == 1);
+    paramValues.push_back(parameterValues.at(name));
   }
   return paramValues;
 }

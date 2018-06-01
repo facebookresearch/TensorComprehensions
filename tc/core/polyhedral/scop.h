@@ -63,6 +63,7 @@ struct Scop {
   // Clone a Scop
   static std::unique_ptr<Scop> makeScop(const Scop& scop) {
     auto res = std::unique_ptr<Scop>(new Scop());
+    res->parameterValues = scop.parameterValues;
     res->globalParameterContext = scop.globalParameterContext;
     res->halide = scop.halide;
     res->reads = scop.reads;
@@ -137,18 +138,21 @@ struct Scop {
   }
 
   // Fix the values of the specified parameters in the context
-  // to the corresponding specified values.
+  // to the corresponding specified values and keep track of them
+  // in parameterValues.
   template <typename T>
   void fixParameters(const std::unordered_map<std::string, T>& sizes) {
+    CHECK(parameterValues.size() == 0);
+    for (const auto& kvp : sizes) {
+      parameterValues.emplace(kvp.first, kvp.second);
+    }
     intersectContext(makeContext(sizes));
   }
 
-  // Given a map between TC parametric tensor sizes, represented as strings,
-  // and their numerical values, return the list of parameter values in the same
+  // Return the list of parameter values in the same
   // order as codegen places them in the function signature, i.e. following the
   // order of scop.params.
-  std::vector<long> getParameterValues(
-      const std::unordered_map<std::string, int>& sizes) const;
+  std::vector<long> getParameterValues() const;
 
   isl::id nextGroupIdForTensor(isl::id tensorId) {
     auto ctx = domain().get_ctx();
@@ -490,6 +494,8 @@ struct Scop {
   // of the ScheduleTree "function".
   isl::union_set& domain();
   const isl::union_set domain() const;
+  // The parameter values of a specialized Scop.
+  std::unordered_map<std::string, int> parameterValues;
   // A globalParameterContext is kept. This represents (partial)
   // parameter specialization coming from the outside.
   // This may be further specialized before codegen.
