@@ -166,6 +166,43 @@ TEST(CHECK, GE) {
   }
 }
 
+TEST(CHECK, CustomException) {
+  ASSERT_THROW(TC_CHECK(false, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK(false, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK(true, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK(true, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_EQ(1, 2, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_EQ(1, 2, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_EQ(1, 1, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_EQ(1, 1, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_NE(1, 1, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_NE(1, 1, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_NE(1, 2, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_NE(1, 2, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_LT(1, 1, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_LT(1, 1, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_LT(1, 2, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_LT(1, 2, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_GT(1, 1, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_GT(1, 1, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_GT(2, 1, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_GT(2, 1, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_LE(2, 1, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_LE(2, 1, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_LE(1, 2, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_LE(1, 2, std::out_of_range) << "aa");
+
+  ASSERT_THROW(TC_CHECK_GE(1, 2, std::out_of_range), std::out_of_range);
+  ASSERT_THROW(TC_CHECK_GE(1, 2, std::out_of_range) << "aa", std::out_of_range);
+  ASSERT_NO_THROW(TC_CHECK_GE(2, 1, std::out_of_range));
+  ASSERT_NO_THROW(TC_CHECK_GE(2, 1, std::out_of_range) << "aa");
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
