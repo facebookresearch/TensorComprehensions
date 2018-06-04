@@ -89,24 +89,28 @@ void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
     }
     std::unique_ptr<typename Backend::ExecutorType> pExecutor(nullptr);
     auto pConf = searchStrategy.population.at(current).get();
-    auto options = makeOptions<Backend>(baseMapping_, *pConf);
-    try {
-      if (FLAGS_debug_tuner) {
-        std::stringstream ssInfo;
-        typename Backend::MappingOptionsCppPrinter infoPrinter(ssInfo);
-        infoPrinter << options;
-        LOG(INFO) << "[COMPILE] Start compilation @:" << current;
-        LOG_LINE_BY_LINE(INFO, ssInfo);
+    if (not stopRequested_) {
+      auto options = makeOptions<Backend>(baseMapping_, *pConf);
+      try {
+        if (FLAGS_debug_tuner) {
+          std::stringstream ssInfo;
+          typename Backend::MappingOptionsCppPrinter infoPrinter(ssInfo);
+          infoPrinter << options;
+          LOG(INFO) << "[COMPILE] Start compilation @:" << current;
+          LOG_LINE_BY_LINE(INFO, ssInfo);
+        }
+        pExecutor =
+            tc::compile<Backend>(tcTree_, inputs_.begin()->second, options);
+        LOG_IF(INFO, FLAGS_debug_tuner) << "[COMPILE] Done compilation";
+      } catch (const std::exception& e) {
+        LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
+        std::stringstream ssWarning;
+        typename Backend::MappingOptionsCppPrinter warningPrinter(ssWarning);
+        warningPrinter << options;
+        LOG_LINE_BY_LINE(WARNING, ssWarning);
+        pConf->invalid = true;
       }
-      pExecutor =
-          tc::compile<Backend>(tcTree_, inputs_.begin()->second, options);
-      LOG_IF(INFO, FLAGS_debug_tuner) << "[COMPILE] Done compilation";
-    } catch (const std::exception& e) {
-      LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
-      std::stringstream ssWarning;
-      typename Backend::MappingOptionsCppPrinter warningPrinter(ssWarning);
-      warningPrinter << options;
-      LOG_LINE_BY_LINE(WARNING, ssWarning);
+    } else {
       pConf->invalid = true;
     }
 
@@ -155,6 +159,11 @@ void TuningHarness<Backend>::doEvaluate(
       // If I popped an empty executor then compilation didn't go as
       // planned, skip it.
       CHECK(pConf->invalid);
+      continue;
+    }
+
+    if (stopRequested_) {
+      pConf->invalid = true;
       continue;
     }
 
@@ -497,8 +506,7 @@ Autotuner<Backend, SearchStrategy>::tune(
     } catch (const std::exception& e) {
       std::cerr << "Exception during autotuning: " << e.what()
                 << "\n dumping cache to "
-                << tc::makeOptionsFilename(cacheFileName) << "/"
-                << Backend::makeDeviceFilename(cacheFileName) << std::endl;
+                << tc::makeOptionsFilename(cacheFileName) << std::endl;
       storeTopKInCache<Backend>(optionsCache_, cacheFileName);
       tuningHarnessThreadEx = std::current_exception();
     }
@@ -507,11 +515,7 @@ Autotuner<Backend, SearchStrategy>::tune(
   while (not tuningHarnessFinished) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (sigint_) {
-      std::cerr
-          << "Autotuning will stop after the current iteration has finished."
-          << std::endl;
       tuningHarness.stopAfterCurrentIteration();
-      tuningHarnessThread.join();
       storeTopKInCache<Backend>(optionsCache_, cacheFileName);
     }
     if (sigterm_) {
