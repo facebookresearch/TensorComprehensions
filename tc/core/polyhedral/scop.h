@@ -102,12 +102,9 @@ struct Scop {
     // strategy.proto.fix_parameters_before_scheduling to true.
     // If you want to fix the parameters in the support domain,
     // then you need to do it explicitly.
-    // Note that the access relations must be intersect with the context as
-    // well to obtain consistent dependences.
     // TODO: this is still subject to interpretation but intersecting seems
     // final here so probably we're right not doing it.
-    // res->domain() =
-    // res->domain().intersect_params(res->globalParameterContext);
+    // res->specializeToContext();
     return res;
   }
 

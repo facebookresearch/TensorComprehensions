@@ -520,10 +520,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
 TEST_F(PolyhedralMapperTest, MergedContexts) {
   auto scop = PrepareAndJoinBandsMatMul();
 
-  // Unit test claims to use scop->globalParameterContext properly
+  // Unit test claims to use the specialized context properly
   scop->fixParameters<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  auto globalParameterContext = scop->globalParameterContext;
-  scop->domain() = scop->domain().intersect_params(globalParameterContext);
+  scop->specializeToContext();
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto res = std::get<0>(mscop->codegen(specializedName));
