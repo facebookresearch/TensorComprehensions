@@ -46,7 +46,7 @@ Once the first time configuration above has been completed, one should activate 
 each new terminal window explicitly (it is discouraged to add this to your `.bashrc` or
 equivalent)
 ```
-. ${CONDA_PATH}/bin/activate
+. ${INSTALLATION_PATH}/bin/activate
 conda activate tc_build
 ```
 
