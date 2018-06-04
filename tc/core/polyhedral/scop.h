@@ -110,7 +110,7 @@ struct Scop {
 
   // Specialize the Scop with respect to its globalParameterContext.
   void specializeToContext() {
-    domain() = domain().intersect_params(globalParameterContext);
+    domainRef() = domain().intersect_params(globalParameterContext);
     reads = reads.intersect_params(globalParameterContext);
     writes = writes.intersect_params(globalParameterContext);
   }
@@ -489,7 +489,9 @@ struct Scop {
   // state is kept.
   // By analogy with generalized functions, the domain is the "support" part
   // of the ScheduleTree "function".
-  isl::union_set& domain();
+ private:
+  isl::union_set& domainRef();
+ public:
   const isl::union_set domain() const;
   // The parameter values of a specialized Scop.
   std::unordered_map<std::string, int> parameterValues;
