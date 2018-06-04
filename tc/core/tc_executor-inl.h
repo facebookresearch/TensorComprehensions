@@ -72,6 +72,8 @@ TcExecutor<Backend>::TcExecutor(
     const std::vector<TensorInfo>& inputsInfo,
     const std::vector<TensorInfo>& outputsInfo,
     const tc2halide::HalideComponents& halideComponents,
+    const lang::TreeRef& tc,
+    const typename Backend::MappingOptionsType& options,
     const typename Backend::CompilationResultType& compilationResult)
     : compiledSource(compilationResult.source),
       inputsInfo_(inputsInfo),
@@ -81,7 +83,9 @@ TcExecutor<Backend>::TcExecutor(
       // not backend-specific, so we store them in the executor
       // TODO: revisit this later once we have strides and parametric kernels
       // with more legitimate uses of parameters.
-      parameters_(compilationResult.parameters) {}
+      parameters_(compilationResult.parameters),
+      tc_(tc),
+      options_(options) {}
 
 namespace detail {
 inline std::pair<std::vector<const void*>, std::vector<void*>> prepareRun(
@@ -151,5 +155,31 @@ void TcExecutor<Backend>::clearRuntimeCompiledFunction() {
   }
   rtcFun_->clear();
   rtcFun_ = nullptr;
+}
+
+template <typename Backend>
+const std::vector<TensorInfo>& TcExecutor<Backend>::inputsInfo() const {
+  return inputsInfo_;
+}
+
+template <typename Backend>
+const std::vector<TensorInfo>& TcExecutor<Backend>::outputsInfo() const {
+  return outputsInfo_;
+}
+
+template <typename Backend>
+std::string TcExecutor<Backend>::deviceName() const {
+  return rtcFun_->deviceName();
+}
+
+template <typename Backend>
+const lang::TreeRef& TcExecutor<Backend>::tc() const {
+  return tc_;
+}
+
+template <typename Backend>
+const typename Backend::MappingOptionsType& TcExecutor<Backend>::options()
+    const {
+  return options_;
 }
 } // namespace tc

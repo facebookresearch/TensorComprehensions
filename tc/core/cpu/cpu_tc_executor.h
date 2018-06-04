@@ -30,6 +30,8 @@ class CpuTcExecutor : public TcExecutor<CpuBackend> {
       const std::vector<TensorInfo>& inputsInfo,
       const std::vector<TensorInfo>& outputsInfo,
       const tc2halide::HalideComponents& halideComponents,
+      const lang::TreeRef& tc,
+      const CpuMappingOptions& options,
       const typename CpuBackend::CompilationResultType& compilationResult);
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to

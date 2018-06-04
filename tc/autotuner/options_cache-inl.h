@@ -171,18 +171,19 @@ void OptionsCache<Backend>::storeCacheToFile(
   }
 }
 
+namespace detail {
+
 template <typename Backend>
-void OptionsCache<Backend>::recordRuntime(
-    const lang::CanonicalTcString& tc,
-    const std::vector<TensorInfo>& inputs,
-    const std::vector<TensorInfo>& outputs,
-    const std::string& backendStr,
+void recordRuntimeImpl(
+    std::mutex& mutex,
+    size_t& numberCacheAttempts,
+    typename OptionsCache<Backend>::MultiMapType& store,
+    const typename OptionsCache<Backend>::KeyType& key,
     const typename Backend::MappingOptionsType& options,
     Duration duration) {
   std::lock_guard<std::mutex> lock(mutex);
   ++numberCacheAttempts;
-  OptionsCacheKey key{tc, inputs, outputs, backendStr};
-  auto range = store_.equal_range(key);
+  auto range = store.equal_range(key);
   for (auto it = range.first; it != range.second; ++it) {
     if (it->second.mappingOptions == options) {
       // key exists, append to it and return
@@ -191,9 +192,37 @@ void OptionsCache<Backend>::recordRuntime(
     }
   }
   // key does not exist, emplace a new key, value
-  store_.emplace(
+  store.emplace(
       key,
       OptionsCacheValue<Backend>{std::vector<Duration>{duration}, options});
+}
+
+} // namespace detail
+
+template <typename Backend>
+void OptionsCache<Backend>::recordRuntime(
+    const lang::CanonicalTcString& tc,
+    const std::vector<TensorInfo>& inputs,
+    const std::vector<TensorInfo>& outputs,
+    const std::string& backendStr,
+    const typename Backend::MappingOptionsType& options,
+    Duration duration) {
+  OptionsCacheKey key{tc, inputs, outputs, backendStr};
+  detail::recordRuntimeImpl<Backend>(
+      mutex, numberCacheAttempts, store_, key, options, duration);
+}
+
+template <typename Backend>
+void OptionsCache<Backend>::recordRuntime(
+    const typename Backend::ExecutorType& exec,
+    Duration duration) {
+  OptionsCacheKey key{canonicalTc(exec.tc()),
+                      exec.inputsInfo(),
+                      exec.outputsInfo(),
+                      exec.deviceName()};
+
+  detail::recordRuntimeImpl<Backend>(
+      mutex, numberCacheAttempts, store_, key, exec.options(), duration);
 }
 
 namespace detail {
@@ -232,20 +261,18 @@ std::vector<OptionsWithMedianAndRuntimes<Backend>> sortedOptions(
       });
   return toSort;
 }
-} // namespace detail
 
 template <typename Backend>
-std::vector<typename Backend::MappingOptionsType>
-OptionsCache<Backend>::getTopKOptions(
-    const lang::CanonicalTcString& tc,
-    const std::vector<TensorInfo>& inputs,
-    const std::vector<TensorInfo>& outputs,
-    const std::string& backendStr,
-    size_t K) const {
+std::vector<typename Backend::MappingOptionsType> getTopKOptionsImpl(
+    std::mutex& mutex,
+    size_t& numberAttemptedRetrievals,
+    size_t& numberSuccessfulRetrievals,
+    const typename OptionsCache<Backend>::MultiMapType& store,
+    const typename OptionsCache<Backend>::KeyType& key,
+    size_t K) {
   std::lock_guard<std::mutex> lock(mutex);
   ++numberAttemptedRetrievals;
-  OptionsCacheKey key{tc, inputs, outputs, backendStr};
-  auto sorted = detail::sortedOptions<Backend>(key, store_);
+  auto sorted = detail::sortedOptions<Backend>(key, store);
   if (sorted.size() == 0u) {
     return {};
   }
@@ -256,6 +283,44 @@ OptionsCache<Backend>::getTopKOptions(
   }
   ++numberSuccessfulRetrievals;
   return res;
+}
+
+} // namespace detail
+
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType>
+OptionsCache<Backend>::getTopKOptions(
+    const lang::CanonicalTcString& tc,
+    const std::vector<TensorInfo>& inputs,
+    const std::vector<TensorInfo>& outputs,
+    const std::string& backendStr,
+    size_t K) const {
+  OptionsCacheKey key{tc, inputs, outputs, backendStr};
+  return detail::getTopKOptionsImpl<Backend>(
+      mutex,
+      numberAttemptedRetrievals,
+      numberSuccessfulRetrievals,
+      store_,
+      key,
+      K);
+}
+
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType>
+OptionsCache<Backend>::getTopKOptions(
+    const typename Backend::ExecutorType& exec,
+    size_t K) const {
+  OptionsCacheKey key{canonicalTc(exec.tc()),
+                      exec.inputsInfo(),
+                      exec.outputsInfo(),
+                      exec.deviceName()};
+  return detail::getTopKOptionsImpl<Backend>(
+      mutex,
+      numberAttemptedRetrievals,
+      numberSuccessfulRetrievals,
+      store_,
+      key,
+      K);
 }
 
 template <typename Backend>

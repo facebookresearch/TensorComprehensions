@@ -46,11 +46,15 @@ CudaTcExecutor::CudaTcExecutor(
     const std::vector<TensorInfo>& inputsInfo,
     const std::vector<TensorInfo>& outputsInfo,
     const tc2halide::HalideComponents& halideComponents,
+    const lang::TreeRef& tc,
+    const CudaMappingOptions& options,
     const typename CudaBackend::CompilationResultType& compilationResult)
     : TcExecutor<CudaBackend>(
           inputsInfo,
           outputsInfo,
           halideComponents,
+          tc,
+          options,
           compilationResult) {
   auto t0 = std::chrono::high_resolution_clock::now();
   // force unloading in case we JIT with the same name/input/outputs with
