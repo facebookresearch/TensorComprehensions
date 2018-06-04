@@ -107,6 +107,10 @@ set(GFLAGS_LIBRARIES gflags)
 #################################################################################
 ## glog
 #################################################################################
+# For our purposes we need to build glog with gflags support.
+# For this, glog needs to know about the gflags TARGET.
+# Since TC builds the gflags TARGET in tree, declare it found for use in glog.
+set(gflags_FOUND ON)
 add_subdirectory(third-party/googlelibraries/glog)
 include_directories(BEFORE ${glog_BINARY_DIR})
 # This is a TARGET, not library names so no .d gets appended ever
