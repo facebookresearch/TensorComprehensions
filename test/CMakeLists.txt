@@ -13,6 +13,9 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 add_executable(test_basic test_basic.cc)
 add_test(test_basic test_basic)
 target_link_libraries(test_basic ${GOOGLE_LIBRARIES} ${ISL_LIBRARIES} ${ATEN_LIBRARIES} pthread)
+if (WITH_BINDINGS)
+  add_dependencies(test_basic generate_isl)
+endif()
 
 ################################################################################
 # Core library only tests
