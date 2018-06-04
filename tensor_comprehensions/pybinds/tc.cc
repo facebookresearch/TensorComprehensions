@@ -287,6 +287,15 @@ PYBIND11_MODULE(tc, m) {
           " 5. group_conv\n"
           " 6. single_thread")
       .def(
+          "serialize",
+          [](tc::CudaMappingOptions& instance) {
+            std::string str = instance.toProtobufSerializedString();
+            return py::bytes(str);
+          },
+          "Serialize the options to a protobuf string that can be deserialized later "
+          "into a CudaMappingOptions. This is needed for Caffe2 who requires string "
+          "arguments to configure TcOp.")
+      .def(
           "__str__",
           [](tc::CudaMappingOptions& instance) {
             std::string str;
