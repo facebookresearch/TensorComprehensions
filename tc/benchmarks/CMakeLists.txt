@@ -13,19 +13,21 @@ find_library(CUDA_CUDNN_LIBRARIES cudnn
   PATH_SUFFIXES lib lib64)
 
 ################################################################################
-# Examples
+# Benchmarks
 ################################################################################
-set(EXAMPLES_FILES
+set(BENCHMARKS
   batchmatmul
   group_convolution
+  kronecker
+  moments
   tmm
   MLP_model
+  wavenet
 )
-foreach(i ${EXAMPLES_FILES})
-  add_executable(${i} ${i}.cc)
-  add_test(${i} ${i})
+foreach(i ${BENCHMARKS})
+  add_executable(benchmark_${i} ${i}.cc)
   target_link_libraries(
-     ${i}
+     benchmark_${i}
 
      ${CUDA_CUBLAS_LIBRARIES}
      ${CUDA_CUDNN_LIBRARIES}

@@ -10,7 +10,6 @@ set(EXAMPLES_FILES
   blockdiagperm
   group_normalization
   tensordot
-  wavenet
 )
 foreach(i ${EXAMPLES_FILES})
   add_executable(${i} ${i}.cc)
