@@ -667,7 +667,6 @@ IslCodegenRes codegenISL(const Scop& scop) {
     return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
   };
 
-  checkValidIslSchedule(scop.scheduleRoot());
   auto schedule = detail::toIslSchedule(scop.scheduleRoot());
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);

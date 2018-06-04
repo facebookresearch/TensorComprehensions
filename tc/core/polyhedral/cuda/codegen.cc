@@ -785,7 +785,6 @@ string emitCudaKernel(
     return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
-  checkValidIslSchedule(mscop.schedule());
   auto schedule = detail::toIslSchedule(mscop.schedule());
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);

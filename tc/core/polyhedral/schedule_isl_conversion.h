@@ -33,7 +33,6 @@ isl::schedule toIslSchedule(const ScheduleTree* root_);
 std::unique_ptr<ScheduleTree> fromIslSchedule(isl::schedule schedule);
 bool validateSchedule(const ScheduleTree* st);
 bool validateSchedule(isl::schedule schedule);
-void checkValidIslSchedule(const detail::ScheduleTree* root_);
 } // namespace detail
 } // namespace polyhedral
 } // namespace tc
