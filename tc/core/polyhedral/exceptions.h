@@ -64,5 +64,11 @@ struct GroupingError : public std::logic_error {
 };
 } // namespace promotion
 
+namespace codegen {
+
+struct NotAssociativeError : public std::logic_error {
+  explicit NotAssociativeError(const std::string& s) : std::logic_error(s) {}
+};
+} // namespace codegen
 } // namespace polyhedral
 } // namespace tc

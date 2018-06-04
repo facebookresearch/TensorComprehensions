@@ -833,6 +833,73 @@ def group_norm(
   checkRtol(outputs[0] - y, {I}, D * H * W, 1e-6);
 }
 
+// For some obscure reason, the succession of these 2 kernels results in an
+// out of bounds memory acces on Volta but not on Pascal.
+TEST(Kronecker, IllegalAccessVoltaBug) {
+  constexpr static auto Kronecker3_1 = "Kronecker3_1";
+  constexpr static auto TC = R"TC(
+  def Kronecker3_1(float(D2, N2) W2, float(M, N0, N1, N2) X) -> (XW2) {
+     XW2(m, n0, n1, d2)   +=! X(m, n0, n1, r_n2) * W2(d2, r_n2)
+  }
+)TC";
+  at::Tensor W2 = at::CUDA(at::kFloat).rand({16, 32});
+  at::Tensor X = at::CUDA(at::kFloat).rand({256, 32, 32, 32});
+
+  auto options1 =
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(
+              tc::FusionStrategy::Preserve3Coincident)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .fixParametersBeforeScheduling(true)
+          .tile(256)
+          .unroll(16)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads(16, 8)
+          .mapToBlocks(4, 2)
+          .useSharedMemory(true)
+          .usePrivateMemory(true)
+          .unrollCopyShared(true)
+          .useReadOnlyCache(false);
+
+  std::vector<at::Tensor> inputs1{W2, X};
+  auto pExecutor1 =
+      tc::aten::compile<tc::CudaBackend>(TC, Kronecker3_1, inputs1, options1);
+  auto outputs1 = tc::aten::prepareOutputs(TC, Kronecker3_1, inputs1);
+  tc::aten::run(*pExecutor1, inputs1, outputs1);
+
+  auto options2 =
+      tc::CudaMappingOptions::makeNaiveMappingOptions()
+          .outerScheduleFusionStrategy(tc::FusionStrategy::Preserve3Coincident)
+          .outerScheduleAllowSkewing(false)
+          .outerSchedulePositiveOrthant(true)
+          .intraTileScheduleFusionStrategy(
+              tc::FusionStrategy::Preserve3Coincident)
+          .intraTileScheduleAllowSkewing(false)
+          .intraTileSchedulePositiveOrthant(true)
+          .fixParametersBeforeScheduling(true)
+          .tile(2, 32)
+          .unroll(32)
+          .tileImperfectlyNested(false)
+          .matchLibraryCalls(true)
+          .mapToThreads(64)
+          .mapToBlocks(2, 1, 64)
+          .useSharedMemory(false)
+          .usePrivateMemory(true)
+          .unrollCopyShared(true)
+          .useReadOnlyCache(false);
+
+  std::vector<at::Tensor> inputs2{W2, X};
+  auto pExecutor2 =
+      tc::aten::compile<tc::CudaBackend>(TC, Kronecker3_1, inputs2, options2);
+  auto outputs2 = tc::aten::prepareOutputs(TC, Kronecker3_1, inputs2);
+  tc::aten::run(*pExecutor2, inputs2, outputs2);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

@@ -113,7 +113,9 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
   res->nvrtc_ptx = std::vector<char>(ptx_size);
   TC_NVRTC_CHECK(nvrtcGetPTX(prog, res->nvrtc_ptx.data()));
   TC_NVRTC_CHECK(nvrtcDestroyProgram(&prog));
-
+  if (FLAGS_dump_ptx) {
+    LOG(INFO) << "PTX:\n" << std::string(res->nvrtc_ptx.data());
+  }
   return res;
 }
 namespace {

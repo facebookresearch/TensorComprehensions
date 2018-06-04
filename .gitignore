@@ -24,3 +24,4 @@ examples/results*
 *.pyc
 test_python/tc_test/*
 install
+tc/benchmarks/results*

@@ -36,6 +36,7 @@
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"
+#include "tc/core/utils/time.h"
 #include "tc/lang/canonicalize.h"
 
 #include <cublas_v2.h> // Must be the same as Caffe2
@@ -59,7 +60,6 @@ DEFINE_bool(
     "Test on other platforms than we claim perf results for");
 DEFINE_bool(autotune, false, "Enable autotuning");
 DEFINE_string(save_tuner_proto_prefix, "/tmp", "Enable autotuning");
-DEFINE_bool(validate_proto, false, "whether to load options from proto");
 
 struct Benchmark : public ::testing::Test {
   void SetUp() {
@@ -99,15 +99,20 @@ struct Benchmark : public ::testing::Test {
   using CheckFunction = std::function<bool(
       const std::vector<at::Tensor>& inputs,
       const std::vector<at::Tensor>& outputs)>;
+  using PrologueFunction = std::function<tc::ProfilingInfo()>;
   std::vector<at::Tensor> Check(
       const std::string& tc,
       const std::string& name,
       const tc::CudaMappingOptions& mappingOptions,
       const std::vector<at::Tensor>& inputs,
-      CheckFunction check_fun = [](const std::vector<at::Tensor>& inputs,
-                                   const std::vector<at::Tensor>& outputs) {
-        return true;
-      }) {
+      CheckFunction check_fun =
+          [](const std::vector<at::Tensor>& inputs,
+             const std::vector<at::Tensor>& outputs) { return true; },
+      PrologueFunction prologue_fun =
+          []() {
+            return tc::ProfilingInfo{tc::Duration::zero(),
+                                     tc::Duration::zero()};
+          }) {
     // 1. Compile, run and check
     auto pExecutor =
         tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions);
@@ -119,14 +124,17 @@ struct Benchmark : public ::testing::Test {
     std::vector<at::Tensor> outputs2 =
         tc::aten::prepareOutputs(tc, name, inputs);
     RunAndReport(
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
+          prologue_fun();
           tc::aten::run(*pExecutor, inputs, outputs2);
         },
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
+          TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+          auto prologueTimings = prologue_fun();
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           auto timings = tc::aten::profile(*pExecutor, inputs, outputs2);
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-          return timings.kernelRuntime;
+          return prologueTimings.kernelRuntime + timings.kernelRuntime;
         },
         "COMPILED KERNEL");
     // 3. Run and report total compiled time (kernel runtime + CPU overhead)
@@ -134,9 +142,10 @@ struct Benchmark : public ::testing::Test {
         [&pExecutor, &inputs, &outputs2]() {
           tc::aten::run(*pExecutor, inputs, outputs2);
         },
-        [&pExecutor, &inputs, &outputs2]() {
+        [&pExecutor, &inputs, &outputs2, prologue_fun]() {
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           auto start(std::chrono::system_clock::now());
+          prologue_fun();
           tc::aten::uncheckedRun(*pExecutor, inputs, outputs2);
           TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
           return tc::Duration::since(start);
@@ -227,119 +236,6 @@ struct Benchmark : public ::testing::Test {
         << GET_US(durations.at(std::min(p99idx, (int)durations.size() - 1)))
         << "us, "
         << "Max: " << GET_US(durations.back()) << "us";
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n\n";
-
-#undef GET_US
-  }
-
-  // Will disappear soon
- public:
-  void validateProto(
-      std::string cacheFilename,
-      const std::string& tc,
-      const std::string& name,
-      const std::vector<at::Tensor>& inputs,
-      CheckFunction check_fun = [](const std::vector<at::Tensor>&,
-                                   const std::vector<at::Tensor>&) {
-        return true;
-      }) {
-    std::cout << "Validating proto from: "
-              << tc::makeOptionsFilename(cacheFilename) << std::endl;
-
-    using CudaOptionsCache =
-        tc::autotune::Autotuner<tc::CudaBackend, tc::autotune::GeneticSearch>::
-            OptionsCacheType;
-    CudaOptionsCache optionsCache;
-    optionsCache.loadCacheFromFile(cacheFilename + ".options");
-    tc::FLAGS_tuner_gen_restore_number = 1;
-
-    auto mappingOptions = [&]() {
-      auto inputDLTensors = tc::aten::makeDLConstTensors(inputs);
-      auto outputDLTensors = tc::aten::inferOutputTensorInfo(tc, name, inputs);
-      return optionsCache.getTopKOptions(
-          lang::canonicalTc(tc),
-          tc::makeTensorInfoVector(tc::extractRawPtrs(inputDLTensors)),
-          tc::makeTensorInfoVector(tc::extractRawPtrs(outputDLTensors)),
-          tc::CudaGPUInfo::GPUInfo().getCudaDeviceStr(),
-          1);
-    }();
-
-    CHECK_GT(mappingOptions.size(), 0)
-        << "No mapping options for " << tc << " in loaded cache";
-    auto pExecutor =
-        tc::aten::compile<tc::CudaBackend>(tc, name, inputs, mappingOptions[0]);
-    auto outputs = tc::aten::prepareOutputs(tc, name, inputs);
-    tc::aten::run(*pExecutor, inputs, outputs);
-    EXPECT_TRUE(check_fun(inputs, outputs));
-    for (size_t i = 1; i < tc::FLAGS_benchmark_warmup; ++i) {
-      tc::aten::run(*pExecutor, inputs, outputs);
-    }
-    std::vector<tc::Duration> kernelTimes;
-    kernelTimes.reserve(tc::FLAGS_benchmark_iterations);
-    std::vector<tc::Duration> totalTimes;
-    totalTimes.reserve(tc::FLAGS_benchmark_iterations);
-    for (size_t i = 0; i < tc::FLAGS_benchmark_iterations; ++i) {
-      auto timings = tc::aten::profile(*pExecutor, inputs, outputs);
-      kernelTimes.push_back(timings.kernelRuntime);
-      TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      auto start(std::chrono::system_clock::now());
-      tc::aten::uncheckedRun(*pExecutor, inputs, outputs);
-      TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
-      totalTimes.push_back(tc::Duration::since(start));
-    }
-
-    auto p50idx = static_cast<int>(std::ceil(0.5 * kernelTimes.size()));
-    auto p90idx = static_cast<int>(std::ceil(0.9 * kernelTimes.size()));
-    auto p99idx = static_cast<int>(std::ceil(0.99 * kernelTimes.size()));
-
-    std::sort(kernelTimes.begin(), kernelTimes.end());
-#define GET_US(X) ((X)).toMicroSeconds()
-
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n------------- AUTOTUNED VALIDATED KERNEL STATS ----------";
-    std::cout << "\n------------------    " << tc::FLAGS_benchmark_iterations
-              << " ITERATIONS    ----------------";
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n";
-    std::cout
-        << "Min: " << GET_US(kernelTimes.front()) << "us, "
-        << "p50: "
-        << GET_US(kernelTimes.at(std::min(p50idx, (int)kernelTimes.size() - 1)))
-        << "us, "
-        << "p90: "
-        << GET_US(kernelTimes.at(std::min(p90idx, (int)kernelTimes.size() - 1)))
-        << "us, "
-        << "p99: "
-        << GET_US(kernelTimes.at(std::min(p99idx, (int)kernelTimes.size() - 1)))
-        << "us, "
-        << "Max: " << GET_US(kernelTimes.back()) << "us";
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n\n";
-
-#undef GET_US
-
-    std::sort(totalTimes.begin(), totalTimes.end());
-#define GET_US(X) ((X)).toMicroSeconds()
-
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n-------------- AUTOTUNED VALIDATED TOTAL STATS ----------";
-    std::cout << "\n------------------    " << tc::FLAGS_benchmark_iterations
-              << " ITERATIONS    ----------------";
-    std::cout << "\n---------------------------------------------------------";
-    std::cout << "\n";
-    std::cout
-        << "Min: " << GET_US(totalTimes.front()) << "us, "
-        << "p50: "
-        << GET_US(totalTimes.at(std::min(p50idx, (int)totalTimes.size() - 1)))
-        << "us, "
-        << "p90: "
-        << GET_US(totalTimes.at(std::min(p90idx, (int)totalTimes.size() - 1)))
-        << "us, "
-        << "p99: "
-        << GET_US(totalTimes.at(std::min(p99idx, (int)totalTimes.size() - 1)))
-        << "us, "
-        << "Max: " << GET_US(totalTimes.back()) << "us";
     std::cout << "\n---------------------------------------------------------";
     std::cout << "\n\n";
 
