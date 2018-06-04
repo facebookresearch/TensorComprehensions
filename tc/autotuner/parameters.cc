@@ -459,9 +459,11 @@ void CudaDimParameters::setRange(
 namespace {
 template <typename Params, typename View>
 void fromMappingOptions(Params& params, const View& options) {
-  CHECK_LE(options.size(), params.dims.size());
-  params.numberDims.selectFromValue(options.size());
-  for (size_t i = 0; i < options.size(); ++i) {
+  // It is possible mapping options are higher dimensional than problem sizes
+  // in which case options could be larger
+  auto min = std::min(options.size(), params.dims.size());
+  params.numberDims.selectFromValue(min);
+  for (size_t i = 0; i < min; ++i) {
     params.dims[i].selectFromValue(options[i]);
   }
 }
