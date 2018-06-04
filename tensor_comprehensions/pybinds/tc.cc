@@ -287,24 +287,16 @@ PYBIND11_MODULE(tc, m) {
           " 5. group_conv\n"
           " 6. single_thread")
       .def(
-          "maxSharedMemory",
-          &tc::CudaMappingOptions::maxSharedMemory,
-          "The amount of shared memory to use, in bytes. If not provided, "
-          "TC will query the active GPU and use all available shared memory.")
-      .def(
-          "useSharedMemory",
-          &tc::CudaMappingOptions::useSharedMemory,
-          "Create block-local copies of data in shared memory when this can "
-          "leverage data reuse or global memory access coalescing")
-      .def(
-          "unrollCopyShared",
-          &tc::CudaMappingOptions::unrollCopyShared,
-          "Also unroll the copies to and from shared memory. If an unroll "
-          "value is not provided, has no effect")
-      .def(
-          "useReadOnlyCache",
-          &tc::CudaMappingOptions::useReadOnlyCache,
-          "Use the readonly cache (i.e. emit __ldg loads)")
+          "__str__",
+          [](tc::CudaMappingOptions& instance) {
+            std::string str;
+            google::protobuf::TextFormat::PrintToString(instance.proto(), &str);
+            return str;
+          },
+          "Returns the CudaMappingOptions as a human-readable string")
+      //
+      // Generic options
+      //
       .def(
           "scheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
@@ -334,20 +326,16 @@ PYBIND11_MODULE(tc, m) {
           "(Preserve3Coincident) by\n"
           "performing loop fusion and fission. Applies before tiling")
       .def(
-          "serialize",
-          [](tc::CudaMappingOptions& instance) {
-            std::string str = instance.toProtobufSerializedString();
-            return py::bytes(str);
+          "fixParametersBeforeScheduling",
+          [](tc::CudaMappingOptions& instance, bool fix) {
+            instance.fixParametersBeforeScheduling(fix);
           },
-          "Serialize the options to a protobuf string")
-      .def(
-          "toString",
-          [](tc::CudaMappingOptions& instance) {
-            std::string str;
-            google::protobuf::TextFormat::PrintToString(instance.proto(), &str);
-            return str;
-          },
-          "Returns the CudaMappingOptions as a human-readable string")
+          "Perform automatic loop scheduling taking into account specific "
+          "tensor sizes.\n"
+          "May produce faster kernels but significantly increases compilation "
+          "time.\n"
+          "Note that the mapping will be performed for specific tensor sizes "
+          "anyway")
       .def(
           "tile",
           // pybind11 has implicit conversion from list -> vector
@@ -356,6 +344,29 @@ PYBIND11_MODULE(tc, m) {
           "Perform loop tiling on the generated code with the given sizes. "
           "Independent of mapping to a\n"
           "grid of thread blocks")
+      .def(
+          "tile_imperfectly_nested",
+          [](tc::CudaMappingOptions& instance, bool tile) {
+            instance.tileImperfectlyNested(tile);
+          },
+          "Allow imperfectly nested loop tiling")
+      .def(
+          "unroll",
+          [](tc::CudaMappingOptions& instance, uint64_t factor) {
+            instance.unroll(factor);
+          },
+          "Perform loop unrolling on the generated code and produce at "
+          "most the given number of statements")
+      .def(
+          "matchLibraryCalls",
+          [](tc::CudaMappingOptions& instance, bool match) {
+            instance.matchLibraryCalls(match);
+          },
+          "Replace computation patterns with calls to highly optimized "
+          "libraries (such as CUB, CUTLASS) when possible")
+      //
+      // CUDA-specific options
+      //
       .def(
           "mapToThreads",
           [](tc::CudaMappingOptions& instance,
@@ -378,30 +389,29 @@ PYBIND11_MODULE(tc, m) {
           "within the range allowed by CUDA (maximum 2^31-1 for the first "
           "value and 65535 for the second and third)")
       .def(
-          "matchLibraryCalls",
-          [](tc::CudaMappingOptions& instance, bool match) {
-            instance.matchLibraryCalls(match);
-          },
-          "Replace computation patterns with calls to highly optimized "
-          "libraries (such as CUB, CUTLASS) when possible")
+          "useSharedMemory",
+          &tc::CudaMappingOptions::useSharedMemory,
+          "Create block-local copies of data in shared memory when this can "
+          "leverage data reuse or global memory access coalescing")
       .def(
-          "fixParametersBeforeScheduling",
-          [](tc::CudaMappingOptions& instance, bool fix) {
-            instance.fixParametersBeforeScheduling(fix);
-          },
-          "Perform automatic loop scheduling taking into account specific "
-          "tensor sizes.\n"
-          "May produce faster kernels but significantly increases compilation "
-          "time.\n"
-          "Note that the mapping will be performed for specific tensor sizes "
-          "anyway")
+          "usePrivateMemory",
+          &tc::CudaMappingOptions::usePrivateMemory,
+          "Use private memoery (registers) when possible")
+
       .def(
-          "unroll",
-          [](tc::CudaMappingOptions& instance, uint64_t factor) {
-            instance.unroll(factor);
-          },
-          "Perform loop unrolling on the generated code and produce at "
-          "most the given number of statements");
+          "unrollCopyShared",
+          &tc::CudaMappingOptions::unrollCopyShared,
+          "Also unroll the copies to and from shared memory. If an unroll "
+          "value is not provided, has no effect")
+      .def(
+          "maxSharedMemory",
+          &tc::CudaMappingOptions::maxSharedMemory,
+          "The amount of shared memory to use, in bytes. If not provided, "
+          "TC will query the active GPU and use all available shared memory.")
+      .def(
+          "useReadOnlyCache",
+          &tc::CudaMappingOptions::useReadOnlyCache,
+          "Use the readonly cache (i.e. emit __ldg loads)");
 }
 
 } // namespace python
