@@ -121,6 +121,9 @@ isl::aff operator*(isl::aff A, isl::val V);
 isl::aff operator*(isl::val V, isl::aff A);
 
 isl::aff operator/(isl::aff A, int i);
+isl::aff operator/(isl::aff A, isl::val V);
+
+isl::aff operator%(isl::aff A, isl::val V);
 
 isl::aff operator+(int i, isl::aff A);
 isl::aff operator+(isl::aff A, isl::aff B);
@@ -175,6 +178,17 @@ isl::map operator>=(isl::aff_map A, isl::aff B);
 isl::map operator<=(isl::aff_map A, isl::aff B);
 isl::map operator>(isl::aff_map A, isl::aff B);
 isl::map operator<(isl::aff_map A, isl::aff B);
+isl::map operator==(isl::aff_map A, isl::aff B);
+isl::map operator==(isl::map A, isl::aff_map B);
+
+///////////////////////////////////////////////////////////////////////////////
+// Operations on isl::multi_aff
+///////////////////////////////////////////////////////////////////////////////
+isl::multi_aff operator-(isl::multi_aff left, isl::multi_aff right);
+
+isl::multi_aff operator*(isl::multi_aff left, isl::multi_val right);
+
+isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set

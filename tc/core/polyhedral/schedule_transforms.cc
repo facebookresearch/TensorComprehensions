@@ -30,6 +30,7 @@
 
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/scope_guard.h"
@@ -472,9 +473,9 @@ isl::multi_union_pw_aff prefixScheduleMupa(
 isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
+  auto prefix = prefixScheduleMupa(root, tree);
   auto band = tree->elemAs<ScheduleTreeElemBand>();
-  CHECK(band);
-  return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
+  return band ? prefix.flat_range_product(band->mupa_) : prefix;
 }
 
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
@@ -771,6 +772,50 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
   auto childPos = tree->positionInParent(parent);
   seq->insertChild(0, gistedFilter(other, parent->detachChild(childPos)));
   parent->insertChild(childPos, std::move(seq));
+}
+
+/*
+ * Extract a mapping from the domain elements active at "tree"
+ * to identifiers "ids", where all branches in "tree"
+ * are assumed to have been mapped to these identifiers.
+ * The result lives in a space of the form "tupleId"["ids"...].
+ */
+isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* tree,
+    const std::vector<mapping::MappingId>& ids,
+    isl::id tupleId = isl::id()) {
+  using namespace polyhedral::detail;
+
+  auto space = isl::space(tree->ctx_, 0);
+  auto empty = isl::union_set::empty(space);
+  if (tupleId) {
+    space = space.named_set_from_params_id(tupleId, ids.size());
+  } else {
+    space = space.unnamed_set_from_params(ids.size());
+  }
+  auto zero = isl::multi_val::zero(space);
+  auto domainToIds = isl::multi_union_pw_aff(empty, zero);
+
+  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
+    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
+    auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
+    bool hasIds = true;
+    for (auto id : ids) {
+      if (mappingNode->mapping.count(id) == 0) {
+        hasIds = false;
+        break;
+      }
+      auto idMap = mappingNode->mapping.at(id);
+      list = list.add(idMap);
+    }
+    if (!hasIds) {
+      continue;
+    }
+    auto nodeToIds = isl::multi_union_pw_aff(space, list);
+    domainToIds = domainToIds.union_add(nodeToIds);
+  }
+
+  return domainToIds;
 }
 
 } // namespace polyhedral

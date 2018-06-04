@@ -55,13 +55,19 @@ std::pair<isl::val, isl::aff> outputRange(
   return emptyRange;
 }
 
+// Compute the bounds of the single output dimension of the given relation.
+// The lower bound is an affine function defined in terms of input dimensions
+// and parameters, and the upper bound has the same shape but shifted by a
+// constant value.  Look for bounds of the same shape as lower bound
+// constraints present in the "access" relation, and pick the one with the
+// smallest constant distance between the lower and the upper bound.
+//
+// TODO: replace this with a call to isl_map_range_box_hull when available.
 std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
   CHECK_EQ(access.dim(isl::dim_type::out), 1u)
       << "expected 1-dim output, call outputRanges instead";
   access = access.detect_equalities();
   auto wrappedAccess = access.wrap().flatten().compute_divs().simple_hull();
-
-  // TODO: also compute strides
 
   isl::val minRange;
   isl::aff lowerBoundWithMinRange;
@@ -83,8 +89,48 @@ std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
   return std::make_pair(minRange, lowerBoundWithMinRange);
 }
 
+isl::map removeRangeStrides(
+    isl::map relation,
+    const std::vector<isl::val>& strides,
+    const std::vector<isl::aff>& offsets) {
+  CHECK_EQ(strides.size(), offsets.size());
+
+  auto valList = isl::val_list(relation.get_ctx(), strides.size());
+  auto affList = isl::aff_list(relation.get_ctx(), 1);
+  for (int i = 0; i < strides.size(); ++i) {
+    valList = valList.add(strides.at(i));
+    affList = affList.add(offsets.at(i).neg());
+  }
+  auto space = relation.get_space();
+  auto stridesMV = isl::multi_val(space.range(), valList);
+  auto stridesMA = isl::multi_aff::identity(space.range().map_from_set());
+  stridesMA = stridesMA / stridesMV;
+  auto negOffsetsMA = isl::multi_aff(space, affList);
+
+  return relation.sum(isl::map(negOffsetsMA)).apply_range(isl::map(stridesMA));
+}
+
+// Compute the box approximation of the range of the given relation,
+// including the lower bounds, the box sizes, and the strides.
+// If the range has strides, remove them first.
+// TODO: replace this with a call to isl_map_range_box_hull when available.
 ScopedFootprint outputRanges(isl::map access) {
   int nSubscripts = access.dim(isl::dim_type::out);
+
+  if (access.get_space().domain().is_wrapping()) {
+    access = access.domain_factor_domain();
+  }
+
+  std::vector<isl::val> strides;
+  std::vector<isl::aff> offsets;
+  for (int i = 0; i < nSubscripts; ++i) {
+    auto si = access.get_range_stride_info(i);
+    strides.push_back(si.get_stride());
+    offsets.push_back(si.get_offset());
+  }
+
+  access = removeRangeStrides(access, strides, offsets);
+
   ScopedFootprint footprint;
   for (int i = 0; i < nSubscripts; ++i) {
     auto singleDim =
@@ -94,7 +140,7 @@ ScopedFootprint outputRanges(isl::map access) {
     if (range.first.is_nan()) {
       return {};
     }
-    footprint.emplace_back(range.second, range.first);
+    footprint.emplace_back(range.second, range.first, offsets[i], strides[i]);
   }
   return footprint;
 }
@@ -135,33 +181,68 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::set ScopedFootprint::footprint(isl::set domain) const {
-  auto space = add_range(domain.get_space(), size());
-  auto accessed = isl::map::universe(space).intersect_domain(domain);
+isl::set TensorReferenceGroup::approximateFootprint() const {
+  auto accessed = scopedAccesses();
   auto lspace = isl::local_space(accessed.get_space().range());
 
-  for (size_t i = 0; i < size(); ++i) {
-    auto dim = at(i);
+  for (size_t i = 0; i < approximation.size(); ++i) {
+    auto dim = approximation.at(i);
     auto rhs = isl::aff(lspace, isl::dim_type::set, i);
-    isl::map partial = (isl::aff_map(dim.lowerBound) <= rhs) &
-        (isl::aff_map(dim.lowerBound + dim.size) > rhs);
+    auto lowerBound = dim.lowerBound * dim.stride + dim.offset;
+    auto upperBound = (dim.lowerBound + dim.size) * dim.stride + dim.offset;
+    isl::map partial =
+        (isl::aff_map(lowerBound) <= rhs) & (isl::aff_map(upperBound) > rhs);
+
     accessed = accessed & partial;
   }
   return accessed.range();
 }
 
+namespace {
+template <typename Func>
+isl::multi_aff createMA(
+    const std::vector<ScopedFootprintDim>& dims,
+    Func accessor) {
+  if (dims.size() == 0) {
+    throw promotion::PromotionNYI("promotion for scalars");
+  }
+  auto space =
+      add_range(accessor(dims.at(0)).get_space().domain(), dims.size());
+  auto ma = isl::multi_aff::zero(space);
+
+  int i = 0;
+  for (const auto& a : dims) {
+    ma = ma.set_aff(i++, accessor(a));
+  }
+  return ma;
+}
+} // namespace
+
 isl::multi_aff ScopedFootprint::lowerBounds() const {
+  return createMA(
+      *this, [](const ScopedFootprintDim& dim) { return dim.lowerBound; });
+}
+
+isl::multi_aff ScopedFootprint::offsets() const {
+  return createMA(
+      *this, [](const ScopedFootprintDim& dim) { return dim.offset; });
+}
+
+// TODO: this can be abstracted in the template createMA by making the
+// return type a template argument, and by exporting set_aff/val as
+// __isl_overload for name homogeneity.
+isl::multi_val ScopedFootprint::strides() const {
   if (size() == 0) {
     throw promotion::PromotionNYI("promotion for scalars");
   }
   auto space = add_range(at(0).lowerBound.get_space().domain(), size());
-  auto ma = isl::multi_aff::zero(space);
+  auto mv = isl::multi_val::zero(space);
 
   int i = 0;
   for (const auto& a : *this) {
-    ma = ma.set_aff(i++, a.lowerBound);
+    mv = mv.set_val(i++, a.stride);
   }
-  return ma;
+  return mv;
 }
 
 bool TensorReferenceGroup::isReadOnly() const {
@@ -346,12 +427,37 @@ void addSingletonReferenceGroups(
 }
 } // namespace
 
+// Compute tensor reference groups encapsulating all tensor accesses below the
+// given tree node "tree" in "scop".  If "threadMapping" is provided, intersect
+// it with the domain of the scop so as to include thread mapping information
+// into the tensor reference descriptors.  Note that if "tree" is below the
+// thread mapping, the mapping information is already included.
+//
+// Tensor reference descriptors (TensorReference) contain information about
+// tensor elements accessed through the given reference by the subtree "tree".
+// Several references form a group (TensorReferenceGroup) if the same elements
+// may be accessed through these references, and at least one of the accesses
+// write to the element.  A group stores a rectangular overapproximation of the
+// set of accessed tensor elements (access footprint).  This overappoximation
+// can be used to create copies of the given tensor elements in another memory
+// space, i.e., to perform memory promotion.  If thread mapping information was
+// included, then a per-thread footprint is used.
+//
+// Returns a map between tensor ids and vectors of unique pointers to
+// TensorReferenceGroup, with each group potentially containing multiple
+// references.
 TensorGroups TensorReferenceGroup::accessedBySubtree(
     const ScheduleTree* tree,
-    const Scop& scop) {
+    const Scop& scop,
+    isl::union_set threadMapping) {
   TensorGroups tensorGroups;
   auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+
+  if (threadMapping) {
+    domain = domain.intersect(threadMapping);
+    schedule = schedule.intersect_domain(threadMapping);
+  }
 
   addSingletonReferenceGroups(
       tensorGroups, scop.writes, domain, schedule, AccessType::Write);
@@ -378,13 +484,21 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   isl::map map = scopedAccesses();
   auto accessSpace = map.get_space();
 
-  // lower bounds space is S -> P; which we transform into [S -> O] -> P
-  auto lowerBounds = approximation.lowerBounds().pullback(
-      isl::multi_aff::domain_map(accessSpace));
-  auto promotion = isl::multi_aff::range_map(accessSpace)
-                       .reset_tuple_id(isl::dim_type::out) -
-      lowerBounds;
-  return promotion;
+  // Construct a projection multi-aff in [S -> O] -> S
+  // for futher precomposition.
+  auto originalSpaceInserter = isl::multi_aff::domain_map(accessSpace);
+
+  // Lower bounds and offsets space is S -> P; transform into [S -> O] -> P.
+  auto lowerBounds =
+      approximation.lowerBounds().pullback(originalSpaceInserter);
+  auto offsets = approximation.offsets().pullback(originalSpaceInserter);
+
+  // Create identity mapping from original to promoted,
+  // resetting the tuple name for the promoted tensor.
+  auto original =
+      isl::multi_aff::range_map(accessSpace).reset_tuple_id(isl::dim_type::out);
+
+  return (original - offsets) / approximation.strides() - lowerBounds;
 }
 
 std::unordered_set<isl::id, isl::IslIdIslHash>
@@ -451,6 +565,11 @@ isl::multi_aff dropDummyTensorDimensions(
   space = add_range(space, list.n());
   return isl::multi_aff(space, list);
 }
+
+inline void unrollAllMembers(detail::ScheduleTreeElemBand* band) {
+  band->unroll_ = std::vector<bool>(band->nMember(), true);
+}
+
 } // namespace
 
 ScheduleTree* insertCopiesUnder(
@@ -458,7 +577,8 @@ ScheduleTree* insertCopiesUnder(
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
     isl::id tensorId,
-    isl::id groupId) {
+    isl::id groupId,
+    bool unrollAllCopies) {
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
   isl::id readId = isl::id(ctx, std::string(kReadIdName));
@@ -488,6 +608,11 @@ ScheduleTree* insertCopiesUnder(
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
+
+  if (unrollAllCopies) {
+    unrollAllMembers(readBandNode->elemAs<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(writeBandNode->elemAs<detail::ScheduleTreeElemBand>());
+  }
 
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();

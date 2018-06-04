@@ -38,10 +38,18 @@ inline isl::aff operator*(isl::aff A, isl::val V) {
   return V * A;
 }
 
+inline isl::aff operator/(isl::aff A, isl::val V) {
+  isl::aff T(isl::local_space(A.get_space().domain()), V);
+  return A.div(T);
+}
+
 inline isl::aff operator/(isl::aff A, int i) {
   isl::ctx ctx = A.get_ctx();
-  isl::aff T(isl::local_space(A.get_space().domain()), isl::val(ctx, i));
-  return A.div(T);
+  return A / isl::val(ctx, i);
+}
+
+inline isl::aff operator%(isl::aff A, isl::val V) {
+  return A.mod(V);
 }
 
 inline isl::aff operator+(int i, isl::aff A) {
@@ -186,6 +194,37 @@ inline isl::map operator<(isl::aff_map A, isl::aff B) {
 
 inline isl::map operator<=(isl::aff_map A, isl::aff B) {
   return A < B + 1;
+}
+
+inline isl::map operator==(isl::aff_map A, isl::aff B) {
+  auto pwA = isl::pw_aff(A.aff);
+  auto pwB = isl::pw_aff(B);
+  return pwA.eq_map(pwB);
+}
+
+inline isl::map operator==(isl::aff A, isl::aff_map B) {
+  auto pwA = isl::pw_aff(A);
+  auto pwB = isl::pw_aff(B.aff);
+  return pwA.eq_map(pwB);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Operations on isl::multi_aff
+///////////////////////////////////////////////////////////////////////////////
+inline isl::multi_aff operator-(isl::multi_aff left, isl::multi_aff right) {
+  return left.sub(right);
+}
+
+inline isl::multi_aff operator*(isl::multi_aff left, isl::multi_val right) {
+  return left.scale(right);
+}
+
+inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
+  auto resultList = isl::aff_list(left.get_ctx(), left.size());
+  for (int i = 0, n = left.size(); i < n; ++i) {
+    resultList = resultList.add(left.get_aff(i) / right.get_val(i));
+  }
+  return isl::multi_aff(left.get_space(), resultList);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -349,7 +349,7 @@ def fun(float(N, M) A) -> (B, C) {
     EXPECT_EQ(groups.count(idC), 1u) << "could not group C references";
 
     const auto& groupsB = groups.at(idB);
-    ASSERT_EQ(groupsB.size(), 1u) << "expected B refereces to be grouped";
+    ASSERT_EQ(groupsB.size(), 1u) << "expected B references to be grouped";
     ASSERT_EQ(groupsB[0]->approximation.size(), 2u) << "B should be a 2D array";
     EXPECT_EQ(
         groupsB[0]->approximation[0].size,
@@ -506,6 +506,126 @@ TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
       << "tensor C promoted to register but has no reuse";
   EXPECT_TRUE(aDeclPos == std::string::npos)
       << "tensor A promoted to register but has elements accessed by multiple threads";
+}
+
+class Strided : public TestMapper {
+ public:
+  std::unique_ptr<MappedScop> makeScopAndCheck(
+      const std::string& tc,
+      const std::unordered_map<std::string, size_t>& sizes,
+      long groupISize,
+      long groupIStride,
+      long groupIConstOffset) {
+    auto options = CudaMappingOptions::makeNaiveMappingOptions()
+                       .tile(32, 32)
+                       .mapToThreads(21, 21)
+                       .useSharedMemory(false);
+    auto mscop = makeMappedScop(tc, options, sizes);
+    auto& scop = mscop->scop();
+    auto ctx = scop.domain().get_ctx();
+
+    auto groups = TensorReferenceGroup::accessedBySubtree(
+        scop.scheduleRoot()->child({0, 0, 0}), scop);
+    EXPECT_EQ(groups.size(), 2u) << "expected groups for both tensors";
+
+    for (const auto& g : groups) {
+      auto name = g.first.get_name();
+      if (name != "I") {
+        continue;
+      }
+
+      const auto& perTensorGroups = g.second;
+      // One cannot use ASSERT_EQ in a function that returns something, because
+      // it would trigger an immediate return without value.  Use EXPECT_EQ and
+      // return nullptr manually.
+      EXPECT_EQ(perTensorGroups.size(), 1u) << "expected one group for I";
+      if (perTensorGroups.size() != 1u) {
+        return nullptr;
+      }
+      const auto& oneGroup = perTensorGroups[0];
+
+      EXPECT_EQ(oneGroup->references.size(), 1u)
+          << "expected one reference in the group for I";
+      if (oneGroup->references.size() != 1u) {
+        return nullptr;
+      }
+      const auto& ref = oneGroup->references[0];
+
+      EXPECT_EQ(oneGroup->approximation.size(), 2u)
+          << "could not compute approximation for " << ref->scopedAccess;
+
+      EXPECT_EQ(oneGroup->approximation[1].size, isl::val(ctx, groupISize))
+          << "expected strides to be removed";
+
+      EXPECT_EQ(oneGroup->approximation[1].stride, isl::val(ctx, groupIStride));
+
+      auto expectedOffset =
+          isl::aff::zero_on_domain(ref->scopedAccess.domain().get_space()) +
+          groupIConstOffset;
+      // Convert to pw_aff because it has is_equal whereas a simple aff only has
+      // is_plain_equal that fails here.
+      EXPECT_TRUE(isl::pw_aff(oneGroup->approximation[1].offset)
+                      .is_equal(isl::pw_aff(expectedOffset)))
+          << oneGroup->approximation[1].offset << "\n"
+          << expectedOffset;
+    }
+    return mscop;
+  }
+};
+
+// Check that strides are effectively handled in memory promotion.  In
+// particular, check that array elements that are jumped over
+TEST_F(Strided, Stride2) {
+  std::string tc = R"TC(
+def strided(float(N,M) I) -> (O) {
+  O(i, j) = I(j, 2 * i + 1)
+}
+)TC";
+
+  // Expect the promoted size to be 32x32, with stride 2 and offset -1 along
+  // the second dimension.
+  auto mscop = makeScopAndCheck(tc, {{"N", 42}, {"M", 420}}, 32, 2, -1);
+  ASSERT_TRUE(mscop.get() != nullptr);
+  auto& scop = mscop->scop();
+
+  // Additionally check that copies look fine.
+  scop.promoteEverythingAt({0, 0, 0});
+  auto code = std::get<0>(mscop->codegen("strided"));
+  EXPECT_TRUE(
+      code.find("I[32 * b1 + c2][64 * b0 + 2 * c3 + 1]") != std::string::npos)
+      << "expected only read elements to be copied";
+  EXPECT_TRUE(code.find("= _I_0[c3][c2]") != std::string::npos)
+      << "expected non-strided access to promoted array in main computation";
+  EXPECT_TRUE(code.find("= _I_0[c3][2 * c2") == std::string::npos)
+      << "did not expect strided access to promoted array in main computation";
+}
+
+TEST_F(Strided, Stride5) {
+  std::string tc = R"TC(
+def strided(float(N,M) I) -> (O) {
+  O(i, j) = I(j, 5 * i)
+}
+)TC";
+
+  // Expect the promoted size to be 32x32, with stride 5 and offset 0 along
+  // the second dimension.
+  makeScopAndCheck(tc, {{"N", 42}, {"M", 420}}, 32, 5, 0);
+}
+
+// Check that strided accesses that access different elements but whose
+// footprints overlap after stride removal get grouped.
+TEST_F(Strided, DISABLED_Join) {
+  std::string tc = R"TC(
+def strided(float(N,M) I) -> (O1, O2) {
+  O1(i, j) = I(j, 2 * i + 1)
+  O2(i, j) = I(j, 2 * i)
+}
+)TC";
+
+  // Expect the promoted size to be 32x64 (coming from both references), with
+  // stride 1 and offset 0 along the second dimension.
+  // We effectively read the elements necessary for both statements together.
+  makeScopAndCheck(tc, {{"N", 42}, {"M", 420}}, 64, 1, 0);
 }
 
 int main(int argc, char** argv) {
