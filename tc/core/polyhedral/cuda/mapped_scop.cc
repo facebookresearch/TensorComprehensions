@@ -166,6 +166,8 @@ void MappedScop::mapToBlocksAndScaleBand(
   bandScale(band, tileSizes);
 }
 
+namespace {
+
 /*
  * Given a node in the schedule tree of a mapped scop,
  * insert a mapping filter underneath (if needed) that fixes
@@ -185,6 +187,41 @@ void fixThreadsBelow(
   auto bandTree = insertNodeBelow(tree, std::move(band));
   mscop.mapThreadsBackward(bandTree);
 }
+
+/*
+ * Try and order the other statements in "domain" (if any)
+ * away from the "updates" statements, returning true is the operation succeeds.
+ * In particular, only do this if it doesn't violate any dependences.
+ * Anything that depends on an update statement is ordered after
+ * the update statements.  Anything else is ordered before.
+ */
+bool separatedOut(
+    Scop& scop,
+    detail::ScheduleTree* tree,
+    isl::union_set domain,
+    isl::union_set updates) {
+  auto other = domain.subtract(updates);
+  if (other.is_empty()) {
+    return true;
+  }
+  auto dependences = scop.activeDependences(tree);
+  auto after =
+      dependences.intersect_domain(updates).intersect_range(other).range();
+  auto before = other.subtract(after);
+  if (!canOrderBefore(scop.scheduleRoot(), tree, before, dependences) ||
+      !canOrderAfter(scop.scheduleRoot(), tree, after, dependences)) {
+    return false;
+  }
+  if (!before.is_empty()) {
+    orderBefore(scop.scheduleRoot(), tree, before);
+  }
+  if (!after.is_empty()) {
+    orderAfter(scop.scheduleRoot(), tree, after);
+  }
+  return true;
+}
+
+} // namespace
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   bool found = false;
@@ -234,16 +271,8 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   // Order the other statements (if any) before the update statements
   // to ensure the band from which the reduction band has been split off
   // only contains update statements.
-  // Only do this if it doesn't violate any dependences.
-  // TODO (#454): order statements before or after the reduction based on
-  // dependences.
-  auto other = domain.subtract(updates);
-  if (!other.is_empty()) {
-    auto dependences = scop_->activeDependences(tree);
-    if (!canOrderBefore(scop_->scheduleRoot(), tree, other, dependences)) {
-      return false;
-    }
-    orderBefore(scop_->scheduleRoot(), tree, other);
+  if (!separatedOut(scop(), tree, domain, updates)) {
+    return false;
   }
   reductionBandUpdates_.emplace(tree, Reduction(updateIds));
   return true;
