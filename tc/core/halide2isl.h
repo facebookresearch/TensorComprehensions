@@ -33,10 +33,11 @@ namespace halide2isl {
 /// Helper functions that participate in translating Halide IR to ISL
 ///
 
+using ParameterVector = std::vector<Halide::Internal::Parameter>;
 /// Find and categorize all variables referenced in a piece of Halide IR
 struct SymbolTable {
   std::vector<std::string> reductionVars, idxVars;
-  std::vector<Halide::Internal::Parameter> params;
+  ParameterVector params;
 };
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components);
 

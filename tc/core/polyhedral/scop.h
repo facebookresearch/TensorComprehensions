@@ -472,7 +472,7 @@ struct Scop {
  public:
   // Halide stuff
   struct {
-    std::vector<Halide::Internal::Parameter> params;
+    halide2isl::ParameterVector params;
     std::vector<std::string> idx, reductionIdx;
     std::vector<Halide::ImageParam> inputs;
     std::vector<Halide::OutputImageParam> outputs;
