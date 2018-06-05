@@ -366,7 +366,7 @@ TensorGroups TensorReferenceGroup::accessedBySubtree(
   return tensorGroups;
 }
 
-// Compute the relation between schedule dimensions, orignal and promoted array
+// Compute the relation between schedule dimensions, original and promoted array
 // subscripts, in the space
 //   [S -> O] -> P
 // The mapping depends on the original schedule dimensions because the same
