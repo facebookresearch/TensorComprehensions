@@ -236,10 +236,10 @@ isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params) {
   return space;
 }
 
-isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable) {
-  auto space = makeParamSpace(ctx, symbolTable.params);
+isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params) {
+  auto space = makeParamSpace(ctx, params);
   auto context = isl::set::universe(space);
-  for (auto p : symbolTable.params) {
+  for (auto p : params) {
     isl::aff a(isl::aff::param_on_domain_space(space, isl::id(ctx, p.name())));
     context = context & (a >= 0);
   }
