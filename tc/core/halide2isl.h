@@ -41,8 +41,8 @@ struct SymbolTable {
 };
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components);
 
-/// Make the space of all parameter values from the symbol table
-isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable);
+/// Make the space of all given parameter values
+isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params);
 
 /// Make the parameter set marking all parameters from the symbol table
 /// as non-negative.
