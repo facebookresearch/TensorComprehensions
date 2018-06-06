@@ -77,9 +77,8 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   // context to specialize the scop..
   auto scop = polyhedral::Scop::makeScop(
       isl::with_exceptions::globalIslCtx(), halideComponents);
-  auto globalParameterContext = scop->makeContextFromInputs(inputs);
-  scop = polyhedral::Scop::makeSpecializedScop(
-      *scop, globalParameterContext.intersect(scop->globalParameterContext));
+  auto pvm = computeParamValueMap(halideComponents, inputs);
+  scop = polyhedral::Scop::makeSpecializedScop(*scop, pvm);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << options;
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "original schedule:\n"
                                       << *(scop->scheduleRoot());
@@ -91,8 +90,7 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
 
-  auto parameters =
-      mappedScop->scop().getParameterValues(globalParameterContext);
+  auto parameters = mappedScop->scop().getParameterValues();
   auto specializedName = specializeKernelName(tcName, parameters);
 
   // This updates the launch bounds with the actual result from compilation

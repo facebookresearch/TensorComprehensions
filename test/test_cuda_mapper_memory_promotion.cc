@@ -45,12 +45,8 @@ class TestMapper : public ::testing::Test {
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     auto scop = Scop::makeScop(ctx, tc);
-    scop = Scop::makeSpecializedScop(
-        *scop,
-        scop->makeContext(problemSizes)
-            .intersect(scop->globalParameterContext));
-    scop->domain() =
-        scop->domain().intersect_params(scop->globalParameterContext);
+    scop = Scop::makeSpecializedScop(*scop, problemSizes);
+    scop->specializeToContext();
     return MappedScop::makeWithOuterBlockInnerThreadStrategy(
         std::move(scop), mappingOptions);
   }
@@ -254,7 +250,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
         {tile1, tile2});
     auto& scop = const_cast<Scop&>(mscop->scop());
     // Must force domain intersection for overapproximation to work
-    scop.domain() = scop.domain().intersect_params(scop.globalParameterContext);
+    scop.specializeToContext();
     auto ctx = scop.domain().get_ctx();
     auto groups = TensorReferenceGroup::accessedBySubtree(
         scop.scheduleRoot()->child(childPos), scop);
@@ -334,7 +330,7 @@ def fun(float(N, M) A) -> (B, C) {
         {tile1, tile2});
     auto& scop = const_cast<Scop&>(mscop->scop());
     // Must force domain intersection for overapproximation to work
-    scop.domain() = scop.domain().intersect_params(scop.globalParameterContext);
+    scop.specializeToContext();
     auto ctx = scop.domain().get_ctx();
     auto groups = TensorReferenceGroup::accessedBySubtree(
         scop.scheduleRoot()->child(childPos), scop);

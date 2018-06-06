@@ -358,11 +358,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 )TC";
 
   auto scop = PrepareAndJoinBands(tc);
-  auto scopPtr = scop.get();
-  auto context =
-      scopPtr->makeContext(std::unordered_map<std::string, int>{{"N", 512}});
-  scop = Scop::makeSpecializedScop(
-      *scop, context.intersect(scop->globalParameterContext));
+  scop = Scop::makeSpecializedScop<int>(*scop, {{"N", 512}});
   auto mscop = TileAndMapBlocksAndThreads(
       std::move(scop), {16ul, 16ul}, {256ul, 256ul}, {16ul, 16ul});
 
@@ -524,12 +520,9 @@ constexpr auto kExpectedMatmul_64_64_64 =
 TEST_F(PolyhedralMapperTest, MergedContexts) {
   auto scop = PrepareAndJoinBandsMatMul();
 
-  // Unit test claims to use scop->globalParameterContext properly
-  auto context = scop->makeContext<int>({{"M", 64}, {"N", 64}, {"K", 64}});
-  auto& globalParameterContext =
-      const_cast<isl::set&>(scop->globalParameterContext);
-  globalParameterContext = globalParameterContext.intersect(context);
-  scop->domain() = scop->domain().intersect(globalParameterContext);
+  // Unit test claims to use the specialized context properly
+  scop->fixParameters<int>({{"M", 64}, {"N", 64}, {"K", 64}});
+  scop->specializeToContext();
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto res = std::get<0>(mscop->codegen(specializedName));

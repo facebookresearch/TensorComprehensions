@@ -421,10 +421,7 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
         (isl::aff_set(aff) < (minAff + extentAff));
   }
 
-  if (scop.globalParameterContext) {
-    tensorElements =
-        tensorElements.intersect_params(scop.globalParameterContext);
-  }
+  tensorElements = tensorElements.intersect_params(scop.context());
   return tensorElements;
 }
 

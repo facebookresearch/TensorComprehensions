@@ -884,7 +884,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   // outer schedule dimensions, so the space of a parameter context code is that
   // of a zero-dimensional space.
   auto root = scop->scheduleRoot();
-  updateTopLevelContext(root, scop->globalParameterContext.from_params());
+  updateTopLevelContext(root, scop->context().from_params());
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;
@@ -907,7 +907,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 } // namespace
 
 // Before generating code, make a copy of the scop and insert
-// the globalParameterContext of the original scop as top-level
+// the context of the original scop as top-level
 // context node in schedule tree.
 std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
     const std::string& specializedName) const {

@@ -63,7 +63,7 @@ struct Scop {
   // Clone a Scop
   static std::unique_ptr<Scop> makeScop(const Scop& scop) {
     auto res = std::unique_ptr<Scop>(new Scop());
-    res->globalParameterContext = scop.globalParameterContext;
+    res->parameterValues = scop.parameterValues;
     res->halide = scop.halide;
     res->reads = scop.reads;
     res->writes = scop.writes;
@@ -78,43 +78,49 @@ struct Scop {
     return res;
   }
 
-  // Intersect globalParameterContext with extraGlobalParameterContext.
-  inline void intersectContext(isl::set extraGlobalParameterContext) {
-    auto context = globalParameterContext & extraGlobalParameterContext;
-    globalParameterContext = context;
+  // Return a context encapsulating all known information about
+  // the parameters.  In particular, all parameters are known
+  // to be non-negative and the parameters fixed by fixParameters
+  // have a known value.
+  // This context lives in a parameter space.
+  // The scop is not necessarily specialized to its context.
+  // Call specializeToContext to perform this specialization.
+  // The schedule tree of the scop does not necessarily have
+  // a context node.  Call updateTopLevelContext on the schedule tree
+  // to introduce or refine such a context node.
+  isl::set context() const {
+    auto ctx = domain().get_ctx();
+    auto context = halide2isl::makeParamContext(ctx, halide.params);
+    return context.intersect(makeContext(parameterValues));
   }
 
-  // Specialize a Scop with extra globalParameterContext information
+  // Specialize a Scop by fixing the given parameters to the given sizes.
   // If you want to intersect the support domain with the
-  // extraGlobalParameterContext then you need to do it explicitly.
+  // resulting context then you need to do it explicitly.
   // Otherwise ambiguities will ensue.
   // TODO: this is still subject to interpretation but intersecting seems a
   // bit final here so probably we're right not doing it.
+  template <typename T>
   static std::unique_ptr<Scop> makeSpecializedScop(
       const Scop& scop,
-      isl::set extraGlobalParameterContext) {
-    CHECK(extraGlobalParameterContext.is_subset(scop.globalParameterContext))
-        << "expected extra context " << extraGlobalParameterContext
-        << " to be more specialized than " << scop.globalParameterContext;
+      const std::unordered_map<std::string, T>& sizes) {
     auto res = makeScop(scop);
-    res->intersectContext(extraGlobalParameterContext);
+    res->fixParameters(sizes);
     // **WARNING** if called before scheduling, this could result in a
     // (partially) specialized schedule, i.e. force
     // strategy.proto.fix_parameters_before_scheduling to true.
-    // If you want to intersect the support domain with the
-    // extraGlobalParameterContext then you need to do it explicitly.
-    // Note that the access relations must be intersect with the context as
-    // well to obtain consistent dependences.
+    // If you want to fix the parameters in the support domain,
+    // then you need to do it explicitly.
     // TODO: this is still subject to interpretation but intersecting seems
     // final here so probably we're right not doing it.
-    // res->domain() =
-    // res->domain().intersect_params(res->globalParameterContext);
+    // res->specializeToContext();
     return res;
   }
 
-  // Specialize the Scop with respect to its globalParameterContext.
+  // Specialize the Scop with respect to its context.
   void specializeToContext() {
-    domain() = domain().intersect_params(globalParameterContext);
+    auto globalParameterContext = context();
+    domainRef() = domain().intersect_params(globalParameterContext);
     reads = reads.intersect_params(globalParameterContext);
     writes = writes.intersect_params(globalParameterContext);
   }
@@ -138,24 +144,21 @@ struct Scop {
     return makeSpecializationSet(s, sizes);
   }
 
-  // Compute the values of parameters based on the effective sizes of the
-  // tensors provided as arguments and their parametric expressions stored in
-  // halide ImageParams.  We only know input sizes, output sizes are inferred.
-  // Result is an isl set directly usable as context.
-  isl::set makeContextFromInputs(
-      const std::vector<const DLConstTensor*>& inputs) const;
-
   // Fix the values of the specified parameters in the context
-  // to the corresponding specified values.
+  // to the corresponding specified values by keeping track of them
+  // in parameterValues.
   template <typename T>
   void fixParameters(const std::unordered_map<std::string, T>& sizes) {
-    intersectContext(makeContext(sizes));
+    CHECK(parameterValues.size() == 0);
+    for (const auto& kvp : sizes) {
+      parameterValues.emplace(kvp.first, kvp.second);
+    }
   }
 
-  // Given the context set, return the list of parameter values in the same
+  // Return the list of parameter values in the same
   // order as codegen places them in the function signature, i.e. following the
   // order of scop.params.
-  std::vector<long> getParameterValues(isl::set context) const;
+  std::vector<long> getParameterValues() const;
 
   isl::id nextGroupIdForTensor(isl::id tensorId) {
     auto ctx = domain().get_ctx();
@@ -478,7 +481,7 @@ struct Scop {
  public:
   // Halide stuff
   struct {
-    std::vector<Halide::Internal::Parameter> params;
+    halide2isl::ParameterVector params;
     std::vector<std::string> idx, reductionIdx;
     std::vector<Halide::ImageParam> inputs;
     std::vector<Halide::OutputImageParam> outputs;
@@ -495,20 +498,13 @@ struct Scop {
   // state is kept.
   // By analogy with generalized functions, the domain is the "support" part
   // of the ScheduleTree "function".
-  isl::union_set& domain();
+ private:
+  isl::union_set& domainRef();
+
+ public:
   const isl::union_set domain() const;
-  // A globalParameterContext is kept. This represents (partial)
-  // parameter specialization coming from the outside.
-  // This may be further specialized before codegen.
-  // This globalParameterContext must not give rise to a context node in the
-  // schedule tree.
-  // This globalParameterContext is intersected with the domain of the
-  // ScheduleTree for best possible specialization of polyhedral decisions and
-  // transformations. By the analogy with generalized functions, the
-  // globalParameterContext becomes part of the "support" of the ScheduleTree
-  // "function".
-  // This globalParameterContext lives in a parameter space.
-  isl::set globalParameterContext; // TODO: not too happy about this name
+  // The parameter values of a specialized Scop.
+  std::unordered_map<std::string, int> parameterValues;
 
   isl::union_map reads;
   isl::union_map writes;

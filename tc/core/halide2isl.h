@@ -33,19 +33,20 @@ namespace halide2isl {
 /// Helper functions that participate in translating Halide IR to ISL
 ///
 
+using ParameterVector = std::vector<Halide::Internal::Parameter>;
 /// Find and categorize all variables referenced in a piece of Halide IR
 struct SymbolTable {
   std::vector<std::string> reductionVars, idxVars;
-  std::vector<Halide::Internal::Parameter> params;
+  ParameterVector params;
 };
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components);
 
-/// Make the space of all parameter values from the symbol table
-isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable);
+/// Make the space of all given parameter values
+isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params);
 
-/// Make the parameter set marking all parameters from the symbol table
+/// Make the parameter set marking all given parameters
 /// as non-negative.
-isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable);
+isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params);
 
 /// Make a constant-valued affine function over a space.
 isl::aff makeIslAffFromInt(isl::space space, int64_t i);

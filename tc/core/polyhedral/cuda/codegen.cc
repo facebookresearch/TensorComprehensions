@@ -747,15 +747,8 @@ string emitCudaKernel(
 
   // Make a map of the specialized scalar parameter values
   map<string, Halide::Expr> paramValues;
-  {
-    auto set = scop.globalParameterContext;
-    for (unsigned i = 0; i < set.n_param(); i++) {
-      auto val = set.plain_get_val_if_fixed(isl::dim_type::param, i);
-      auto name = set.get_space().get_dim_name(isl::dim_type::param, i);
-      if (!val.is_nan()) {
-        paramValues[name] = static_cast<int>(val.get_num_si());
-      }
-    }
+  for (const auto& kvp : scop.parameterValues) {
+    paramValues[kvp.first] = kvp.second;
   }
 
   stringstream ss;
