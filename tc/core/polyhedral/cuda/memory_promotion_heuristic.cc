@@ -740,17 +740,14 @@ bool isPromotableToRegistersBelow(
              group, scop.schedule(), scope, threadSchedule);
 }
 
-// Returns a union of all thread mapping filters in "scop".
-isl::union_set collectThreadMappings(const Scop& scop) {
+// Returns a union of all mapping filters to "MappingType" in "scop".
+template <typename MappingType>
+isl::union_set collectMappingsTo(const Scop& scop) {
   auto root = scop.scheduleRoot();
   auto domain = scop.domain();
   auto mappingFilters = detail::ScheduleTree::collect(
       root, detail::ScheduleTreeType::MappingFilter);
-  mappingFilters = functional::Filter(
-      [](const detail::ScheduleTree* tree) {
-        return isMappingTo<mapping::ThreadId>(tree);
-      },
-      mappingFilters);
+  mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
   for (auto mf : mappingFilters) {
     auto filterNode = mf->elemAs<detail::ScheduleTreeElemMappingFilter>();
     domain = domain.intersect(filterNode->filter_);
@@ -776,7 +773,7 @@ void promoteGreedilyAtDepth(
 void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto& scop = mscop.scop();
   auto groupMap = TensorReferenceGroup::accessedBySubtree(
-      scope, scop, collectThreadMappings(scop));
+      scope, scop, collectMappingsTo<mapping::ThreadId>(scop));
 
   // FIXME: this schedule is also copmuted in
   // isPromotableToRegistersBelow
