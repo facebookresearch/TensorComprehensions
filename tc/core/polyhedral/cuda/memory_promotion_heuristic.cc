@@ -468,11 +468,13 @@ void promoteToSharedGreedy(
   // both.
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
-    auto groupMap = TensorReferenceGroup::accessedBySubtree(bandNode, scop);
+    auto activePoints = activeDomainPoints(root, bandNode);
     auto partialSched = partialSchedule(root, bandNode);
+
+    auto groupMap = TensorReferenceGroup::accessedWithin(
+        partialSched.intersect_domain(activePoints), scop.reads, scop.writes);
     // Pure affine schedule without (mapping) filters.
     auto partialSchedMupa = partialScheduleMupa(root, bandNode);
-    auto activePoints = activeDomainPoints(root, bandNode);
 
     // Prepare groups for sorting, to have specified order necessary for
     // reproducibility and tests.
@@ -581,7 +583,12 @@ void promoteToRegistersBelowThreads(Scop& scop, size_t nRegisters) {
       auto mapSchedMupa = infixScheduleMupa(root, mapping, marker);
       auto partialSchedMupa = prefixSchedMupa.flat_range_product(mapSchedMupa);
 
-      auto groupMap = TensorReferenceGroup::accessedBySubtree(marker, scop);
+      // Because this function is called below the thread mapping marker,
+      // partialSched has been intersected with both the block and the thread
+      // mapping filters.   Therefore, groups will be computed relative to
+      // blocks and threads.
+      auto groupMap = TensorReferenceGroup::accessedWithin(
+          partialSched, scop.reads, scop.writes);
       for (auto& tensorGroups : groupMap) {
         auto tensorId = tensorGroups.first;
 
