@@ -31,71 +31,12 @@ namespace polyhedral {
 using detail::ScheduleTree;
 
 namespace {
-std::pair<isl::val, isl::aff> outputRange(
-    isl::basic_set wrappedAccess,
-    isl::constraint cstr) {
-  auto emptyRange =
-      std::make_pair(isl::val::nan(wrappedAccess.get_ctx()), isl::aff());
-  int pos = cstr.dim(isl::dim_type::set) - 1;
-  if (!cstr.is_lower_bound(isl::dim_type::set, pos)) {
-    return emptyRange;
-  }
-  if (cstr.involves_dims(isl::dim_type::div, 0, cstr.dim(isl::dim_type::div))) {
-    return emptyRange;
-  }
-
-  auto lowerBound = cstr.get_bound(isl::dim_type::set, pos).ceil();
-  auto aff = lowerBound.neg().add_coefficient_si(isl::dim_type::in, pos, 1);
-  lowerBound = lowerBound.drop_dims(isl::dim_type::in, pos, 1);
-
-  auto range = wrappedAccess.max_val(aff);
-  if (range.is_int()) {
-    return std::make_pair(range + 1, lowerBound);
-  }
-  return emptyRange;
-}
-
-std::pair<isl::val, isl::aff> outputRangeSingle(isl::map access) {
-  CHECK_EQ(access.dim(isl::dim_type::out), 1u)
-      << "expected 1-dim output, call outputRanges instead";
-  access = access.detect_equalities();
-  auto wrappedAccess = access.wrap().flatten().compute_divs().simple_hull();
+ScopedFootprint outputRanges(isl::map access) {
+  ScopedFootprint footprint;
 
   // TODO: also compute strides
 
-  isl::val minRange;
-  isl::aff lowerBoundWithMinRange;
-  for (auto cstr : wrappedAccess.get_constraint_list()) {
-    auto range = outputRange(wrappedAccess, cstr);
-    if (range.first.is_nan()) {
-      continue;
-    }
-    if (minRange.is_null() || range.first < minRange) {
-      minRange = range.first;
-      lowerBoundWithMinRange = range.second;
-    }
-  }
-  if (minRange.is_null()) {
-    return std::make_pair(
-        isl::val::nan(access.get_ctx()), lowerBoundWithMinRange);
-  }
-
-  return std::make_pair(minRange, lowerBoundWithMinRange);
-}
-
-ScopedFootprint outputRanges(isl::map access) {
-  int nSubscripts = access.dim(isl::dim_type::out);
-  ScopedFootprint footprint;
-  for (int i = 0; i < nSubscripts; ++i) {
-    auto singleDim =
-        access.project_out(isl::dim_type::out, 0, i)
-            .project_out(isl::dim_type::out, 1, nSubscripts - i - 1);
-    auto range = outputRangeSingle(singleDim);
-    if (range.first.is_nan()) {
-      return {};
-    }
-    footprint.emplace_back(range.second, range.first);
-  }
+  footprint.box = access.get_range_simple_fixed_box_hull();
   return footprint;
 }
 
@@ -117,15 +58,16 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
   auto refId = scopedAccess.get_space().domain().unwrap().get_tuple_id(
       isl::dim_type::out);
+  scopedAccess = scopedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
-  ref->scopedAccess = scopedAccess.domain_factor_domain();
+  ref->scopedAccess = scopedAccess;
   ref->type = type;
   ref->refId = refId;
   auto group = std::unique_ptr<TensorReferenceGroup>(new TensorReferenceGroup);
   group->references.push_back(std::move(ref));
   group->approximation = outputRanges(scopedAccess);
 
-  if (group->approximation.size() != scopedAccess.dim(isl::dim_type::out)) {
+  if (!group->approximation.box.is_valid()) {
     std::stringstream ss;
     ss << "could not compute rectangular overapproximation of: "
        << scopedAccess;
@@ -136,32 +78,25 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
 }
 
 isl::set ScopedFootprint::footprint(isl::set domain) const {
-  auto space = add_range(domain.get_space(), size());
+  auto space = box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(domain);
   auto lspace = isl::local_space(accessed.get_space().range());
 
-  for (size_t i = 0; i < size(); ++i) {
-    auto dim = at(i);
+  for (size_t i = 0; i < dim(); ++i) {
+    auto dimLowerBound = lowerBound(i);
     auto rhs = isl::aff(lspace, isl::dim_type::set, i);
-    isl::map partial = (isl::aff_map(dim.lowerBound) <= rhs) &
-        (isl::aff_map(dim.lowerBound + dim.size) > rhs);
+    isl::map partial = (isl::aff_map(dimLowerBound) <= rhs) &
+        (isl::aff_map(dimLowerBound + size(i)) > rhs);
     accessed = accessed & partial;
   }
   return accessed.range();
 }
 
 isl::multi_aff ScopedFootprint::lowerBounds() const {
-  if (size() == 0) {
+  if (dim() == 0) {
     throw promotion::PromotionNYI("promotion for scalars");
   }
-  auto space = add_range(at(0).lowerBound.get_space().domain(), size());
-  auto ma = isl::multi_aff::zero(space);
-
-  int i = 0;
-  for (const auto& a : *this) {
-    ma = ma.set_aff(i++, a.lowerBound);
-  }
-  return ma;
+  return box.get_offset();
 }
 
 bool TensorReferenceGroup::isReadOnly() const {
@@ -173,10 +108,9 @@ bool TensorReferenceGroup::isReadOnly() const {
 }
 
 isl::set TensorReferenceGroup::promotedFootprint() const {
-  auto space =
-      scopedAccesses().get_space().range().reset_tuple_id(isl::dim_type::set);
-  auto sizes = approximationSizes();
-  if (sizes.size() != space.dim(isl::dim_type::set)) {
+  auto space = scopedAccesses().get_space().range();
+  auto sizes = approximation.box.get_size();
+  if (!sizes.get_space().has_equal_tuples(space)) {
     throw promotion::GroupingError("unexpected dimensionality mismatch");
   }
 
@@ -184,17 +118,18 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
   auto lspace = isl::local_space(space);
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
     auto aff = isl::aff(lspace, isl::dim_type::out, i);
+    auto size = sizes.get_val(i);
     footprint =
-        footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < sizes[i]);
+        footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
   }
   return footprint;
 }
 
 std::vector<size_t> TensorReferenceGroup::approximationSizes() const {
   std::vector<size_t> result;
-  result.reserve(approximation.size());
-  for (const auto& dim : approximation) {
-    result.push_back(dim.size.get_num_si());
+  result.reserve(approximation.dim());
+  for (const auto& size : approximation.box.get_size().get_val_list()) {
+    result.push_back(size.get_num_si());
   }
   return result;
 }
@@ -381,9 +316,7 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   // lower bounds space is S -> P; which we transform into [S -> O] -> P
   auto lowerBounds = approximation.lowerBounds().pullback(
       isl::multi_aff::domain_map(accessSpace));
-  auto promotion = isl::multi_aff::range_map(accessSpace)
-                       .reset_tuple_id(isl::dim_type::out) -
-      lowerBounds;
+  auto promotion = isl::multi_aff::range_map(accessSpace) - lowerBounds;
   return promotion;
 }
 
