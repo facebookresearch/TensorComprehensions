@@ -189,7 +189,7 @@ void fixThreadsBelow(
 }
 
 /*
- * Try and order the other statements in "domain" (if any)
+ * Try and order the other active statements at "tree" (if any)
  * away from the "updates" statements, returning true is the operation succeeds.
  * In particular, only do this if it doesn't violate any dependences.
  * Anything that depends on an update statement is ordered after
@@ -198,8 +198,8 @@ void fixThreadsBelow(
 bool separatedOut(
     Scop& scop,
     detail::ScheduleTree* tree,
-    isl::union_set domain,
     isl::union_set updates) {
+  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
     return true;
@@ -271,7 +271,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   // Order the other statements (if any) before the update statements
   // to ensure the band from which the reduction band has been split off
   // only contains update statements.
-  if (!separatedOut(scop(), tree, domain, updates)) {
+  if (!separatedOut(scop(), tree, updates)) {
     return false;
   }
   reductionBandUpdates_.emplace(tree, Reduction(updateIds));

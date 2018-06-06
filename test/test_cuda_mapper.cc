@@ -1022,6 +1022,29 @@ def fun(float(N) I) -> (O) {
   ASSERT_TRUE(code.find("__ldg(&I") != std::string::npos) << code; // yes
 }
 
+/*
+ * Check that isolating the update statements does not introduce
+ * an empty mapping filter.
+ */
+TEST_F(PolyhedralMapperTest, EmptyMappingFilter) {
+  constexpr static auto tc = R"TC(
+  def var_2D_1D(float(N, K) I, float(N) mean) -> (var)
+  {
+       var(n) +=! I(n, r_k) * I(n, r_k)
+       var(n)  =  var(n) / (K) - mean(n) * mean(n)
+  }
+)TC";
+  auto mappingOptions = DefaultOptions()
+                            .fixParametersBeforeScheduling(false)
+                            .matchLibraryCalls(true)
+                            .mapToThreads(256);
+  auto scop = Prepare(tc);
+  scop->fixParameters<int>({{"N", 1024}, {"K", 36864}});
+  auto mscop = MappedScop::makeWithOuterBlockInnerThreadStrategy(
+      std::move(scop), mappingOptions);
+  mscop->codegen(specializedName);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
