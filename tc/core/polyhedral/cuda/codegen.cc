@@ -381,7 +381,7 @@ struct LdgWrapper {
   LdgWrapper(const CodegenStatementContext& context, isl::id id)
       : readOnly_(context.readOnlySet.count(id) > 0), out_(context.ss) {
     if (readOnly_) {
-      out_ << "__ldg(&";
+      out_ << tc::code::cuda::kLdg << "(&";
     }
   }
 

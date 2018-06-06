@@ -1018,8 +1018,9 @@ def fun(float(N) I) -> (O) {
 )TC";
   auto mappingOptions = DefaultOptions().useReadOnlyCache(true);
   auto code = codegenMapped(tc, mappingOptions);
-  ASSERT_TRUE(code.find("__ldg(&O") == std::string::npos) << code; // no
-  ASSERT_TRUE(code.find("__ldg(&I") != std::string::npos) << code; // yes
+  using tc::code::cuda::kLdg;
+  ASSERT_TRUE(code.find(kLdg + "(&O") == std::string::npos) << code; // no
+  ASSERT_TRUE(code.find(kLdg + "(&I") != std::string::npos) << code; // yes
 }
 
 /*
