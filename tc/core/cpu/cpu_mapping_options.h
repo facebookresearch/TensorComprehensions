@@ -79,4 +79,7 @@ class CpuMappingOptions {
  public:
   MappingOptionsView generic;
 };
+
+std::ostream& operator<<(std::ostream& os, const CpuMappingOptions& view);
+
 } // namespace tc

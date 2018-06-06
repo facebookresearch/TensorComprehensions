@@ -78,4 +78,12 @@ CpuMappingOptions CpuMappingOptions::makeNaiveMappingOptions() {
   return makeUnmappedMappingOptions().tile(32, 32, 32).unroll(1);
 }
 
+std::ostream& operator<<(
+    std::ostream& os,
+    const CpuMappingOptions& cpuOptions) {
+  OstreamBoolalphaScope scope(os);
+  tc::CpuMappingOptionsAsCpp cpp(cpuOptions);
+  os << cpp;
+  return os;
+}
 } // namespace tc
