@@ -371,6 +371,15 @@ std::vector<detail::ScheduleTree*> bandsContainingScheduleDepth(
     size_t depth) {
   using namespace tc::polyhedral::detail;
 
+  if (depth == 0) {
+    if (root->numChildren() > 0 &&
+        root->child({0})->elemAs<detail::ScheduleTreeElemContext>()) {
+      return {root->child({0})};
+    } else {
+      return {root};
+    }
+  }
+
   auto bands =
       ScheduleTree::collectDFSPreorder(root, detail::ScheduleTreeType::Band);
   std::function<bool(ScheduleTree * st)> containsDepth = [&](ScheduleTree* st) {
@@ -391,6 +400,10 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
     detail::ScheduleTree* root,
     size_t depth) {
   using namespace tc::polyhedral::detail;
+
+  if (depth == 0) {
+    return bands;
+  }
 
   std::function<ScheduleTree*(ScheduleTree*)> splitAtDepth =
       [&](ScheduleTree* st) {
@@ -844,7 +857,7 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   bands = functional::Filter(
       [root, depth](ScheduleTree* tree) {
         auto band = tree->elemAs<ScheduleTreeElemBand>();
-        return !isThreadMappedBand(tree) ||
+        return !band || !isThreadMappedBand(tree) ||
             tree->scheduleDepth(root) + band->nMember() == depth;
       },
       bands);
