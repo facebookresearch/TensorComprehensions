@@ -34,9 +34,17 @@ namespace tc {
 namespace polyhedral {
 namespace {
 
-bool isThreadId(const mapping::MappingId& id) {
-  return id == mapping::ThreadId::x() or id == mapping::ThreadId::y() or
-      id == mapping::ThreadId::z();
+/*
+ * Is "id" a mapping of the type provided as template argument?
+ */
+template <typename MappingType>
+bool isMappingIdType(const mapping::MappingId& id) {
+  for (size_t i = 0; i < MappingType::kMaxDim; ++i) {
+    if (id == MappingType::makeId(i)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /*
@@ -47,7 +55,7 @@ bool isThreadMapping(const detail::ScheduleTree* tree) {
 
   if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
     for (auto& kvp : filterNode->mapping) {
-      if (isThreadId(kvp.first)) {
+      if (isMappingIdType<mapping::ThreadId>(kvp.first)) {
         return true;
       }
     }
