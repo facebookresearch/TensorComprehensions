@@ -445,11 +445,13 @@ void promoteToSharedGreedy(
   // both.
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
-    auto groupMap = TensorReferenceGroup::accessedBySubtree(bandNode, scop);
+    auto activePoints = activeDomainPoints(root, bandNode);
     auto partialSched = partialSchedule(root, bandNode);
+
+    auto groupMap = TensorReferenceGroup::accessedWithin(
+        partialSched.intersect_domain(activePoints), scop.reads, scop.writes);
     // Pure affine schedule without (mapping) filters.
     auto partialSchedMupa = partialScheduleMupa(root, bandNode);
-    auto activePoints = activeDomainPoints(root, bandNode);
 
     // Prepare groups for sorting, to have specified order necessary for
     // reproducibility and tests.
@@ -771,9 +773,16 @@ void promoteGreedilyAtDepth(
 
 // Promote to registers below the given schedule node.
 void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
+  // Schedule computed by partialSchedule is intersected with (mapping) filters
+  // above the scope node, we additionally intersect it with block and thread
+  // mapping filters below the scope to compute reference groups specific to
+  // each block and each thread.
   auto& scop = mscop.scop();
-  auto groupMap = TensorReferenceGroup::accessedBySubtree(
-      scope, scop, collectMappingsTo<mapping::ThreadId>(scop));
+  auto mapping = collectMappingsTo<mapping::ThreadId>(scop).intersect(
+      collectMappingsTo<mapping::BlockId>(scop));
+  auto schedule = partialSchedule(scop.scheduleRoot(), scope);
+  auto groupMap = TensorReferenceGroup::accessedWithin(
+      schedule.intersect_domain(mapping), scop.reads, scop.writes);
 
   // FIXME: this schedule is also copmuted in
   // isPromotableToRegistersBelow

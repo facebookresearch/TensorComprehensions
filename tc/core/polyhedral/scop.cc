@@ -254,7 +254,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   checkFiltersDisjointStatements(scheduleRoot());
   auto schedule = partialSchedule(root, tree);
 
-  auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
+  auto groupMap = TensorReferenceGroup::accessedWithin(schedule, reads, writes);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
       promoteGroup(

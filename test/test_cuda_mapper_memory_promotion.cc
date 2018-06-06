@@ -54,6 +54,21 @@ class TestMapper : public ::testing::Test {
     return MappedScop::makeWithOuterBlockInnerThreadStrategy(
         std::move(scop), mappingOptions);
   }
+
+  // This mimics behavior of the old TensorReferenceGroup::accessedBySubtree.
+  // In particular, it takes the partial schedule until "tree" inclusive,
+  // intersecting its domain with all (mapping) filter ancestors and compute
+  // accessed tensor reference groups within that schedule.
+  // If the schedule happens to contain the block/thread mapping filter, the
+  // groups are per-block/thread.  Otherwise, they include all blocks/threads,
+  // which is questionable, but corresponds to what the test currently checks.
+  TensorGroups accessedBySubtree(
+      const polyhedral::detail::ScheduleTree* tree,
+      const Scop& scop) {
+    auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+    return TensorReferenceGroup::accessedWithin(
+        schedule, scop.reads, scop.writes);
+  }
 };
 
 class MapperMemoryPromotion2DHelper : public TestMapper {
@@ -256,8 +271,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     // Must force domain intersection for overapproximation to work
     scop.domain() = scop.domain().intersect_params(scop.globalParameterContext);
     auto ctx = scop.domain().get_ctx();
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child(childPos), scop);
+    auto groups = accessedBySubtree(scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
     EXPECT_EQ(groups.size(), 3u);
@@ -336,8 +350,7 @@ def fun(float(N, M) A) -> (B, C) {
     // Must force domain intersection for overapproximation to work
     scop.domain() = scop.domain().intersect_params(scop.globalParameterContext);
     auto ctx = scop.domain().get_ctx();
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child(childPos), scop);
+    auto groups = accessedBySubtree(scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
     ASSERT_EQ(groups.size(), 3u);
@@ -524,8 +537,8 @@ class Strided : public TestMapper {
     auto& scop = mscop->scop();
     auto ctx = scop.domain().get_ctx();
 
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child({0, 0, 0}), scop);
+    auto groups =
+        accessedBySubtree(scop.scheduleRoot()->child({0, 0, 0}), scop);
     EXPECT_EQ(groups.size(), 2u) << "expected groups for both tensors";
 
     for (const auto& g : groups) {
