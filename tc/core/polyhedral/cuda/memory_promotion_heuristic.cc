@@ -324,6 +324,29 @@ bool promotionImprovesCoalescing(
 }
 
 /*
+ * Returns the union of all mapping filters to "MappingType" in "scop".
+ *
+ * Note: similarly to MappedScop::[thread|block]MappingSchedule, this function
+ * does not take into account elements introduced by extension nodes.
+ */
+template <typename MappingType>
+isl::union_set collectMappingsTo(const Scop& scop) {
+  auto root = scop.scheduleRoot();
+  auto domain = scop.domain();
+  auto mappingFilters = detail::ScheduleTree::collect(
+      root, detail::ScheduleTreeType::MappingFilter);
+  mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
+  auto mapping = isl::union_set::empty(domain.get_space());
+  for (auto mf : mappingFilters) {
+    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMappingFilter>();
+    auto filter = filterNode->filter_.intersect(
+        activeDomainPointsNoMappingNoExtension(root, mf));
+    mapping = mapping.unite(filterNode->filter_);
+  }
+  return mapping;
+}
+
+/*
  * Check if the given "group" can be promoted to registers for the given
  * mapping to thread identifiers and within the given outer schedule.
  *
