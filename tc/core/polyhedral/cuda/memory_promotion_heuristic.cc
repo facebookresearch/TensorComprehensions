@@ -437,13 +437,19 @@ bool isPromotableToRegistersBelow(
 }
 
 /*
- * Starting from the root, find bands where depth is reached.  Using
+ * Starting from the root, find bands where depth is reached.  If zero depth is
+ * requested, insert a zero-dimensional band node below the root (or the
+ * context node if present) and return it.  Otherwise, use
  * DFSPreorder to make sure order is specified and consistent for tests.
  */
 std::vector<detail::ScheduleTree*> bandsContainingScheduleDepth(
     detail::ScheduleTree* root,
     size_t depth) {
   using namespace tc::polyhedral::detail;
+
+  if (depth == 0) {
+    return {insertTopLevelEmptyBand(root)};
+  }
 
   auto bands =
       ScheduleTree::collectDFSPreorder(root, detail::ScheduleTreeType::Band);
