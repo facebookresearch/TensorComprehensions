@@ -48,14 +48,16 @@ bool isMappingIdType(const mapping::MappingId& id) {
 }
 
 /*
- * Is "tree" a mapping filter that maps a thread identifier?
+ * Is "tree" a mapping filter that maps identifiers of the type provided as
+ * template argument?
  */
-bool isThreadMapping(const detail::ScheduleTree* tree) {
+template <typename MappingType>
+bool isMappingTo(const detail::ScheduleTree* tree) {
   using namespace detail;
 
   if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
     for (auto& kvp : filterNode->mapping) {
-      if (isMappingIdType<mapping::ThreadId>(kvp.first)) {
+      if (isMappingIdType<MappingType>(kvp.first)) {
         return true;
       }
     }
@@ -100,7 +102,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     // Check that we are not mapping to threads below other thread mappings.
     std::unordered_set<mapping::ThreadId, mapping::ThreadId::Hash> usedThreads;
     for (auto n : node->ancestors(root)) {
-      if (isThreadMapping(n)) {
+      if (isMappingTo<mapping::ThreadId>(n)) {
         throw promotion::PromotionBelowThreadsException(
             "attempted to map memory copies to threads below "
             "another thread mapping");
@@ -257,7 +259,7 @@ const detail::ScheduleTree* findThreadMappingAncestor(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
   auto ancestors = node->ancestors(root);
-  ancestors = functional::Filter(isThreadMapping, ancestors);
+  ancestors = functional::Filter(isMappingTo<mapping::ThreadId>, ancestors);
   if (ancestors.size() < 1) {
     throw promotion::PromotionLogicError("missing MappingFilter");
   }
