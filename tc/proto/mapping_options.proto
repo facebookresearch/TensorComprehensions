@@ -71,6 +71,8 @@ message CudaMappingOptionsProto {
   optional uint64 max_shared_memory = 7;
   // Use the readonly cache (i.e. emit __ldg loads)
   required bool use_readonly_cache = 8;
+  // Depth of promotion to private memory, ignored if use_private_memory is false.
+  required uint32 private_depth = 9;
 }
 
 message CpuMappingOptionsProto {
