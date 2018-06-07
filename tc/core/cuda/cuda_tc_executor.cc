@@ -93,13 +93,16 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   auto parameters = mappedScop->scop().getParameterValues();
   auto specializedName = specializeKernelName(tcName, parameters);
 
+  auto inputsInfo = makeTensorInfoVector(inputs);
+
   // This updates the launch bounds with the actual result from compilation
   // with tightening of launch_bounds. What you get is not necessarily what
   // you asked for, the autotuner should adapt to that.
   std::string source;
   Grid grid;
   Block block;
-  std::tie(source, grid, block) = mappedScop->codegen(specializedName);
+  std::tie(source, grid, block) =
+      mappedScop->codegen(specializedName, inputsInfo);
   LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << source << "\n"
                                 << "grid: " << grid << " block: " << block;
 

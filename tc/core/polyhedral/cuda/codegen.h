@@ -145,7 +145,8 @@ struct CodegenStatementContext : CodegenContext {
 
 std::string emitCudaKernel(
     const std::string& specializedName,
-    const MappedScop& scop);
+    const MappedScop& scop,
+    const std::vector<TensorInfo>& inputsInfo);
 
 } // namespace polyhedral
 } // namespace tc
