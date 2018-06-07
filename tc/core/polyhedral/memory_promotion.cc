@@ -58,20 +58,17 @@ isl::map removeRangeStrides(
 // including the lower bounds, the box sizes, and the strides.
 // If the range has strides, remove them first.
 ScopedFootprint outputRanges(isl::map access) {
-  auto ctx = access.get_ctx();
-  int nSubscripts = access.dim(isl::dim_type::out);
+  ScopedFootprint footprint;
+  footprint.strideValues = isl::multi_val::zero(access.get_space().range());
+  footprint.strideOffsets = isl::multi_aff::zero(access.get_space());
 
-  auto strides = isl::val_list(ctx, nSubscripts);
-  auto strideOffsets = isl::aff_list(ctx, nSubscripts);
+  int nSubscripts = footprint.strideValues.size();
   for (int i = 0; i < nSubscripts; ++i) {
     auto si = access.get_range_stride_info(i);
-    strides = strides.add(si.get_stride());
-    strideOffsets = strideOffsets.add(si.get_offset());
+    footprint.strideValues = footprint.strideValues.set_val(i, si.get_stride());
+    footprint.strideOffsets =
+        footprint.strideOffsets.set_aff(i, si.get_offset());
   }
-
-  ScopedFootprint footprint;
-  footprint.strideValues = isl::multi_val(access.get_space().range(), strides);
-  footprint.strideOffsets = isl::multi_aff(access.get_space(), strideOffsets);
 
   access = removeRangeStrides(
       access, footprint.strideValues, footprint.strideOffsets);
