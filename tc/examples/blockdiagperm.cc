@@ -148,7 +148,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   // later if required
   if (not FLAGS_options_cache.empty()) {
     tc::autotune::appendTopKToCacheFile(
-        geneticAutotuneATen.optionsCache,
+        *geneticAutotuneATen.optionsCache,
         FLAGS_options_cache,
         tc::FLAGS_tuner_save_best_candidates_count);
   }

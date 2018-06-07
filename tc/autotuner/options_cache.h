@@ -166,9 +166,10 @@ struct OptionsCache {
       OptionsCacheKeyHash>
       store_;
 
+  // Make friend to access toProtobuf/fromProtobuf
   template <typename BackendType>
   friend void appendTopKToCacheFile(
-      const std::shared_ptr<OptionsCache<BackendType>>& cache,
+      const OptionsCache<BackendType>& cache,
       const std::string& cacheFilename,
       uint32_t count);
 };
@@ -199,7 +200,7 @@ std::vector<typename Backend::MappingOptionsType> loadTopKFromCacheFile(
 /// needed.
 template <typename Backend>
 void appendTopKToCacheFile(
-    const std::shared_ptr<OptionsCache<Backend>>& cache,
+    const OptionsCache<Backend>& cache,
     const std::string& cacheFilename,
     uint32_t count);
 

@@ -21,6 +21,12 @@ echo "Running debug init test"
 $PYTHON test_debug_init.py -v
 
 ###############################################################################
+# PyTorch TcBuilder
+###############################################################################
+echo "Running PyTorch TcBuilder example"
+$PYTHON pytorch_example.py -v
+
+###############################################################################
 # PyTorch testing all features
 ###############################################################################
 echo "Running all PyTorch tests"
