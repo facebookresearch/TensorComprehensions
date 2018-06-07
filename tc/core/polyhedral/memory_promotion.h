@@ -104,7 +104,7 @@ typedef std::unordered_map<isl::id, TensorGroupsInfo, isl::IslIdIslHash>
 // memory together to avoid inconsistent values.
 //
 // Scoped to a specific position in a schedule tree, the user is responsible
-// for maintaing the correspondence between schedule tree positions and scoped
+// for maintaining the correspondence between schedule tree positions and scoped
 // access relations of each reference as well as scoped footprints.
 class TensorReferenceGroup {
  private:
