@@ -475,9 +475,6 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  if (groupId.is_null()) {
-    throw promotion::GroupingError("expected group id");
-  }
   auto promotion =
       isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
   auto promotionSpace = promotion.get_space();
