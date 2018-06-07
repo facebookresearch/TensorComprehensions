@@ -117,6 +117,7 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
 std::vector<TensorInfo> inferOutputTensorInfo(
     lang::TreeRef tcDefinition,
     const std::vector<const DLConstTensor*> inputs);
+
 } // namespace detail
 } // namespace tc
 

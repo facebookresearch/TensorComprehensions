@@ -18,6 +18,7 @@
 #include <sstream>
 #include <string>
 
+#include "tc/core/exceptions.h"
 #include "tc/core/flags.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/tensor.h"
@@ -35,6 +36,19 @@ std::vector<TensorInfo> inferOutputTensorInfo(
 }
 
 namespace detail {
+
+inline void helpThrowInvalidStride(
+    const lang::TreeRef param,
+    const DLConstTensor* inputsInfo) {
+  lang::ErrorReport ep = lang::ErrorReport(param);
+  std::ostringstream err_c;
+  err_c << ep.what() << "compilation aborted: invalid strides in tensor "
+        << std::endl;
+  err_c << *(inputsInfo);
+  err_c << std::endl;
+  throw InvalidStrideException(err_c.str());
+}
+
 void checkInputsCompliant(
     const tc2halide::HalideComponents& halideComponents,
     const std::vector<const DLConstTensor*>& inputsInfo) {
@@ -66,6 +80,20 @@ void checkInputsCompliant(
       throw lang::ErrorReport(halideComponents.getDef().params()[i])
           << "expected a tensor with " << hdim << " dimensions but found "
           << dldim << " dimensions.";
+    }
+    auto dlstrides = inputsInfo[i]->strides;
+    auto dlsizes = inputsInfo[i]->shape;
+    if (dldim) {
+      if (dlstrides[dldim - 1] < 1) {
+        helpThrowInvalidStride(
+            halideComponents.getDef().params()[i], inputsInfo[i]);
+      }
+      for (size_t j = 0; j < dldim - 1; ++j) {
+        if (dlstrides[j] < dlstrides[j + 1] * dlsizes[j + 1]) {
+          helpThrowInvalidStride(
+              halideComponents.getDef().params()[i], inputsInfo[i]);
+        }
+      }
     }
   }
 }
