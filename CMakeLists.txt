@@ -226,7 +226,7 @@ message(STATUS "Found ATen.so file: ${ATEN_LIBRARIES}")
 ################################################################################
 # isl
 ################################################################################
-set(ISL_INT gmp)
+set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
 include_directories(AFTER ${PROJECT_SOURCE_DIR}/third-party/islpp/include)
 include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/third-party/islpp/include)
 add_subdirectory(third-party/islpp)
