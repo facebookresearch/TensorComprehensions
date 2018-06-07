@@ -919,6 +919,9 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
   code << code::c::warpSyncFunctions;
   code << std::endl;
+  if (useReadOnlyCache) {
+    code << code::cuda::ldg;
+  }
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
     code << code::cuda::common;
     code << code::cuda::cubBlockReduce;

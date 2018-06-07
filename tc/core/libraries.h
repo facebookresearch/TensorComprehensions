@@ -156,6 +156,25 @@ template<typename T> inline __device__ T floord(T n, T d) {
 } // namespace cpp
 
 namespace cuda {
+
+// Wrapper around __ldg to avoid compilation errors
+// on architectures that do not support it.
+constexpr auto ldg = R"CUDA(
+
+namespace __tc {
+template<typename T>
+__device__ __forceinline__ T ldg(const T* ptr) {
+#if __CUDA_ARCH__ >= 350
+  return __ldg(ptr);
+#else
+  return *ptr;
+#endif
+}
+} // namespace __tc
+)CUDA";
+
+const static std::string kLdg = "__tc::ldg";
+
 constexpr auto common = R"CUDA(
 
 namespace __tc {
