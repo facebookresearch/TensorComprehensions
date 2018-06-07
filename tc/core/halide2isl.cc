@@ -248,6 +248,8 @@ isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params) {
   return context;
 }
 
+namespace {
+
 isl::map extractAccess(
     isl::set domain,
     const IRNode* op,
@@ -328,6 +330,8 @@ extractAccesses(isl::set domain, const Stmt& s, AccessMap* accesses) {
   s.accept(&finder);
   return {finder.reads, finder.writes};
 }
+
+} // namespace
 
 /*
  * Helper function for extracting a schedule from a Halide Stmt,
@@ -446,8 +450,7 @@ isl::schedule makeScheduleTreeHelper(
     schedule = isl::schedule::from_domain(domain);
 
     isl::union_map newReads, newWrites;
-    std::tie(newReads, newWrites) =
-        halide2isl::extractAccesses(domain, op, accesses);
+    std::tie(newReads, newWrites) = extractAccesses(domain, op, accesses);
 
     *reads = reads->unite(newReads);
     *writes = writes->unite(newWrites);
