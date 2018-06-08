@@ -1,7 +1,7 @@
 # Important notice
 ***In order to uniformize and simplify the build system we had to make choices. TC is currently only officially supported on Ubuntu 16.04 with gcc 5.4.0.***
 Other configurations may work too but are not yet officially supported.
-For more information about setting up the config that we use to build the conda dependencies see the following [Dockerfile](conda_recipes/Dockerfile).
+For more information about setting up the config that we use to build the conda dependencies see the following [Dockerfile](https://github.com/facebookresearch/TensorComprehensions/blob/master/conda_recipes/docker-images/tc-cuda9.0-cudnn7.1-ubuntu16.04-devel/Dockerfile).
 
 Our main goal with this decision is to make the build procedure extremely simple, both reproducible internally and extensible to new targets in the future.
 In particular the gcc-4 / gcc-5 ABI switch is not something we want to concern ourselves with at this point, we go for gcc-5.4.0.
