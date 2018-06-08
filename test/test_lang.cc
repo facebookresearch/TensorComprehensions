@@ -232,7 +232,7 @@ int main(int argc, char** argv) {
     ASSERT(s->tree(0)->stringValue() == "min");
   }
   {
-    std::string stuff = "-3+4*5+7-a";
+    std::string stuff = "-3%2+4*5+7-a";
     Parser p(stuff);
     auto r = p.parseExp();
     std::stringstream ss;
