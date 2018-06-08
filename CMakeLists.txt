@@ -226,7 +226,7 @@ message(STATUS "Found ATen.so file: ${ATEN_LIBRARIES}")
 ################################################################################
 # isl
 ################################################################################
-set(ISL_INT gmp)
+set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
 include_directories(AFTER ${PROJECT_SOURCE_DIR}/third-party/islpp/include)
 include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/third-party/islpp/include)
 add_subdirectory(third-party/islpp)
@@ -236,11 +236,11 @@ set(ISL_LIBRARIES isl-static)
 # Halide
 ################################################################################
 message(STATUS "Finding Halide")
-find_path(HALIDE_INCLUDE_DIR REQUIRED NAMES Halide PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES include NO_DEFAULT_PATH)
+find_path(HALIDE_INCLUDE_DIR REQUIRED NAMES Halide PATHS ${HALIDE_PREFIX} PATH_SUFFIXES include NO_DEFAULT_PATH)
 message(STATUS "HALIDE_INCLUDE_DIRS: ${HALIDE_INCLUDE_DIR}")
 include_directories(AFTER ${HALIDE_INCLUDE_DIR})
 include_directories(AFTER ${HALIDE_INCLUDE_DIR}/Halide)
-find_library(HALIDE_LIBRARIES REQUIRED NAMES Halide PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
+find_library(HALIDE_LIBRARIES REQUIRED NAMES Halide PATHS ${HALIDE_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
 message(STATUS "Found Halide.so file: ${HALIDE_LIBRARIES}")
 
 ################################################################################
@@ -304,14 +304,14 @@ else()
 endif()
 
 if (WITH_CAFFE2 AND WITH_CUDA)
-   find_path(EIGEN_INCLUDE_DIR REQUIRED NAMES Eigen PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES include/eigen3 NO_DEFAULT_PATH)
+   find_path(EIGEN_INCLUDE_DIR REQUIRED NAMES Eigen PATHS ${EIGEN_PREFIX} PATH_SUFFIXES include/eigen3 NO_DEFAULT_PATH)
    message(STATUS "Found, EIGEN_INCLUDE_DIR: " ${EIGEN_INCLUDE_DIR})
    find_library(CAFFE2_CPU_LIBRARY REQUIRED NAMES caffe2
-                PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
+                PATHS ${CAFFE2_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
    find_library(CAFFE2_GPU_LIBRARY REQUIRED NAMES caffe2_gpu
-                PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
+                PATHS ${CAFFE2_PREFIX} PATH_SUFFIXES lib lib64 NO_DEFAULT_PATH)
    set(CAFFE2_LIBRARIES ${CAFFE2_CPU_LIBRARY} ${CAFFE2_GPU_LIBRARY})
-   find_path(CAFFE2_INCLUDE_DIR REQUIRED NAMES caffe2 PATHS ${THIRD_PARTY_INSTALL_PREFIX} PATH_SUFFIXES include NO_DEFAULT_PATH)
+   find_path(CAFFE2_INCLUDE_DIR REQUIRED NAMES caffe2 PATHS ${CAFFE2_PREFIX} PATH_SUFFIXES include NO_DEFAULT_PATH)
    message(STATUS "Found, CAFFE2_INCLUDE_DIR: " ${CAFFE2_INCLUDE_DIR})
 
    add_definitions(-DCAFFE2_USE_GOOGLE_GLOG)

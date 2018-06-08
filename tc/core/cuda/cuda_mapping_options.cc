@@ -47,35 +47,6 @@ std::string CudaDimView::toCommaSeparatedString() const {
   return ss.str();
 }
 
-std::ostream& operator<<(std::ostream& os, const CudaDimView& view) {
-  os << "CudaDim(" << view.toCommaSeparatedString() << ") @" << &view.proto;
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const CudaDim& dim) {
-  os << dim.view;
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const Grid& dim) {
-  os << dim.view;
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, const Block& dim) {
-  os << dim.view;
-  return os;
-}
-
-std::ostream& operator<<(
-    std::ostream& os,
-    const CudaMappingOptions& cudaOptions) {
-  OstreamBoolalphaScope scope(os);
-  tc::CudaMappingOptionsAsCpp cpp(cudaOptions);
-  os << cpp;
-  return os;
-}
-
 // CudaDimView & CudaDim
 //
 CudaDim::CudaDim(std::vector<uint64_t> il) : ownedProto_(), view(ownedProto_) {
@@ -400,4 +371,32 @@ CudaMappingOptions CudaMappingOptions::makeGroupConvolutionMappingOptions() {
       .unroll(1);
 }
 
+std::ostream& operator<<(std::ostream& os, const CudaDimView& view) {
+  os << "CudaDim(" << view.toCommaSeparatedString() << ") @" << &view.proto;
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const CudaDim& dim) {
+  os << dim.view;
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Grid& dim) {
+  os << dim.view;
+  return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const Block& dim) {
+  os << dim.view;
+  return os;
+}
+
+std::ostream& operator<<(
+    std::ostream& os,
+    const CudaMappingOptions& cudaOptions) {
+  OstreamBoolalphaScope scope(os);
+  tc::CudaMappingOptionsAsCpp cpp(cudaOptions);
+  os << cpp;
+  return os;
+}
 } // namespace tc

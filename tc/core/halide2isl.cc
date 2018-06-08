@@ -227,19 +227,19 @@ isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
   return list[0];
 }
 
-isl::space makeParamSpace(isl::ctx ctx, const SymbolTable& symbolTable) {
+isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params) {
   auto space = isl::space(ctx, 0);
   // set parameter names
-  for (auto p : symbolTable.params) {
+  for (auto p : params) {
     space = space.add_param(isl::id(ctx, p.name()));
   }
   return space;
 }
 
-isl::set makeParamContext(isl::ctx ctx, const SymbolTable& symbolTable) {
-  auto space = makeParamSpace(ctx, symbolTable);
+isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params) {
+  auto space = makeParamSpace(ctx, params);
   auto context = isl::set::universe(space);
-  for (auto p : symbolTable.params) {
+  for (auto p : params) {
     isl::aff a(isl::aff::param_on_domain_space(space, isl::id(ctx, p.name())));
     context = context & (a >= 0);
   }

@@ -324,8 +324,7 @@ llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
 
 class LLVMCodegen {
   void collectTensor(const Halide::OutputImageParam& t) {
-    auto sizes =
-        getTensorSizesWithoutLeadingDim(t, scop_.globalParameterContext);
+    auto sizes = getTensorSizesWithoutLeadingDim(t, scop_.context());
     if (not sizes.empty()) {
       args_.emplace_back(
           makePtrToArrayType(halide_cg.llvm_type_of(t.type()), sizes));
@@ -509,7 +508,7 @@ class LLVMCodegen {
       CHECK(condLHS);
       CHECK_EQ(condLHS.get_id(), iterator);
 
-      IslAstExprInterpeter i(scop_.globalParameterContext);
+      IslAstExprInterpeter i(scop_.context());
       auto condRHSVal = i.interpret(cond_expr.get_arg(1));
 
       auto cond = [&]() {

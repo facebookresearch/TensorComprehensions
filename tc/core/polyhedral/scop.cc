@@ -47,11 +47,9 @@ ScopUPtr Scop::makeScop(
 
   halide2isl::SymbolTable sym = halide2isl::makeSymbolTable(components);
 
-  auto globalParameterContext = halide2isl::makeParamContext(ctx, sym);
-  isl::space paramSpace = globalParameterContext.get_space();
+  isl::space paramSpace = halide2isl::makeParamSpace(ctx, sym.params);
 
   ScopUPtr scop(new Scop());
-  scop->globalParameterContext = globalParameterContext;
   scop->halide.params = sym.params;
   scop->halide.idx = sym.idxVars;
   scop->halide.reductionIdx = sym.reductionVars;
@@ -78,7 +76,7 @@ ScopUPtr Scop::makeScop(isl::ctx ctx, const lang::TreeRef& treeRef) {
   return makeScop(ctx, tc2halide::translate(ctx, treeRef));
 }
 
-isl::union_set& Scop::domain() {
+isl::union_set& Scop::domainRef() {
   auto dom = scheduleRoot()->elemAs<ScheduleTreeElemDomain>();
   CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
   // TODO: activate this when the invariant has a chance of working (i.e. we
@@ -92,7 +90,7 @@ isl::union_set& Scop::domain() {
 }
 
 const isl::union_set Scop::domain() const {
-  return const_cast<Scop*>(this)->domain();
+  return const_cast<Scop*>(this)->domainRef();
 }
 
 std::ostream& operator<<(std::ostream& os, const Scop& s) {
@@ -262,51 +260,17 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   insertSyncsAroundCopies(tree);
 }
 
-// Compute the values of parameters based on the effective sizes of the
-// tensors provided as arguments and their parametric expressions stored in
-// Halide InputImage.  We only know input sizes, output sizes are inferred.
-// Result is an isl set directly usable as context.
-//
-// TODO(ntv)
-isl::set Scop::makeContextFromInputs(
-    const std::vector<const DLConstTensor*>& inputs) const {
-  CHECK_EQ(halide.inputs.size(), inputs.size());
-
-  auto paramSpace = domain().get_space().params();
-  auto paramSet = isl::set::universe(paramSpace);
-  for (size_t i = 0, ei = inputs.size(); i < ei; ++i) {
-    CHECK_EQ(halide.inputs[i].dimensions(), inputs[i]->ndim);
-    for (size_t j = 0, ej = halide.inputs[i].dimensions(); j < ej; ++j) {
-      auto parametricAff = halide2isl::makeIslAffFromExpr(
-          paramSpace, halide.inputs[i].parameter().extent_constraint(j));
-      paramSet =
-          paramSet & (isl::aff_set(parametricAff) == inputs[i]->shape[j]);
-    }
-  }
-  CHECK(paramSet.is_equal(paramSet.sample()))
-      << "could not infer the values of parameters";
-  return paramSet;
-}
-
-std::vector<long> Scop::getParameterValues(isl::set context) const {
-  auto ctx = context.get_ctx();
-  auto longMax = isl::val(ctx, std::numeric_limits<long>::max());
-  auto space = context.get_space();
-  auto p = context.sample_point();
-  CHECK(context.is_equal(p));
-
+std::vector<long> Scop::getParameterValues() const {
   // Scop holds a vector of Variables.
   // Iterate over parameters in order, checking if the
-  // context contains a parameter whose name corresponds to that
+  // map of known parameter values contains a parameter
+  // whose name corresponds to that
   // Variable and push respective parameter values.
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
-    isl::id id(ctx, param.name());
-    CHECK(context.involves_param(id));
-    auto val = isl::aff::param_on_domain_space(space, id).eval(p);
-    CHECK(val.is_int()) << "fractional parameters unsupported";
-    CHECK(val.le(longMax)) << "parameter value overflows long";
-    paramValues.push_back(val.get_num_si());
+    auto name = param.name();
+    CHECK(parameterValues.count(name) == 1);
+    paramValues.push_back(parameterValues.at(name));
   }
   return paramValues;
 }

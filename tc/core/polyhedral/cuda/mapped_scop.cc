@@ -189,7 +189,7 @@ void fixThreadsBelow(
 }
 
 /*
- * Try and order the other statements in "domain" (if any)
+ * Try and order the other active statements at "tree" (if any)
  * away from the "updates" statements, returning true is the operation succeeds.
  * In particular, only do this if it doesn't violate any dependences.
  * Anything that depends on an update statement is ordered after
@@ -198,8 +198,8 @@ void fixThreadsBelow(
 bool separatedOut(
     Scop& scop,
     detail::ScheduleTree* tree,
-    isl::union_set domain,
     isl::union_set updates) {
+  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
     return true;
@@ -271,7 +271,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   // Order the other statements (if any) before the update statements
   // to ensure the band from which the reduction band has been split off
   // only contains update statements.
-  if (!separatedOut(scop(), tree, domain, updates)) {
+  if (!separatedOut(scop(), tree, updates)) {
     return false;
   }
   reductionBandUpdates_.emplace(tree, Reduction(updateIds));
@@ -884,7 +884,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   // outer schedule dimensions, so the space of a parameter context code is that
   // of a zero-dimensional space.
   auto root = scop->scheduleRoot();
-  updateTopLevelContext(root, scop->globalParameterContext.from_params());
+  updateTopLevelContext(root, scop->context().from_params());
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;
@@ -907,7 +907,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 } // namespace
 
 // Before generating code, make a copy of the scop and insert
-// the globalParameterContext of the original scop as top-level
+// the context of the original scop as top-level
 // context node in schedule tree.
 std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
     const std::string& specializedName) const {
@@ -919,6 +919,9 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
   code << code::c::warpSyncFunctions;
   code << std::endl;
+  if (useReadOnlyCache) {
+    code << code::cuda::ldg;
+  }
   if (mappedScopForCodegen->scop().treeSyncUpdateMap.size() != 0) {
     code << code::cuda::common;
     code << code::cuda::cubBlockReduce;

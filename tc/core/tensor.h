@@ -127,6 +127,8 @@ bool operator==(const DLDataType& t1, const DLDataType& t2);
 std::string toString(const DLDataType& t);
 std::ostream& operator<<(std::ostream& os, const DLDataType& t);
 std::ostream& operator<<(std::ostream& os, const DLTensor& t);
+std::ostream& operator<<(std::ostream& os, const TensorInfo& t);
+std::ostream& operator<<(std::ostream& os, const DLConstTensor& t);
 
 // Basic metadata-owning DLTensor, only copies the underlying raw pointer.
 DLTensorUPtr makeDLTensor(const DLTensor* ptr);

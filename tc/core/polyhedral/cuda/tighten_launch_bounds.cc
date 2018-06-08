@@ -84,7 +84,7 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
     const tc::Grid& grid,
     const tc::Block& block) {
   auto root = scop.scheduleRoot();
-  auto params = scop.globalParameterContext;
+  auto params = scop.context();
 
   auto max = [root, params](const mapping::MappingId& id) -> size_t {
     size_t sizetMax = std::numeric_limits<size_t>::max();

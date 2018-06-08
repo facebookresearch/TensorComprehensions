@@ -30,29 +30,37 @@ namespace polyhedral {
 
 enum class AccessType : short { Read, Write };
 
-// A single dimension of the ScopedFootprint.
-// The scope is defined by a specific position in a schedule tree (const
-// ScheduleTree*), the user is responsible for maintaining the correspondance
-// between schedule tree positions and footprints.
-// Overapproximates one dimension by its lower bound, affine function of
-// parameters and schedule dimensions visible around the scope, and by a
-// constant size.
-struct ScopedFootprintDim {
- public:
-  ScopedFootprintDim(isl::aff lb, isl::val s) : lowerBound(lb), size(s) {}
-
- public:
-  isl::aff lowerBound;
-  isl::val size;
-};
-
 // Rectangular overapproximation of a tensor elements accessed through a single
-// reference.  Each dimension is described independently.
+// reference.
+// Each dimension is overapproximated by a lower bound, an affine function of
+// parameters and schedule dimensions visible around the scope, by a
+// constant size, and by a pair offset/stride for strided accesses.  If the
+// access is not strided, then "offset" is a zero expression and "stride" is 1.
+// The lowerBound and the size are computed after removing the potential stride.
 // The scope is defined by a specific position in a schedule tree (const
 // ScheduleTree*), the user is responsible for maintaining the correspondance
 // between schedule tree positions and footprints.
-struct ScopedFootprint : std::vector<ScopedFootprintDim> {
-  isl::set footprint(isl::set domain) const;
+struct ScopedFootprint {
+  size_t dim() const {
+    return box.get_size().size();
+  }
+  isl::val size(size_t pos) const {
+    return box.get_size().get_val(pos);
+  }
+  isl::aff lowerBound(size_t pos) const {
+    return box.get_offset().get_aff(pos);
+  }
+  isl::val stride(size_t pos) const {
+    return strideValues.get_val(pos);
+  }
+  isl::aff strideOffset(size_t pos) const {
+    return strideOffsets.get_aff(pos);
+  }
+
+  isl::fixed_box box;
+  isl::multi_val strideValues;
+  isl::multi_aff strideOffsets;
+
   isl::multi_aff lowerBounds() const;
 };
 
@@ -134,9 +142,7 @@ class TensorReferenceGroup {
 
   // Rectangular overapproximation of the set of tensor elements accessed below
   // the scoping point.
-  isl::set approximateFootprint() const {
-    return approximation.footprint(scopedAccesses().domain());
-  }
+  isl::set approximateFootprint() const;
 
   isl::multi_aff promotion() const;
   isl::set promotedFootprint() const;
@@ -159,13 +165,11 @@ class TensorReferenceGroup {
 };
 
 inline std::ostream& operator<<(std::ostream& os, const ScopedFootprint& fp) {
-  int i = 0;
-  for (const auto& f : fp) {
-    if (i++ == 0) {
-      os << "{\n";
-    }
-    os << f.lowerBound << " of size " << f.size << "\n";
+  if (!fp.box) {
+    return os;
   }
+  os << "{\n";
+  os << fp.box.get_offset() << " of size " << fp.box.get_size() << "\n";
   os << "}";
   return os;
 }
