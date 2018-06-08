@@ -125,6 +125,7 @@ def makeDataset(tc_prog, inp):
 
 def learn(tc_prog, inp):
     datasetX, datasetY = makeDataset(tc_prog, inp)
+    print(min(datasetY))
     Xtrain, Xtest, Ytrain, Ytest = train_test_split(datasetX, datasetY, test_size=0.2, random_state = 42)
     model1 = GradientBoostingRegressor(n_estimators=1000)
     model1.fit(Xtrain, Ytrain)

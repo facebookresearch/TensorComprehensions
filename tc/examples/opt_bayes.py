@@ -9,8 +9,9 @@ from sklearn.model_selection import train_test_split
 #from tensor_comprehensions.mapping_options import Options
 from multiprocessing import Pool
 from itertools import repeat
-import bayesopt as bo
-from bayesoptmodule import BayesOptDiscrete
+from bayes_opt import BayesianOptimization
+#import bayesopt as bo
+#from bayesoptmodule import BayesOptDiscrete
 
 nb_cat = 0
 cat_val = 0
