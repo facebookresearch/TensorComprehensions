@@ -45,13 +45,6 @@ Machine Learning.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Caffe2 Integration
-
-   framework/caffe2_integration/integration_with_example
-   framework/caffe2_integration/installation_caffe2_integration
-
-.. toctree::
-   :maxdepth: 1
    :caption: Installation
 
    installation
