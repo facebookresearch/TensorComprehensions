@@ -34,7 +34,8 @@ using namespace tc::polyhedral::detail;
 
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components) {
   // const Stmt& s) {
-  // Collect and categorize all the Variable symbols
+  // Collect and categorize all the Halide Variable symbols as reduction
+  // or index variables
   class BuildSymbolTable : public IRVisitor {
     using IRVisitor::visit;
     std::set<std::string> included;
@@ -59,7 +60,7 @@ SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components) {
 
   components.stmt.accept(&builder);
   // Get params from components.params which contain everything declared in
-  // tcdef. However, the 0-D tensors are registered as both params and inputs,
+  // TC Def. However, the 0-D tensors are registered as both params and inputs,
   // filter those out.
   for (auto kvp : components.params) {
     bool skip = false;
@@ -202,7 +203,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     std::vector<isl::aff> result;
     // We cannot span multiple constraints if a modulo operation is involved.
     // x > max(a,b) % C is not equivalent to (x > a % C && x > b % C).
-    auto lhs = makeIslAffBoundsFromExpr(space, e, false, false);
+    auto lhs = makeIslAffBoundsFromExpr(space, op->a, false, false);
     CHECK_EQ(lhs.size(), 1u);
     if (const int64_t* b = as_const_int(op->b)) {
       return {lhs[0].mod(isl::val(space.get_ctx(), *b))};
