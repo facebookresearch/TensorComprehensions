@@ -46,7 +46,7 @@ Concretely, following functions need to be defined:
 
 * :code:`compile`: This takes the dlpack tensors converted in previous step and dispatches compilation call to TC backend on those input dlpack tensors.
 
-* :code:`prepareOutputs`: TC backend send back the output tensors infor (strides, shapes, type etc.) and framework should allocate the outputs storage.
+* :code:`prepareOutputs`: TC backend send back the output tensors info (strides, shapes, type etc.) and framework should allocate the outputs storage.
 
 * :code:`run`: This simply dispatches the output tensor pointers to the TC backend and returns the outputs received.
 

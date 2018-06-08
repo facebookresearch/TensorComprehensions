@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul class="current">
@@ -186,82 +194,19 @@
 <li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -460,7 +370,7 @@
             
   <div class="section" id="autograd-with-tc">
 <h1>Autograd with TC<a class="headerlink" href="#autograd-with-tc" title="Permalink to this headline">¶</a></h1>
-<p>We provide the TC intergation with PyTorch <cite>autograd</cite> so that it is easy to write
+<p>We provide the TC integration with PyTorch <cite>autograd</cite> so that it is easy to write
 a training layer with TC and be able to run backwards as well if the layer is part
 of a network. We do not support double backwards right now. In order to write a
 training layer with TC, you need to follow the steps below:</p>
@@ -470,7 +380,7 @@ training layer with TC, you need to follow the steps below:</p>
 <li>Run the layer and get the output of forward pass.</li>
 <li>To see that the backward call works fine, you can call backward on the outputs.</li>
 </ol>
-<p>Let&#8217;s see one example to demonstrate the steps above:</p>
+<p>Let’s see one example to demonstrate the steps above:</p>
 <div class="section" id="examples">
 <h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
@@ -479,11 +389,11 @@ training layer with TC, you need to follow the steps below:</p>
 <span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
 <span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">   O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)</span>
+<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
 <span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -&gt; (I_grad, W1_grad) {{</span>
-<span class="s2">   I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)</span>
-<span class="s2">   W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)</span>
+<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
+<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
 <span class="s2">}}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
@@ -502,10 +412,10 @@ part of computations graph and if <code class="code docutils literal"><span clas
 is done, then the grad will be available for the <cite>Variable.cuda()</cite> and not the actual <cite>Variable/Tensor</cite>.</p>
 </div>
 </div>
-<div class="section" id="specifying-mapping-options">
-<h2>Specifying Mapping Options<a class="headerlink" href="#specifying-mapping-options" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="specifying-cudamappingoptions">
+<h2>Specifying CudaMappingOptions<a class="headerlink" href="#specifying-cudamappingoptions" title="Permalink to this headline">¶</a></h2>
 <p>We highly recommend passing the mapping options when running the kernel.
-See <a class="reference internal" href="writing_layers.html#must-pass-options"><span class="std std-ref">Specifying Mapping Options</span></a> for more details. When running the training layer,
+See <a class="reference internal" href="writing_layers.html#must-pass-options"><span class="std std-ref">Specifying CudaMappingOptions</span></a> for more details. When running the training layer,
 you can pass the options for forward and backward layer separately or you can
 pass the same options for them. In case you want to pass different options for
 them, the example for that would be:</p>
@@ -515,18 +425,18 @@ them, the example for that would be:</p>
 <span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
 <span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">   O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)</span>
+<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
 <span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -&gt; (I_grad, W1_grad) {{</span>
-<span class="s2">   I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)</span>
-<span class="s2">   W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)</span>
+<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
+<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
 <span class="s2">}}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
 <span class="n">convolution</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">CONV_LANG</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;convolution&quot;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="s2">&quot;convolution_grad&quot;</span><span class="p">,</span> <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sh&quot;</span><span class="p">:</span><span class="n">sH</span><span class="p">,</span> <span class="s2">&quot;sw&quot;</span><span class="p">:</span><span class="n">sW</span><span class="p">})</span>
 <span class="n">I</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 <span class="n">W</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">),</span> <span class="n">tc</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="s2">&quot;group_conv&quot;</span><span class="p">)])</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">),</span> <span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;group_conv&quot;</span><span class="p">)])</span>
 <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -539,16 +449,16 @@ be tuned separately in order to ensure maximal performance. Please read <a class
 for how to set autotuner parameters. We will see how to autotune a training
 layer, save cache and run the layer with help of examples:</p>
 <p>You can either cache to default options or to a file (also see <a class="reference internal" href="autotuning_layers.html#autotuner-cache-choices"><span class="std std-ref">Caching autotuned options</span></a>).
-Let&#8217;s see how to cache options to file when we tune a training layer.</p>
+Let’s see how to cache options to file when we tune a training layer.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">   O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)</span>
+<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
 <span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -&gt; (I_grad, W1_grad) {{</span>
-<span class="s2">   I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)</span>
-<span class="s2">   W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)</span>
+<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
+<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
 <span class="s2">}}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
@@ -559,29 +469,29 @@ Let&#8217;s see how to cache options to file when we tune a training layer.</p>
 <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 </pre></div>
 </div>
-<p>You will find two cache files created: <code class="code docutils literal"><span class="pre">convolution_train.cuda/options</span></code> has
-options for the forward layer and <code class="code docutils literal"><span class="pre">convolution_train_backward.cuda/options</span></code> file
+<p>You will find a cache file created: <code class="code docutils literal"><span class="pre">convolution_train.options</span></code> has
+options for the forward layer and <code class="code docutils literal"><span class="pre">convolution_train_backward.options</span></code> file
 has options for the grad layer.</p>
 </div>
 <div class="section" id="reordering-grad-outputs">
 <h2>Reordering grad outputs<a class="headerlink" href="#reordering-grad-outputs" title="Permalink to this headline">¶</a></h2>
 <p>In the backward pass, TC uses the list of input tensors in the forward pass and appends
 the output tensors list to it. This is treated as the input to the backward TC definition.
-However, sometimes, the forward layer TC might have some temporary variable for which we don&#8217;t
+However, sometimes, the forward layer TC might have some temporary variable for which we don’t
 need gradient in the backward TC. In such cases, users can use <code class="code docutils literal"><span class="pre">reorder_function</span></code>. See
 the example below for how to use it:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def convolution(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B) -&gt; (tmp, O) {</span>
-<span class="s2">  tmp(n, m, h, w) +=! I(n, c, h + kh, w + kw) * W1(m, c, kh, kw)</span>
+<span class="s2">  tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
 <span class="s2">  O(n, m, h, w) = tmp(n, m, h, w) + B(m)</span>
 <span class="s2">}</span>
-<span class="s2">def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) O_grad)</span>
-<span class="s2">-&gt; (I_grad, W1_grad, B_grad) {</span>
-<span class="s2">  I_grad(n, c, h, w) +=! O_grad(n, m, h - kh, w - kw) * W1(m, c, kh, kw)</span>
-<span class="s2">  W1_grad(m, c, kh, kw) +=! O_grad(n, m,  h - kh, w - kw) * I(n, c, h, w)</span>
-<span class="s2">  B_grad(m) +=! O_grad(n, m, h, w)</span>
+<span class="s2">def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) d_O)</span>
+<span class="s2">-&gt; (d_I, d_W1, d_B) {</span>
+<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
+<span class="s2">  d_B(m) +=! d_O(n, m, h, w)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 
@@ -659,7 +569,7 @@ the example below for how to use it:</p>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

@@ -38,7 +38,7 @@
               href="../../genindex.html"/>
         <link rel="search" title="Search" href="../../search.html"/>
     <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="../../index.html"/>
-        <link rel="next" title="ML Layers database" href="layers_database.html"/>
+        <link rel="next" title="Autotuning layers" href="autotuning_layers.html"/>
         <link rel="prev" title="Getting Started" href="getting_started.html"/> 
 
   
@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../../integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul class="current">
@@ -186,82 +194,19 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../../installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -476,8 +386,8 @@ will skip the compilation and will run the layer directly.</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">MATMUL_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def matmul(float(M,N) A, float(N,K) B) -&gt; (output) {</span>
-<span class="s2">  output(i, j) +=! A(i, kk) * B(kk, j)</span>
+<span class="s2">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s2">    C(m, n) +=! A(m, r_k) * B(r_k, n)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="c1"># the `name` should match the definition name in the `lang`</span>
@@ -487,150 +397,12 @@ will skip the compilation and will run the layer directly.</p>
 </pre></div>
 </div>
 <p>Below is a complete documentation of each API call:</p>
-<span class="target" id="module-tensor_comprehensions"></span></div>
+</div>
 <div class="section" id="tc-define">
 <h2>tc.define<a class="headerlink" href="#tc-define" title="Permalink to this headline">¶</a></h2>
-<dl class="function">
-<dt id="tensor_comprehensions.define">
-<code class="descclassname">tensor_comprehensions.</code><code class="descname">define</code><span class="sig-paren">(</span><em>lang</em>, <em>**kwargs_define</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions/tc_unit.html#define"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.define" title="Permalink to this definition">¶</a></dt>
-<dd><p>Process and store TC definitions from input TC language where language
-can have many TC definitions. Most common example for multiple TC definitions
-is forward and backward TC for a layer.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>lang</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>required</em>) &#8211; a valid TC language defining the operations using
-Einstein notation. It can have multiple TC definitions in the same lang.</li>
-<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>required</em>) &#8211; A string same as the name of your TC.</li>
-<li><strong>training</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.6)"><em>bool</em></a>) &#8211; boolean value describing whether the <code class="xref py py-attr docutils literal"><span class="pre">lang</span></code> containes two
-TC definitions describing forward and backward operation. If set to
-True, TC will enable the train mode for the lang. If set to False,
-TC will not enable the train mode.</li>
-<li><strong>backward</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>optional</em>) &#8211; A string same as the name of backwards TC if the <code class="xref py py-attr docutils literal"><span class="pre">training</span></code> is
-set to True. The backward TC name must be specified if training is True
-and the <code class="xref py py-attr docutils literal"><span class="pre">lang</span></code> should contain both forward and backward TC
-strings.</li>
-<li><strong>constants</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.6)"><em>dict</em></a><em>, </em><em>optional</em>) &#8211; if your TC uses scalars, for example strides in convolutions,
-you should format the string with the scalar values. For that,
-pass the python dictionary containing scalar name and its value.</li>
-<li><strong>inject_kernel</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>optional</em>) &#8211; If you want to manually inject an external CUDA code
-for a TC definition,  set <code class="xref py py-attr docutils literal"><span class="pre">inject_kernel</span></code> to the name
-of your kernel you want to inject.</li>
-<li><strong>cuda_code</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>optional</em>) &#8211; If you want to manually inject an external CUDA code for a TC definition,
-then set <code class="xref py py-attr docutils literal"><span class="pre">cuda_code</span></code> to the CUDA code string you want to inject.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">TC layer that you can run by passing the tensors. If <code class="xref py py-attr docutils literal"><span class="pre">training</span></code> is True,
-the layer returned will also do the backwards when backwards is called.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Example</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LANG</span> <span class="o">=</span> <span class="n">MATMUL_LANG</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
-</pre></div>
 </div>
-</dd></dl>
-
-<dl class="class">
-<dt id="tensor_comprehensions.TcUnit">
-<em class="property">class </em><code class="descclassname">tensor_comprehensions.</code><code class="descname">TcUnit</code><span class="sig-paren">(</span><em>lang</em>, <em>**kwargs_define</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions/tc_unit.html#TcUnit"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.TcUnit" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="method">
-<dt id="tensor_comprehensions.TcUnit.__call__">
-<code class="descname">__call__</code><span class="sig-paren">(</span><em>*inputs</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions/tc_unit.html#TcUnit.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.TcUnit.__call__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Runs the define TC language on given inputs.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>*inputs</strong> (<em>required</em>) &#8211; PyTorch Tensors or Variables that TC should
-execute on. The inputs should be passed in the order they
-are also passed in the definition of TC language.</li>
-<li><strong>options</strong> (<em>optional</em>) &#8211; <p>Kernel mapping options of type <code class="xref py py-attr docutils literal"><span class="pre">tc.Options</span></code>. These options
-provide mapping for kernel like grid, blocks, memory etc. It
-is recommended to always pass kernel options. The options can be
-obtained by:</p>
-<ul>
-<li>Autotuning, (recommended) OR</li>
-<li>You can create <cite>Options</cite> object by chosing the closely matching &#8220;type&#8221; of kernel. For example:</li>
-</ul>
-<blockquote>
-<div><div class="code highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="k">as</span> <span class="nn">tc</span>
-<span class="n">options</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="nb">type</span><span class="p">)</span>
-</pre></div>
-</div>
-</div></blockquote>
-<p>where <code class="xref py py-attr docutils literal"><span class="pre">type</span></code> is a string with value one of below:</p>
-<ul>
-<li><code class="xref py py-attr docutils literal"><span class="pre">pointwise</span></code>:  if kernel resembles a pointwise operation</li>
-<li><code class="xref py py-attr docutils literal"><span class="pre">mlp</span></code>: if kernel resembles an Linear layer operation</li>
-<li><code class="xref py py-attr docutils literal"><span class="pre">conv</span></code>: if kernel resembles a convolution operation</li>
-<li><code class="xref py py-attr docutils literal"><span class="pre">group_conv</span></code>: if kernel resembles a convolution operation</li>
-<li><code class="xref py py-attr docutils literal"><span class="pre">naive</span></code>: if none of the above, then chose naive <em>Default</em></li>
-</ul>
-<p>If no <code class="xref py py-attr docutils literal"><span class="pre">Options</span></code> are passed, the naive options will be used which
-might not yield great performance.</p>
-</li>
-<li><strong>outputs</strong> (<em>optional</em>) &#8211; List of Pytorch tensors/Variables. The number of outputs is
-the same as defined in the TC language and are in the same
-order as in TC language. You can chose to allocate the outputs
-tensors/Variables beforehand. Most common use case is to
-reuse output from a previous operation.</li>
-<li><strong>cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/string.html#module-string" title="(in Python v3.6)"><em>string</em></a><em>, </em><em>optional</em>) &#8211; <p>A string denoting the absolute filepath which
-contains the mapping options for the kernel. Such file can be created by running
-autotuning.</p>
-<blockquote>
-<div>If <code class="xref py py-attr docutils literal"><span class="pre">training</span></code> = True, then the backward options will be obtained
-from file cache + &#8216;_backward&#8217;. For the backward, separate filename
-is not accepted for now.</div></blockquote>
-</li>
-<li><strong>grid</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em>, </em><em>3D list</em>) &#8211; If <code class="xref py py-attr docutils literal"><span class="pre">inject_kernel</span></code> is <cite>True</cite>, then user
-needs to specify the kernel grid options for running it. TC
-will simply use those options and will not add any optimizations</li>
-<li><strong>block</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.6)"><em>int</em></a><em>, </em><em>3D list</em>) &#8211; If <code class="xref py py-attr docutils literal"><span class="pre">inject_kernel</span></code> is <cite>True</cite>, then user
-needs to specify the kernel <cite>block</cite> options for running it. TC
-will simply use those options and will not add any optimizations</li>
-<li><strong>reorder_function</strong> (<em>optional</em>) &#8211; If <code class="xref py py-attr docutils literal"><span class="pre">training</span></code> is set to true in <a class="reference internal" href="#tensor_comprehensions.define" title="tensor_comprehensions.define"><code class="xref py py-attr docutils literal"><span class="pre">define</span></code></a> call,
-then TC infers the inputs for backward layer for compilation
-(1st time the layer is run). The backward layer should typically
-contain the grad_outputs of the forward layer. The backward
-layer should take TC forward inputs + grad_outputs in the same
-order as the forward TC takes inputs and emits outputs. If
-the order of the outputs is changed, or some output grad are
-not required in backwards, then you can pass a function which
-can reorder/drop the layer grad_outputs according to backwards
-layer inputs your TC needs.</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">List of PyTorch tensors/Variables which is the output of running
-TC layer. The number of outputs is the same as defined in the TC
-language and are in the same order as in TC language.</p>
-</td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Example</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">LANG</span> <span class="o">=</span> <span class="n">MATMUL_LANG</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">Options</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</dd></dl>
-
-</div>
-<div class="section" id="specifying-mapping-options">
-<span id="must-pass-options"></span><h2>Specifying Mapping Options<a class="headerlink" href="#specifying-mapping-options" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="specifying-cudamappingoptions">
+<span id="must-pass-options"></span><h2>Specifying CudaMappingOptions<a class="headerlink" href="#specifying-cudamappingoptions" title="Permalink to this headline">¶</a></h2>
 <p>TC is transformed into <code class="code docutils literal"><span class="pre">CUDA</span></code> kernel by using the <code class="code docutils literal"><span class="pre">Options</span></code> which
 is used to run the layer and hence also determines the performance of the kernel
 generated. Therefore, it is important to use good <code class="code docutils literal"><span class="pre">Options</span></code> for running a
@@ -651,13 +423,13 @@ kernel. You can read more about mapping options here - <a class="reference inter
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def matmul(float(M,N) A, float(N,K) B) -&gt; (output) {</span>
-<span class="s2">  output(i, j) +=! A(i, kk) * B(kk, j)</span>
+<span class="s2">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s2">    C(m, n) +=! A(m, r_k) * B(r_k, n)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
 <span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">400</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="mi">500</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">))</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;mlp&quot;</span><span class="p">))</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -682,8 +454,8 @@ of input sizes, you need to define TC once. An example:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def matmul(float(M,N) A, float(N,K) B) -&gt; (output) {</span>
-<span class="s2">  output(i, j) +=! A(i, kk) * B(kk, j)</span>
+<span class="s2">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s2">    C(m, n) +=! A(m, r_k) * B(r_k, n)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
@@ -701,7 +473,7 @@ happens only once and then you can keep running the layer.</p>
 </div>
 <div class="section" id="multiple-tc-definitions-in-language">
 <h2>Multiple TC definitions in language<a class="headerlink" href="#multiple-tc-definitions-in-language" title="Permalink to this headline">¶</a></h2>
-<p>Let&#8217;s say you want to define all of your TCs in one string and later use that string
+<p>Let’s say you want to define all of your TCs in one string and later use that string
 for running different operations defined in the string. You an do so easily. You
 can define a <code class="code docutils literal"><span class="pre">lang</span></code> variable that holds the TC definition for all your operations.
 Every time you want to run a different operation, you can make a <code class="code docutils literal"><span class="pre">tc.define</span></code> call
@@ -710,11 +482,11 @@ definition and get the TC layer for it. Below is an example for how to do this:<
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def matmul(float(M,N) A, float(N,K) B) -&gt; (output) {</span>
-<span class="s2">  output(i, j) +=! A(i, kk) * B(kk, j)</span>
+<span class="s2">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s2">    C(m, n) +=! A(m, r_k) * B(r_k, n)</span>
 <span class="s2">}</span>
 <span class="s2">def abs(float(M, N) A) -&gt; (O1) {</span>
-<span class="s2">  O1(m, n) = fabs(A(m, n))</span>
+<span class="s2">    O1(m, n) = fabs(A(m, n))</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
@@ -736,7 +508,7 @@ nicely. This current behavior will likely change in near future.</p>
 <h2>Writing layers with scalars<a class="headerlink" href="#writing-layers-with-scalars" title="Permalink to this headline">¶</a></h2>
 <p>If you have an operation that requires a constant scalar value for bounds inference,
 for example, kernel or stride in case of convolution operation, we need to pass
-the TC with the substituted scalar value because right now, we don&#8217;t support using
+the TC with the substituted scalar value because right now, we don’t support using
 scalars for bound inference. The substitution can be done in two ways and users can
 adopt whatever feels more convenient.</p>
 <ul class="simple">
@@ -752,7 +524,8 @@ will likely be changed in ~1 month timespan.</p>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def avgpool(float(B, C, H, W) input) -&gt; (output) {{</span>
-<span class="s2">    output(b, c, h, w) += input(b, c, h * {sH} + kh, w * {sW} + kw) where kh in 0:{kH}, kw in 0:{kW}</span>
+<span class="s2">    output(b, c, h, w) +=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})</span>
+<span class="s2">        where r_kh in 0:{kH}, r_kw in 0:{kW}</span>
 <span class="s2">}}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">avgpool</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;avgpool&quot;</span><span class="p">,</span> <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sH&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;sW&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;kH&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;kW&quot;</span><span class="p">:</span><span class="mi">2</span><span class="p">})</span>
@@ -774,7 +547,8 @@ consists of scalars.</p>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="n">LANG</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def avgpool(float(B, C, H, W) input) -&gt; (output) {</span>
-<span class="s2">    output(b, c, h, w) += input(b, c, h * &lt;sh&gt; + kh, w * &lt;sw&gt; + kw) where kh in 0:&lt;kH&gt;, kw in 0:&lt;kW&gt;</span>
+<span class="s2">    output(b, c, h, w) +=! input(b, c, h * &lt;sH&gt; + r_kh, w * &lt;sW&gt; + r_kw) / (&lt;kH&gt; * &lt;kW&gt;)</span>
+<span class="s2">        where r_kh in 0:&lt;kH&gt;, r_kw in 0:&lt;kW&gt;</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span>
@@ -788,49 +562,11 @@ consists of scalars.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="manually-injecting-external-cuda-code">
-<h2>Manually injecting external CUDA code<a class="headerlink" href="#manually-injecting-external-cuda-code" title="Permalink to this headline">¶</a></h2>
-<p>If you have an external efficient CUDA code that you want to use rather than
-the CUDA code that TC generates, you can inject your code easily. For this,
-you need to create a string which has the CUDA code you want to inject and you
-need to pass the name of the kernel and the CUDA code string to the <code class="code docutils literal"><span class="pre">tc.define</span></code>
-call. For example:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def add(float(N) A, float(N) B) -&gt; (output) {</span>
-<span class="s2">    output(i) = A(i) + B(i) + 1</span>
-<span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-
-<span class="n">cuda_code</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">extern &quot;C&quot;{</span>
-<span class="s2">__global__ void my_add(float* __restrict__ output, const float* __restrict__ A, const float* __restrict B)</span>
-<span class="s2">{</span>
-<span class="s2">    int t = threadIdx.x;</span>
-<span class="s2">    output[t] = A[t] + B[t];</span>
-<span class="s2">}</span>
-<span class="s2">}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-
-<span class="n">add</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="n">inject_kernel</span><span class="o">=</span><span class="s2">&quot;my_add&quot;</span><span class="p">,</span> <span class="n">cuda_code</span><span class="o">=</span><span class="n">cuda_code</span><span class="p">)</span>
-<span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">grid</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">block</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">In such cases, please note that TC doesn&#8217;t modify the injected CUDA kernel. It will
-simply run the kernel injected as is and TC will also not guarantee the performance
-of the kernel. User needs to specify the <code class="code docutils literal"><span class="pre">grid</span></code> and <code class="code docutils literal"><span class="pre">block</span></code> values
-when running the layer and TC will simply use those settings.</p>
-</div>
-</div>
 <div class="section" id="built-in-functions">
 <h2>Built-in Functions<a class="headerlink" href="#built-in-functions" title="Permalink to this headline">¶</a></h2>
 <p>TC allows using some CUDA built-in functions as well when defining the TC language.
 During the execution, CUDA API will be called for those built-in functions. For example,
-let&#8217;s say we want to use <code class="code docutils literal"><span class="pre">fmax</span></code> CUDA function in our TC language. An example
+let’s say we want to use <code class="code docutils literal"><span class="pre">fmax</span></code> CUDA function in our TC language. An example
 for how this would be done is below:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
@@ -872,7 +608,7 @@ The functions supported in TC are:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="layers_database.html" class="btn btn-neutral float-right" title="ML Layers database" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="autotuning_layers.html" class="btn btn-neutral float-right" title="Autotuning layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="getting_started.html" class="btn btn-neutral" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -916,7 +652,7 @@ The functions supported in TC are:</p>
       <script type="text/javascript" src="../../_static/jquery.js"></script>
       <script type="text/javascript" src="../../_static/underscore.js"></script>
       <script type="text/javascript" src="../../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

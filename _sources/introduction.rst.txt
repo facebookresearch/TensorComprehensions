@@ -19,8 +19,8 @@ An example of how using TC in PyTorch looks like:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -48,24 +48,25 @@ Let's start with a simple example is a matrix vector product:
 
 .. code::
 
-    def mv(float(R,C) A, float(C) B) -> (o) {
-      o(i) += A(i,j) * B(j)
+    def mv(float(R,C) A, float(C) x) -> (o) {
+        o(r) +=! A(r,r_c) * x(r_c)
     }
 
-:code:`A` and :code:`B` are input tensors. :code:`o` is an output tensor.
-The statement :code:`o(i) += A(i,j) * B(j)` introduces two index variables :code:`i` and :code:`j`.
-Their range is inferred by their use indexing :code:`A` and :code:`B`. :code:`i = [0,R)`, :code:`j = [0,C)`.
-Because :code:`j` only appears on the right side,
-stores into :code:`o` will reduce over :code:`j` with the reduction specified for the loop.
+:code:`A` and :code:`x` are input tensors. :code:`o` is an output tensor.
+The statement :code:`o(r) += A(r,r_c) * x(r_c)` introduces two index variables :code:`r` and :code:`r_`.
+Their range is inferred by their use indexing :code:`A` and :code:`x`. :code:`r = [0,R)`, :code:`r_c = [0,C)`.
+Because :code:`r_c` only appears on the right side,
+stores into :code:`o` will reduce over :code:`r_c` with the reduction specified for the loop.
 Reductions can occur across multiple variables, but they all share the same kind of associative reduction (e.g. :code:`+=`)
-to maintain invariant (3). :code:`mv` computes the same thing as this C++ loop:
+to maintain invariant (3). Note that we prefix reduction indices names with
+:code:`r_` for improved readability. :code:`mv` computes the same thing as this C++ loop:
 
 .. code::
 
     for(int i = 0; i < R; i++) {
       o(i) = 0.0f;
       for(int j = 0; j < C; j++) {
-        o(i) += A(i,j) * B(j);
+        o(i) += A(i,j) * x(j);
       }
     }
 
@@ -81,8 +82,8 @@ Simple matrix-vector
 
 .. code::
 
-    def mv(float(R,C) A, float(C) B) -> (o) {
-      o(i) += A(i,j) * B(j)
+    def mv(float(R,C) A, float(C) x) -> (o) {
+        o(r) +=! A(r,r_c) * x(r_c)
     }
 
 Simple 2-D convolution (no stride, no padding)
@@ -91,7 +92,7 @@ Simple 2-D convolution (no stride, no padding)
 .. code::
 
     def conv(float(B,IP,H,W) input, float(OP,IP,KH,KW) weight) -> (output) {
-      output(b, op, h, w) += input(b, ip, h + kh, w + kw) * weight(op, ip, kh, kw)
+        output(b, op, h, w) +=! input(b, r_ip, h + r_kh, w + r_kw) * weight(op, r_ip, r_kh, r_kw)
     }
 
 Simple 2D max pooling
@@ -102,6 +103,6 @@ Note the similarity with a convolution with a "select"-style kernel:
 .. code::
 
     def maxpool2x2(float(B,C,H,W) input) -> (output) {
-      output(b,c,i,j) max= input(b,c,2*i + kw, 2*j + kh)
-        where kw in 0:2, kh in 0:2
+        output(b,c,h,w) max=! input(b,c,2*h + r_kw, 2*w + r_kh)
+            where r_kw in 0:2, r_kh in 0..2
     }

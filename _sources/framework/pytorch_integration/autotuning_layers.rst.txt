@@ -24,8 +24,8 @@ An example demonstrating each step above is:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -91,8 +91,8 @@ kernel timing. You can adopt the following parameter settings as starters for au
      }
 
 
-Initial Mapping Options
------------------------
+Initial CudaMappingOptions
+--------------------------
 
 At the beginning of autotuning, the kernel is mapped to whatever :code:`mapping options`
 user passes. If no mapping options are passed by user, then the default :code:`naive`
@@ -108,13 +108,13 @@ An example for how to pass options:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
     mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-    options = Options("mlp")
+    options =CudaMappingOptions("mlp")
     matmul.autotune(mat1, mat2, options=options, **tc.autotuner_settings)
     out = matmul(mat1, mat2)
 
@@ -134,8 +134,8 @@ argument to the autotuning call. There are two ways of caching the tuned options
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -151,8 +151,8 @@ argument to the autotuning call. There are two ways of caching the tuned options
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -182,8 +182,8 @@ For example:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -207,8 +207,8 @@ For example:
 
     import tensor_comprehensions as tc
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")
@@ -219,7 +219,7 @@ For example:
 tc.decode
 ---------
 
-When you save the autotuner cache, two files are created ending in :code:`.cuda/.options`.
+When you save the autotuner cache, one file is created ending in :code:`.options`.
 The :code:`.options` file contains the encoded kernel options. If you are curious
 about what those options look like, you can decode the options by calling :code:`tc.decode`
 
@@ -237,8 +237,8 @@ Below is example describing the above usage:
     import tensor_comprehensions as tc
     cache = "{}/matmul_3_4_5".format(PATH_PREFIX)
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M,K) A, float(N,K) B) -> (output) {
+        output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
     matmul = tc.define(lang, name="matmul")

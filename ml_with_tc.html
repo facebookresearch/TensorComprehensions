@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul>
@@ -186,82 +194,19 @@
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -478,11 +388,11 @@ implications that we will look into lifting in the future.</p>
 <div class="section" id="one-tc-function-one-kernel">
 <h3>One TC function one kernel<a class="headerlink" href="#one-tc-function-one-kernel" title="Permalink to this headline">¶</a></h3>
 <p>A single TC function must correspond to exactly one synthesized HPC
-kernel. If TC doesn&#8217;t guarantee that invariant, it will have to handle the
+kernel. If TC doesn’t guarantee that invariant, it will have to handle the
 integration of kernel launches and their proper synchronization in each
 framework it targets. This is off the table for now because it is
 counter-productive; the moment one operates at this level of control, one is
-effectively competing with frameworks and wants to write one&#8217;s own.</p>
+effectively competing with frameworks and wants to write one’s own.</p>
 </div>
 <div class="section" id="no-variable-allocations">
 <h3>No Variable Allocations<a class="headerlink" href="#no-variable-allocations" title="Permalink to this headline">¶</a></h3>
@@ -494,13 +404,13 @@ notation. For now, it should not try to be a Programming Language.</p>
 <p>As a result of this, everything in TC should be either an input or output. For example:
 consider the TC definition below:</p>
 <div class="code highlight-default"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, expsum) {
-  expsum(n) +=! exp(I(n, d))
-  O(n, d) = exp(I(n, d)) / expsum(n)
+    expsum(n) +=! exp(I(n, d))
+       O(n, d) =  exp(I(n, d)) / expsum(n)
 }
 </pre></div>
 </div>
 <p>In this TC, <code class="code docutils literal"><span class="pre">expsum</span></code> is a temporary variable that needs to be computed but
-since TC doesn&#8217;t do allocations itself, we set it as another output. User can chose
+since TC doesn’t do allocations itself, we set it as another output. User can chose
 to ignore this output. We will work on enhancing this and deal with temporary
 allocations better in future.</p>
 </div>
@@ -515,7 +425,7 @@ happen. TC calling built-in functions with side effects is fine though.</p>
 </div>
 <div class="section" id="minimal-information-to-write-ml-layers-concisely">
 <h2>Minimal information to write ML layers concisely<a class="headerlink" href="#minimal-information-to-write-ml-layers-concisely" title="Permalink to this headline">¶</a></h2>
-<p>This should be as simple as possible but no simpler. Let&#8217;s discuss TC in the context of alternative solutions:</p>
+<p>This should be as simple as possible but no simpler. Let’s discuss TC in the context of alternative solutions:</p>
 <div class="section" id="c-style-loops">
 <h3>C-style loops<a class="headerlink" href="#c-style-loops" title="Permalink to this headline">¶</a></h3>
 <p><code class="code docutils literal"><span class="pre">C</span></code> loops over multi-dimensional arrays are non-ambiguous and general.
@@ -531,7 +441,7 @@ that compiles and run.</p>
 <p>Halide could be viewed as a specialization of <code class="code docutils literal"><span class="pre">C</span></code> loops for image
 processing. This specialization is a trade-off, you can only express box
 regions within boxes (no triangular loops). This specialization fits our
-application domain and we are using it heavily. Halide&#8217;s backwards shape
+application domain and we are using it heavily. Halide’s backwards shape
 inference allows removing much of the boilerplate specification for
 intermediate tensors. The tradeoff is you need to specify input tensor shapes
 (also in TC), output tensor shapes (omitted in TC) and the ranges of all
@@ -547,7 +457,7 @@ but may still evolve in the future towards greater expressiveness, see <a class=
 <div class="section" id="matrix-languages">
 <h3>Matrix Languages<a class="headerlink" href="#matrix-languages" title="Permalink to this headline">¶</a></h3>
 <p>Matrix languages such as Matlab are very concise and make sense mathematically
-but don&#8217;t naturally extend to tensors (what does the operator <code class="code docutils literal"><span class="pre">*</span></code> mean on 3-D
+but don’t naturally extend to tensors (what does the operator <code class="code docutils literal"><span class="pre">*</span></code> mean on 3-D
 tensors?). As a consequence loops need to be introduced prematurely; TC avoids
 this pit-hole.</p>
 </div>
@@ -608,7 +518,7 @@ this pit-hole.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

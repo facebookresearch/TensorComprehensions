@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="../integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul>
@@ -186,82 +194,19 @@
 <li class="toctree-l1"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../framework/caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../framework/caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -481,7 +391,7 @@ use a stock batched matrix multiply operation. This seems like an easy way to im
 <code class="code docutils literal"><span class="pre">TensorDot</span></code> operation but that requires changes in data layout which could
 lead to bad kernel performance for memory bound operations. It would be better
 if we could generate a CUDA kernel which operated on the original data layout.</p>
-<p>So let&#8217;s walk through the steps needed to implement TensorDot with TC.</p>
+<p>So let’s walk through the steps needed to implement TensorDot with TC.</p>
 </div>
 <div class="section" id="step-1-write-tc-for-tensordot">
 <h2>Step 1: Write TC for TensorDot<a class="headerlink" href="#step-1-write-tc-for-tensordot" title="Permalink to this headline">¶</a></h2>
@@ -490,22 +400,22 @@ For that, we will start from a simple matrix multiply operation and evolve that
 to TensorDot operation.</p>
 <p>A simple 2D matrix multiply operation in TC is expressed as:</p>
 <div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, N) X, float(N, K) W) -&gt; (output) {
-    output(m, k) +=! X(m, nn) * W(nn, k)
+    output(m, k) +=! X(m, r_n) * W(r_n, k)
 }
 </pre></div>
 </div>
-<p>The variable <code class="code docutils literal"><span class="pre">nn</span></code> is being reduced in above expression. Now, let&#8217;s write a
+<p>The variable <code class="code docutils literal"><span class="pre">r_n</span></code> is being reduced in above expression. Now, let’s write a
 <strong>batched matrix-multiply</strong> operation using above expression. For that, we need to
 add a batch dimension to it and the expression becomes:</p>
 <div class="code highlight-default"><div class="highlight"><pre><span></span>def batch_matmul(float(B, M, N) X, float(B, N, K) W) -&gt; (output) {
-    output(b, m, k) +=! X(b, m, nn) * W(b, nn, k)
+    output(b, m, k) +=! X(b, m, r_n) * W(b, r_n, k)
 }
 </pre></div>
 </div>
 <p>Now, for the tensordot operation, we need to add spatial dimensions <code class="code docutils literal"><span class="pre">H</span></code> and <code class="code docutils literal"><span class="pre">W</span></code>
 to the batched matrix multiply, and the expression for TensorDot becomes:</p>
 <div class="code highlight-default"><div class="highlight"><pre><span></span>def tensordot(float(B, C1, C2, H, W) I0, float(B, C2, C3, H, W) I1) -&gt; (O) {
-    O(b, c1, c3, h, w) +=! I0(b, c1, c2, h, w) * I1(b, c2, c3, h, w)
+    O(b, c1, c3, h, w) +=! I0(b, c1, r_c2, h, w) * I1(b, r_c2, c3, h, w)
 }
 </pre></div>
 </div>
@@ -517,7 +427,7 @@ to the batched matrix multiply, and the expression for TensorDot becomes:</p>
 <span class="c1"># define the operation as TC language</span>
 <span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -&gt; (O) {</span>
-<span class="s2">    O(n, c1, c3, h, w) +=! I0(n, c1, c2, h, w) * I1(n, c2, c3, h, w)</span>
+<span class="s2">    O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 </pre></div>
@@ -543,19 +453,19 @@ to the batched matrix multiply, and the expression for TensorDot becomes:</p>
 <span class="n">N</span><span class="p">,</span> <span class="n">C1</span><span class="p">,</span> <span class="n">C2</span><span class="p">,</span> <span class="n">C3</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">512</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">28</span>
 <span class="n">I0</span><span class="p">,</span> <span class="n">I1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C1</span><span class="p">,</span> <span class="n">C2</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C2</span><span class="p">,</span> <span class="n">C3</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
 <span class="c1"># choose the options that resemble the operation and run</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">tensordot</span><span class="p">(</span><span class="n">I0</span><span class="p">,</span> <span class="n">I1</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">))</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">tensordot</span><span class="p">(</span><span class="n">I0</span><span class="p">,</span> <span class="n">I1</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">))</span>
 </pre></div>
 </div>
 <p>The <code class="code docutils literal"><span class="pre">options</span></code> can be obtained by autotuning the kernel using Autotuner
 (next step) or you can chose defaults provided. We strongly recommend to run
-the autotuner instead of manual options for better performance. See <a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#must-pass-options"><span class="std std-ref">Specifying Mapping Options</span></a>
+the autotuner instead of manual options for better performance. See <a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#must-pass-options"><span class="std std-ref">Specifying CudaMappingOptions</span></a>
 for more information about options.</p>
 </div>
 <div class="section" id="step-4-autotune-and-get-better-performing-kernel">
 <h2>Step 4: Autotune and get better performing kernel<a class="headerlink" href="#step-4-autotune-and-get-better-performing-kernel" title="Permalink to this headline">¶</a></h2>
 <p>So, it was very quick and easy to define the TensorDot operation with TC and get it running.</p>
 <p>But how about a better performing kernel?</p>
-<p>TC provides a genetic algorithm based autotuner to tune the kernel performance. Let&#8217;s
+<p>TC provides a genetic algorithm based autotuner to tune the kernel performance. Let’s
 autotune the kernel and get a better performance kernel. We will also cache the better
 kernel options by setting <code class="code docutils literal"><span class="pre">cache={filepath}</span></code> so that we can use these options
 later.</p>
@@ -642,7 +552,7 @@ after autotuning.</p>
       <script type="text/javascript" src="../_static/jquery.js"></script>
       <script type="text/javascript" src="../_static/underscore.js"></script>
       <script type="text/javascript" src="../_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

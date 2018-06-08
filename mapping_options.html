@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul>
@@ -186,82 +194,19 @@
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -464,14 +374,14 @@
 <p>The mapping options provide a relatively high-level declarative interface to the GPU mapping process. They are not expressed in terms of loops or other control flow constructs, or individual tensors. Instead, they enable or parameterize certain classes of transformations similarly to regular compiler options. In particular, they control the resources allocated to the GPU kernel, the number of threads, the amount of shared memory to use, the amount of computation per thread, etc. These resources affect occupancy and ultimately the performance of the generated kernel. Mapping Options are mostly intended for programmatic use, they can be configured through API calls, saved and loaded from a Protocol Buffer.</p>
 <div class="section" id="how-to-choose-starting-mapping-options">
 <h2>How to choose starting mapping options?<a class="headerlink" href="#how-to-choose-starting-mapping-options" title="Permalink to this headline">¶</a></h2>
-<p><em>Don&#8217;t.</em></p>
+<p><em>Don’t.</em></p>
 <p>We recommend to not set up the mapping options manually unless you understand how TCs map to <code class="code docutils literal"><span class="pre">CUDA</span></code> code and how the latter can be optimized. Use the Autotuner or the operation- and GPU-specific options provided with <code class="code docutils literal"><span class="pre">TC</span></code>, see <a class="reference internal" href="#defaults-provided">Defaults Provided</a>.</p>
 </div>
 <div class="section" id="options-api">
 <h2>Options API<a class="headerlink" href="#options-api" title="Permalink to this headline">¶</a></h2>
 <p>Options can be set up programmatically using the C++ or Python API. Both implement a <a class="reference external" href="https://en.wikipedia.org/wiki/Fluent_interface">fluent interface</a> through method chaining. Mapping options construction always starts from the <em>naïve</em> options that enable some kernel code to be generated but oftentimes provide poor performance. <code class="code docutils literal"><span class="pre">TC</span></code> provide more efficient mapping options for some common deep learning operations, see <a class="reference internal" href="#defaults-provided">Defaults Provided</a>. Individual mapping parameters can be modified by calling option-specific functions, for example:</p>
 <p>C++</p>
-<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;tc/core/mapping_options.h&gt;</span><span class="cp"></span>
+<div class="highlight-c++"><div class="highlight"><pre><span></span><span class="cp">#include</span> <span class="cpf">&lt;tc/core/cuda/cuda_mapping_options.h&gt;</span><span class="cp"></span>
 
 <span class="k">auto</span> <span class="n">options</span> <span class="o">=</span> <span class="n">MappingOptions</span><span class="o">::</span><span class="n">makeNaiveMappingOptions</span><span class="p">()</span>
     <span class="p">.</span><span class="n">mapToBlocks</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
@@ -479,7 +389,7 @@
 </pre></div>
 </div>
 <p>Python</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tensor_comprehensions.mapping_options</span> <span class="kn">import</span> <span class="n">Options</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">tensor_comprehensions.tc</span> <span class="kn">import</span> <span class="n">Options</span>
 
 <span class="n">options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">(</span><span class="s2">&quot;naive&quot;</span><span class="p">)</span>
 <span class="n">options</span><span class="o">.</span><span class="n">mapToBlocks</span><span class="p">([</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">])</span>
@@ -509,6 +419,7 @@
 <li><code class="code docutils literal"><span class="pre">.maxSharedMemory(&lt;positive</span> <span class="pre">integer&gt;)</span></code>: The amount of shared memory to use, in bytes. If not provided, <code class="code docutils literal"><span class="pre">TC</span></code> will query the active GPU and use all available shared memory.</li>
 <li><code class="code docutils literal"><span class="pre">.unroll(&lt;positive</span> <span class="pre">integer&gt;)</span></code>: Perform <a class="reference external" href="https://en.wikipedia.org/wiki/Loop_unrolling">loop unrolling</a> on the generated code and produce <em>at most</em> the given number of statements.</li>
 <li><code class="code docutils literal"><span class="pre">.unrollCopyShared(&lt;boolean&gt;)</span></code>: Also unroll the copies to and from shared memory introduced by the <code class="code docutils literal"><span class="pre">TC</span></code> mapper. If <code class="code docutils literal"><span class="pre">unroll</span></code> value is not provided, has no effect.</li>
+<li><code class="code docutils literal"><span class="pre">.useReaOnlyCache(&lt;boolean&gt;)</span></code>: Emit loads to the readonly cache when appropriate.</li>
 <li><code class="code docutils literal"><span class="pre">.matchLibraryCalls(&lt;boolean&gt;)</span></code>: Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS) when possible.</li>
 <li><code class="code docutils literal"><span class="pre">.fixParametersBeforeScheduling(&lt;boolean&gt;)</span></code>: Perform automatic loop scheduling taking into account specific tensor sizes. May produce faster kernels but significantly increases compilation time. Note that the <em>mapping</em> will be performed for specific tensor sizes anyway.</li>
 <li><code class="code docutils literal"><span class="pre">.outerScheduleFusionStrategy(&lt;choice</span> <span class="pre">of</span> <span class="pre">Max,</span> <span class="pre">Preserve3Coincident,</span> <span class="pre">Min&gt;)</span></code>: Require <code class="code docutils literal"><span class="pre">TC</span></code> to try and execute different <code class="code docutils literal"><span class="pre">TC</span></code> expressions interleaved (<code class="code docutils literal"><span class="pre">Max</span></code>), separately (<code class="code docutils literal"><span class="pre">Min</span></code>) or interleaved as long as sufficient parallelism is exploited (<code class="code docutils literal"><span class="pre">Preserve3Coincident</span></code>) by performing <a class="reference external" href="https://en.wikipedia.org/wiki/Loop_fission_and_fusion">loop fusion and fission</a>. Applies before tiling.</li>
@@ -531,7 +442,7 @@
 <li><code class="code docutils literal"><span class="pre">Tiling</span></code> may leverage the caches by making reuse more localized. Elements of the <code class="code docutils literal"><span class="pre">LHS</span></code> tensor in <code class="code docutils literal"><span class="pre">TC</span></code> can be computed independently yet, when not computed in parallel, they are computed in some order. While this order is optimized for maximal parallelism and reuse by an automatic procedure, it only changes the order in which tensor dimensions are processed. One can think of it as an extension to tensors of per-row or per-column matrix traversals. In any case, the entire slice (row, plane, hyper-place) of the <code class="code docutils literal"><span class="pre">LHS</span></code> tensor is computed before the next slice starts. If some <code class="code docutils literal"><span class="pre">RHS</span></code> tensor element is reused for computing <code class="code docutils literal"><span class="pre">LHS</span></code> values in the same column, but the order was chosen to be per rows, this element is likely to be evicted from cache before it is needed again. <code class="code docutils literal"><span class="pre">Tiling</span></code> changes the order in which <code class="code docutils literal"><span class="pre">LHS</span></code> elements are computed by creating smaller <em>blocks</em> inside each slice. <code class="code docutils literal"><span class="pre">Tile</span></code> sizes define the number of elements along each dimension in this <code class="code docutils literal"><span class="pre">block</span></code>. This transformation reminds of how iterations are mapped to the <code class="code docutils literal"><span class="pre">CUDA</span></code> <code class="code docutils literal"><span class="pre">grid</span></code> of thread blocks. In fact, mapping to blocks implicitly performs tiling. Contrary to the thread <code class="code docutils literal"><span class="pre">block</span></code> mapping, tiling does not require all elements to be computed independently from each other as long as other validity conditions hold. Note that <code class="code docutils literal"><span class="pre">TC</span></code> engine performs tiling independently of mapping to the <code class="code docutils literal"><span class="pre">CUDA</span></code> <code class="code docutils literal"><span class="pre">grid</span></code>, i.e., the tiled dimensions may or may not be mapped to blocks or threads. Similarly to <code class="code docutils literal"><span class="pre">block</span></code> and <code class="code docutils literal"><span class="pre">grid</span></code> sizes, <code class="code docutils literal"><span class="pre">tile</span></code> sizes that are divisors of the input tensor size are a reasonable choice. Keep them relatively small to benefit from caches.</li>
 <li>Using <code class="code docutils literal"><span class="pre">shared</span> <span class="pre">memory</span></code> is profitable in many cases. Even if when there is no reuse, data may be preloaded into a shared memory cache in a more efficient way than it is accessed during computation, in particular using memory coalescing. However, it may limit the amount of parallelism. Copying to shared memory also uses barrier synchronization inside blocks, which may be undesirable for short kernels. Promotion to shared memory may be disabled for cases where global memory access is not the principal bottleneck of the kernel.</li>
 <li><code class="code docutils literal"><span class="pre">Unrolling</span></code> eliminates control flow by introducing copies of statements. This reduces the number of integer instructions but may <em>significantly</em> increase the compilation time.</li>
-<li><code class="code docutils literal"><span class="pre">Fusion</span> <span class="pre">strategy</span></code> controls how different <code class="code docutils literal"><span class="pre">TC</span></code> expressions will be interleaved with each other. Maximal fusion will attempt to &#8220;pipeline&#8221; the computation of tensor elements whenever it is possible while minimal fusion will try and ensure that all elements of one <code class="code docutils literal"><span class="pre">LHS</span></code> tensor are computed before starting the next one. Fusion often makes reuse more local, but increases requirements to memory resources and, more importantly, may lead to a loss of parallelism. Maximal fusion is sometimes required at the outer level to produce kernels mappable to more than one <code class="code docutils literal"><span class="pre">block</span></code> (or requiring a global synchronization), minimal fusion at the inner level can decrease the resources requirements at the const of additional synchronizations inside the loop.</li>
+<li><code class="code docutils literal"><span class="pre">Fusion</span> <span class="pre">strategy</span></code> controls how different <code class="code docutils literal"><span class="pre">TC</span></code> expressions will be interleaved with each other. Maximal fusion will attempt to “pipeline” the computation of tensor elements whenever it is possible while minimal fusion will try and ensure that all elements of one <code class="code docutils literal"><span class="pre">LHS</span></code> tensor are computed before starting the next one. Fusion often makes reuse more local, but increases requirements to memory resources and, more importantly, may lead to a loss of parallelism. Maximal fusion is sometimes required at the outer level to produce kernels mappable to more than one <code class="code docutils literal"><span class="pre">block</span></code> (or requiring a global synchronization), minimal fusion at the inner level can decrease the resources requirements at the const of additional synchronizations inside the loop.</li>
 </ul>
 </div>
 <div class="section" id="possible-compiler-issues">
@@ -597,7 +508,7 @@
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 

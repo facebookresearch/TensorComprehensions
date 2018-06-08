@@ -5,8 +5,8 @@ Reuse outputs
 -------------
 
 TC depends on a tensor library to do the allocations for temporary variables or output tensors.
-So everytime TC is run on given input sizes, the output tensor shapes inferred by
-TC backend is passed back to the tensor library and the output variables are allocated
+So every time TC is run on given input sizes, the output tensor shapes inferred by
+TC backend are passed back to the tensor library and the output variables are allocated
 by making a :code:`malloc` call. However, this can be expensive and effect performance
 significantly. Rather, if your input tensor sizes do not change every time TC is run,
 you can keep reusing the output tensor already allocated in previous call. This helps
@@ -18,8 +18,8 @@ argument when you run the TC. For a concrete example:
     import tensor_comprehensions as tc
     import torch
     lang = """
-    def matmul(float(M,N) A, float(N,K) B) -> (output) {
-      output(i, j) +=! A(i, kk) * B(kk, j)
+    def matmul(float(M, K) A, float(K, N) B) -> (C) {
+        C(m, n) +=! A(m, r_k) * B(r_k, n)
     }
     """
     matmul = tc.define(lang, name="matmul")

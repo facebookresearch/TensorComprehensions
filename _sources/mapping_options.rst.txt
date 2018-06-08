@@ -24,7 +24,7 @@ C++
 
 .. code-block:: c++
 
-  #include <tc/core/mapping_options.h>
+  #include <tc/core/cuda/cuda_mapping_options.h>
 
   auto options = MappingOptions::makeNaiveMappingOptions()
       .mapToBlocks(100, 20)
@@ -34,7 +34,7 @@ Python
 
 .. code-block:: python
 
-  from tensor_comprehensions.mapping_options import Options
+  from tensor_comprehensions.tc import Options
 
   options = Options("naive")
   options.mapToBlocks([100, 20])
@@ -74,6 +74,8 @@ The following options are currently available:
 * :code:`.unroll(<positive integer>)`: Perform `loop unrolling <https://en.wikipedia.org/wiki/Loop_unrolling>`_ on the generated code and produce *at most* the given number of statements.
 
 * :code:`.unrollCopyShared(<boolean>)`: Also unroll the copies to and from shared memory introduced by the :code:`TC` mapper. If :code:`unroll` value is not provided, has no effect.
+
+* :code:`.useReaOnlyCache(<boolean>)`: Emit loads to the readonly cache when appropriate.
 
 * :code:`.matchLibraryCalls(<boolean>)`: Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS) when possible.
 

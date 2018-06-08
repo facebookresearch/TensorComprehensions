@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
@@ -9,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; Tensor Comprehensions v0.1.1 documentation</title>
+  <title>Installation in the Google Colaboratory environment &mdash; Tensor Comprehensions v0.1.1 documentation</title>
   
 
   
@@ -36,9 +35,11 @@
 
   
         <link rel="index" title="Index"
-              href="#"/>
+              href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/> 
+    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
+        <link rel="next" title="Tech Report" href="report.html"/>
+        <link rel="prev" title="Installation Guide" href="installation.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -250,7 +251,7 @@
 </li>
 </ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#conda-installation">Conda installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="installation.html#build-from-source">Build from source</a><ul>
@@ -268,10 +269,10 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -348,12 +349,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Index</li>
+      <li>Installation in the Google Colaboratory environment</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/installation_colab_research.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -365,11 +368,42 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
+  <div class="section" id="installation-in-the-google-colaboratory-environment">
+<h1>Installation in the Google Colaboratory environment<a class="headerlink" href="#installation-in-the-google-colaboratory-environment" title="Permalink to this headline">¶</a></h1>
+<p>If you want to install TC in a Google Colaboratory environment, copy/paste and run
+the following code in the notebook. Please note, it will take 2-3 minutes to execute.</p>
+<div class="section" id="step-1-create-new-notebook-in-the-google-research-colaboratory">
+<h2>Step 1: Create new Notebook in the Google Research Colaboratory<a class="headerlink" href="#step-1-create-new-notebook-in-the-google-research-colaboratory" title="Permalink to this headline">¶</a></h2>
+<p>Open <a class="reference external" href="https://colab.research.google.com/">https://colab.research.google.com/</a> ,  create a new notebook and switch Runtime to GPU.</p>
+</div>
+<div class="section" id="step-2-create-a-new-code-cell-with-the-following-code">
+<h2>Step 2: Create a new Code Cell, with the following code<a class="headerlink" href="#step-2-create-a-new-code-cell-with-the-following-code" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span>!wget -c https://repo.continuum.io/archive/Anaconda3-5.1.0-Linux-x86_64.sh
+!chmod +x Anaconda3-5.1.0-Linux-x86_64.sh
+!bash ./Anaconda3-5.1.0-Linux-x86_64.sh -b -f -p /usr/local
+!conda install -q -y --prefix /usr/local -c pytorch -c tensorcomp tensor_comprehensions
 
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- 
+import sys
+sys.path.append(&#39;/usr/local/lib/python3.6/site-packages/&#39;)
+</pre></div>
+</div>
+</div>
+<div class="section" id="step-3-use-tc-normally-from-python-torch-environment">
+<h2>Step 3: Use TC normally, from Python/Torch environment<a class="headerlink" href="#step-3-use-tc-normally-from-python-torch-environment" title="Permalink to this headline">¶</a></h2>
+<p>As an example, paste and execute the following code in a new Code Cell:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {</span>
+<span class="s2">    C(m, n) +=! A(m, r_k) * B(r_k, n)</span>
+<span class="s2">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+<span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
+<span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </div>
 
 
@@ -379,6 +413,15 @@
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="report.html" class="btn btn-neutral float-right" title="Tech Report" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="installation.html" class="btn btn-neutral" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

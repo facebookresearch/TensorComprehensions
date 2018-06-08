@@ -20,10 +20,10 @@ as input not output.
 .. code::
 
     def softmax(float(N, D) I) -> (O, maxVal, expDistance) {
-      maxVal(n) max= I(n, d)
-      expDistance(n, d) = exp(I(n, d) - maxVal(n))
-      expSum(n) +=! expDistance(n, d)
-      O(n, d) = expDistance(n, d) / expSum(n)
+        maxVal(n) max=! I(n, d)
+        expDistance(n, d) = exp(I(n, d) - maxVal(n))
+        expSum(n) +=! expDistance(n, d)
+        O(n, d) = expDistance(n, d) / expSum(n)
     }
 
 **Valid TC**
@@ -33,15 +33,15 @@ The correct TC would be:
 .. code::
 
     def softmax(float(N, D) I) -> (O, maxVal, expDistance, expSum) {
-      maxVal(n) max= I(n, d)
-      expDistance(n, d) = exp(I(n, d) - maxVal(n))
-      expSum(n) +=! expDistance(n, d)
-      O(n, d) = expDistance(n, d) / expSum(n)
+        maxVal(n) max=! I(n, d)
+        expDistance(n, d) = exp(I(n, d) - maxVal(n))
+        expSum(n) +=! expDistance(n, d)
+        O(n, d) = expDistance(n, d) / expSum(n)
     }
 
 Can I re-use a temporary variable?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-You can as long as the tensor dependencies are strictly DAG. For example:
+You can as long as the tensor dependencies form a DAG. For example:
 
 **Invalid**
 
@@ -54,18 +54,17 @@ You can as long as the tensor dependencies are strictly DAG. For example:
         O(n, d) = O(n, d) / tmp(n)
     }
 
-This TC is invalid because :code:`tmp` and :code:`O(n, d)` have cyclic dependency.
+This TC is invalid because :code:`tmp` and :code:`O(n, d)` have a cyclic dependency.
 
 **Valid**
 
 .. code::
 
     def softmax(float(N, D) I) -> (O, expsum, maxVal) {
-        maxVal(n) max= I(n, d)
+        maxVal(n) max=! I(n, d)
         expsum(n) +=! exp(I(n, d) - maxVal(n))
         O(n, d) = exp(I(n, d) - maxVal(n)) / expsum(n)
     }
-
 
 Autotuner
 ---------

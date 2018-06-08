@@ -1,7 +1,7 @@
 Autograd with TC
 ================
 
-We provide the TC intergation with PyTorch `autograd` so that it is easy to write
+We provide the TC integration with PyTorch `autograd` so that it is easy to write
 a training layer with TC and be able to run backwards as well if the layer is part
 of a network. We do not support double backwards right now. In order to write a
 training layer with TC, you need to follow the steps below:
@@ -27,11 +27,11 @@ Examples
      from torch.nn.parameter import Parameter
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -49,7 +49,7 @@ Examples
     is done, then the grad will be available for the `Variable.cuda()` and not the actual `Variable/Tensor`.
 
 
-Specifying Mapping Options
+Specifying CudaMappingOptions
 --------------------------
 
 We highly recommend passing the mapping options when running the kernel.
@@ -66,18 +66,18 @@ them, the example for that would be:
      from torch.nn.parameter import Parameter
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
      convolution = tc.define(CONV_LANG, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
      I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
      W = Parameter(torch.randn(O, C, kH, kW).cuda())
-     out = convolution(I, W, options=[tc.Options("conv"), tc.Options("group_conv")])
+     out = convolution(I, W, options=[tc.CudaMappingOptions("conv"), tc.CudaMappingOptions("group_conv")])
      out[0].sum().backward()
 
 In order to obtain options via autotuning for backward and forward layer, keep reading further.
@@ -100,11 +100,11 @@ Let's see how to cache options to file when we tune a training layer.
      import torch
      CONV_LANG = """
      def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-        O(n, m, h, w) +=! I(n, c, {sh} * h + kh, {sw} * w + kw) * W1(m, c, kh, kw)
+       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
      }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) O_grad) -> (I_grad, W1_grad) {{
-        I_grad(n, c, h, w) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * W1(m, c, kh, kw)
-        W1_grad(m, c, kh, kw) +=! O_grad(n, m, {sh} * h - kh, {sw} * w - kw) * I(n, c, h, w)
+     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
      }}
      """
      N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
@@ -114,8 +114,8 @@ Let's see how to cache options to file when we tune a training layer.
      out = convolution(I, W)
      out[0].sum().backward()
 
-You will find two cache files created: :code:`convolution_train.cuda/options` has
-options for the forward layer and :code:`convolution_train_backward.cuda/options` file
+You will find a cache file created: :code:`convolution_train.options` has
+options for the forward layer and :code:`convolution_train_backward.options` file
 has options for the grad layer.
 
 Reordering grad outputs
@@ -133,14 +133,14 @@ the example below for how to use it:
      import torch
      LANG = """
      def convolution(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B) -> (tmp, O) {
-       tmp(n, m, h, w) +=! I(n, c, h + kh, w + kw) * W1(m, c, kh, kw)
+       tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
        O(n, m, h, w) = tmp(n, m, h, w) + B(m)
      }
-     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) O_grad)
-     -> (I_grad, W1_grad, B_grad) {
-       I_grad(n, c, h, w) +=! O_grad(n, m, h - kh, w - kw) * W1(m, c, kh, kw)
-       W1_grad(m, c, kh, kw) +=! O_grad(n, m,  h - kh, w - kw) * I(n, c, h, w)
-       B_grad(m) +=! O_grad(n, m, h, w)
+     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) d_O)
+     -> (d_I, d_W1, d_B) {
+        d_I(n, c,  h,  w) +=! d_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)
+       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)
+       d_B(m) +=! d_O(n, m, h, w)
      }
      """
 

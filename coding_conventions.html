@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
@@ -9,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Index &mdash; Tensor Comprehensions v0.1.1 documentation</title>
+  <title>Coding Conventions &mdash; Tensor Comprehensions v0.1.1 documentation</title>
   
 
   
@@ -36,9 +35,11 @@
 
   
         <link rel="index" title="Index"
-              href="#"/>
+              href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/> 
+    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
+        <link rel="next" title="Getting Started" href="framework/pytorch_integration/getting_started.html"/>
+        <link rel="prev" title="Integrating TC with ML framework" href="integrating_any_ml_framework.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -152,7 +153,7 @@
 <li class="toctree-l1"><a class="reference internal" href="performance.html">Performance of TC</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
-<ul>
+<ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="ml_with_tc.html#implications-of-ml-framework-integration">Implications of ML Framework Integration</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
@@ -174,12 +175,12 @@
 <li class="toctree-l2"><a class="reference internal" href="integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
 </ul>
@@ -348,12 +349,14 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>Index</li>
+      <li>Coding Conventions</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
+            <a href="_sources/coding_conventions.rst.txt" rel="nofollow"> View page source</a>
+          
         
       </li>
     
@@ -365,11 +368,107 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
+  <div class="section" id="coding-conventions">
+<h1>Coding Conventions<a class="headerlink" href="#coding-conventions" title="Permalink to this headline">¶</a></h1>
+<p>In order to increase readability across Tensor Comprehensions written by
+multiple authors and to reduce the amount of surprising behavior, the
+following conventions should be adopted when writing TC. Generally in TC, one
+should increment nesting by 4 whitespaces at each level and align tensor names
+and indices where appropriate to make memory access patterns emerge. Since
+these two goals can easily be conflicting, use your best judgement to tradeoff
+between the two goals. Such examples are provided below.</p>
+<div class="section" id="use-indices-named-after-parameters">
+<h2>Use indices named after parameters<a class="headerlink" href="#use-indices-named-after-parameters" title="Permalink to this headline">¶</a></h2>
+<p>Use upper-case names for parameters and capital-case names for input/output tensors.
+Use lower-case names for indices to match the name of the parameter
+corresponding to the dimension upon which they iterate.
+In other words, prefer:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">O</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>to:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">O</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="prefix-reduction-index-names-with-r">
+<h2>Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code><a class="headerlink" href="#prefix-reduction-index-names-with-r" title="Permalink to this headline">¶</a></h2>
+<p>By definition, reduction indices are the ones that appear on the RHS of a TC
+expression but not on the LHS. On larger expressions it can get challenging to easily
+detect the reduction variables by mentally parsing the set of indices on the
+RHS and subtracting the set of indices on the LHS from it. To alleviate such
+issues, name the reduction variables with a <code class="code docutils literal"><span class="pre">r_</span></code> prefix.
+In other words, prefer:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
+    C(m, n) +=! A(m, r_k) * B(r_k, n)
+}
+</pre></div>
+</div>
+<p>to:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
+    C(m, n) +=! A(m, k) * B(k, n)
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="filter-non-rectangular-regions-with-data-dependencies">
+<h2>Filter non-rectangular regions with data-dependencies<a class="headerlink" href="#filter-non-rectangular-regions-with-data-dependencies" title="Permalink to this headline">¶</a></h2>
+<p>TC semantics are restricted to (hyper-)rectangular iteration spaces.
+This is a hard requirement to ensure range inference is non-ambiguous (see <a href="#id1"><span class="problematic" id="id2">inference_</span></a>).
+To simulate non-rectangular iteration spaces, one can use the following:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
+    LU(m1, m2) +=! (r_k &gt;= m1 and r_k =&lt; m2) ? L(m1, r_k) * U(r_k, m2) : 0
+}
+</pre></div>
+</div>
+<p>However, non-(hyper)-rectangular iteration spaces (e.g. triangular) are
+incompatible with range inference and will fail the semantic checks in the TC
+compiler:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
+    LU(m1, m2) +=! L(m1, r_k) * U(r_k, m2) where r_k in m1:M, r_k in 0:m2+1
+}
+</pre></div>
+</div>
+<p>The reader may remark that this is an inefficient way of writing
+matrix-multiplication of triangular matrices.
+Lowering such operations efficiently from TC is the subject of future work.</p>
+</div>
+<div class="section" id="prefix-gradient-tensors-names-with-d">
+<h2>Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code><a class="headerlink" href="#prefix-gradient-tensors-names-with-d" title="Permalink to this headline">¶</a></h2>
+<p>When implementing backward operations, pass the inputs to the backwards pass
+in the same order as the outputs of the forward pass and use the same tensor
+name prefixed by <code class="code docutils literal"><span class="pre">d_</span></code>. For instance:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">conv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">KH</span><span class="p">,</span><span class="n">KW</span><span class="p">)</span> <span class="n">Wt</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+    <span class="o">...</span>
+<span class="p">}</span>
 
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- 
+<span class="k">def</span> <span class="nf">conv_bw</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">KH</span><span class="p">,</span><span class="n">KW</span><span class="p">)</span> <span class="n">Wt</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">M</span><span class="p">,</span><span class="n">HO</span><span class="p">,</span><span class="n">WO</span><span class="p">)</span> <span class="n">d_O</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">d_I</span><span class="p">)</span> <span class="p">{</span>
+    <span class="o">...</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="a-more-complex-example">
+<h2>A more complex example<a class="headerlink" href="#a-more-complex-example" title="Permalink to this headline">¶</a></h2>
+<p>The following shows a possible implementation for a more complex forward and
+backward example. Notice the proper alignment of indices in the backward pass
+and the emergence of an antidiagonal pattern in the reduction accesses:</p>
+<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M,K) A, float(K,N) B) -&gt; (C) {
+    C(m, n) +=! A(m, r_k) * B(r_k, n)
+}
+def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) d_C) -&gt; (d_A, d_B){
+    d_A(m, k) +=! d_C(  m, r_n) * B(  k, r_n)
+    d_B(k, n) +=! d_C(r_m,   n) * A(r_m,   k)
+}
+</pre></div>
+</div>
+<p>Reasoning on such reduction patterns at the level of TC has already proven
+valuable in other circumstances.</p>
+</div>
 </div>
 
 
@@ -379,6 +478,15 @@
            </div>
           </div>
           <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="framework/pytorch_integration/getting_started.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="integrating_any_ml_framework.html" class="btn btn-neutral" title="Integrating TC with ML framework" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
   
 
   <hr/>

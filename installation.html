@@ -38,8 +38,8 @@
               href="genindex.html"/>
         <link rel="search" title="Search" href="search.html"/>
     <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Installing TC from Docker image" href="installation_docker_image.html"/>
-        <link rel="prev" title="Installing TC with Caffe2 Integration" href="framework/caffe2_integration/installation_caffe2_integration.html"/> 
+        <link rel="next" title="Installation in the Google Colaboratory environment" href="installation_colab_research.html"/>
+        <link rel="prev" title="Frequently Asked Questions" href="framework/pytorch_integration/frequently_asked_questions.html"/> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -175,6 +175,14 @@
 <li class="toctree-l2"><a class="reference internal" href="integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
 </ul>
 <p class="caption"><span class="caption-text">PyTorch Integration</span></p>
 <ul>
@@ -186,82 +194,19 @@
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#manually-injecting-external-cuda-code">Manually injecting external CUDA code</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/layers_database.html">ML Layers database</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#pooling-layers">Pooling Layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#average-pooling">Average pooling</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#max-pooling">Max pooling</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#convolution-layers">Convolution layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-convolution">Simple Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution">Strided Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#strided-convolution-gradient">Strided Convolution Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#simple-group-convolution">Simple Group Convolution</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#group-convolution-strided">Group Convolution Strided</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#linear-layers">Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fully-connected-layer">Fully Connected layer</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#non-linear-layers">Non-Linear layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#relu">ReLU</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#sigmoid">Sigmoid</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#softmax">Softmax</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tanh">Tanh</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine">Cosine</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#math-operations">Math Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensordot">TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul">Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#matmul-gradient">Matmul Gradient</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-matmul">Batch Matmul</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#absolute">Absolute</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#add">Add</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#tensor-operations">Tensor Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#indexing">Indexing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#lookup-table">Lookup Table</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#transpose">Transpose</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#concat">Concat</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cast">Cast</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#copy">Copy</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#scale">Scale</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fused-layers">Fused layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#fcrelu">FCRelu</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#small-mobilenet">Small MobileNet</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#normalization-layers">Normalization layers</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#batch-normalization">Batch Normalization</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#layer-normalization">Layer Normalization</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#distance-functions">Distance Functions</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#cosine-similarity">Cosine Similarity</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/layers_database.html#what-operations-can-not-be-expressed">What operations can not be expressed</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-mapping-options">Initial Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
@@ -273,7 +218,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-mapping-options">Specifying Mapping Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
 </ul>
@@ -305,64 +250,29 @@
 </ul>
 </li>
 </ul>
-<p class="caption"><span class="caption-text">Caffe2 Integration</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html">Using TC with Caffe2</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#installation">Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#how-it-works">How it works</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/integration_with_example.html#future">Future</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html">Installing TC with Caffe2 Integration</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-5-install-tc-with-caffe2">Step 5: Install TC with Caffe2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/caffe2_integration/installation_caffe2_integration.html#step-6-run-tc-caffe2-python-test">Step 6: Run TC Caffe2 Python test</a></li>
-</ul>
-</li>
-</ul>
 <p class="caption"><span class="caption-text">Installation</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="installation_docker_image.html">Installing TC from Docker image</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_docker_image.html#tc-runtime-image-with-nvidia-docker">TC runtime image with nvidia-docker</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-locally">Test locally</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda_dep.html">Building with conda packaged dependencies in Conda Environment</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-1-install-system-dependencies">Step 1: Install system dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-3-install-anaconda3">Step 3: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-5-install-tc">Step 5: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#step-6-verify-tc-installation">Step 6: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda_dep.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_conda.html">Building from Source in Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-4-install-anaconda3">Step 4: Install Anaconda3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-5-get-cuda-and-cudnn">Step 5: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-6-get-protobuf3-4">Step 6: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-7-installing-tc">Step 7: Installing TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="installation_non_conda.html">Building from Source in Non-Conda Env</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-1-install-some-build-dependencies">Step 1: Install some build dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-2-setup-gcc-g">Step 2: Setup gcc / g++</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-3-install-clang-llvm">Step 3: Install Clang+LLVM</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-4-get-cuda-and-cudnn">Step 4: Get CUDA and CUDNN</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-5-get-protobuf3-4">Step 5: Get Protobuf3.4</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-6-python-install">Step 6: Python install</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-7-install-tc">Step 7: Install TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#step-8-verify-tc-installation">Step 8: Verify TC installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation_non_conda.html#build-with-basic-caffe2-integration">Build with Basic Caffe2 Integration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
 </ul>
 </li>
 </ul>
@@ -460,19 +370,203 @@
             
   <div class="section" id="installation-guide">
 <h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Permalink to this headline">¶</a></h1>
-<p><strong>Author</strong>: <a class="reference external" href="https://github.com/prigoyal">Priya Goyal</a></p>
-<p>The following instructions are provided for developers who would like to
-experiment with the library.</p>
-<p>At the moment, only <code class="code docutils literal"><span class="pre">Ubuntu</span> <span class="pre">14.04</span></code> and <code class="code docutils literal"><span class="pre">Ubuntu</span> <span class="pre">16.04</span></code> configurations are
-officially supported. Additionally, we routinely run on a custom CentOS7
-installation. If you are interested in running on non-Ubuntu configurations
-please reach out and we will do our best to assist you. Contributing back new
-docker configurations to provide a stable environment to build from source on
-new systems would be highly appreciated. Please read the <code class="code docutils literal"><span class="pre">docker/README.md</span></code> for how
-to build new docker images.</p>
-<p>Some users might prefer building TC in <code class="code docutils literal"><span class="pre">non-conda</span></code> enviroment and some might prefer building in <code class="code docutils literal"><span class="pre">conda</span></code> enviroment. We provide installation instructions for both environments.</p>
-<p>Further, we also provide runtime <code class="code docutils literal"><span class="pre">docker</span></code> images for both <code class="code docutils literal"><span class="pre">conda</span></code> and <code class="code docutils literal"><span class="pre">non-conda</span></code> environment and also an <code class="code docutils literal"><span class="pre">nvidia-docker</span></code> runtime image for TC to have access to GPUs.</p>
-<p>You can chose whatever build settings suit your requirements best and follow the instructions to build. Please feel free to contact us in case you need help with build.</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Since Tensor Comprehensions is still a research project in its infancy
+it is recommended to build the master from source.</p>
+</div>
+</div></blockquote>
+<div class="section" id="conda-installation">
+<h2>Conda installation<a class="headerlink" href="#conda-installation" title="Permalink to this headline">¶</a></h2>
+<p>You can install the latest released package for tensor comprehensions as follows:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c pytorch -c tensorcomp tensor_comprehensions
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="build-from-source">
+<h2>Build from source<a class="headerlink" href="#build-from-source" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><strong>In order to uniformize and simplify the build system we had to make
+choices. TC is currently only officially supported on Ubuntu 16.04 with
+gcc 5.4.0 and takes most its dependencies from conda packages.</strong>
+Other configurations may work too but are not yet officially supported.
+For more information about the setup we use to build the conda
+dependencies see the following <a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/blob/master/conda_recipes/docker-images/tc-cuda9.0-cudnn7.1-ubuntu16.04-devel/Dockerfile">Dockerfile</a>.
+Our main goal with this decision is to make the build procedure
+extremely simple, both reproducible internally and extensible to new
+targets in the future. In particular the gcc-4 / gcc-5 ABI switch is
+not something we want to concern ourselves with at this point, we go
+for gcc-5.4.0.</p>
+</div>
+</div></blockquote>
+<div class="section" id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
+<p>Building TC from source requires gmp, cmake (v3.10 or higher), automake
+and libtool. It is generally a good idea to look at the
+<a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/blob/master/conda_recipes/docker-images/tc-cuda9.0-cudnn7.1-ubuntu16.04-devel/Dockerfile">Dockerfile</a>
+which shows the environment we use for testing and building our packages.
+To install on Ubuntu16.04:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>sudo apt-get install libgmp3-dev cmake automake libtool
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="conda-from-scratch-first-time-configuration">
+<h3>Conda from scratch (first time configuration)<a class="headerlink" href="#conda-from-scratch-first-time-configuration" title="Permalink to this headline">¶</a></h3>
+<p>Choose and set an INSTALLATION_PATH then run the following:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>wget https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O anaconda.sh <span class="o">&amp;&amp;</span> <span class="se">\</span>
+chmod +x anaconda.sh <span class="o">&amp;&amp;</span> <span class="se">\</span>
+./anaconda.sh -b -p <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span> <span class="o">&amp;&amp;</span> <span class="se">\</span>
+rm anaconda.sh
+
+. <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span>/bin/activate
+conda update -y -n base conda
+</pre></div>
+</div>
+</div></blockquote>
+<p>Create a new environment in which TC will be built and install core dependencies:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda create -y --name tc_build <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.6
+conda activate tc_build
+conda install -y pyyaml mkl-include pytest
+conda install -y -c nicolasvasilache llvm-tapir50 halide
+</pre></div>
+</div>
+</div></blockquote>
+<p>Then install the PyTorch version that corresponds to your system binaries
+(e.g. cuda 9.0):</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c pytorch pytorch torchvision cuda90
+conda remove -y cudatoolkit --force
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">As of PyTorch 0.4, PyTorch links cuda libraries dynamically and it
+pulls cudatoolkit. However cudatoolkit can never replace a system installation
+because it cannot package libcuda.so (which comes with the driver, not
+the toolkit). As a consequence cudatoolkit only contains redundant
+libraries and we remove it explicitly. In a near future, the unified
+PyTorch + Caffe2 build system will link everything statically and stop
+pulling the cudatoolkit dependency.</p>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="activate-conda-in-your-current-terminal">
+<h3>Activate conda in your current terminal<a class="headerlink" href="#activate-conda-in-your-current-terminal" title="Permalink to this headline">¶</a></h3>
+<p>Once the first time configuration above has been completed, one should
+activate conda in
+each new terminal window explicitly (it is discouraged to add this to your
+<cite>.bashrc</cite> or equivalent)</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>. <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span>/bin/activate
+conda activate tc_build
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="build-tc-with-dependencies-supplied-by-conda">
+<h3>Build TC with dependencies supplied by conda<a class="headerlink" href="#build-tc-with-dependencies-supplied-by-conda" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="k">$(</span><span class="si">${</span><span class="nv">CONDA_PREFIX</span><span class="si">}</span>/bin/llvm-config --prefix<span class="k">)</span> ./build.sh
+</pre></div>
+</div>
+</div></blockquote>
+<p>You may need to pass the environment variable <cite>CUDA_TOOLKIT_ROOT_DIR</cite> pointing
+to your cuda installation (this is required for <cite>FindCUDA.cmake</cite> to find your
+cuda installation and can be omitted on most systems). When required, passing
+<cite>CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda</cite> is generally sufficient.</p>
+</div>
+<div class="section" id="test-locally">
+<h3>Test locally<a class="headerlink" href="#test-locally" title="Permalink to this headline">¶</a></h3>
+<p>Run C++ tests:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>./test.sh
+</pre></div>
+</div>
+</div></blockquote>
+<p>Install the TC Python package locally to <cite>/tmp</cite> for smoke checking:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python setup.py install --prefix<span class="o">=</span>/tmp
+<span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span>:<span class="k">$(</span>find /tmp/lib -name site-packages<span class="k">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Run Python smoke checks:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python -c <span class="s1">&#39;import torch&#39;</span>
+python -c <span class="s1">&#39;import tensor_comprehensions&#39;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Run Python tests:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>./test_python/run_test.sh
+</pre></div>
+</div>
+</div></blockquote>
+<p>At this point, if things work as expected you can venture installing as
+follows (it is always a good idea to record installed files for easy removal):</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python setup.py install --record tc_files.txt
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="advanced-development-mode-installation">
+<h2>Advanced / development mode installation<a class="headerlink" href="#advanced-development-mode-installation" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="optional-dependencies">
+<h3>Optional dependencies<a class="headerlink" href="#optional-dependencies" title="Permalink to this headline">¶</a></h3>
+<p>Optionally if you want to use Caffe2 (this is necessary for building the C++
+benchmarks since Caffe2 is our baseline):</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c conda-forge eigen
+conda install -y -c nicolasvasilache caffe2
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="cudnn-version-7-1-in-caffe2-dev-mode">
+<h3>Cudnn version 7.1 in Caffe2 / dev mode<a class="headerlink" href="#cudnn-version-7-1-in-caffe2-dev-mode" title="Permalink to this headline">¶</a></h3>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">As of PyTorch 0.4, we need to package our own Caffe2. The curent
+PyTorch + Caffe2 build system links cudnn dynamically. The version of
+cudnn that is linked dynamically is imposed on us by the docker image
+supported by NVIDIA (see
+<a class="reference external" href="https://github.com/facebookresearch/TensorComprehensions/blob/master/conda_recipes/docker-images/tc-cuda9.0-cudnn7.1-ubuntu16.04-devel/Dockerfile">Dockerfile</a>).
+For now this cudnn version is cudnn 7.1.</p>
+</div>
+</div></blockquote>
+<p>If for some reason, one cannot install cudnn 7.1 system-wide, one may resort
+to the following:</p>
+<blockquote>
+<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -c anaconda cudnn
+conda remove -y cudatoolkit --force
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">cudnn pulls a cudatoolkit dependency but this can never replace a
+system installation because it cannot package libcuda.so (which comes
+with the driver, not the toolkit).
+As a consequence cudatoolkit only contains redundant libraries and we
+remove it explicitly. In a near future, the unified PyTorch + Caffe2
+build system will link everything statically and we will not need to
+worry about cudnn anymore.</p>
+</div>
+</div></blockquote>
+</div>
+</div>
 </div>
 
 
@@ -485,10 +579,10 @@ to build new docker images.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="installation_docker_image.html" class="btn btn-neutral float-right" title="Installing TC from Docker image" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="installation_colab_research.html" class="btn btn-neutral float-right" title="Installation in the Google Colaboratory environment" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="framework/caffe2_integration/installation_caffe2_integration.html" class="btn btn-neutral" title="Installing TC with Caffe2 Integration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="framework/pytorch_integration/frequently_asked_questions.html" class="btn btn-neutral" title="Frequently Asked Questions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -529,7 +623,7 @@ to build new docker images.</p>
       <script type="text/javascript" src="_static/jquery.js"></script>
       <script type="text/javascript" src="_static/underscore.js"></script>
       <script type="text/javascript" src="_static/doctools.js"></script>
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
 
   
 
