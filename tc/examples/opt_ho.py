@@ -31,11 +31,18 @@ def group_normalization(
 }
 """
 
+def dictToArray(dic):
+    res=np.zeros(13).astype(int)
+    for i in range(13):
+        res[i] = dic['p' + str(i)]
+    return res
+
 def evalTime(opt):
     global tc_prog, inp, cat_val
-    print(opt[0])
+    #print(opt[0])
     #print(i)
-    opt = np.array([cat_val[opt[i]] for i in range(13)])
+    opt = dictToArray(opt)
+    #opt = np.array([cat_val[opt[i]] for i in range(13)])
     opt = optionsFromVector(opt)
     warmup = 10
     iters  = 50
@@ -119,7 +126,7 @@ def computeCat(inp):
         cat_sz[i] = len(cat_val[i])
 
 gn = tc.define(code, name="group_normalization")
-
+tc_prog=gn
 N, G, D, H, W = 5, 5, 5, 5, 5
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
@@ -135,11 +142,11 @@ computeCat(inp)
 print("salut coco")
 
 def bidule(opt):
-    return 1
+    print(opt)
 
-space = hp.choice('args', 
+space = hp.choice('args',
 [{
-    'p0':0
+    'p0':0,
     'p1':0,
     'p2':hp.choice('a_p2', cat_val[2]),
     'p3':hp.choice('a_p3', cat_val[3]),
@@ -152,6 +159,7 @@ space = hp.choice('args',
     'p10':hp.choice('a_p10', cat_val[10]),
     'p11':hp.choice('a_p11', cat_val[11]),
     'p12':hp.choice('a_p12', cat_val[12])
-}])
+    }])
 
-best = fmin(bidule, space, algo=tpe.suggest, max_evals=100)
+best = fmin(evalTime, space, algo=tpe.suggest, max_evals=10)
+print(best)
