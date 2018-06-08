@@ -55,11 +55,7 @@ Machine Learning.
    :caption: Installation
 
    installation
-   installation_docker_image
-   installation_conda_dep
-   installation_conda
-   installation_non_conda
-
+   installation_colab_research
 
 .. toctree::
    :maxdepth: 1
