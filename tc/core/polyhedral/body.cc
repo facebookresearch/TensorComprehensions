@@ -26,6 +26,7 @@ namespace polyhedral {
 std::ostream& operator<<(std::ostream& os, const Body& body) {
   os << "reads: " << body.reads << "\n";
   os << "writes: " << body.writes << "\n";
+  os << "reductions: " << body.reductions << "\n";
 
   return os;
 }
