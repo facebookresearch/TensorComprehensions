@@ -28,7 +28,10 @@
 namespace tc {
 std::mutex nvrtc_mutex;
 
-CudaRTCFunction::CudaRTCFunction() {}
+CudaRTCFunction::CudaRTCFunction() {
+  TC_CUDA_RUNTIMEAPI_ENFORCE(
+      cudaMalloc((void**)&startTimeDev, sizeof(unsigned long long)));
+}
 
 CudaRTCFunction::~CudaRTCFunction() {
   if (!cleared_) {
@@ -43,6 +46,7 @@ void CudaRTCFunction::clear() {
       WithCudaDevice(kvp.first);
       TC_CUDA_DRIVERAPI_ENFORCE(cuModuleUnload(kvp.second));
     }
+    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaFree((void*)startTimeDev));
     cleared_ = true;
   }
 }
@@ -136,7 +140,9 @@ Duration CudaRTCFunction::Launch(
     std::vector<long> params,
     std::vector<void*> outputs,
     std::vector<const void*> inputs,
+    uint32_t timeout,
     bool profile) const {
+  uint64_t timeoutInNs = timeout * 1000 * 1000;
   int dev;
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&dev));
   if (perGpuModule_.count(dev) == 0) {
@@ -152,10 +158,18 @@ Duration CudaRTCFunction::Launch(
 
   constexpr size_t kNumMaxParameters = 100;
   std::array<void*, kNumMaxParameters> args_voidp{0};
-  CHECK_GE(kNumMaxParameters, params.size() + outputs.size() + inputs.size());
+  CHECK_GE(
+      kNumMaxParameters,
+      params.size() + outputs.size() + inputs.size() + (timeout != 0));
   int ind = 0;
   for (auto& p : params) {
     args_voidp[ind++] = &p;
+  }
+  if (timeout != 0) {
+    args_voidp[ind++] =
+        const_cast<void*>(static_cast<const void*>(&startTimeDev));
+    args_voidp[ind++] =
+        const_cast<void*>(static_cast<const void*>(&timeoutInNs));
   }
   for (auto& o : outputs) {
     args_voidp[ind++] = &o;
@@ -171,6 +185,15 @@ Duration CudaRTCFunction::Launch(
   unsigned int bx = block[0];
   unsigned int by = block[1];
   unsigned int bz = block[2];
+  if (timeout != 0) {
+    unsigned long long startTime = 0;
+    TC_CUDA_RUNTIMEAPI_ENFORCE(cudaMemcpy(
+        (void*)startTimeDev,
+        (void*)&startTime,
+        sizeof(unsigned long long),
+        cudaMemcpyHostToDevice));
+  }
+
   auto launch = [&]() {
     TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchKernel(
         perGpuKernel_.at(dev),

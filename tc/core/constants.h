@@ -30,5 +30,7 @@ constexpr auto kWriteIdName = "write";
 constexpr auto kSyncIdPrefix = "_sync_";
 constexpr auto kWarpSyncIdPrefix = "_warpSync_";
 
+constexpr auto kTimeoutCheckPrefix = "_timeoutCheck_";
+
 } // namespace polyhedral
 } // namespace tc

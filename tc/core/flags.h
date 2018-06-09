@@ -31,6 +31,10 @@ DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
 DECLARE_bool(dump_ptx);
 
+// Cuda timeout
+DECLARE_uint32(timeout_check_frequency);
+DECLARE_uint32(timeout);
+
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);

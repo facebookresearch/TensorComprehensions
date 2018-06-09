@@ -29,7 +29,8 @@ CpuTcExecutor::CpuTcExecutor(
     const std::vector<TensorInfo>& inputsInfo,
     const std::vector<TensorInfo>& outputsInfo,
     const tc2halide::HalideComponents& halideComponents,
-    const typename CpuBackend::CompilationResultType& compilationResult)
+    const typename CpuBackend::CompilationResultType& compilationResult,
+    const typename CpuBackend::MappingOptionsType& options)
     : TcExecutor<CpuBackend>(
           inputsInfo,
           outputsInfo,

@@ -38,6 +38,12 @@ DEFINE_bool(
 DEFINE_bool(dump_cuda, false, "Print the generated source");
 DEFINE_bool(dump_ptx, false, "Dump the generated PTX");
 
+DEFINE_uint32(
+    timeout_check_frequency,
+    100,
+    "The minimum number of loop iterations between two timeout checks");
+DEFINE_uint32(timeout, 0, "The cuda kernel timeout in ms");
+
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
 DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");

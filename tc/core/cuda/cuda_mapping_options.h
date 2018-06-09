@@ -197,6 +197,11 @@ class CudaMappingOptions {
   CudaMappingOptions& useReadOnlyCache(bool b);
   ///@}
 
+  /// Change kernel timeout
+  ///@{
+  CudaMappingOptions& timeout(uint32_t ms);
+  ///@}
+
   /// Static constructors for predefined strategies.
   ///@{
   static CudaMappingOptions makeNaiveMappingOptions();

@@ -247,7 +247,9 @@ isl::schedule toIslSchedule(const ScheduleTree* root) {
   CHECK(domain) << "Root node should be domain node" << *root;
   auto node = isl::schedule_node::from_domain(domain->domain_);
   node = extendChild(node, root);
-  return node.get_schedule();
+  auto ans = node.get_schedule();
+  return ans;
+  // return node.get_schedule();
 }
 
 namespace {

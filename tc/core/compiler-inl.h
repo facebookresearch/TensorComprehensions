@@ -66,6 +66,10 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
       options);
   return std::unique_ptr<typename Backend::ExecutorType>(
       new typename Backend::ExecutorType(
-          inputsInfo, outputsInfo, halideComponents, compilationResult));
+          inputsInfo,
+          outputsInfo,
+          halideComponents,
+          compilationResult,
+          options));
 }
 } // namespace tc

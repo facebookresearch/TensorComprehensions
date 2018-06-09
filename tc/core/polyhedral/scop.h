@@ -215,6 +215,14 @@ struct Scop {
     insertExtensionLabelAfter(scheduleRoot(), tree, makeSyncId(level));
   }
 
+  void insertTimeoutCheckAfter(detail::ScheduleTree* tree) {
+    insertExtensionLabelAfter(scheduleRoot(), tree, makeTimeoutCheckId());
+  }
+
+  void insertTimeoutCheck(detail::ScheduleTree* seqNode, size_t pos) {
+    insertExtensionLabelAt(scheduleRoot(), seqNode, pos, makeTimeoutCheckId());
+  }
+
   size_t reductionUID() const {
     static size_t count = 0;
     return count++;
@@ -224,6 +232,10 @@ struct Scop {
     return count++;
   }
   size_t warpSyncUID() const {
+    static size_t count = 0;
+    return count++;
+  }
+  size_t timeoutCheckUID() const {
     static size_t count = 0;
     return count++;
   }
@@ -255,6 +267,13 @@ struct Scop {
         ctx, std::string(kWarpSyncIdPrefix) + std::to_string(warpSyncUID()));
   }
 
+  isl::id makeTimeoutCheckId() const {
+    auto ctx = domain().get_ctx();
+    return isl::id(
+        ctx,
+        std::string(kTimeoutCheckPrefix) + std::to_string(timeoutCheckUID()));
+  }
+
   // Check if the id has a name with the expected prefix, followed by a long
   // integer.
   static bool isIdWithExpectedPrefix(
@@ -279,6 +298,10 @@ struct Scop {
 
   static bool isWarpSyncId(isl::id id) {
     return isIdWithExpectedPrefix(id, kWarpSyncIdPrefix);
+  }
+
+  static bool isTimeoutCheckId(isl::id id) {
+    return isIdWithExpectedPrefix(id, kTimeoutCheckPrefix);
   }
 
   static isl::id makeRefId(isl::ctx ctx) {

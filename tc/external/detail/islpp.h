@@ -352,6 +352,29 @@ inline isl::set makeSpecializationSet(
   return makeSpecializationSet(space, map);
 }
 
+/*
+ * Return a bound on the range of values attained by "f" for fixed
+ * values of "fixed", taking into account basic strides
+ * in the range of values attained by "f".
+ *
+ * First construct a map from values of "fixed" to corresponding
+ * values of "f".  If this map is empty, then "f" cannot attain
+ * any values and the bound is zero.
+ * Otherwise, consider pairs of "f" values for the same value
+ * of "fixed" and take their difference over all possible values
+ * of the parameters and of the "fixed" values.
+ * Take a simple overapproximation as a convex set and
+ * determine the stride is the value differences.
+ * The possibly quasi-affine set is then overapproximated by an affine set.
+ * At this point, the set is a possibly infinite, symmetrical interval.
+ * Take the maximal value of the difference divided by the stride plus one as
+ * a bound on the number of possible values of "f".
+ * That is, take M/s + 1.  Note that 0 is always an element of
+ * the difference set, so no offset needs to be taken into account
+ * during the stride computation and M is an integer multiple of s.
+ */
+inline isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f);
+
 namespace detail {
 
 // Helper class used to support range-based for loops on isl::*_list types.

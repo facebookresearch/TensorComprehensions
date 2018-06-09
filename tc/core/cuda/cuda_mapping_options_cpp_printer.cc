@@ -38,6 +38,9 @@ CudaMappingOptionsCppPrinter& operator<<(
     prn.printValueOption(
         "maxSharedMemory", cudaOptions.proto().max_shared_memory());
   }
+  if (cudaOptions.proto().has_timeout()) {
+    prn.printValueOption("timeout", cudaOptions.proto().timeout());
+  }
   prn.endStmt();
   return prn;
 }

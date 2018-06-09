@@ -30,7 +30,8 @@ class CudaTcExecutor : public TcExecutor<CudaBackend> {
       const std::vector<TensorInfo>& inputsInfo,
       const std::vector<TensorInfo>& outputsInfo,
       const tc2halide::HalideComponents& halideComponents,
-      const typename CudaBackend::CompilationResultType& compilationResult);
+      const typename CudaBackend::CompilationResultType& compilationResult,
+      const typename CudaBackend::MappingOptionsType& options);
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to
   /// data in the address space where kernel is executed.
@@ -63,5 +64,7 @@ class CudaTcExecutor : public TcExecutor<CudaBackend> {
   // GPU-specific results of compilation
   Grid grid_;
   Block block_;
+
+  uint32_t timeout_;
 };
 } // namespace tc

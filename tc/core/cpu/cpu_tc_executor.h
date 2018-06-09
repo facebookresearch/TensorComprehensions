@@ -30,7 +30,8 @@ class CpuTcExecutor : public TcExecutor<CpuBackend> {
       const std::vector<TensorInfo>& inputsInfo,
       const std::vector<TensorInfo>& outputsInfo,
       const tc2halide::HalideComponents& halideComponents,
-      const typename CpuBackend::CompilationResultType& compilationResult);
+      const typename CpuBackend::CompilationResultType& compilationResult,
+      const typename CpuBackend::MappingOptionsType& options);
 
   /// This is the "low-latency" mode in which we just propagate raw pointers to
   /// data in the address space where kernel is executed.

@@ -46,12 +46,14 @@ CudaTcExecutor::CudaTcExecutor(
     const std::vector<TensorInfo>& inputsInfo,
     const std::vector<TensorInfo>& outputsInfo,
     const tc2halide::HalideComponents& halideComponents,
-    const typename CudaBackend::CompilationResultType& compilationResult)
+    const typename CudaBackend::CompilationResultType& compilationResult,
+    const typename CudaBackend::MappingOptionsType& options)
     : TcExecutor<CudaBackend>(
           inputsInfo,
           outputsInfo,
           halideComponents,
-          compilationResult) {
+          compilationResult),
+      timeout_(options.proto().timeout()) {
   auto t0 = std::chrono::high_resolution_clock::now();
   // force unloading in case we JIT with the same name/input/outputs with
   // different options.
@@ -121,7 +123,8 @@ void CudaTcExecutor::uncheckedRun(
       info.stream,
       parameters_,
       outputs,
-      inputs);
+      inputs,
+      timeout_);
 }
 
 ProfilingInfo CudaTcExecutor::profileUnchecked(
@@ -140,6 +143,7 @@ ProfilingInfo CudaTcExecutor::profileUnchecked(
       parameters_,
       outputs,
       inputs,
+      timeout_,
       true));
   // The CPU overhead is the total time minus the (synchronized) kernel runtime
   Duration cpuOverhead(Duration::since(start));
