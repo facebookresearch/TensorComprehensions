@@ -50,7 +50,7 @@ void initGlog() {
 }
 
 inline std::vector<tc::TensorInfo> getATenTensorsAsTensorInfo(
-    py::tuple& pyTensors) {
+    const py::tuple& pyTensors) {
   std::vector<tc::TensorInfo> tensors;
   for (auto& inp : pyTensors) {
     tensors.push_back(tc::aten::toTensorInfo(inp.cast<at::Tensor>()));
@@ -58,7 +58,7 @@ inline std::vector<tc::TensorInfo> getATenTensorsAsTensorInfo(
   return tensors;
 }
 
-inline std::vector<at::Tensor> getATenTensors(py::tuple& pyTensors) {
+inline std::vector<at::Tensor> getATenTensors(const py::tuple& pyTensors) {
   std::vector<at::Tensor> atTensors;
   for (auto& inp : pyTensors) {
     atTensors.push_back(inp.cast<at::Tensor>());
@@ -67,7 +67,8 @@ inline std::vector<at::Tensor> getATenTensors(py::tuple& pyTensors) {
 }
 
 template <typename VoidPtr>
-inline std::vector<VoidPtr> getATenTensorsAsRawPtrs(py::tuple& pyTensors) {
+inline std::vector<VoidPtr> getATenTensorsAsRawPtrs(
+    const py::tuple& pyTensors) {
   std::vector<VoidPtr> res;
   for (auto& inp : pyTensors) {
     res.push_back(static_cast<VoidPtr>(inp.cast<at::Tensor>().data_ptr()));
@@ -75,7 +76,7 @@ inline std::vector<VoidPtr> getATenTensorsAsRawPtrs(py::tuple& pyTensors) {
   return res;
 }
 
-inline py::list convertToPyObjects(std::vector<at::Tensor>& tensors) {
+inline py::list convertToPyObjects(const std::vector<at::Tensor>& tensors) {
   py::list outputs;
   for (auto& tensor : tensors) {
     outputs.append(py::cast(torch::autograd::make_variable(tensor)));
@@ -101,7 +102,7 @@ inline py::list convertToPyObjects(std::vector<at::Tensor>& tensors) {
  */
 struct CompilationCache {
   struct Key {
-    Key(std::string entryPt, py::tuple& inputTuple)
+    Key(std::string entryPt, const py::tuple& inputTuple)
         : entryPoint(entryPt), inputs(getATenTensorsAsTensorInfo(inputTuple)) {}
     bool operator==(const Key& other) const {
       return entryPoint == other.entryPoint && inputs == other.inputs;
@@ -132,7 +133,7 @@ struct CompilationCache {
     initGlog();
   }
 
-  bool isCompiled(const std::string& entryPoint, py::tuple& inputs) {
+  bool isCompiled(const std::string& entryPoint, const py::tuple& inputs) {
     return compiled.count(Key(entryPoint, inputs)) > 0;
   }
 
@@ -140,7 +141,9 @@ struct CompilationCache {
   /// This brings overhead, therefore we memoize the output sizes on-demand.
   /// The allocation itself is backed by ATen's caching allocator and is
   /// assumed acceptable (this is used everywhere in PyTorch).
-  py::list allocOutputs(const std::string& entryPoint, py::tuple& inputs) {
+  std::vector<at::Tensor> allocATenOutputTensors(
+      const std::string& entryPoint,
+      const py::tuple& inputs) {
     Key k(entryPoint, inputs);
     auto kvp = outputs.find(k);
     if (kvp == outputs.end()) {
@@ -156,7 +159,13 @@ struct CompilationCache {
       outputs.emplace(k, atOutputs);
       kvp = outputs.find(k);
     }
-    return convertToPyObjects(kvp->second);
+    return kvp->second;
+  }
+
+  py::list allocOutputs(
+      const std::string& entryPoint,
+      const py::tuple& inputs) {
+    return convertToPyObjects(allocATenOutputTensors(entryPoint, inputs));
   }
 
   /// This function forces recompilation and storage.
@@ -166,32 +175,48 @@ struct CompilationCache {
   /// compiled version given an entryPoint and inputs.
   void compile(
       const std::string& entryPoint,
-      py::tuple& inputs,
+      const py::tuple& inputs,
       const tc::CudaMappingOptions& options) {
     Key k(entryPoint, inputs);
     compiled[k] = tc::aten::compile<tc::CudaBackend>(
         tc, entryPoint, getATenTensors(inputs), options);
   }
 
-  void
-  run(const std::string& entryPoint, py::tuple& inputs, py::tuple& outputs) {
-    CHECK_GE(outputs.size(), 1u)
-        << "run needs a tuple of output tensors to write into";
-    auto atInputs = getATenTensors(inputs);
-    auto atOutputs = getATenTensors(outputs);
-    tc::aten::run(*compiled.at(Key(entryPoint, inputs)), atInputs, atOutputs);
+  py::list run(
+      const std::string& entryPoint,
+      const py::tuple& inputs,
+      const py::tuple& outputs = py::tuple()) {
+    if (outputs.size() > 0) {
+      auto atOutputs = getATenTensors(outputs);
+      auto atInputs = getATenTensors(inputs);
+      tc::aten::run(*compiled.at(Key(entryPoint, inputs)), atInputs, atOutputs);
+      return py::list(outputs);
+    } else {
+      auto atOutputs = allocATenOutputTensors(entryPoint, inputs);
+      auto atInputs = getATenTensors(inputs);
+      tc::aten::run(*compiled.at(Key(entryPoint, inputs)), atInputs, atOutputs);
+      return convertToPyObjects(atOutputs);
+    }
   }
 
-  void uncheckedRun(
+  py::list uncheckedRun(
       const std::string& entryPoint,
-      py::tuple& inputs,
-      py::tuple& outputs) {
-    CHECK_GE(outputs.size(), 1u)
-        << "uncheckedRun needs a tuple of output tensors to write into";
-    compiled.at(Key(entryPoint, inputs))
-        ->uncheckedRun(
-            getATenTensorsAsRawPtrs<const void*>(inputs),
-            getATenTensorsAsRawPtrs<void*>(outputs));
+      const py::tuple& inputs,
+      const py::tuple& outputs = py::tuple()) {
+    if (outputs.size() > 0) {
+      compiled.at(Key(entryPoint, inputs))
+          ->uncheckedRun(
+              getATenTensorsAsRawPtrs<const void*>(inputs),
+              getATenTensorsAsRawPtrs<void*>(outputs));
+      return py::list(outputs);
+    } else {
+      auto outputs = allocOutputs(entryPoint, inputs);
+      compiled.at(Key(entryPoint, inputs))
+          ->uncheckedRun(
+              getATenTensorsAsRawPtrs<const void*>(inputs),
+              getATenTensorsAsRawPtrs<void*>(outputs));
+      return outputs;
+    }
   }
 
   std::string tc;
@@ -276,7 +301,7 @@ class MappingOptionsCache {
   std::vector<tc::CudaMappingOptions> load(
       const std::string& tc,
       const std::string& entryPoint,
-      py::tuple& inputTuple,
+      const py::tuple& inputTuple,
       const size_t numCandidates) {
     tc::autotune::OptionsCache<tc::CudaBackend> cache;
     cache.loadCacheFromFile(fileName_);
@@ -400,7 +425,7 @@ PYBIND11_MODULE(tclib, m) {
           "tune",
           [](Tuner& instance,
              const std::string& entryPoint,
-             py::tuple& inputs,
+             const py::tuple& inputs,
              tc::CudaMappingOptions& baseMapping,
              const TunerConfig& config) {
             config.__enter__();
