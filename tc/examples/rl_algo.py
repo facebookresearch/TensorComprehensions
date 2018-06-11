@@ -13,7 +13,7 @@ import time
 import tensor_comprehensions as tc
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
-NB_EPOCHS = 100
+NB_EPOCHS = 10000
 
 code = """
 def group_normalization(
@@ -60,8 +60,8 @@ def evalTime(opt):
 
 def optionsFromVector(vect):
     options = tc.CudaMappingOptions("naive")
-    #options.outerScheduleFusionStrategy(vect[0], False, True)
-    #options.intraTileFusionStrategy(vect[1], False, True)
+    #options.outerScheduleFusionStrategy("Max")
+    #options.intraTileScheduleFusionStrategy("Min")
     options.fixParametersBeforeScheduling(vect[2])
     options.tile([vect[3]]) #why list in doc?
     options.unroll(2**vect[4]) #128 is too big? trying 30
