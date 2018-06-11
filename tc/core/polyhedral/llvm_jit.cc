@@ -15,6 +15,7 @@
  */
 #include <stdexcept>
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/llvm_jit.h"
 
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -27,6 +28,7 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/Transforms/Utils/Cloning.h"
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
 
@@ -99,7 +101,7 @@ void Jit::addModule(std::shared_ptr<Module> M) {
       });
 
   auto res = compileLayer_.addModule(M, std::move(Resolver));
-  CHECK(res) << "Failed to jit compile.";
+  TC_CHECK(res) << "Failed to jit compile.";
 }
 #else
 Jit::Jit()
@@ -142,7 +144,7 @@ void Jit::addModule(std::shared_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto K = ES.allocateVModule();
   llvm::Error res = compileLayer_.addModule(K, CloneModule(*M));
-  CHECK(!res) << "Failed to jit compile.";
+  TC_CHECK(!res) << "Failed to jit compile.";
 }
 #endif
 
@@ -168,7 +170,7 @@ JITSymbol Jit::findSymbol(const std::string Name) {
 
 JITTargetAddress Jit::getSymbolAddress(const std::string Name) {
   auto res = findSymbol(Name).getAddress();
-  CHECK(res) << "Could not find jit-ed symbol";
+  TC_CHECK(res) << "Could not find jit-ed symbol";
   return *res;
 }
 

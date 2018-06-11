@@ -122,7 +122,7 @@ void WaveNet::runWaveNet1(const tc::CudaMappingOptions& options) {
         tc::TC_WAVENET1_NAME,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc::TC_WAVENET, tc::TC_WAVENET1_NAME, bestOptions[0], inputs);
 }

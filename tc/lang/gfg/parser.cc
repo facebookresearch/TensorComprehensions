@@ -15,17 +15,14 @@
  */
 #include <tc/lang/parser.h>
 
-// #include <glog/logging.h>
-
 #include <sstream>
 #include <unordered_set>
+#include "tc/core/check.h"
 
 using namespace std;
 
 namespace tc {
 namespace parser {
-
-#define CHECK(x) ;
 
 int uid() {
   static int id = 0;
@@ -34,15 +31,15 @@ int uid() {
 
 Node& GFG::addNode(const string& name) {
   nodes.emplace_back(new Node(name));
-  CHECK(nodes.size() == nodes.back().id);
+  TC_CHECK(nodes.size() == nodes.back().id);
   name2NodeId.insert(
       make_pair<string, int>(string(name), int(nodes.back()->id)));
   return *nodes.back();
 }
 
 const Edge& GFG::addEdge(Node& s, const string& transition, const Node& t) {
-  CHECK(name2Node.at(s.name) != name2Node.end());
-  CHECK(name2Node.at(t.name) != name2Node.end());
+  TC_CHECK(name2Node.at(s.name) != name2Node.end());
+  TC_CHECK(name2Node.at(t.name) != name2Node.end());
   s.outEdges.emplace_back(s, transition, t);
   return s.outEdges.back();
 }
@@ -212,6 +209,5 @@ GFG GFG::makeGFG(const string& grammar) {
   return res;
 }
 
-#undef CHECK
-}
+} // namespace parser
 } // namespace tc

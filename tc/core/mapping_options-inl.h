@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include "tc/core/check.h"
 #include "tc/core/utils/vararg.h"
 
 namespace tc {
@@ -41,14 +42,14 @@ size_t TilingView::size() const {
 }
 
 ValueAccessor<uint64_t> TilingView::operator[](size_t i) {
-  CHECK_LT(i, static_cast<size_t>(proto.sizes_size())) << "index overflow";
+  TC_CHECK_LT(i, static_cast<size_t>(proto.sizes_size())) << "index overflow";
   return ValueAccessor<uint64_t>(
       [this, i](uint64_t u) { this->proto.set_sizes(i, u); },
       [this, i]() { return this->proto.sizes(i); });
 }
 
 uint64_t TilingView::operator[](size_t i) const {
-  CHECK_LT(i, static_cast<size_t>(proto.sizes_size())) << "index overflow";
+  TC_CHECK_LT(i, static_cast<size_t>(proto.sizes_size())) << "index overflow";
   return proto.sizes(i);
 }
 
@@ -163,7 +164,7 @@ MappingOptionsView& MappingOptionsView::scheduleFusionStrategy(
     const std::string& str) {
   FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
-  CHECK(couldParse) << "unknown FusionStrategy " << str;
+  TC_CHECK(couldParse) << "unknown FusionStrategy " << str;
   return scheduleFusionStrategy(fs);
 }
 
@@ -177,7 +178,7 @@ MappingOptionsView& MappingOptionsView::outerScheduleFusionStrategy(
     const std::string& str) {
   FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
-  CHECK(couldParse) << "unknown FusionStrategy " << str;
+  TC_CHECK(couldParse) << "unknown FusionStrategy " << str;
   return outerScheduleFusionStrategy(fs);
 }
 
@@ -201,7 +202,7 @@ MappingOptionsView& MappingOptionsView::intraTileScheduleFusionStrategy(
     const std::string& str) {
   FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
-  CHECK(couldParse) << "unknown FusionStrategy " << str;
+  TC_CHECK(couldParse) << "unknown FusionStrategy " << str;
   return intraTileScheduleFusionStrategy(fs);
 }
 

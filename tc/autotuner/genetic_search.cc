@@ -19,6 +19,8 @@
 #include <random>
 #include <sstream>
 
+#include "tc/core/check.h"
+
 namespace tc {
 namespace autotune {
 
@@ -130,13 +132,13 @@ void dropInvalidConfigurations(GeneticSearch::Population& population) {
 
 } // namespace
 
-#define VALIDATE()                                   \
-  CHECK_LT(numberElites, maxPopulationSize);         \
-  CHECK(mutationRate >= 0 and mutationRate <= 100)   \
-      << "the mutation rate (" << mutationRate       \
-      << ") should be in the [0,100] interval";      \
-  CHECK(crossOverRate >= 0 and crossOverRate <= 100) \
-      << "the crossover (" << crossOverRate          \
+#define VALIDATE()                                      \
+  TC_CHECK_LT(numberElites, maxPopulationSize);         \
+  TC_CHECK(mutationRate >= 0 and mutationRate <= 100)   \
+      << "the mutation rate (" << mutationRate          \
+      << ") should be in the [0,100] interval";         \
+  TC_CHECK(crossOverRate >= 0 and crossOverRate <= 100) \
+      << "the crossover (" << crossOverRate             \
       << ") rate should be in the [0,100] interval";
 
 namespace {
@@ -170,7 +172,7 @@ GeneticSearch::GeneticSearch(
       rng{std::random_device{}()} {
   restoreRngState(rng);
   VALIDATE();
-  CHECK(not confs.empty()) << "empty set of predefined configurations";
+  TC_CHECK(not confs.empty()) << "empty set of predefined configurations";
 
   population.reserve(populationSize);
   size_t size = 0;
@@ -296,7 +298,7 @@ void GeneticSearch::updateParameters() {
           make_unique<CandidateConfiguration>(lastBestConf));
     }
     // Don't lose the first one which was the best from before
-    CHECK_LT(0u, population.size());
+    TC_CHECK_LT(0u, population.size());
     randomizePopulation(population.begin() + 1, population.end(), rng);
     return;
   }

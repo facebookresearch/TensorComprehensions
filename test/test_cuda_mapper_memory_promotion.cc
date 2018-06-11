@@ -17,6 +17,7 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
@@ -299,7 +300,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       auto schedule = partialSchedule(
           scop.scheduleRoot(), scop.scheduleRoot()->child(childPos));
       auto scopedAccess = oneGroup->originalAccesses().apply_domain(schedule);
-      CHECK(scopedAccess.is_equal(oneGroup->scopedAccesses()))
+      TC_CHECK(scopedAccess.is_equal(oneGroup->scopedAccesses()))
           << "expected original accesses " << oneGroup->originalAccesses()
           << " to be equal to scoped accesses " << oneGroup->scopedAccesses()
           << " after applying the partial schedule " << schedule;
@@ -366,7 +367,7 @@ def fun(float(N, M) A) -> (B, C) {
 
     auto schedule = partialSchedule(scop.scheduleRoot(), t);
     auto scopedAccess = groupsB[0]->originalAccesses().apply_domain(schedule);
-    CHECK(scopedAccess.is_equal(groupsB[0]->scopedAccesses()))
+    TC_CHECK(scopedAccess.is_equal(groupsB[0]->scopedAccesses()))
         << "expected original accesses " << groupsB[0]->originalAccesses()
         << " to be equal to scoped accesses " << groupsB[0]->scopedAccesses()
         << " after applying the partial schedule " << schedule;

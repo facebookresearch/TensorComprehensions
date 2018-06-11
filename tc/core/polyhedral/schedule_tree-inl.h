@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include "tc/core/check.h"
+
 namespace tc {
 namespace polyhedral {
 namespace detail {
@@ -23,14 +25,14 @@ inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
     const std::vector<MappingIdType>& mappedIds,
     isl::union_pw_aff_list mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
-  CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
+  TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
       << "expected as many mapped ids as affs";
   ScheduleTreeElemMappingFilter::Mapping mapping;
   for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
     mapping.emplace(mappedIds.at(i), mappedAffs.get(i));
   }
-  CHECK_GE(mapping.size(), 1u) << "empty mapping";
-  CHECK_EQ(mappedIds.size(), mapping.size())
+  TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
+  TC_CHECK_EQ(mappedIds.size(), mapping.size())
       << "some id is used more than once in the mapping";
   auto ctx = mappedIds[0].get_ctx();
   ScheduleTreeUPtr res(new ScheduleTree(ctx));

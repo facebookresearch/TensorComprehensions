@@ -23,6 +23,7 @@
 #include <stdexcept>
 #include <unordered_set>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/gpu.h"
 #include "tc/core/libraries.h"
@@ -106,7 +107,7 @@ detail::ScheduleTree* MappedScop::map(
     isl::union_pw_aff_list list) {
   size_t nToMap = list.n();
   const auto& extent = mappingSize<MappingTypeId>(this).view;
-  CHECK_LE(nToMap, extent.size()) << "dimension overflow";
+  TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
 
   auto root = scop_->scheduleRoot();
   auto domain = activeDomainPoints(root, tree).universe();
@@ -116,7 +117,7 @@ detail::ScheduleTree* MappedScop::map(
   for (size_t i = 0; i < nToMap; ++i) {
     auto id = MappingTypeId::makeId(i);
     auto upa = list.get(i);
-    CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
+    TC_CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
     upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
     affList = affList.add(upa);
     idList.emplace_back(id);
@@ -139,7 +140,7 @@ detail::ScheduleTree* MappedScop::mapBlocksForward(
     detail::ScheduleTree* band,
     size_t nToMap) {
   auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
-  CHECK(bandNode) << "expected a band, got " << *band;
+  TC_CHECK(bandNode) << "expected a band, got " << *band;
 
   auto list = bandNode->mupa_.get_union_pw_aff_list();
   list = list.drop(nToMap, list.n() - nToMap);
@@ -154,7 +155,7 @@ void MappedScop::mapToBlocksAndScaleBand(
   using namespace tc::polyhedral::detail;
 
   auto bandNode = band->elemAs<ScheduleTreeElemBand>();
-  CHECK(bandNode->permutable_) << "cannot map non-permutable band to blocks";
+  TC_CHECK(bandNode->permutable_) << "cannot map non-permutable band to blocks";
 
   auto nBlocksToMap = bandNode->nOuterCoincident();
   // Can map at most 3 dimensions
@@ -288,9 +289,9 @@ bool MappedScop::needReductionSeparation(const detail::ScheduleTree* st) {
 
 isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
     const detail::ScheduleTree* st) {
-  CHECK(reductionBandUpdates_.count(st) == 1);
+  TC_CHECK(reductionBandUpdates_.count(st) == 1);
   auto reductionBand = st->elemAs<detail::ScheduleTreeElemBand>();
-  CHECK(reductionBand);
+  TC_CHECK(reductionBand);
 
   // Drop band members following the reduction dimension and preceding those
   // mapped to threads.
@@ -298,7 +299,7 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   auto nMember = reductionBand->nMember();
   auto reductionDim = reductionBand->nOuterCoincident();
   auto nMappedThreads = std::min(numThreads.view.size(), reductionDim + 1);
-  CHECK_GE(nMember, reductionDim);
+  TC_CHECK_GE(nMember, reductionDim);
   reductionSchedule = reductionSchedule.drop_dims(
       isl::dim_type::set, reductionDim + 1, nMember - (reductionDim + 1));
   reductionSchedule = reductionSchedule.drop_dims(
@@ -359,10 +360,10 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
 detail::ScheduleTree* MappedScop::mapThreadsBackward(
     detail::ScheduleTree* band) {
   auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
-  CHECK(bandNode);
+  TC_CHECK(bandNode);
   auto nMember = bandNode->nMember();
   auto nToMap = std::min(nMember, numThreads.view.size());
-  CHECK_LE(nToMap, 3u) << "mapping to too many threads";
+  TC_CHECK_LE(nToMap, 3u) << "mapping to too many threads";
 
   auto ctx = band->ctx_;
   insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
@@ -393,7 +394,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   // this member has to be mapped as well.
   // In particular, it will get mapped to threadIdx.x
   if (isReduction) {
-    CHECK(reductionBandUpdates_.at(band).separated);
+    TC_CHECK(reductionBandUpdates_.at(band).separated);
     nCanMap++;
   }
 
@@ -423,7 +424,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
     bandSplit(scop_->scheduleRoot(), band, nMappedThreads);
   }
 
-  CHECK_GT(nMappedThreads, 0u) << "not mapping to threads";
+  TC_CHECK_GT(nMappedThreads, 0u) << "not mapping to threads";
 
   if (isReduction) {
     band = splitOutReductionTileAndInsertSyncs(band);
@@ -551,10 +552,10 @@ Scop::SyncLevel MappedScop::findBestSync(
     return Scop::SyncLevel::None;
   }
 
-  CHECK_LE(1u, scop_->scheduleRoot()->children().size());
+  TC_CHECK_LE(1u, scop_->scheduleRoot()->children().size());
   auto contextSt = scop_->scheduleRoot()->children()[0];
   auto contextElem = contextSt->elemAs<detail::ScheduleTreeElemContext>();
-  CHECK(nullptr != contextElem);
+  TC_CHECK(nullptr != contextElem);
   dependences = dependences.intersect_params(contextElem->context_);
 
   if (dependences.is_subset(dependences.eq_at(domainToThread))) {
@@ -716,7 +717,7 @@ std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
 }
 
 void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
-  CHECK(seq->elemAs<detail::ScheduleTreeElemSequence>());
+  TC_CHECK(seq->elemAs<detail::ScheduleTreeElemSequence>());
 
   auto children = seq->children();
   auto nChildren = children.size();
@@ -817,9 +818,9 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
       // member, insert a synchronization after its last child.
       // The node must have children if some of them were mapped to threads,
       // double-check.  Note that a band node has at most one child.
-      CHECK_EQ(st->numChildren(), 1u);
+      TC_CHECK_EQ(st->numChildren(), 1u);
       // The mapping should be always complete, double-check.
-      CHECK_EQ(n, numThreads.view.size());
+      TC_CHECK_EQ(n, numThreads.view.size());
       scop_->insertSyncAfter(st->child({0}));
     }
   }
@@ -987,7 +988,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   scop = Scop::makeScheduled(*scop, generic.outerScheduleOptions);
 
   // 3. Tile
-  CHECK_LT(0u, generic.tiling.size())
+  TC_CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
   auto outerBand = scop->tileOuterBand(generic.tiling);
 
@@ -1010,7 +1011,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
   // 6. Map to threads
   if (outerBand->numChildren() > 0) {
-    CHECK_EQ(1u, outerBand->numChildren());
+    TC_CHECK_EQ(1u, outerBand->numChildren());
     // 6.1. Optionally detect reductions while mapping to threads
 
     if (generic.proto.match_library_calls()) {

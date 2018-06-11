@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
@@ -239,7 +240,7 @@ struct Scop {
         return makeSyncId();
         break;
       default:
-        CHECK(level != SyncLevel::None);
+        TC_CHECK(level != SyncLevel::None);
         return isl::id();
     }
   }
@@ -292,8 +293,8 @@ struct Scop {
         domain().get_ctx(), std::string("red_update") + std::to_string(uid));
     auto reductionInitId = isl::id(
         domain().get_ctx(), std::string("red_init") + std::to_string(uid));
-    CHECK_EQ(0u, treeSyncUpdateMap.count(treeSyncId));
-    CHECK_EQ(0u, defaultReductionInitMap.count(treeSyncId));
+    TC_CHECK_EQ(0u, treeSyncUpdateMap.count(treeSyncId));
+    TC_CHECK_EQ(0u, defaultReductionInitMap.count(treeSyncId));
 
     treeSyncUpdateMap.emplace(treeSyncId, updateId);
     defaultReductionInitMap.emplace(treeSyncId, reductionInitId);
@@ -319,7 +320,7 @@ struct Scop {
         return treeSyncUpdateMap.at(p.first);
       }
     }
-    CHECK(false) << "not found";
+    TC_CHECK(false) << "not found";
     return id;
   }
 
@@ -334,7 +335,7 @@ struct Scop {
 
   size_t reductionUpdatePos(isl::id id) const {
     size_t pos = 0;
-    CHECK(isReductionUpdate(id));
+    TC_CHECK(isReductionUpdate(id));
     for (const auto& kvp : treeSyncUpdateMap) {
       if (id == kvp.second) {
         return pos;

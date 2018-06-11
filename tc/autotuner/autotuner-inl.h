@@ -21,6 +21,7 @@
 #include <glog/stl_logging.h>
 
 #include "tc/autotuner/utils.h"
+#include "tc/core/check.h"
 #include "tc/core/compiler.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
@@ -127,9 +128,9 @@ void TuningHarness<Backend>::doEvaluate(
     size_t populationSize,
     Printer& printer) {
   typename Backend::WithDevice wd(device);
-  CHECK_EQ(inputs_.count(device), 1u);
+  TC_CHECK_EQ(inputs_.count(device), 1u);
   auto& inputs = inputs_.at(device);
-  CHECK_EQ(outputs_.count(device), 1u);
+  TC_CHECK_EQ(outputs_.count(device), 1u);
   auto& outputs = outputs_.at(device);
 
   while (true) {
@@ -158,7 +159,7 @@ void TuningHarness<Backend>::doEvaluate(
     if (!pExecutor.get()) {
       // If I popped an empty executor then compilation didn't go as
       // planned, skip it.
-      CHECK(pConf->invalid);
+      TC_CHECK(pConf->invalid);
       continue;
     }
 
@@ -252,8 +253,8 @@ void TuningHarness<Backend>::runOneIteration(
     size_t iteration) {
   // Define tensors per device once globally
   auto devices = detail::parseDevices<Backend>(FLAGS_tuner_devices);
-  CHECK(executors_.empty());
-  CHECK(configurations_.empty());
+  TC_CHECK(executors_.empty());
+  TC_CHECK(configurations_.empty());
 
   {
     // Initialize for this round
@@ -384,7 +385,7 @@ std::vector<size_t> inputDivisorsAndPowers2(
 }
 
 size_t largestDim(const std::vector<const DLConstTensor*>& inputs) {
-  CHECK_GE(inputs.size(), 1u);
+  TC_CHECK_GE(inputs.size(), 1u);
   auto maxElement = std::max_element(
       inputs.begin(),
       inputs.end(),
@@ -398,7 +399,7 @@ size_t largestDim(const std::vector<const DLConstTensor*>& inputs) {
 void setupTuningParameters(
     const std::vector<const DLConstTensor*>& inputs,
     TuningConfiguration& configuration) {
-  CHECK_GE(inputs.size(), 1u);
+  TC_CHECK_GE(inputs.size(), 1u);
   auto range = inputDivisorsAndPowers2(inputs);
   // 0 is a valid tiling annotation and signals no tiling of that dimension
   // 0 is not a valid block / grid annotation
@@ -428,12 +429,12 @@ Autotuner<Backend, SearchStrategy>::tune(
     const std::string& cacheFileName,
     const TuningParameterFixer& fixedParams) {
   std::map<std::string, lang::TreeRef> tcEntryPointMap(tc::detail::parse(tc));
-  CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
+  TC_CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
       << "Error looking up " << tcEntryPoint;
 
   // Initialize a model configuration
   TuningConfiguration modelConfiguration;
-  CHECK_GE(inputs.size(), 1u);
+  TC_CHECK_GE(inputs.size(), 1u);
   setupTuningParameters(inputs.begin()->second, modelConfiguration);
   modelConfiguration.fixParameters(fixedParams);
 

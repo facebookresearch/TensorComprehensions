@@ -18,6 +18,7 @@
 #include <sstream>
 #include <string>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/tensor.h"
@@ -38,7 +39,7 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     /* TODO: in the future also pass outputs for stride and alignment info */
     const typename Backend::MappingOptionsType& options) {
   auto parsedTcs = detail::parse(tc);
-  CHECK_EQ(parsedTcs.count(entryPoint), 1u)
+  TC_CHECK_EQ(parsedTcs.count(entryPoint), 1u)
       << "attempting to access undefined function " << entryPoint;
   return compile<Backend>(parsedTcs[entryPoint], inputs, options);
 }

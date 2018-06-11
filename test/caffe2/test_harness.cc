@@ -45,8 +45,8 @@ void CheckEqual(
           << " for Tensor " << Texpected.DebugString() << " at position " << i;
     } else {
       // From glog's glog/src/glog/logging.h.in
-      // #define CHECK_NEAR(val1, val2, margin)
-      // CHECK_NEAR is actualy absolute!!!
+      // #define TC_CHECK_NEAR(val1, val2, margin)
+      // TC_CHECK_NEAR is actualy absolute!!!
       ASSERT_NEAR(
           Texpected.data<float>()[i + offsetInExpected],
           Ttested.data<float>()[i + offsetInTested],

@@ -29,6 +29,7 @@
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/utils.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_rtc.h"
@@ -65,33 +66,33 @@ struct Benchmark : public ::testing::Test {
   void SetUp() {
     if (!FLAGS_disable_version_checks) {
       auto cudnnVersion = cudnnGetVersion();
-      CHECK_LE(6021, cudnnVersion)
+      TC_CHECK_LE(6021, cudnnVersion)
           << "[CUDNN][VERSION] Enforce version compatibility check";
 
       auto cudaRtVersion = cudnnGetCudartVersion();
-      CHECK_LE(8000, cudaRtVersion)
+      TC_CHECK_LE(8000, cudaRtVersion)
           << "[CUDART][VERSION] Enforce version compatibility check";
 
       int cublasVersion;
       cublasHandle_t handle;
       TC_CUDA_CUBLAS_ENFORCE(cublasCreate_v2(&handle));
       TC_CUDA_CUBLAS_ENFORCE(cublasGetVersion_v2(handle, &cublasVersion));
-      CHECK_LE(8000, cublasVersion)
+      TC_CHECK_LE(8000, cublasVersion)
           << "[CUBLAS][VERSION] Enforce version compatibility check";
       tc::ScopeGuard sg(
           [&handle]() { TC_CUDA_CUBLAS_ENFORCE(cublasDestroy_v2(handle)); });
 
       int cudaRuntimeVersion;
       TC_CUDA_RUNTIMEAPI_ENFORCE(cudaRuntimeGetVersion(&cudaRuntimeVersion));
-      CHECK_LE(8000, cudaRuntimeVersion)
+      TC_CHECK_LE(8000, cudaRuntimeVersion)
           << "[CUDA RUNTIME][VERSION] Enforce version compatibility check";
 
       int nvrtcVersionMajor;
       int nvrtcVersionMinor;
       TC_NVRTC_CHECK(nvrtcVersion(&nvrtcVersionMajor, &nvrtcVersionMinor));
-      CHECK_LE(8, nvrtcVersionMajor)
+      TC_CHECK_LE(8, nvrtcVersionMajor)
           << "[NVRTC][MAJOR][VERSION] Enforce version compatibility check";
-      CHECK_LE(0, nvrtcVersionMinor)
+      TC_CHECK_LE(0, nvrtcVersionMinor)
           << "[NVRTC][MINOR][VERSION] Enforce version compatibility check";
     }
   }
@@ -191,8 +192,8 @@ struct Benchmark : public ::testing::Test {
     auto bestOptions = [&]() {
       auto options = geneticAutotuneATen.tune(
           kernelName, inputs, baseMapping, cacheFilename, fixedParams);
-      CHECK_GE(options.size(), 1u) << "Benchmark mode: at least one "
-                                   << "options expected";
+      TC_CHECK_GE(options.size(), 1u) << "Benchmark mode: at least one "
+                                      << "options expected";
       return options[0];
     }();
     Check(tc, kernelName, bestOptions, inputs, check_fun);

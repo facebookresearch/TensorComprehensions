@@ -35,7 +35,7 @@ namespace aten {
  *    auto best = tuner.tune("tc_function_name", inputs, baseOption, cacheFn)
  *
  * The best options may then be used to compile an executor and run.
- *    CHECK_GT(best.size(), 0);
+ *    TC_CHECK_GT(best.size(), 0);
  *    auto pExecutor = compile(tc, "tc_function_name", inputs, best[0]);
  *    auto outputs = prepareOutputs(tc, "tc_function_name", inputs);
  *    // memoize the executor and outputs if needed
