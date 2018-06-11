@@ -80,7 +80,7 @@ namespace tc {
 //    (at a minimum: tile, mapToThreads and mapToBlocks)
 // 3. call makeCliStrategy with the overridden options
 tc::CudaMappingOptions makeBaseCliStrategy() {
-  tc::FusionStrategy fs;
+  tc::FusionStrategy fs(FusionStrategy::Max);
   CHECK(tc::FusionStrategy_Parse(DEFAULT_FUSION_STRATEGY, &fs));
   CudaMappingOptions options =
       CudaMappingOptions::makeNaiveMappingOptions()
@@ -104,7 +104,7 @@ tc::CudaMappingOptions makeBaseCliStrategy() {
 
 tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
   if (FLAGS_fusion_strategy != std::string(DEFAULT_FUSION_STRATEGY)) {
-    tc::FusionStrategy fs;
+    tc::FusionStrategy fs(FusionStrategy::Max);
     if (tc::FusionStrategy_Parse(FLAGS_fusion_strategy, &fs)) {
       options.scheduleFusionStrategy(fs);
     } else {

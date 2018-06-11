@@ -161,7 +161,7 @@ MappingOptionsView& MappingOptionsView::scheduleFusionStrategy(
 
 MappingOptionsView& MappingOptionsView::scheduleFusionStrategy(
     const std::string& str) {
-  FusionStrategy fs;
+  FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
   CHECK(couldParse) << "unknown FusionStrategy " << str;
   return scheduleFusionStrategy(fs);
@@ -175,7 +175,7 @@ MappingOptionsView& MappingOptionsView::outerScheduleFusionStrategy(
 
 MappingOptionsView& MappingOptionsView::outerScheduleFusionStrategy(
     const std::string& str) {
-  FusionStrategy fs;
+  FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
   CHECK(couldParse) << "unknown FusionStrategy " << str;
   return outerScheduleFusionStrategy(fs);
@@ -199,7 +199,7 @@ MappingOptionsView& MappingOptionsView::intraTileScheduleFusionStrategy(
 
 MappingOptionsView& MappingOptionsView::intraTileScheduleFusionStrategy(
     const std::string& str) {
-  FusionStrategy fs;
+  FusionStrategy fs(FusionStrategy::Max);
   bool couldParse = FusionStrategy_Parse(str, &fs);
   CHECK(couldParse) << "unknown FusionStrategy " << str;
   return intraTileScheduleFusionStrategy(fs);
