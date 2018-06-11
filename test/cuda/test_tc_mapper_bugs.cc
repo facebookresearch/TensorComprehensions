@@ -693,8 +693,8 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
 
 // This case was observed when running the autotuner on example_MLP_model
 // (#200).  It calls code generation on a schedule tree containing a
-// disjunctive filter, which results in expression with more than one disjunct
-// that was not handed properly.
+// disjunctive filter, which results in an expression with more than
+// one disjunct that was not handled properly.
 // TODO: the disjunctive filter in the schedule is unexpected and its origin
 // should be identified and explained.
 TEST(TMM_128_1024_1000, DisjunctiveFilter) {
