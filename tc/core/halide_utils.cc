@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/tc2halide.h"
 #include "tc/core/tensor.h"
@@ -72,7 +73,7 @@ std::unordered_map<std::string, int> computeParamValueMap(
         }
       } else { // it was a constant
         const int64_t* c = as_const_int(extent);
-        CHECK(c != NULL);
+        TC_CHECK(c != NULL);
         if (*c != tensor->shape[d]) {
           throw lang::ErrorReport(dimExpTree)
               << "Constant dimension expected size " << *c << " but found "
@@ -149,7 +150,7 @@ std::string halideCodegenC(const Stmt& stmt) {
         stream << "]";
       }
       stream << " = ";
-      CHECK_EQ(1u, op->values.size())
+      TC_CHECK_EQ(1u, op->values.size())
           << "Cannot generate C for provide with != 1 values";
       op->values[0].accept(this);
       stream << ";\n";

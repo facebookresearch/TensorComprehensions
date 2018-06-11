@@ -24,6 +24,7 @@
 #include "tc/core/tensor.h"
 
 #include "caffe2/core/common.h"
+#include "tc/core/check.h"
 
 namespace caffe2 {
 namespace dlpack {
@@ -49,8 +50,8 @@ inline DLDataType getDLDataType(const TypeMeta& meta) {
   } else if (meta.Match<int>()) {
     res.code = DLDataTypeCode::kDLInt;
   } else {
-    CHECK(false) << "NYI: getDLDataType(caffe2::Meta::Make<" << meta.name()
-                 << ">))";
+    TC_CHECK(false) << "NYI: getDLDataType(caffe2::Meta::Make<" << meta.name()
+                    << ">))";
   }
   res.bits = 32;
   res.lanes = 1;

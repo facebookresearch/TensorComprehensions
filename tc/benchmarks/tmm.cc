@@ -95,7 +95,7 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
         inputs,
         options,
         check_fun);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "tmm", bestOptions[0], inputs, check_fun);
 }

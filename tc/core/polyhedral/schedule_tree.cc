@@ -27,6 +27,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
@@ -75,7 +76,7 @@ deque<size_t> findDescendant(
 vector<size_t> positionRelativeToSubtree(
     const ScheduleTree* relativeRoot,
     const ScheduleTree* target) {
-  CHECK(relativeRoot != target)
+  TC_CHECK(relativeRoot != target)
       << "Need a strict relative root to find position";
   auto res = findDescendant(relativeRoot, target);
   return vector<size_t>{res.begin(), res.end()};
@@ -90,7 +91,7 @@ vector<const ScheduleTree*> constAncestorsInSubTree(
   vector<size_t> cp(positionRelativeToSubtree(relativeRoot, target));
   if (cp.size() == 0) {
     // Special case, this must be the root
-    CHECK_EQ(relativeRoot, target);
+    TC_CHECK_EQ(relativeRoot, target);
     return {};
   }
   vector<const ScheduleTree*> res(cp.size() + 1, nullptr);
@@ -100,11 +101,11 @@ vector<const ScheduleTree*> constAncestorsInSubTree(
     res[i + 1] = res[i]->child({cp[i]});
   }
   // Check last element is self for consistency
-  CHECK_EQ(res.back(), target)
+  TC_CHECK_EQ(res.back(), target)
       << "Could not find " << *target << " under " << *relativeRoot << "\n";
   // Resize to drop self, and check again for consistency
   res.resize(cp.size());
-  CHECK_NE(res.back(), target);
+  TC_CHECK_NE(res.back(), target);
   return res;
 }
 
@@ -148,8 +149,8 @@ ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {
 const ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) const {
   auto st = this;
   for (auto pos : positions) {
-    CHECK_LE(0u, pos) << "Reached a leaf";
-    CHECK_GT(st->children_.size(), pos) << "Out of children bounds";
+    TC_CHECK_LE(0u, pos) << "Reached a leaf";
+    TC_CHECK_GT(st->children_.size(), pos) << "Out of children bounds";
     st = st->children_[pos].get();
   }
   return st;
@@ -165,9 +166,9 @@ ScheduleTree* ScheduleTree::ancestor(
 const ScheduleTree* ScheduleTree::ancestor(
     const ScheduleTree* relativeRoot,
     size_t generations) const {
-  CHECK_LT(0u, generations) << "Nonpositive ancestor generation";
+  TC_CHECK_LT(0u, generations) << "Nonpositive ancestor generation";
   auto as = constAncestorsInSubTree(relativeRoot, this);
-  CHECK_GE(as.size(), generations) << "Out of ancestors bounds";
+  TC_CHECK_GE(as.size(), generations) << "Out of ancestors bounds";
   return as[as.size() - generations];
 }
 
@@ -210,7 +211,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
 
 ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
   auto domain = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domain);
+  TC_CHECK(domain);
   auto space = domain->domain_.get_space().set_from_params();
   auto mv = isl::multi_val::zero(space);
   auto zero = isl::multi_union_pw_aff(domain->domain_, mv);
@@ -359,7 +360,7 @@ bool ScheduleTree::operator==(const ScheduleTree& other) const {
   if (!elemEquals(elem_.get(), other.elem_.get(), type_)) {
     return false;
   }
-  CHECK(!other.elemAs<ScheduleTreeElemSet>())
+  TC_CHECK(!other.elemAs<ScheduleTreeElemSet>())
       << "NYI: isl_node_type::set comparison";
   for (size_t i = 0; i < children_.size(); ++i) {
     if (*children_[i] != *other.children_[i]) {

@@ -21,6 +21,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/external/isl.h"
@@ -66,7 +67,7 @@ isl::schedule_node insertBranch(
   auto filters = isl::union_set_list(node.get_ctx(), st->numChildren());
   for (size_t i = 0; i < pos.size(); ++i) {
     auto filter = st->child({pos[i]})->elemAsBase<ScheduleTreeElemFilter>();
-    CHECK(filter);
+    TC_CHECK(filter);
     filters = filters.add(filter->filter_);
   }
   if (st->elemAs<ScheduleTreeElemSet>()) {
@@ -100,10 +101,10 @@ std::vector<size_t> findCorePositions(
     const ScheduleTree* st,
     isl::union_set domain) {
   std::vector<size_t> positions;
-  CHECK(st->elemAs<ScheduleTreeElemSequence>());
+  TC_CHECK(st->elemAs<ScheduleTreeElemSequence>());
   for (size_t i = 0; i < st->numChildren(); ++i) {
     auto filter = st->child({i})->elemAsBase<ScheduleTreeElemFilter>();
-    CHECK(filter);
+    TC_CHECK(filter);
     if (!filter->filter_.intersect(domain).is_empty()) {
       positions.emplace_back(i);
     }
@@ -121,7 +122,7 @@ isl::schedule_node graftFromFilterSubtree(
     const ScheduleTree* st,
     isl::union_map extension) {
   auto filter = st->elemAsBase<ScheduleTreeElemFilter>();
-  CHECK(filter);
+  TC_CHECK(filter);
   auto filterExtension = extension.intersect_range(filter->filter_);
   auto extensionNode = isl::schedule_node::from_extension(filterExtension);
   return extendChild(extensionNode, st);
@@ -145,7 +146,7 @@ isl::schedule_node insertExtension(
   auto domain = node.get_universe_domain();
   auto child = st->child({0});
   auto corePos = findCorePositions(child, domain);
-  CHECK(!corePos.empty());
+  TC_CHECK(!corePos.empty());
   node = insertBranch(node, child, corePos);
 
   auto extension = st->elemAs<ScheduleTreeElemExtension>()->extension_;
@@ -244,7 +245,7 @@ isl::schedule_node extendChild(
  */
 isl::schedule toIslSchedule(const ScheduleTree* root) {
   auto domain = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domain) << "Root node should be domain node" << *root;
+  TC_CHECK(domain) << "Root node should be domain node" << *root;
   auto node = isl::schedule_node::from_domain(domain->domain_);
   node = extendChild(node, root);
   return node.get_schedule();

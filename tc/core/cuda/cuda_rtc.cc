@@ -20,6 +20,7 @@
 #include <cuda_runtime.h>
 #include <nvrtc.h>
 
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/flags.h"
@@ -152,7 +153,8 @@ Duration CudaRTCFunction::Launch(
 
   constexpr size_t kNumMaxParameters = 100;
   std::array<void*, kNumMaxParameters> args_voidp{0};
-  CHECK_GE(kNumMaxParameters, params.size() + outputs.size() + inputs.size());
+  TC_CHECK_GE(
+      kNumMaxParameters, params.size() + outputs.size() + inputs.size());
   int ind = 0;
   for (auto& p : params) {
     args_voidp[ind++] = &p;

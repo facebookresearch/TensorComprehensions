@@ -18,6 +18,7 @@
 #include <gflags/gflags.h>
 #include <vector>
 
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
 #define DEFAULT_FUSION_STRATEGY "Preserve3Coincident"
@@ -80,8 +81,8 @@ namespace tc {
 //    (at a minimum: tile, mapToThreads and mapToBlocks)
 // 3. call makeCliStrategy with the overridden options
 tc::CudaMappingOptions makeBaseCliStrategy() {
-  tc::FusionStrategy fs;
-  CHECK(tc::FusionStrategy_Parse(DEFAULT_FUSION_STRATEGY, &fs));
+  tc::FusionStrategy fs(FusionStrategy::Max);
+  TC_CHECK(tc::FusionStrategy_Parse(DEFAULT_FUSION_STRATEGY, &fs));
   CudaMappingOptions options =
       CudaMappingOptions::makeNaiveMappingOptions()
           .mapToThreads(DEFAULT_BLOCK)
@@ -104,11 +105,11 @@ tc::CudaMappingOptions makeBaseCliStrategy() {
 
 tc::CudaMappingOptions makeCliStrategy(tc::CudaMappingOptions options) {
   if (FLAGS_fusion_strategy != std::string(DEFAULT_FUSION_STRATEGY)) {
-    tc::FusionStrategy fs;
+    tc::FusionStrategy fs(FusionStrategy::Max);
     if (tc::FusionStrategy_Parse(FLAGS_fusion_strategy, &fs)) {
       options.scheduleFusionStrategy(fs);
     } else {
-      CHECK(false) << "Unknown fusion_strategy: " << FLAGS_fusion_strategy;
+      TC_CHECK(false) << "Unknown fusion_strategy: " << FLAGS_fusion_strategy;
     }
   }
   options.generic.outerScheduleOptions.proto.set_allow_skewing(

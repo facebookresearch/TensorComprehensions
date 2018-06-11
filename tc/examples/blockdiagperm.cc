@@ -25,6 +25,7 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_search.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -79,7 +80,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   ATenGeneticCudaTuner geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
       "blockdiagperm2dfissioned_1", {I, W}, options, FLAGS_proto_path);
-  CHECK_GT(bestOption.size(), 0u);
+  TC_CHECK_GT(bestOption.size(), 0u);
 
   auto pExecutor = tc::aten::compile<tc::CudaBackend>(
       tc, "blockdiagperm2dfissioned_1", {I, W}, bestOption[0]);
@@ -92,7 +93,7 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
   at::Tensor Idx = at::CPU(at::kInt).randperm({500}).toBackend(at::kCUDA);
   auto bestOption2 = geneticAutotuneATen.tune(
       "blockdiagperm2dfissioned_2", {O, Idx}, options, FLAGS_proto_path);
-  CHECK_GT(bestOption2.size(), 0u);
+  TC_CHECK_GT(bestOption2.size(), 0u);
 
   auto pExecutor2 = tc::aten::compile<tc::CudaBackend>(
       tc, "blockdiagperm2dfissioned_2", {O, Idx}, bestOption2[0]);

@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -132,8 +133,8 @@ inline std::vector<isl::aff> combineSingleAffs(
     isl::aff (isl::aff::*combine)(isl::aff) const) {
   auto left = makeIslAffBoundsFromExpr(space, op->a, false, false);
   auto right = makeIslAffBoundsFromExpr(space, op->b, false, false);
-  CHECK_LE(left.size(), 1u);
-  CHECK_LE(right.size(), 1u);
+  TC_CHECK_LE(left.size(), 1u);
+  TC_CHECK_LE(right.size(), 1u);
 
   if (left.size() == 0 || right.size() == 0) {
     return {};
@@ -164,7 +165,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     const Expr& e,
     bool allowMin,
     bool allowMax) {
-  CHECK(!(allowMin && allowMax));
+  TC_CHECK(!(allowMin && allowMax));
 
   using Halide::Internal::Max;
   using Halide::Internal::Min;
@@ -204,7 +205,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
     // We cannot span multiple constraints if a modulo operation is involved.
     // x > max(a,b) % C is not equivalent to (x > a % C && x > b % C).
     auto lhs = makeIslAffBoundsFromExpr(space, op->a, false, false);
-    CHECK_EQ(lhs.size(), 1u);
+    TC_CHECK_EQ(lhs.size(), 1u);
     if (const int64_t* b = as_const_int(op->b)) {
       return {lhs[0].mod(isl::val(space.get_ctx(), *b))};
     }
@@ -217,7 +218,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
 
 isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
   auto list = makeIslAffBoundsFromExpr(space, e, false, false);
-  CHECK_LE(list.size(), 1u)
+  TC_CHECK_LE(list.size(), 1u)
       << "Halide expr " << e << " unrolled into more than 1 isl aff"
       << " but min/max operations were disabled";
 
@@ -373,7 +374,7 @@ isl::schedule makeScheduleTreeHelper(
     // Then we add our new loop bound constraints.
     auto lbs = halide2isl::makeIslAffBoundsFromExpr(
         set.get_space(), op->min, false, true);
-    CHECK_GT(lbs.size(), 0u)
+    TC_CHECK_GT(lbs.size(), 0u)
         << "could not obtain polyhedral lower bounds from " << op->min;
     for (auto lb : lbs) {
       set = set.intersect(loopVar.ge_set(lb));
@@ -382,7 +383,7 @@ isl::schedule makeScheduleTreeHelper(
     Expr max = simplify(op->min + op->extent - 1);
     auto ubs =
         halide2isl::makeIslAffBoundsFromExpr(set.get_space(), max, true, false);
-    CHECK_GT(ubs.size(), 0u)
+    TC_CHECK_GT(ubs.size(), 0u)
         << "could not obtain polyhedral upper bounds from " << max;
     for (auto ub : ubs) {
       set = set.intersect(ub.ge_set(loopVar));

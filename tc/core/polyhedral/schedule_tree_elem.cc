@@ -23,6 +23,7 @@
 
 #include <glog/logging.h>
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
@@ -136,13 +137,13 @@ std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
 // Return the number of scheduling dimensions in the band
 size_t ScheduleTreeElemBand::nMember() const {
   size_t res = mupa_.size();
-  CHECK_EQ(res, coincident_.size());
-  CHECK_EQ(res, unroll_.size());
+  TC_CHECK_EQ(res, coincident_.size());
+  TC_CHECK_EQ(res, unroll_.size());
   return res;
 }
 
 size_t ScheduleTreeElemBand::nOuterCoincident() const {
-  CHECK_EQ(nMember(), coincident_.size());
+  TC_CHECK_EQ(nMember(), coincident_.size());
   size_t i;
   for (i = 0; i < nMember(); ++i) {
     if (!coincident_[i]) {
@@ -153,9 +154,9 @@ size_t ScheduleTreeElemBand::nOuterCoincident() const {
 }
 
 void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
-  CHECK_LE(0u, n) << "range out of bounds";
-  CHECK_LE(0u, pos) << "range  out of bounds";
-  CHECK_GE(nMember(), pos + n) << "range out of bounds";
+  TC_CHECK_LE(0u, n) << "range out of bounds";
+  TC_CHECK_LE(0u, pos) << "range  out of bounds";
+  TC_CHECK_GE(nMember(), pos + n) << "range out of bounds";
   auto nBegin = nMember();
 
   mupa_ = mupa_.drop_dims(isl::dim_type::set, pos, n);
@@ -167,7 +168,7 @@ void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
   coincident_.resize(nBegin - n);
   std::copy(unroll_.begin() + pos + n, unroll_.end(), unroll_.begin() + pos);
   unroll_.resize(nBegin - n);
-  CHECK_EQ(nBegin - n, nMember());
+  TC_CHECK_EQ(nBegin - n, nMember());
 }
 
 bool ScheduleTreeElemBand::operator==(const ScheduleTreeElemBand& other) const {

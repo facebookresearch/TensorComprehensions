@@ -93,7 +93,7 @@ void Moments2_2D_1D::autotuneAndCheck(
         entryPoint,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc::TC_Moments, entryPoint, bestOptions[0], inputs, checkFun);
 }

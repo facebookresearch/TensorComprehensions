@@ -24,6 +24,7 @@
 #include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/library/common.h"
@@ -185,7 +186,7 @@ TEST(TestCornerCases, E15){
         {a, b},                                                  \
         {c});                                                    \
     auto r = at::Scalar(a).toFloat() op at::Scalar(b).toFloat(); \
-    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                     \
+    TC_CHECK_EQ(r, at::Scalar(c[0]).toFloat());                  \
   }
 
     GEN_COMPARATOR(<=) GEN_COMPARATOR(>=) GEN_COMPARATOR(==) GEN_COMPARATOR(!=)
@@ -206,7 +207,7 @@ TEST(TestCornerCases, E16){
         {c});                                                                 \
     auto r = !(at::Scalar(a).toFloat() < .5) op at::Scalar(b).toFloat() > .5; \
     ;                                                                         \
-    CHECK_EQ(r, at::Scalar(c[0]).toFloat());                                  \
+    TC_CHECK_EQ(r, at::Scalar(c[0]).toFloat());                               \
   }
 
     GEN_BOOLS(||) GEN_BOOLS(&&)}
@@ -215,7 +216,7 @@ TEST(TestCornerCases, E17) {
   auto r = F(1);
   Succeed(
       "def f(float(1) a) -> (b) { b(i) = 4.0 where exists a(i) }", {F(1)}, {r});
-  CHECK_EQ(at::Scalar(r[0]).toFloat(), 4);
+  TC_CHECK_EQ(at::Scalar(r[0]).toFloat(), 4);
 }
 
 TEST(TestCornerCases, E18) {
@@ -223,7 +224,7 @@ TEST(TestCornerCases, E18) {
   auto r = F(1);
   Succeed(
       "def f(float(1) a) -> (b) { b(i) = 2*foo where foo = a(i) }", {a}, {r});
-  CHECK_EQ(at::Scalar(r[0]).toFloat(), at::Scalar(a[0]).toFloat() * 2);
+  TC_CHECK_EQ(at::Scalar(r[0]).toFloat(), at::Scalar(a[0]).toFloat() * 2);
 }
 TEST(TestCornerCases, E19) {
   Fail(
@@ -248,7 +249,7 @@ TEST(TestCornerCases, E21) {
       "def f(float(1) a, float(1) b) -> (c) { c(i) = max(a(i), b(i)) }",
       {a, b},
       {c});
-  CHECK_EQ(
+  TC_CHECK_EQ(
       fmaxf(at::Scalar(a[0]).toFloat(), at::Scalar(b[0]).toFloat()),
       at::Scalar(c[0]).toFloat());
 }
@@ -261,7 +262,7 @@ TEST(TestCornerCases, E22) {
       "def f(float(1) a, float(1) b) -> (c) { c(i) = min(a(i), b(i)) }",
       {a, b},
       {c});
-  CHECK_EQ(
+  TC_CHECK_EQ(
       fminf(at::Scalar(a[0]).toFloat(), at::Scalar(b[0]).toFloat()),
       at::Scalar(c[0]).toFloat());
 }
@@ -275,7 +276,7 @@ TEST(TestCornerCases, E23) {
       "def f(float(1) a, float(1) b, float(1) c) -> (d) { d(i) = min(a(i), max(b(i), c(i))) }",
       {a, b, c},
       {d});
-  CHECK_EQ(
+  TC_CHECK_EQ(
       fminf(
           at::Scalar(a[0]).toFloat(),
           fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())),
@@ -312,7 +313,7 @@ i))
 )TC",
       {a, b, c},
       {d});
-  CHECK_EQ(
+  TC_CHECK_EQ(
       fminf(
           at::Scalar(a[0]).toFloat(),
           fmaxf(at::Scalar(b[0]).toFloat(), at::Scalar(c[0]).toFloat())) +

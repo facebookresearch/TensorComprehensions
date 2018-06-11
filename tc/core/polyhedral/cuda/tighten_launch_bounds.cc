@@ -16,6 +16,7 @@
 
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
@@ -56,11 +57,11 @@ std::pair<size_t, size_t> rangeOfMappingParameter(
   if (max.is_nan() || max.is_infty()) {
     return std::make_pair(0, std::numeric_limits<size_t>::max());
   }
-  CHECK(max.is_int()) << max.to_str();
-  CHECK(max.is_nonneg()) << max.to_str();
+  TC_CHECK(max.is_int()) << max.to_str();
+  TC_CHECK(max.is_nonneg()) << max.to_str();
   auto min = active.min_val(a);
-  CHECK(min.is_int()) << max.to_str();
-  CHECK(min.is_nonneg()) << max.to_str();
+  TC_CHECK(min.is_int()) << max.to_str();
+  TC_CHECK(min.is_nonneg()) << max.to_str();
 
   return std::make_pair(
       static_cast<size_t>(min.get_num_si()),

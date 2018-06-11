@@ -22,6 +22,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/mapping_types.h"
 
 namespace tc {
@@ -152,11 +153,11 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
       : ScheduleTreeElemFilter(eb.filter_), mapping(eb.mapping) {}
   ScheduleTreeElemMappingFilter(const Mapping& mapping)
       : ScheduleTreeElemFilter(isl::union_set()), mapping(mapping) {
-    CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
+    TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
     auto domain = mapping.cbegin()->second.domain();
     for (auto& kvp : mapping) {
-      CHECK(domain.is_equal(kvp.second.domain()));
+      TC_CHECK(domain.is_equal(kvp.second.domain()));
     }
     filter_ = domain.universe();
     for (auto& kvp : mapping) {
