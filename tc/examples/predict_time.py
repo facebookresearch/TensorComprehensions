@@ -68,10 +68,9 @@ def getAllDivs(inp, maxp2=31):
 
 def optionsFromVector(vect):
     options = tc.CudaMappingOptions("naive")
-    #options.outerScheduleFusionStrategy(vect[0], todo, todo)
-    #options.intraTileFusionStrategy(vect[1], todo, todo)
+    options.outerScheduleFusionStrategy(vect[0], false, true)
+    options.intraTileFusionStrategy(vect[1], false, true)
     options.fixParametersBeforeScheduling(vect[2])
-    #print(vect[3])
     options.tile([vect[3]]) #why list in doc?
     options.unroll(2**vect[4]) #128 is too big? trying 30
     options.matchLibraryCalls(vect[5])
@@ -80,7 +79,7 @@ def optionsFromVector(vect):
     options.useSharedMemory(vect[8])
     options.usePrivateMemory(vect[9])
     options.unrollCopyShared(vect[10])
-    #options.maxSharedMemory(vect[11]) #todo
+    #options.maxSharedMemory(vect[11]) #todo 40000 / 0 et divs
     options.useReadOnlyCache(vect[12])
     return options
 
