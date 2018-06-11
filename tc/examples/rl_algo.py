@@ -149,8 +149,20 @@ class FullNetwork(nn.Module):
             x = torch.cat([x, sym])
         return x
 
+N, G, D, H, W = 5, 5, 5, 5, 5
+I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
+
+init_input = (I, gamma, beta)
+init_input_sz = np.array([N,G,D,H,W])
+init_input_sz = torch.from_numpy(init_input_sz).float()
+
+inp = init_input
+computeCat(inp)
+
 net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
+
+tc_prog = tc.define(code, name="group_normalization")
 
 def finish_episode(final_reward):
     saved_actions = net.saved_actions
@@ -166,17 +178,6 @@ def finish_episode(final_reward):
     optimizer.step()
     del net.rewards[:]
     del net.saved_actions[:]
-
-tc_prog = tc.define(code, name="group_normalization")
-
-N, G, D, H, W = 5, 5, 5, 5, 5
-I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
-
-init_input = (I, gamma, beta)
-init_input_sz = np.array([N,G,D,H,W])
-init_input_sz = torch.from_numpy(init_input_sz).float()
-
-inp = init_input
 
 for i in range(NB_EPOCHS):
     net.zero_grad()
