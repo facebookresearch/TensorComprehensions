@@ -89,7 +89,7 @@ void checkInputsCompliant(
         helpThrowInvalidStride(
             halideComponents.getDef().params()[i], inputsInfo[i]);
       }
-      for (size_t j = 0; j < dldim - 1; ++j) {
+      for (int j = 0; j < dldim - 1; ++j) {
         if (dlstrides[j] < dlstrides[j + 1] * dlsizes[j + 1]) {
           helpThrowInvalidStride(
               halideComponents.getDef().params()[i], inputsInfo[i]);
