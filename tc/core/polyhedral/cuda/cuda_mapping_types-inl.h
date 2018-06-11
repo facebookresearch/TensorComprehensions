@@ -15,11 +15,13 @@
  */
 #pragma once
 
+#include "tc/core/check.h"
+
 namespace tc {
 namespace polyhedral {
 namespace mapping {
 ThreadId ThreadId::makeId(size_t dim) {
-  CHECK(dim < 3);
+  TC_CHECK_LT(dim, 3ul);
   if (dim == 0) {
     return ThreadId::x();
   }
@@ -50,7 +52,7 @@ ThreadId ThreadId::z() {
 }
 
 BlockId BlockId::makeId(size_t dim) {
-  CHECK(dim < 3);
+  TC_CHECK_LT(dim, 3ul);
   if (dim == 0) {
     return BlockId::x();
   }

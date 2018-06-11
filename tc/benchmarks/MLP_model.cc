@@ -26,6 +26,7 @@
 #include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 
 #include "../test/caffe2/cuda/test_harness.h"
@@ -200,8 +201,6 @@ class ProductionModel : public Benchmark {
 };
 
 void ProductionModel::run1LUT(const tc::CudaMappingOptions& options) {
-  CHECK_LT(0, E1);
-
   // This test uses an c2 OpTester because we need to run the C2 reference
   // implementation for TcLUTOp.
   auto ws_init_func = [=](Workspace& w) {
@@ -266,7 +265,7 @@ def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
           inputs,
           options,
           check_fun);
-      CHECK_GE(bestOptions.size(), 1u);
+      TC_CHECK_GE(bestOptions.size(), 1u);
     }
     Check(tc, "_1LUT", options, inputs, check_fun);
   }
@@ -294,9 +293,8 @@ void ProductionModel::runATen1LUT() {
 }
 
 void ProductionModel::run2LUT(const tc::CudaMappingOptions& options) {
-  CHECK_LT(0, E1);
-  CHECK_LT(0, E2);
-
+  TC_CHECK_LT(0, E1);
+  TC_CHECK_LT(0, E2);
   auto ws_init_func = [=](Workspace& w) {
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
@@ -385,7 +383,7 @@ def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2
           inputs,
           options,
           check_fun);
-      CHECK_GE(bestOptions.size(), 1u);
+      TC_CHECK_GE(bestOptions.size(), 1u);
     }
     Check(tc, "_2LUT", bestOptions[0], inputs, check_fun);
   }
@@ -454,7 +452,7 @@ def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
         inputs,
         options,
         check_fun);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "_C3", bestOptions[0], inputs, check_fun);
 }
@@ -519,7 +517,7 @@ def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
         inputs,
         options,
         check_fun);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "mlp1", bestOptions[0], inputs, check_fun);
 }
@@ -602,7 +600,7 @@ def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3,
         inputs,
         options,
         check_fun);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "mlp3", bestOptions[0], inputs, check_fun);
 }

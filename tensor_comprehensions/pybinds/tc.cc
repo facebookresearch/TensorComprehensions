@@ -244,7 +244,7 @@ PYBIND11_MODULE(tc, m) {
               const std::string& entryPoint,
               py::list& inputs,
               py::list& outputs) {
-            CHECK_GE(outputs.size(), 1u);
+            TC_CHECK_GE(outputs.size(), 1u);
             auto atOutputs = getATenTensors(outputs, dlpack);
             tc::aten::uncheckedRun(
                 *instance.compiled.at(entryPoint),

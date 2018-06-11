@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "tc/c2/tc_op.h"
+#include "tc/core/check.h"
 #include "tc/library/convolution.h"
 
 namespace caffe2 {
@@ -58,7 +59,7 @@ class TcConvolutionOp : public TcOp<T, Context, Engine> {
       padR = OperatorBase::GetSingleArgument<int>("pad_r", 0);
     }
 
-    CHECK(padT == 0 && padL == 0 && padB == 0 && padR == 0)
+    TC_CHECK(padT == 0 && padL == 0 && padB == 0 && padR == 0)
         << "NYI: padding larger than 0";
 
     this->tc_ = tc::makeConvolution2DTc(strideH, strideW);

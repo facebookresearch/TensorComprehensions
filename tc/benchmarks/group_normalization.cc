@@ -106,7 +106,7 @@ std::vector<at::Tensor> GroupNormalization::runGroupNormalization(
         tc::TC_GroupNormalization_NAME,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
 
   auto pExecutorMoments = tc::aten::compile<tc::CudaBackend>(
@@ -168,7 +168,7 @@ std::vector<at::Tensor> GroupNormalization::runGroupNormalizationSingleKernel(
         tc::TC_GroupNormalizationSingleKernel_NAME,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   return Check(
       tc::TC_GroupNormalization,

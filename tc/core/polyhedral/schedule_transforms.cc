@@ -28,6 +28,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
@@ -110,7 +111,7 @@ isl::union_set activeDomainPointsHelper(
     const ScheduleTree* root,
     const vector<const ScheduleTree*>& nodes) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domainElem) << "root must be a Domain node" << *root;
+  TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
@@ -120,7 +121,7 @@ isl::union_set activeDomainPointsHelper(
     } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
-      CHECK(parentSchedule) << "missing root domain node";
+      TC_CHECK(parentSchedule) << "missing root domain node";
       parentSchedule = parentSchedule.intersect_domain(domain);
       domain = domain.unite(parentSchedule.range().apply(extension));
     }
@@ -171,7 +172,7 @@ ScheduleTree* swapSubtree(
     ScheduleTree* relativeRoot,
     ScheduleTree* tree,
     ScheduleTreeUPtr& newTree) {
-  CHECK(relativeRoot != tree) << "Need a strict relative root to graft";
+  TC_CHECK(relativeRoot != tree) << "Need a strict relative root to graft";
   auto cpos = tree->positionRelativeTo(relativeRoot).back();
   auto parent = tree->ancestor(relativeRoot, 1);
   auto rawPtr = newTree.get();
@@ -192,7 +193,7 @@ namespace {
  */
 ScheduleTree* joinBandsHelper(ScheduleTree* st, bool& moveChildren) {
   moveChildren = false;
-  CHECK(st->elemAs<ScheduleTreeElemBand>());
+  TC_CHECK(st->elemAs<ScheduleTreeElemBand>());
   if (st->numChildren() != 1) {
     return st;
   }
@@ -224,7 +225,7 @@ ScheduleTree* joinBands(ScheduleTree* st, bool permutable) {
   if (moveChildren) {
     // Just overwrite children and let shared pointers go out of scope
     auto children = st->detachChildren();
-    CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
+    TC_CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
     st->appendChildren(children[0]->detachChildren());
   }
   st->elemAs<ScheduleTreeElemBand>()->permutable_ = permutable;
@@ -238,7 +239,7 @@ ScheduleTree* joinBandsIterative(ScheduleTree* st, bool permutable) {
     // Stupid private access hack, remove when moving to unique_ptr
     if (moveChildren) {
       auto children = st->detachChildren();
-      CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
+      TC_CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
       st->appendChildren(children[0]->detachChildren());
     }
   }
@@ -270,12 +271,12 @@ void applyTileOptions(isl::ctx& ctx, TileOptions tileOptions) {
 
 ScheduleTree*
 bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
-  CHECK(tree->elemAs<ScheduleTreeElemBand>()) << "Not a band:\n" << *tree;
+  TC_CHECK(tree->elemAs<ScheduleTreeElemBand>()) << "Not a band:\n" << *tree;
   auto band = tree->elemAs<ScheduleTreeElemBand>();
   size_t n = band->nMember();
-  CHECK_LT(0u, n) << "no bands to split";
-  CHECK_LE(0u, pos) << "position out of bounds";
-  CHECK_GE(n, pos) << "position out of bounds";
+  TC_CHECK_LT(0u, n) << "no bands to split";
+  TC_CHECK_LE(0u, pos) << "position out of bounds";
+  TC_CHECK_GE(n, pos) << "position out of bounds";
 
   // Detach and reattach children to avoid making copies.
   auto children = tree->detachChildren();
@@ -292,7 +293,7 @@ bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
 ScheduleTree*
 bandSplitOut(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
   auto band = tree->elemAs<ScheduleTreeElemBand>();
-  CHECK(band);
+  TC_CHECK(band);
   auto size = band->nMember();
   if (pos != size - 1) {
     tree = bandSplit(relativeRoot, tree, pos + 1);
@@ -320,13 +321,13 @@ ScheduleTree* bandTile(
     const vector<size_t>& tileSizes,
     TileOptions tileOptions) {
   auto eb = st->elemAs<ScheduleTreeElemBand>();
-  CHECK(eb) << "Not a band: " << *st;
+  TC_CHECK(eb) << "Not a band: " << *st;
 
   if (tileSizes.size() == 0) {
     return st;
   }
   auto& band = *eb;
-  CHECK(band.permutable_) << "Can't tile an non-permutable band" << band;
+  TC_CHECK(band.permutable_) << "Can't tile an non-permutable band" << band;
 
   auto ts = tileSizes;
   if (band.nMember() > ts.size()) {
@@ -337,7 +338,7 @@ ScheduleTree* bandTile(
                  << " entries: " << ts;
     ts.resize(band.nMember());
   }
-  CHECK_EQ(band.nMember(), ts.size()) << "NYI: incorrect sizes: " << ts;
+  TC_CHECK_EQ(band.nMember(), ts.size()) << "NYI: incorrect sizes: " << ts;
   // TODO: adapt size
   // TODO: imperfectly nested loop tiling
 
@@ -360,7 +361,7 @@ ScheduleTree* bandTile(
   }
 
   auto ebChild = childUPtr->elemAs<ScheduleTreeElemBand>();
-  CHECK(ebChild) << "Not a band: " << *childUPtr;
+  TC_CHECK(ebChild) << "Not a band: " << *childUPtr;
   auto& childBand = *ebChild;
   // No need for isl_schedule_band_point, it's almost done
   if (tileOptions & TileOptions::ShiftPointLoops) {
@@ -379,7 +380,7 @@ ScheduleTree* bandTile(
 
 ScheduleTree* bandScale(ScheduleTree* tree, const vector<size_t>& scales) {
   auto eb = tree->elemAs<ScheduleTreeElemBand>();
-  CHECK(eb) << "Not a band: " << *tree;
+  TC_CHECK(eb) << "Not a band: " << *tree;
   auto& band = *eb;
 
   // This mimics the behavior of bandTile...
@@ -449,7 +450,7 @@ isl::multi_union_pw_aff infixScheduleMupa(
     const ScheduleTree* relativeRoot,
     const ScheduleTree* tree) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domainElem);
+  TC_CHECK(domainElem);
   auto domain = domainElem->domain_.universe();
   auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
   auto prefix = isl::multi_union_pw_aff(domain, zero);
@@ -473,7 +474,7 @@ isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
   auto band = tree->elemAs<ScheduleTreeElemBand>();
-  CHECK(band);
+  TC_CHECK(band);
   return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
 }
 
@@ -484,7 +485,7 @@ void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
   }
   auto contextElem = const_cast<detail::ScheduleTreeElemContext*>(
       root->child({0})->elemAs<detail::ScheduleTreeElemContext>());
-  CHECK(contextElem) << "Expected domain(context(any()))";
+  TC_CHECK(contextElem) << "Expected domain(context(any()))";
   contextElem->context_ = contextElem->context_ & context;
 }
 
@@ -517,7 +518,7 @@ void insertSequenceBelow(
     const detail::ScheduleTree* root,
     detail::ScheduleTree* tree) {
   auto numChildren = tree->numChildren();
-  CHECK_LE(numChildren, 1u);
+  TC_CHECK_LE(numChildren, 1u);
   auto filter = activeDomainPointsBelow(root, tree).universe();
   auto node = ScheduleTree::makeFilter(filter, tree->detachChildren());
   tree->appendChild(ScheduleTree::makeSequence(std::move(node)));
@@ -546,7 +547,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
     ScheduleTree* relativeRoot,
     ScheduleTree* st) {
   auto domain = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domain);
+  TC_CHECK(domain);
   auto space = domain->domain_.get_space();
   auto extension = isl::union_map::empty(space);
   return insertExtensionAbove(relativeRoot, st, extension);
@@ -594,8 +595,8 @@ void insertExtensionAt(
     extensionTree = insertEmptyExtensionAbove(root, relativeRoot, seqNode);
     extensionNode = extensionTree->elemAs<detail::ScheduleTreeElemExtension>();
   }
-  CHECK(extensionNode);
-  CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>());
+  TC_CHECK(extensionNode);
+  TC_CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>());
   extensionNode->extension_ = extensionNode->extension_.unite(extension);
   seqNode->insertChild(pos, std::move(filterNode));
 }

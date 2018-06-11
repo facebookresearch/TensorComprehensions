@@ -20,6 +20,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
@@ -45,7 +46,7 @@ isl::map removeRangeStrides(
     isl::map relation,
     isl::multi_val strides,
     isl::multi_aff offsets) {
-  CHECK_EQ(strides.size(), offsets.size());
+  TC_CHECK_EQ(strides.size(), offsets.size());
 
   auto space = relation.get_space();
   auto stridesMA = isl::multi_aff::identity(space.range().map_from_set());

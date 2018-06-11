@@ -20,6 +20,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/islpp_wrap.h"
 #include "tc/core/libraries.h"
@@ -153,7 +154,7 @@ void emitKernelSignature(
     stringstream& ss,
     const std::string& specializedName,
     const Scop& scop) {
-  CHECK_NE(specializedName, "") << "name not provided";
+  TC_CHECK_NE(specializedName, "") << "name not provided";
   ss << "__global__ void " << specializedName << "(";
   emitArgs(ss, scop);
   ss << ") {" << endl;
@@ -189,7 +190,7 @@ void emitTensorView(
   for (int i = 1; i < p.dimensions(); ++i) { // Skip the outermost dimension
     Halide::Expr extent = p.parameter().extent_constraint(i);
     extent = Halide::Internal::substitute(paramValues, extent);
-    CHECK(extent.defined())
+    TC_CHECK(extent.defined())
         << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
     ssViewType << "[" << extent << "]";
   }
@@ -249,8 +250,8 @@ void AstPrinter::emitIf(isl::ast_node_if node) {
 
 void emitReductionOpName(const Halide::Expr& e, const CodegenContext& context) {
   auto call = e.as<Halide::Internal::Call>();
-  CHECK(call);
-  CHECK(call->is_intrinsic(tc2halide::kReductionUpdate));
+  TC_CHECK(call);
+  TC_CHECK(call->is_intrinsic(tc2halide::kReductionUpdate));
   context.ss << "__tc::ReductionOp::";
   if (call->args[0].as<Halide::Internal::Add>()) {
     context.ss << "Sum";
@@ -261,7 +262,7 @@ void emitReductionOpName(const Halide::Expr& e, const CodegenContext& context) {
   } else if (call->args[0].as<Halide::Internal::Max>()) {
     context.ss << "Max";
   } else {
-    CHECK(false) << "unsupported reduction type: " << e << "\n";
+    TC_CHECK(false) << "unsupported reduction type: " << e << "\n";
   }
 }
 
@@ -271,7 +272,7 @@ void emitTreeSyncCall(
     isl::id id,
     isl::id reductionUpdateNodeId,
     const CodegenStatementContext& context) {
-  CHECK_EQ(1u, context.scop().treeSyncUpdateMap.count(id));
+  TC_CHECK_EQ(1u, context.scop().treeSyncUpdateMap.count(id));
   isl::id updateId = context.scop().treeSyncUpdateMap.at(id);
 
   // Halide reduction.
@@ -312,14 +313,14 @@ void emitTreeSyncCall(
 }
 
 void emitUserStmt(isl::id stmtId, const CodegenStatementContext& context) {
-  CHECK(context.scop().halide.statements.count(stmtId))
+  TC_CHECK(context.scop().halide.statements.count(stmtId))
       << "No stmt with id " << stmtId << "\n";
   auto provide = context.scop().halide.statements.at(stmtId);
   auto op = provide.as<Halide::Internal::Provide>();
-  CHECK(op) << "Expected a Provide node: " << provide << '\n';
+  TC_CHECK(op) << "Expected a Provide node: " << provide << '\n';
   detail::emitMappedTensorAccess(op->name, op, op->args, context);
   context.ss << " = ";
-  CHECK(op->values.size() == 1)
+  TC_CHECK(op->values.size() == 1)
       << "Multi-valued Provide: " << Halide::Internal::Stmt(provide) << "\n";
   detail::emitHalideExpr(op->values[0], context);
   context.ss << ";" << endl;
@@ -356,7 +357,7 @@ void emitReductionInit(
                      .as<Halide::Internal::Provide>();
   context.ss << makeReductionTmpName(updateId, context.scop()) << " = ";
   auto call = provide->values[0].as<Halide::Internal::Call>();
-  CHECK(call && call->is_intrinsic(tc2halide::kReductionUpdate));
+  TC_CHECK(call && call->is_intrinsic(tc2halide::kReductionUpdate));
   auto assoc = prove_associativity(provide->name, provide->args, call->args);
   if (!assoc.associative()) {
     std::stringstream ss;
@@ -367,7 +368,7 @@ void emitReductionInit(
     throw codegen::NotAssociativeError(ss.str());
   }
   auto statementContext = CodegenStatementContext(context, stmtId);
-  CHECK_EQ(assoc.pattern.identities.size(), 1u);
+  TC_CHECK_EQ(assoc.pattern.identities.size(), 1u);
   detail::emitHalideExpr(assoc.pattern.identities[0], statementContext);
   context.ss << ";" << endl;
 }
@@ -428,7 +429,7 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   auto stmtId = usrExp.get_arg(0).as<isl::ast_expr_id>().get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
-  CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1u)
+  TC_CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1u)
       << "no info for node " << nodeId;
 
   WS ws;
@@ -454,7 +455,7 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     emitCopyStmt(statementContext);
   } else { // regular statement
     auto mappedStmtId = statementContext.statementId();
-    CHECK_EQ(stmtId, mappedStmtId)
+    TC_CHECK_EQ(stmtId, mappedStmtId)
         << "statement ids in expr (" << stmtId << ") and in iteratorMaps ("
         << mappedStmtId << ") do not match";
     emitUserStmt(stmtId, statementContext);
@@ -471,7 +472,7 @@ void AstPrinter::emitAst(isl::ast_node node) {
       emitAst(child);
     }
   } else if (node.as<isl::ast_node_mark>()) {
-    CHECK(false) << "mark";
+    TC_CHECK(false) << "mark";
     // emitAst(node.mark_get_node());
   } else if (auto userNode = node.as<isl::ast_node_user>()) {
     emitStmt(userNode);
@@ -489,7 +490,7 @@ isl::pw_aff makeAffFromMappedExpr(
     const CodegenStatementContext& context) {
   // We only expect this to be called on encountering a free
   // variable. Compound expressions should be emitted as Halide.
-  CHECK(expr.as<Halide::Internal::Variable>());
+  TC_CHECK(expr.as<Halide::Internal::Variable>());
   auto aff = context.makeIslAffFromExpr(expr);
   auto pwaff = isl::pw_aff(aff).pullback(context.iteratorMap());
   return pwaff;
@@ -501,8 +502,8 @@ isl::space findDomainSpaceById(const CodegenStatementContext& context) {
       return d.get_space();
     }
   }
-  CHECK(false) << "could not find domain for " << context.statementId()
-               << " in " << context.scop().domain();
+  TC_CHECK(false) << "could not find domain for " << context.statementId()
+                  << " in " << context.scop().domain();
   return isl::space();
 }
 
@@ -510,7 +511,8 @@ isl::multi_aff makeMultiAffAccess(
     isl::id tensorId,
     const std::vector<Halide::Expr>& subscripts,
     const CodegenStatementContext& context) {
-  CHECK_NE(subscripts.size(), 0u) << "cannot build subscript aff for a scalar";
+  TC_CHECK_NE(subscripts.size(), 0u)
+      << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
   auto tensorSpace = domainSpace.params().named_set_from_params_id(
@@ -596,7 +598,7 @@ void emitMappedTensorAccess(
     return;
   }
 
-  CHECK_EQ(context.scop().halide.accesses.count(node), 1u)
+  TC_CHECK_EQ(context.scop().halide.accesses.count(node), 1u)
       << "attempting to generate code for tensor " << name
       << " reference not present in Scop" << node;
   auto refId = context.scop().halide.accesses.at(node);
@@ -604,7 +606,7 @@ void emitMappedTensorAccess(
   Scop::PromotionInfo promotionInfo;
   for (auto pi : context.activePromotions()) {
     if (pi.group->referenceIds().count(refId)) {
-      CHECK(!promotionInfo.groupId)
+      TC_CHECK(!promotionInfo.groupId)
           << "reference " << refId
           << " belongs to two groups: " << promotionInfo.groupId << " and "
           << pi.groupId;
@@ -639,7 +641,7 @@ void emitMappedTensorAccess(
       isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(
           context.domain())); // map :: D -> S
 
-  CHECK(schedule.is_single_valued())
+  TC_CHECK(schedule.is_single_valued())
       << "expected single-valued schedule, got " << schedule;
   // PMA :: A -> S
   auto astToSchedule = isl::pw_multi_aff(schedule).pullback(iteratorMap);
@@ -740,8 +742,8 @@ string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
   // Expecting a schedule with domain root and context first child.
-  CHECK(mscop.schedule()->elemAs<detail::ScheduleTreeElemDomain>());
-  CHECK(
+  TC_CHECK(mscop.schedule()->elemAs<detail::ScheduleTreeElemDomain>());
+  TC_CHECK(
       mscop.schedule()->child({0})->elemAs<detail::ScheduleTreeElemContext>());
   const auto& scop = mscop.scop();
 
@@ -766,7 +768,7 @@ string emitCudaKernel(
            isl::ast_build build,
            NodeInfoMapType* nodeInfoMap) -> isl::ast_node {
       auto user = node.as<isl::ast_node_user>();
-      CHECK(user);
+      TC_CHECK(user);
       auto expr = user.get_expr().as<isl::ast_expr_op>();
       auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
       auto schedule = build.get_schedule();
@@ -775,7 +777,7 @@ string emitCudaKernel(
       auto nodeId = isl::id(
           node.get_ctx(),
           std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
-      CHECK_EQ(0u, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
+      TC_CHECK_EQ(0u, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
 
       auto& nodeInfo = (*nodeInfoMap)[nodeId];
       nodeInfo.iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());

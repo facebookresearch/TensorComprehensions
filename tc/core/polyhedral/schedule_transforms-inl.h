@@ -15,13 +15,15 @@
  */
 #pragma once
 
+#include "tc/core/check.h"
+
 namespace tc {
 namespace polyhedral {
 inline detail::ScheduleTree* insertNodeAbove(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
     ScheduleTreeUPtr&& node) {
-  CHECK_EQ(node->numChildren(), 0u);
+  TC_CHECK_EQ(node->numChildren(), 0u);
   auto parent = tree->ancestor(root, 1);
   auto childPos = tree->positionInParent(parent);
   node->appendChild(parent->detachChild(childPos));
@@ -32,9 +34,9 @@ inline detail::ScheduleTree* insertNodeAbove(
 inline detail::ScheduleTree* insertNodeBelow(
     detail::ScheduleTree* tree,
     ScheduleTreeUPtr&& node) {
-  CHECK_EQ(node->numChildren(), 0u);
+  TC_CHECK_EQ(node->numChildren(), 0u);
   auto numChildren = tree->numChildren();
-  CHECK_LE(numChildren, 1u);
+  TC_CHECK_LE(numChildren, 1u);
   node->appendChildren(tree->detachChildren());
   tree->appendChild(std::move(node));
   return tree->child({0});
