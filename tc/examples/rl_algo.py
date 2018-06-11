@@ -13,7 +13,7 @@ import time
 import tensor_comprehensions as tc
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
-NB_EPOCHS = 10
+NB_EPOCHS = 100
 
 code = """
 def group_normalization(
@@ -34,7 +34,9 @@ def group_normalization(
 
 def evalTime(opt):
     global tc_prog, inp, cat_val
-    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
+    #print(opt)
+    #print(cat_val)
+    opt = [cat_val[i][opt[i+INIT_INPUT_SZ]] for i in range(NB_HYPERPARAMS)]
     opt = optionsFromVector(opt)
     warmup = 10
     iters  = 50
@@ -58,8 +60,8 @@ def evalTime(opt):
 
 def optionsFromVector(vect):
     options = tc.CudaMappingOptions("naive")
-    options.outerScheduleFusionStrategy(vect[0], False, True)
-    options.intraTileFusionStrategy(vect[1], False, True)
+    #options.outerScheduleFusionStrategy(vect[0], False, True)
+    #options.intraTileFusionStrategy(vect[1], False, True)
     options.fixParametersBeforeScheduling(vect[2])
     options.tile([vect[3]]) #why list in doc?
     options.unroll(2**vect[4]) #128 is too big? trying 30
@@ -137,6 +139,7 @@ class FullNetwork(nn.Module):
         self.init_input_sz = init_input_sz
         self.nets = [Predictor(init_input_sz + i, int(cat_sz[i])) for i in range(nb_hyperparams)]
         self.nets = nn.ModuleList(self.nets)
+        self.saved_actions = []
 
     def select_action(self, x, i):
         probs, state_value = self.nets[i](x)
@@ -148,7 +151,7 @@ class FullNetwork(nn.Module):
     def forward(self, x):
         for i in range(self.nb_hyperparams):
             sym = self.select_action(x, i)
-            x = torch.cat([x, sym])
+            x = torch.cat([x, torch.FloatTensor([sym])])
         return x
 
 N, G, D, H, W = 5, 5, 5, 5, 5
@@ -170,7 +173,7 @@ def finish_episode(final_reward):
     saved_actions = net.saved_actions
     policy_losses = []
     value_losses = []
-    for (log_prob, value) in zip(saved_actions):
+    for (log_prob, value) in saved_actions:
         reward = final_reward - value.item()
         policy_losses.append(-log_prob * reward)
         value_losses.append(F.smooth_l1_loss(value, torch.tensor([final_reward])))
@@ -178,11 +181,11 @@ def finish_episode(final_reward):
     loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
     loss.backward()
     optimizer.step()
-    del net.rewards[:]
     del net.saved_actions[:]
 
 for i in range(NB_EPOCHS):
     net.zero_grad()
     out = net(init_input_sz)
-    reward = -evalTime(out)
+    reward = -evalTime(out.numpy().astype(int))
+    print(-reward)
     finish_episode(reward)
