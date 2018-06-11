@@ -28,4 +28,5 @@ cat ${TC_PREFIX}/tc/benchmarks/scripts/AUTOTUNER_COMMANDS | grep -v "\#" | head 
 cat ${TC_PREFIX}/tc/benchmarks/scripts/AUTOTUNER_COMMANDS | grep -v "\#" | head -n ${SLURM_ARRAY_TASK_ID} | tail -n 1 | xargs -i bash -c "{}"
 
 # Run with:
-# sbatch --array=1-40 -C volta ./tc/benchmarks/scripts/autotuner_parallel.sh
+# export NUM_TO_RUN=$(cat ${TC_PREFIX}/tc/benchmarks/scripts/AUTOTUNER_COMMANDS | grep -v "\#" | wc -l)
+# sbatch --array=1-${NUM_TO_RUN} -C volta ./tc/benchmarks/scripts/autotuner_parallel.sh
