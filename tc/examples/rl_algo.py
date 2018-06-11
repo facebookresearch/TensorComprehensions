@@ -183,9 +183,11 @@ def finish_episode(final_reward):
     optimizer.step()
     del net.saved_actions[:]
 
+running_reward = 10
 for i in range(NB_EPOCHS):
-    net.zero_grad()
     out = net(init_input_sz)
     reward = -evalTime(out.numpy().astype(int))
-    print(-reward)
+    reward=100*reward
     finish_episode(reward)
+    running_reward = running_reward * 0.99 + reward * 0.01
+    print(-running_reward)
