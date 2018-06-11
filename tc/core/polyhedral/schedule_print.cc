@@ -19,6 +19,7 @@
 #include <glog/logging.h>
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/external/isl.h"
@@ -247,7 +248,7 @@ std::ostream& operator<<(
 }
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& st) {
-  CHECK(st.elem_.get());
+  TC_CHECK(st.elem_.get());
   os << *st.elem_ << "\n";
   os << st.children_;
 

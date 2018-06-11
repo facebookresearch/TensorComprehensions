@@ -33,6 +33,7 @@
 
 #include "Halide.h"
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
 #include "tc/core/halide2isl.h"
@@ -71,7 +72,7 @@ namespace {
 thread_local llvm::LLVMContext llvmCtx;
 
 int64_t toSInt(isl::val v) {
-  CHECK(v.is_int());
+  TC_CHECK(v.is_int());
   static_assert(sizeof(long) <= 8, "long is assumed to fit into 64bits");
   return v.get_num_si();
 }
@@ -82,7 +83,7 @@ llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
 
 int64_t IslExprToSInt(isl::ast_expr e) {
   auto intExpr = e.as<isl::ast_expr_int>();
-  CHECK(intExpr);
+  TC_CHECK(intExpr);
   return toSInt(intExpr.get_val());
 }
 
@@ -90,7 +91,7 @@ int64_t islIdToInt(isl::ast_expr_id e, isl::set context) {
   auto space = context.get_space();
   isl::aff param(isl::aff::param_on_domain_space(space, e.get_id()));
   auto p = context.sample_point();
-  CHECK(context.is_equal(p));
+  TC_CHECK(context.is_equal(p));
   return toSInt(param.eval(p));
 }
 
@@ -99,7 +100,7 @@ int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
   // simplifying the expression.
   auto aff = halide2isl::makeIslAffFromExpr(context.get_space(), e);
   auto p = context.sample_point();
-  CHECK(context.is_equal(p));
+  TC_CHECK(context.is_equal(p));
   return toSInt(aff.eval(p));
 }
 
@@ -111,7 +112,7 @@ std::vector<int64_t> getTensorSizesWithoutLeadingDim(
   sizes.reserve(dims);
   for (int d = 1; d < dims; ++d) {
     Halide::Expr extent = t.parameter().extent_constraint(d);
-    CHECK(extent.defined())
+    TC_CHECK(extent.defined())
         << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
     sizes.push_back(getTensorSize(context, extent));
   }
@@ -132,7 +133,7 @@ class IslAstExprInterpeter {
     } else if (auto opExpr = e.as<isl::ast_expr_op>()) {
       return interpretOp(opExpr);
     } else {
-      CHECK(false) << "NYI";
+      TC_CHECK(false) << "NYI";
       return 0; // avoid warning
     }
   };
@@ -145,7 +146,7 @@ class IslAstExprInterpeter {
       case 2:
         return interpretBinaryOp(e);
       default:
-        CHECK(false) << "NYI: " << e;
+        TC_CHECK(false) << "NYI: " << e;
         return 0; // avoid warning
     }
   }
@@ -158,7 +159,7 @@ class IslAstExprInterpeter {
     } else if (e.as<isl::ast_op_sub>()) {
       return left - right;
     } else {
-      CHECK(false) << "NYI: " << e;
+      TC_CHECK(false) << "NYI: " << e;
       return 0; // avoid warning
     }
   }
@@ -168,7 +169,7 @@ class IslAstExprInterpeter {
     if (e.as<isl::ast_op_minus>()) {
       return -val;
     } else {
-      CHECK(false) << "NYI";
+      TC_CHECK(false) << "NYI";
       return 0; // avoid warning
     }
   }
@@ -255,10 +256,10 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
       } else if (op->type.is_float()) {
         value = builder->CreateFPCast(value, ty);
       } else {
-        CHECK(false) << "Type inconsistency not handled. "
-                     << "Variable " << op->name << " is " << op->type
-                     << ", but its corresponding llvm::Value is "
-                     << toString(value->getType()) << ".";
+        TC_CHECK(false) << "Type inconsistency not handled. "
+                        << "Variable " << op->name << " is " << op->type
+                        << ", but its corresponding llvm::Value is "
+                        << toString(value->getType()) << ".";
       }
     }
   }
@@ -454,8 +455,8 @@ class LLVMCodegen {
   llvm::Type* makePtrToArrayType(
       llvm::Type* baseTy,
       const std::vector<int64_t>& sizes) {
-    CHECK_GE(sizes.size(), 1u);
-    CHECK(baseTy);
+    TC_CHECK_GE(sizes.size(), 1u);
+    TC_CHECK(baseTy);
     llvm::Type* arrTy = llvm::ArrayType::get(baseTy, sizes.back());
     for (auto s = sizes.rbegin() + 1; s != sizes.rend(); ++s) {
       arrTy = llvm::ArrayType::get(arrTy, *s);
@@ -502,11 +503,11 @@ class LLVMCodegen {
       phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
 
       auto cond_expr = node.get_cond().as<isl::ast_expr_op>();
-      CHECK(cond_expr.as<isl::ast_op_lt>() or cond_expr.as<isl::ast_op_le>())
+      TC_CHECK(cond_expr.as<isl::ast_op_lt>() or cond_expr.as<isl::ast_op_le>())
           << "I only know how to codegen lt and le";
       auto condLHS = cond_expr.get_arg(0).as<isl::ast_expr_id>();
-      CHECK(condLHS);
-      CHECK_EQ(condLHS.get_id(), iterator);
+      TC_CHECK(condLHS);
+      TC_CHECK_EQ(condLHS.get_id(), iterator);
 
       IslAstExprInterpeter i(scop_.context());
       auto condRHSVal = i.interpret(cond_expr.get_arg(1));
@@ -518,7 +519,7 @@ class LLVMCodegen {
         } else if (cond_expr.as<isl::ast_op_le>()) {
           return halide_cg.get_builder().CreateICmpSLE(phi, constant);
         } else {
-          CHECK(false) << "NYI";
+          TC_CHECK(false) << "NYI";
           return static_cast<llvm::Value*>(nullptr); // avoid warning
         }
       }();
@@ -578,8 +579,8 @@ class LLVMCodegen {
     auto id = usrExp.get_arg(0).as<isl::ast_expr_id>().get_id();
     auto provide = scop_.halide.statements.at(id);
     auto op = provide.as<Halide::Internal::Provide>();
-    CHECK(op) << "Expected a Provide node: " << provide << '\n';
-    CHECK(op->values.size() == 1)
+    TC_CHECK(op) << "Expected a Provide node: " << provide << '\n';
+    TC_CHECK(op->values.size() == 1)
         << "Multi-valued Provide: " << Halide::Internal::Stmt(provide) << "\n";
     auto arrayName = op->name;
     const auto& subscripts = stmtSubscripts_.at(id);
@@ -628,13 +629,13 @@ isl::ast_node collectIteratorMaps(
     const Scop& scop,
     StmtSubscriptExprMapType& stmtSubscripts) {
   auto user = node.as<isl::ast_node_user>();
-  CHECK(user);
+  TC_CHECK(user);
   auto expr = user.get_expr().as<isl::ast_expr_op>();
   auto schedule = build.get_schedule();
   auto scheduleMap = isl::map::from_union_map(schedule);
 
   auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
-  CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
+  TC_CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
   auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
   auto iterators = scop.halide.iterators.at(stmtId);
   auto& stmtIteratorMap = iteratorMaps[stmtId];
@@ -650,7 +651,7 @@ isl::ast_node collectIteratorMaps(
     auto space = map.get_space().params();
     auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
     auto pulled = isl::pw_aff(aff).pullback(map);
-    CHECK_EQ(pulled.n_piece(), 1);
+    TC_CHECK_EQ(pulled.n_piece(), 1);
     subscripts.push_back(build.expr_from(pulled));
   }
   return node.set_annotation(stmtId);
@@ -661,7 +662,6 @@ IslCodegenRes codegenISL(const Scop& scop) {
   StmtSubscriptExprMapType stmtSubscripts;
   auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
                      isl::ast_node n, isl::ast_build b) -> isl::ast_node {
-
     auto& uv = iteratorMaps;
     return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
   };

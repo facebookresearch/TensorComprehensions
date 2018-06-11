@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 
@@ -258,7 +259,8 @@ inline bool matchOne(
   // We still need to check well-formedness of the matcher (i.e. no wildcards
   // except in the last position)
   for (size_t i = 0; i < matcher.children_.size(); ++i) {
-    CHECK(!matcher.children_[i].wildcard || i == matcher.children_.size() - 1)
+    TC_CHECK(
+        !matcher.children_[i].wildcard || i == matcher.children_.size() - 1)
         << "Error in matcher structure, wildcard must be the last child!";
     if (!matchOne(matcher.children_[i], tree->child({i}))) {
       return false;

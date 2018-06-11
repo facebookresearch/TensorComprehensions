@@ -20,6 +20,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/utils/vararg.h"
@@ -135,9 +136,9 @@ struct ScheduleTree {
 
   // Swap a tree with with the given tree.
   void swapChild(size_t pos, ScheduleTreeUPtr& swappee) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LE(pos, children_.size()) << "position out of children bounds";
-    CHECK(swappee.get()) << "Cannot swap in a null tree";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LE(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK(swappee.get()) << "Cannot swap in a null tree";
     std::swap(children_[pos], swappee);
   }
 
@@ -150,10 +151,10 @@ struct ScheduleTree {
 
   // Manipulators for the list of children.
   void insertChildren(size_t pos, std::vector<ScheduleTreeUPtr>&& children) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LE(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LE(pos, children_.size()) << "position out of children bounds";
     for (const auto& c : children) {
-      CHECK(c.get()) << "inserting null or moved-from child";
+      TC_CHECK(c.get()) << "inserting null or moved-from child";
     }
 
     children_.insert(
@@ -177,8 +178,8 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr detachChild(size_t pos) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LT(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr child = std::move(children_[pos]);
     children_.erase(children_.begin() + pos);
@@ -199,8 +200,8 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr replaceChild(size_t pos, ScheduleTreeUPtr&& child) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LT(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr oldChild = std::move(children_[pos]);
     children_[pos] = std::move(child);
@@ -242,7 +243,7 @@ struct ScheduleTree {
 
   inline size_t positionInParent(const ScheduleTree* parent) const {
     auto p = positionRelativeTo(parent);
-    CHECK_EQ(1u, p.size()) << *parent << " is not the parent of " << *this;
+    TC_CHECK_EQ(1u, p.size()) << *parent << " is not the parent of " << *this;
     return p[0];
   }
 
@@ -346,7 +347,7 @@ struct ScheduleTree {
   // Flatten nested nodes of the same type.
   void flattenSequenceOrSet() {
     // This should be enforced by the type system...
-    CHECK(
+    TC_CHECK(
         type_ == detail::ScheduleTreeType::Sequence ||
         type_ == detail::ScheduleTreeType::Set);
 

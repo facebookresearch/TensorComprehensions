@@ -20,6 +20,7 @@
 #include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/check.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"
@@ -91,7 +92,8 @@ def sum1D(float(M) A) -> (C) {
 }
 )TC"};
 
-    CHECK_LE(version, 3u) << "Versions [0-3] supported, asked for: " << version;
+    TC_CHECK_LE(version, 3u)
+        << "Versions [0-3] supported, asked for: " << version;
     auto refOutput = A.sum();
     auto checkFun = [&, refOutput](
                         const std::vector<at::Tensor>& inputs,

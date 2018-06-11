@@ -20,6 +20,7 @@
 #include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/exceptions.h"
@@ -393,7 +394,7 @@ def fun(float(B, R) LUT, int32(B, N) I) -> (O) {
         float correct = 0;
         for (int r = 0; r < R; r++) {
           int idx = IAccessor[b][n];
-          CHECK(idx >= 0 && idx < B);
+          TC_CHECK(idx >= 0 && idx < B);
           correct += LUTAccessor[idx][r];
         }
         OAccessor[b][n] -= correct;

@@ -33,7 +33,7 @@ foreach(i ${CORE_TEST_FILES})
 endforeach()
 
 add_executable(test_check test_check.cc)
-target_link_libraries(test_check ${GTEST_LIBRARIES})
+target_link_libraries(test_check ${GTEST_LIBRARIES} tc_core)
 
 ################################################################################
 # CPP cuda_mapper crosscompile tests

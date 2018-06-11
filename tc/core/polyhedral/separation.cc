@@ -15,6 +15,7 @@
  */
 
 #include "tc/core/polyhedral/separation.h"
+#include "tc/core/check.h"
 
 #include "tc/external/isl.h"
 
@@ -39,7 +40,7 @@ isl::union_set partialTargetTiles(
   // Mapping between prefix values and target values
   // for some common domain element
   // P -> T
-  CHECK(domain.is_subset(scheduleMap.domain()));
+  TC_CHECK(domain.is_subset(scheduleMap.domain()));
   auto target = domain.apply(scheduleMap).unwrap();
   // Mapping between prefix values and target values
   // for some common domain element, extended to complete target tiles.

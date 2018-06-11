@@ -15,6 +15,7 @@
  */
 #include <glog/logging.h>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/tc2halide.h"
 #include "tc/lang/parser.h"
@@ -91,7 +92,7 @@ void translateParam(
       }
       dims.push_back(Variable::make(Int(32), p.name(), p));
     } else {
-      CHECK(d_->kind() == lang::TK_CONST);
+      TC_CHECK(d_->kind() == lang::TK_CONST);
       int32_t value = lang::Const(d_).value();
       dims.push_back(Expr(value));
     }
@@ -279,7 +280,7 @@ void forwardBoundsInference(
 
       // Create inequalities that assert this is not an out-of-bounds access.
       if (op->call_type == Call::Halide) {
-        CHECK(op->func.defined())
+        TC_CHECK(op->func.defined())
             << "Expected a Call of type Halide to have an associated Function\n";
         const auto& it = bounds.find(Function(op->func));
         if (it != bounds.end()) {
@@ -289,7 +290,7 @@ void forwardBoundsInference(
             const auto& it = b.find(dim);
             if (it != b.end()) {
               Interval interval = it->second;
-              CHECK(interval.is_bounded())
+              TC_CHECK(interval.is_bounded())
                   << "Expected explicit constraints on every dimension of every Func\n";
               result.push_back(op->args[i] >= interval.min);
               result.push_back(op->args[i] <= interval.max);
@@ -297,10 +298,10 @@ void forwardBoundsInference(
           }
         }
       } else if (op->call_type == Call::Image) {
-        CHECK(op->param.defined())
+        TC_CHECK(op->param.defined())
             << "Expected a Call of type Image to have an associated Parameter\n";
         for (size_t i = 0; i < op->args.size(); i++) {
-          CHECK(
+          TC_CHECK(
               op->param.min_constraint(i).defined() &&
               op->param.extent_constraint(i).defined())
               << "Expected explicit constraints on every dimension of every input\n";
