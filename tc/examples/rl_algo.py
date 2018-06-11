@@ -34,6 +34,7 @@ def group_normalization(
 
 def evalTime(opt):
     global tc_prog, inp, cat_val
+    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
     opt = optionsFromVector(opt)
     warmup = 10
     iters  = 50
@@ -57,8 +58,8 @@ def evalTime(opt):
 
 def optionsFromVector(vect):
     options = tc.CudaMappingOptions("naive")
-    options.outerScheduleFusionStrategy(vect[0], false, true)
-    options.intraTileFusionStrategy(vect[1], false, true)
+    options.outerScheduleFusionStrategy(vect[0], False, True)
+    options.intraTileFusionStrategy(vect[1], False, True)
     options.fixParametersBeforeScheduling(vect[2])
     options.tile([vect[3]]) #why list in doc?
     options.unroll(2**vect[4]) #128 is too big? trying 30
@@ -101,7 +102,7 @@ def computeCat(inp):
     cat_val.append([1,2,3])
     cat_val.append([0,1])
     cat_val.append(divs + [0])
-    cat_val.append([i for i in range(31)])
+    cat_val.append([i for i in range(30)])
     cat_val.append([0,1])
     cat_val.append(divs)
     cat_val.append(divs)
@@ -134,7 +135,7 @@ class FullNetwork(nn.Module):
         super(FullNetwork, self).__init__()
         self.nb_hyperparams = nb_hyperparams
         self.init_input_sz = init_input_sz
-        self.nets = [Predictor(init_input_sz + i, cat_sz[i]) for i in range(nb_hyperparams)]
+        self.nets = [Predictor(init_input_sz + i, int(cat_sz[i])) for i in range(nb_hyperparams)]
 
     def select_action(self, x, i):
         probs, state_value = self.nets[i](x)
