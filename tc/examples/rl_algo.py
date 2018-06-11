@@ -135,7 +135,8 @@ class FullNetwork(nn.Module):
         super(FullNetwork, self).__init__()
         self.nb_hyperparams = nb_hyperparams
         self.init_input_sz = init_input_sz
-        self.nets = nn.ParameterList([Predictor(init_input_sz + i, int(cat_sz[i])) for i in range(nb_hyperparams)])
+        self.nets = [Predictor(init_input_sz + i, int(cat_sz[i])) for i in range(nb_hyperparams)]
+        self.nets = nn.ModuleList(self.nets)
 
     def select_action(self, x, i):
         probs, state_value = self.nets[i](x)
