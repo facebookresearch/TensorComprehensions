@@ -8,7 +8,12 @@
 #SBATCH --gres=gpu:2
 #SBATCH --partition=priority,uninterrupted,learnfair,scavenge
 
-export TUNER_THREADS=${TUNER_THREADS:=20}
+module load cuda/9.0
+. ${HOME}/anaconda/bin/activate
+conda activate tc_build
+export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
+
+export TUNER_THREADS=${TUNER_THREADS:=8}
 export TUNER_DEVICES=${TUNER_DEVICES:="0,1"}
 export DEVICE_NAME=$(nvidia-smi -L | head -n 1 | cut -d'(' -f 1 | cut -d':' -f 2 | sed "s/ //g")
 
