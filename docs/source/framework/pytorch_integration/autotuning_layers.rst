@@ -92,7 +92,7 @@ kernel timing. You can adopt the following parameter settings as starters for au
 
 
 Initial CudaMappingOptions
------------------------
+--------------------------
 
 At the beginning of autotuning, the kernel is mapped to whatever :code:`mapping options`
 user passes. If no mapping options are passed by user, then the default :code:`naive`

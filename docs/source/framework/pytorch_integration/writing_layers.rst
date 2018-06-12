@@ -46,7 +46,7 @@ tc.define
 .. _must_pass_options:
 
 Specifying CudaMappingOptions
---------------------------
+-----------------------------
 
 TC is transformed into :code:`CUDA` kernel by using the :code:`Options` which
 is used to run the layer and hence also determines the performance of the kernel
