@@ -194,13 +194,13 @@ def finish_episode(final_rewards):
     optimizer.step()
     del net.saved_actions[:]
     net.saved_actions = [[] for i in range(BATCH_SZ)]
-    return vloss, ploss
+    return vloss.item(), ploss.item()
 
 INTER_DISP = 20
 
 running_reward = -0.5
 tab_rewards=[]
-best=0.5
+best=-0.5
 v_losses=[]
 p_losses=[]
 for i in range(NB_EPOCHS):
@@ -208,7 +208,7 @@ for i in range(NB_EPOCHS):
     for j in range(BATCH_SZ):
         out = net(init_input_sz,j)
         reward = -evalTime(out.numpy().astype(int))
-        reward=100*reward+0.45
+        reward=100*reward#+0.45
         rewards.append(reward)
     vloss, ploss = finish_episode(rewards)
     v_losses.append(vloss)
@@ -217,5 +217,5 @@ for i in range(NB_EPOCHS):
     running_reward = best #running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
     if i % INTER_DISP == 0:
-        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), v_losses, p_losses)), win=win, opts=dict(textlabels=["Minus Running reward", "Value loss", "Policy loss"]))
+        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(v_losses), np.array(p_losses))), win=win, opts=dict(legend=["Minus Running reward", "Value loss", "Policy loss"]))
     print(-running_reward)
