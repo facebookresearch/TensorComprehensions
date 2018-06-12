@@ -217,5 +217,5 @@ for i in range(NB_EPOCHS):
     running_reward = best #running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
     if i % INTER_DISP == 0:
-        viz.line(X=np.arange(i+1), Y=(np.array(tab_rewards), v_losses, p_losses), win=win, opts=dict(textlabels=["Minus Running reward", "Value loss", "Policy loss"]))
+        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), v_losses, p_losses)), win=win, opts=dict(textlabels=["Minus Running reward", "Value loss", "Policy loss"]))
     print(-running_reward)
