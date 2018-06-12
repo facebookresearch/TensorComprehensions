@@ -16,6 +16,10 @@ from visdom import Visdom
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
 NB_EPOCHS = 10000
 BATCH_SZ = 8
+EPS_START = 0.9
+EPS_END = 0.05
+EPS_DECAY = 200
+steps_done = 0
 
 viz = Visdom()
 win = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
@@ -146,8 +150,12 @@ class FullNetwork(nn.Module):
         self.nets = nn.ModuleList(self.nets)
         self.saved_actions = [[] for i in range(batch_size)]
 
-    def select_action(self, x, i, batch_id):
+    def select_action(self, x, i, batch_id, out_sz):
+        geps = 0.1
+        proba = np.random.rand()
         probs, state_value = self.nets[i](x)
+        if(proba <= geps):
+            probs = torch.FloatTensor([1./out_sz]*out_sz)
         m = Categorical(probs)
         action = m.sample()
         self.saved_actions[batch_id].append(SavedAction(m.log_prob(action), state_value))
@@ -155,7 +163,7 @@ class FullNetwork(nn.Module):
 
     def forward(self, x, batch_id):
         for i in range(self.nb_hyperparams):
-            sym = self.select_action(x, i, batch_id)
+            sym = self.select_action(x, i, batch_id, int(cat_sz[i]))
             x = torch.cat([x, torch.FloatTensor([sym])])
         return x
 
