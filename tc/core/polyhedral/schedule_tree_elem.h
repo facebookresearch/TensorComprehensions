@@ -260,7 +260,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // Drop the "n" dimensions starting at "pos" from "band".
   // We apply the transformation even if "n" is zero to ensure consistent
   // behavior with respect to changes in the schedule space.
-  // The caller is responsible for updating the isolate option (Note: why?)
   void drop(size_t pos, size_t n);
 
  public:
