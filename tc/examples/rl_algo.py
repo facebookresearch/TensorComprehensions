@@ -165,7 +165,7 @@ init_input_sz = torch.from_numpy(init_input_sz).float()
 inp = init_input
 computeCat(inp)
 
-net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
+net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ, BATCH_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
@@ -183,17 +183,17 @@ def finish_episode(final_rewards):
             policy_losses[batch_id].append(-log_prob * reward)
             value_losses[batch_id].append(F.smooth_l1_loss(value, torch.tensor([final_rewards[batch_id]])))
     optimizer.zero_grad()
-    loss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean() 
-            + torch.stack([torch.stack(value_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
+    loss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean() + torch.stack([torch.stack(value_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
     loss.backward()
     optimizer.step()
     del net.saved_actions[:]
+    net.saved_actions = [[] for i in range(BATCH_SZ)]
 
 running_reward = -1
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
-        out = net(init_input_sz)
+        out = net(init_input_sz,j)
         reward = -evalTime(out.numpy().astype(int))
         reward=100*reward
         rewards.append(reward)
