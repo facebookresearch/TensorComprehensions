@@ -1120,7 +1120,7 @@ def fun(float(N) a) -> (b) { b(i) = a(i % 3) where i in 0:N }
 )TC";
   // This triggers tc2halide conversion and should not throw.
   auto scop = Prepare(tc);
-  for (auto r : scop->reads.wrap().get_set_list()) {
+  for (auto r : scop->body.reads.wrap().get_set_list()) {
     auto read = r.unwrap();
     // skip irrelevant reads, if any
     if (read.range().get_tuple_name() != std::string("a")) {
@@ -1138,7 +1138,7 @@ def local_sparse_convolution(float(N, C, H, W) I, float(O, KC, KH, KW) W1) -> (O
 )TC";
   // This triggers tc2halide conversion and should not throw.
   auto scop = Prepare(tc);
-  for (auto r : scop->reads.range().get_set_list()) {
+  for (auto r : scop->body.reads.range().get_set_list()) {
     // skip irrelevant reads, if any
     if (r.get_tuple_name() != std::string("I")) {
       continue;

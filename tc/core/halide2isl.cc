@@ -20,6 +20,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -360,7 +361,7 @@ onDomains(isl::aff f, isl::union_set domain, const IterationDomainMap& map) {
  * from outermost to innermost.
  * Return the schedule corresponding to the subtree at "s".
  *
- * "reads" and "writes" collect the accesses found along the way.
+ * "body" collects the accesses found along the way.
  * "accesses" collects the mapping from Call (for the reads) and Provide nodes
  * (for the writes) to the corresponding tag in the access relations.
  * "statements" collects the mapping from instance set tuple identifiers
@@ -372,8 +373,7 @@ isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
     isl::id_list outer,
-    isl::union_map* reads,
-    isl::union_map* writes,
+    Body* body,
     AccessMap* accesses,
     StatementMap* statements,
     IterationDomainMap* domains) {
@@ -406,8 +406,8 @@ isl::schedule makeScheduleTreeHelper(
 
     // Recursively descend.
     auto outerNext = outer.add(isl::id(set.get_ctx(), op->name));
-    auto body = makeScheduleTreeHelper(
-        op->body, set, outerNext, reads, writes, accesses, statements, domains);
+    auto bodySchedule = makeScheduleTreeHelper(
+        op->body, set, outerNext, body, accesses, statements, domains);
 
     // Create an affine function that defines an ordering for all
     // the statements in the body of this loop over the values of
@@ -415,10 +415,10 @@ isl::schedule makeScheduleTreeHelper(
     // to the current loop iterator and then convert it to
     // a function on the statements in the domain of the body schedule.
     auto aff = isl::aff::param_on_domain_space(space, id);
-    auto domain = body.get_domain();
+    auto domain = bodySchedule.get_domain();
     auto mupa = isl::multi_union_pw_aff(onDomains(aff, domain, *domains));
 
-    schedule = body.insert_partial_schedule(mupa);
+    schedule = bodySchedule.insert_partial_schedule(mupa);
   } else if (auto op = s.as<Halide::Internal::Block>()) {
     std::vector<Stmt> stmts;
     stmts.push_back(op->first);
@@ -429,7 +429,7 @@ isl::schedule makeScheduleTreeHelper(
     std::vector<isl::schedule> schedules;
     for (Stmt stmt : stmts) {
       schedules.push_back(makeScheduleTreeHelper(
-          stmt, set, outer, reads, writes, accesses, statements, domains));
+          stmt, set, outer, body, accesses, statements, domains));
     }
     schedule = schedules[0].sequence(schedules[1]);
 
@@ -453,8 +453,8 @@ isl::schedule makeScheduleTreeHelper(
     std::tie(newReads, newWrites) =
         extractAccesses(iterationDomain, op, accesses);
 
-    *reads = reads->unite(newReads);
-    *writes = writes->unite(newWrites);
+    body->reads = body->reads.unite(newReads);
+    body->writes = body->writes.unite(newWrites);
 
   } else {
     LOG(FATAL) << "Unhandled Halide stmt: " << s;
@@ -465,7 +465,7 @@ isl::schedule makeScheduleTreeHelper(
 ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   ScheduleTreeAndAccesses result;
 
-  result.writes = result.reads = isl::union_map::empty(paramSpace);
+  Body body(paramSpace);
 
   // Walk the IR building a schedule tree
   isl::id_list outer(paramSpace.get_ctx(), 0);
@@ -473,12 +473,12 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
       s,
       isl::set::universe(paramSpace),
       outer,
-      &result.reads,
-      &result.writes,
+      &body,
       &result.accesses,
       &result.statements,
       &result.domains);
 
+  result.body = body;
   result.tree = fromIslSchedule(schedule);
 
   return result;

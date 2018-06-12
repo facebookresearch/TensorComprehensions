@@ -21,6 +21,7 @@
 #include <unordered_map>
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
@@ -341,15 +342,14 @@ void addSingletonReferenceGroups(
 // references.
 TensorGroups TensorReferenceGroup::accessedWithin(
     isl::union_map outerSchedule,
-    isl::union_map reads,
-    isl::union_map writes) {
+    const Body& body) {
   TensorGroups tensorGroups;
   auto domain = outerSchedule.domain();
 
   addSingletonReferenceGroups(
-      tensorGroups, writes, domain, outerSchedule, AccessType::Write);
+      tensorGroups, body.writes, domain, outerSchedule, AccessType::Write);
   addSingletonReferenceGroups(
-      tensorGroups, reads, domain, outerSchedule, AccessType::Read);
+      tensorGroups, body.reads, domain, outerSchedule, AccessType::Read);
 
   // For each tensor, join groups whose footprints overlap and at least one
   // access is a write.  Do not join between tensors because no aliasing.

@@ -25,6 +25,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/halide2isl.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
@@ -60,8 +61,7 @@ ScopUPtr Scop::makeScop(
 
   auto tree = halide2isl::makeScheduleTree(paramSpace, components.stmt);
   scop->scheduleTreeUPtr = std::move(tree.tree);
-  scop->reads = tree.reads;
-  scop->writes = tree.writes;
+  scop->body = tree.body;
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
@@ -97,8 +97,7 @@ const isl::union_set Scop::domain() const {
 
 std::ostream& operator<<(std::ostream& os, const Scop& s) {
   os << "domain: " << s.domain() << "\n";
-  os << "reads: " << s.reads << "\n";
-  os << "writes: " << s.writes << "\n";
+  os << s.body;
   os << "schedule: " << *s.scheduleRoot() << "\n";
   os << "idx: { ";
   for (auto i : s.halide.idx) {
@@ -256,7 +255,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   checkFiltersDisjointStatements(scheduleRoot());
   auto schedule = partialSchedule(root, tree);
 
-  auto groupMap = TensorReferenceGroup::accessedWithin(schedule, reads, writes);
+  auto groupMap = TensorReferenceGroup::accessedWithin(schedule, body);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
       promoteGroup(
@@ -353,8 +352,8 @@ isl::schedule_constraints makeScheduleConstraints(
 
 void Scop::computeAllDependences() {
   auto schedule = toIslSchedule(scheduleRoot());
-  auto allReads = reads.domain_factor_domain();
-  auto allWrites = writes.domain_factor_domain();
+  auto allReads = body.reads.domain_factor_domain();
+  auto allWrites = body.writes.domain_factor_domain();
   // RAW
   auto flowDeps = computeDependences(allWrites, allReads, schedule);
   // WAR and WAW

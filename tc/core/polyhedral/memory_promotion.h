@@ -113,8 +113,7 @@ class TensorReferenceGroup {
  public:
   static TensorGroups accessedWithin(
       isl::union_map outerSchedule,
-      isl::union_map reads,
-      isl::union_map writes);
+      const Body& body);
 
   bool isReadOnly() const;
 
