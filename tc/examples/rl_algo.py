@@ -201,8 +201,8 @@ INTER_DISP = 20
 running_reward = -0.5
 tab_rewards=[]
 best=0.5
-vlosses=[]
-plosses=[]
+v_losses=[]
+p_losses=[]
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
@@ -211,8 +211,8 @@ for i in range(NB_EPOCHS):
         reward=100*reward+0.45
         rewards.append(reward)
     vloss, ploss = finish_episode(rewards)
-    vlosses.append(vloss)
-    plosses.append(ploss)
+    v_losses.append(vloss)
+    p_losses.append(ploss)
     best = max(best, np.max(rewards))
     running_reward = best #running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
