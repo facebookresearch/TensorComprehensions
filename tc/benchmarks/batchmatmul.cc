@@ -88,16 +88,7 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
       std::to_string(FLAGS_M) + std::string("_N_") + std::to_string(FLAGS_N);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_cache") +
-            suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/batchmatmul_best") +
-            suffix,
-        tc,
-        "batch_matmul",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "batch_matmul", inputs, options, check_fun);
   }
   Check(tc, "batch_matmul", bestOptions[0], inputs, check_fun);
 }

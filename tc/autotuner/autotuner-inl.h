@@ -321,45 +321,6 @@ namespace {
 volatile std::sig_atomic_t sigint_ = 0;
 volatile std::sig_atomic_t sigterm_ = 0;
 
-template <typename Backend>
-std::vector<typename Backend::MappingOptionsType> loadThroughCache(
-    lang::TreeRef tree,
-    std::shared_ptr<OptionsCache<Backend>> optionsCache,
-    const std::string& cacheFileName,
-    const std::vector<const DLConstTensor*>& inputs,
-    const size_t numCandidates) {
-  LOG_IF(INFO, FLAGS_debug_tuner)
-      << "Loading proto from: " << tc::makeOptionsFilename(cacheFileName)
-      << std::endl;
-  if (!cacheFileName.empty()) {
-    optionsCache->loadCacheFromFile(tc::makeOptionsFilename(cacheFileName));
-  }
-  auto outputs = tc::detail::inferOutputTensorInfo(tree, inputs);
-  return optionsCache->getTopKOptions(
-      canonicalTc(tree),
-      makeTensorInfoVector(inputs),
-      outputs,
-      Backend::backendString(),
-      numCandidates);
-}
-
-template <typename Backend>
-void storeTopKInCache(
-    const std::shared_ptr<OptionsCache<Backend>>& optionsCache,
-    const std::string& cacheFilename) {
-  if (cacheFilename.empty()) {
-    LOG_IF(INFO, FLAGS_debug_tuner)
-        << "No filepath provided, not saving cache" << std::endl;
-  } else {
-    LOG_IF(INFO, FLAGS_debug_tuner)
-        << "Dumping cache to " << tc::makeOptionsFilename(cacheFilename)
-        << std::endl;
-    OptionsCache<Backend> cache(*optionsCache);
-    cache.pruneKeepTopK(tc::FLAGS_tuner_save_best_candidates_count);
-    cache.storeCacheToFile(tc::makeOptionsFilename(cacheFilename));
-  }
-}
-
 void removeDuplicates(std::vector<size_t>& v) {
   std::sort(v.begin(), v.end());
   v.erase(std::unique(v.begin(), v.end()), v.end());
@@ -416,7 +377,7 @@ void setupTuningParameters(
 
 template <typename Backend, typename SearchStrategy>
 Autotuner<Backend, SearchStrategy>::Autotuner()
-    : optionsCache_(new OptionsCache<Backend>()) {}
+    : optionsCache(new OptionsCache<Backend>()) {}
 
 template <typename Backend, typename SearchStrategy>
 std::vector<typename Backend::MappingOptionsType>
@@ -425,8 +386,7 @@ Autotuner<Backend, SearchStrategy>::tune(
     const std::string& tcEntryPoint,
     const std::unordered_map<size_t, std::vector<const DLConstTensor*>>& inputs,
     std::unordered_map<size_t, std::vector<const DLTensor*>>& outputs,
-    const typename Backend::MappingOptionsType& baseMapping,
-    const std::string& cacheFileName,
+    const std::vector<typename Backend::MappingOptionsType>& baseMappings,
     const TuningParameterFixer& fixedParams) {
   std::map<std::string, lang::TreeRef> tcEntryPointMap(tc::detail::parse(tc));
   TC_CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
@@ -438,28 +398,13 @@ Autotuner<Backend, SearchStrategy>::tune(
   setupTuningParameters(inputs.begin()->second, modelConfiguration);
   modelConfiguration.fixParameters(fixedParams);
 
-  // Build starting points from baseMapping + whatever we recover from cache
-  std::vector<typename Backend::MappingOptionsType> startingPoints{baseMapping};
-  auto restoredCandidates = loadThroughCache<Backend>(
-      tcEntryPointMap.at(tcEntryPoint),
-      optionsCache_,
-      cacheFileName,
-      inputs.begin()->second,
-      FLAGS_tuner_gen_restore_number);
-  if (restoredCandidates.size() > 0) {
-    startingPoints.reserve(1 + restoredCandidates.size());
-    std::move(
-        restoredCandidates.begin(),
-        restoredCandidates.end(),
-        std::back_inserter(startingPoints));
-  }
-
   // Create initial configs based on options + model configuration
+  const std::vector<typename Backend::MappingOptionsType> options{baseMappings};
   std::vector<TuningConfiguration> configs;
-  configs.reserve(startingPoints.size());
+  configs.reserve(options.size());
   std::transform(
-      startingPoints.begin(),
-      startingPoints.end(),
+      options.begin(),
+      options.end(),
       std::back_inserter(configs),
       [this, &fixedParams, &modelConfiguration](
           const typename Backend::MappingOptionsType& options) {
@@ -484,9 +429,9 @@ Autotuner<Backend, SearchStrategy>::tune(
       tcEntryPointMap.at(tcEntryPoint),
       inputs,
       outputs,
-      baseMapping,
+      options[0],
       fixedParams,
-      optionsCache_);
+      optionsCache);
 
   // Setup handlers
   sigterm_ = 0;
@@ -505,10 +450,6 @@ Autotuner<Backend, SearchStrategy>::tune(
     try {
       tuningHarness.run(searchStrategy);
     } catch (const std::exception& e) {
-      std::cerr << "Exception during autotuning: " << e.what()
-                << "\n dumping cache to "
-                << tc::makeOptionsFilename(cacheFileName) << std::endl;
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
       tuningHarnessThreadEx = std::current_exception();
     }
     tuningHarnessFinished = true;
@@ -517,11 +458,9 @@ Autotuner<Backend, SearchStrategy>::tune(
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (sigint_) {
       tuningHarness.stopAfterCurrentIteration();
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
     }
     if (sigterm_) {
       std::cerr << "Autotuning aborted." << std::endl;
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
       std::abort();
     }
   }
@@ -531,8 +470,6 @@ Autotuner<Backend, SearchStrategy>::tune(
   if (tuningHarnessThreadEx) {
     std::rethrow_exception(tuningHarnessThreadEx);
   }
-
-  storeTopKInCache<Backend>(optionsCache_, cacheFileName);
 
   return {tuningHarness.bestMappingOptions()};
 }

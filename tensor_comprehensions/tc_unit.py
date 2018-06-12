@@ -211,6 +211,7 @@ class TcAutotuner(object):
     # the cache that correspond to the inputs sizes. This is useful when the
     # cache may contain multiple kernels and multiple sizes for each kernel
     def load(self, filename, tc_name, inputs, num_candidates=1):
+        print("filename", filename)
         best_options = self.autotuner.load(filename, tc_name, inputs, num_candidates)
         if num_candidates == 1:
             return best_options[0]

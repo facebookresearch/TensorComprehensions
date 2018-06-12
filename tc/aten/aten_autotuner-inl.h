@@ -52,8 +52,7 @@ std::vector<typename Backend::MappingOptionsType>
 ATenAutotuner<Backend, Search>::tune(
     const std::string& tcName,
     const std::vector<at::Tensor>& inputs,
-    const typename Backend::MappingOptionsType& baseMapping,
-    const std::string& cacheFileName,
+    const std::vector<typename Backend::MappingOptionsType>& baseMappings,
     const tc::autotune::TuningParameterFixer& fixedParams) {
   // TODO: some checks that inputs memory lives on the proper Backend device
 
@@ -91,8 +90,7 @@ ATenAutotuner<Backend, Search>::tune(
       tcName,
       rawInputsPerDevice,
       rawOutputsPerDevice,
-      baseMapping,
-      cacheFileName,
+      baseMappings,
       fixedParams);
 }
 } // namespace aten
