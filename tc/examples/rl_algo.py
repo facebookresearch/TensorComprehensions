@@ -180,33 +180,42 @@ def finish_episode(final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
     final_rewards = torch.tensor(final_rewards)
-    final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
+    #final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in saved_actions[batch_id]:
             reward = final_rewards[batch_id] - value.item()
             policy_losses[batch_id].append(-log_prob * reward)
             value_losses[batch_id].append(F.smooth_l1_loss(value, torch.tensor([final_rewards[batch_id]])))
     optimizer.zero_grad()
-    loss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean() + torch.stack([torch.stack(value_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
+    vloss = torch.stack([torch.stack(value_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
+    ploss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
+    loss = ploss + vloss
     loss.backward()
     optimizer.step()
     del net.saved_actions[:]
     net.saved_actions = [[] for i in range(BATCH_SZ)]
+    return vloss, ploss
 
 INTER_DISP = 50
 
 running_reward = -1
 tab_rewards=[]
+best=0.5
+vlosses=[]
+plosses=[]
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
         out = net(init_input_sz,j)
         reward = -evalTime(out.numpy().astype(int))
-        reward=100*reward
+        reward=100*reward+0.45
         rewards.append(reward)
-    finish_episode(rewards)
-    running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
+    vloss, ploss = finish_episode(rewards)
+    vlosses.append(vloss)
+    plosses.append(ploss)
+    best = max(best, np.max(rewards))
+    running_reward = best #running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(running_reward)
     if i % INTER_DISP == 0:
-        viz.line(X=np.arange(i+1), Y=np.array(tab_rewards), win=win)
+        viz.line(X=np.arange(i+1), Y=(np.array(tab_rewards), v_losses, p_losses), win=win, opts=dict(textlabels=["Minus Running reward", "Value loss", "Policy loss"]))
     print(-running_reward)
