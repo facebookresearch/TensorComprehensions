@@ -275,6 +275,37 @@ def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
   TC_CHECK_EQ(r, 0);
 }
 
+TEST_F(CompilationTest, Types) {
+  struct TypeMatch {
+    std::string s;
+    at::ScalarType a;
+  };
+  for (auto type :
+       {// TypeMatch{"bool", at::ScalarType::Bool},    // no aten version
+        TypeMatch{"uint8", at::ScalarType::Byte},
+        // TypeMatch{"uint16", at::ScalarType::Short}, // no aten version
+        // TypeMatch{"uint32", at::ScalarType::Int},   // no aten version
+        // TypeMatch{"uint64", at::ScalarType::Long},  // no aten version
+        TypeMatch{"int8", at::ScalarType::Char},
+        TypeMatch{"int16", at::ScalarType::Short},
+        TypeMatch{"int32", at::ScalarType::Int},
+        TypeMatch{"int64", at::ScalarType::Long},
+        // NVRTC include transitive dependencies issue
+        // TypeMatch{"float16", at::ScalarType::Half},
+        TypeMatch{"float32", at::ScalarType::Float},
+        TypeMatch{"float64", at::ScalarType::Double},
+        TypeMatch{"float", at::ScalarType::Float},
+        TypeMatch{"double", at::ScalarType::Double}}) {
+    std::string tc = std::string("def test_type(") + std::string(type.s) +
+        std::string("(N) A) -> (B) { B(k) +=! A(i) where k in 0:1 }");
+    std::vector<at::Tensor> outputs = Check(
+        tc,
+        "test_type",
+        tc::CudaMappingOptions::makeNaiveMappingOptions(),
+        {at::CUDA(type.a).ones({100})});
+  }
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

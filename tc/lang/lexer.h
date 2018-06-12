@@ -41,8 +41,6 @@ namespace lang {
   _(TK_MIN, "min", "min")                        \
   _(TK_MAX, "max", "max")                        \
   _(TK_WHERE, "where", "where")                  \
-  _(TK_FLOAT, "float", "float")                  \
-  _(TK_DOUBLE, "double", "double")               \
   _(TK_DEF, "def", "def")                        \
   _(TK_ARROW, "arrow", "->")                     \
   _(TK_EQUIVALENT, "equivalent", "<=>")          \
@@ -67,15 +65,21 @@ namespace lang {
   _(TK_TIMES_EQ_B, "times_eq_b", "*=!")          \
   _(TK_MIN_EQ_B, "min_eq_b", "min=!")            \
   _(TK_MAX_EQ_B, "max_eq_b", "max=!")            \
-  _(TK_INT8, "int8", "int8")                     \
-  _(TK_INT16, "int16", "int16")                  \
-  _(TK_INT32, "int32", "int32")                  \
-  _(TK_INT64, "int64", "int64")                  \
+                                                 \
+  _(TK_BOOL, "bool", "bool")                     \
   _(TK_UINT8, "uint8", "uint8")                  \
   _(TK_UINT16, "uint16", "uint16")               \
   _(TK_UINT32, "uint32", "uint32")               \
   _(TK_UINT64, "uint64", "uint64")               \
-  _(TK_BOOL, "bool", "bool")                     \
+  _(TK_INT8, "int8", "int8")                     \
+  _(TK_INT16, "int16", "int16")                  \
+  _(TK_INT32, "int32", "int32")                  \
+  _(TK_INT64, "int64", "int64")                  \
+  _(TK_FLOAT16, "float16", "float16")            \
+  _(TK_FLOAT32, "float32", "float32")            \
+  _(TK_FLOAT64, "float64", "float64")            \
+  _(TK_FLOAT, "float", "float")                  \
+  _(TK_DOUBLE, "double", "double")               \
   _(TK_CAST, "cast", "")                         \
   _(TK_IN, "in", "in")                           \
   _(TK_GE, "ge", ">=")                           \
@@ -271,15 +275,18 @@ struct SharedParserData {
   }
   bool isScalarType(int kind) {
     switch (kind) {
-      case TK_INT8:
-      case TK_INT16:
-      case TK_INT32:
-      case TK_INT64:
+      case TK_BOOL:
       case TK_UINT8:
       case TK_UINT16:
       case TK_UINT32:
       case TK_UINT64:
-      case TK_BOOL:
+      case TK_INT8:
+      case TK_INT16:
+      case TK_INT32:
+      case TK_INT64:
+      case TK_FLOAT16:
+      case TK_FLOAT32:
+      case TK_FLOAT64:
       case TK_FLOAT:
       case TK_DOUBLE:
         return true;

@@ -32,22 +32,26 @@ struct TypeInfo {
   TypeInfo(Code code_, uint8_t bits_) : code_(code_), bits_(bits_) {}
   TypeInfo(TreeRef scalar_type) {
     switch (scalar_type->kind()) {
-#define TYPE_INFO_OPTION(tok, c, b) \
-  case tok:                         \
-    code_ = c;                      \
-    bits_ = b;                      \
+#define TYPE_INFO_OPTION(tok, c, b, l) \
+  case tok:                            \
+    code_ = c;                         \
+    bits_ = b;                         \
     break;
-      TYPE_INFO_OPTION(TK_BOOL, UInt, 1)
-      TYPE_INFO_OPTION(TK_UINT8, UInt, 8)
-      TYPE_INFO_OPTION(TK_UINT16, UInt, 16)
-      TYPE_INFO_OPTION(TK_UINT32, UInt, 32)
-      TYPE_INFO_OPTION(TK_UINT64, UInt, 64)
-      TYPE_INFO_OPTION(TK_INT8, Int, 8)
-      TYPE_INFO_OPTION(TK_INT16, Int, 16)
-      TYPE_INFO_OPTION(TK_INT32, Int, 32)
-      TYPE_INFO_OPTION(TK_INT64, Int, 64)
-      TYPE_INFO_OPTION(TK_FLOAT, Float, 32)
-      TYPE_INFO_OPTION(TK_DOUBLE, Float, 64)
+      TYPE_INFO_OPTION(TK_BOOL, UInt, 1, 1)
+      TYPE_INFO_OPTION(TK_UINT8, UInt, 8, 1)
+      TYPE_INFO_OPTION(TK_UINT16, UInt, 16, 1)
+      TYPE_INFO_OPTION(TK_UINT32, UInt, 32, 1)
+      TYPE_INFO_OPTION(TK_UINT64, UInt, 64, 1)
+      TYPE_INFO_OPTION(TK_INT8, Int, 8, 1)
+      TYPE_INFO_OPTION(TK_INT16, Int, 16, 1)
+      TYPE_INFO_OPTION(TK_INT32, Int, 32, 1)
+      TYPE_INFO_OPTION(TK_INT64, Int, 64, 1)
+      TYPE_INFO_OPTION(TK_FLOAT16, Float, 16, 1)
+      TYPE_INFO_OPTION(TK_FLOAT32, Float, 32, 1)
+      TYPE_INFO_OPTION(TK_FLOAT64, Float, 64, 1)
+      TYPE_INFO_OPTION(TK_FLOAT, Float, 32, 1)
+      TYPE_INFO_OPTION(TK_DOUBLE, Float, 64, 1)
+
 #undef TYPE_INFO_OPTION
       default:
         throw ErrorReport(scalar_type)
@@ -82,12 +86,15 @@ struct TypeInfo {
         }
       case Float:
         switch (bits()) {
+          case 16:
+            return TK_FLOAT16;
           case 32:
             return TK_FLOAT;
           case 64:
             return TK_DOUBLE;
         }
     }
+
     throw std::runtime_error("Unknown type info?");
   }
   Code code() const {
