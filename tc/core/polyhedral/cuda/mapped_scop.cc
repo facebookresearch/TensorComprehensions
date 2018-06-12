@@ -494,6 +494,11 @@ isl::multi_union_pw_aff extractDomainToThread(
       list = list.add(threadMap);
     }
     auto nodeToThread = isl::multi_union_pw_aff(space, list);
+    for (auto ancestor : mapping->ancestors(tree)) {
+      if (auto filterNode = ancestor->elemAs<ScheduleTreeElemFilter>()) {
+        nodeToThread = nodeToThread.intersect_domain(filterNode->filter_);
+      }
+    }
     domainToThread = domainToThread.union_add(nodeToThread);
   }
 
