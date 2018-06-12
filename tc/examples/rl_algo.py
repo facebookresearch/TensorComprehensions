@@ -193,9 +193,9 @@ def finish_episode(final_rewards):
     del net.saved_actions[:]
     net.saved_actions = [[] for i in range(BATCH_SZ)]
 
-INTER_DISP = 50
+INTER_DISP = 20
 
-running_reward = -1
+running_reward = -0.5
 tab_rewards=[]
 for i in range(NB_EPOCHS):
     rewards = []
@@ -206,7 +206,7 @@ for i in range(NB_EPOCHS):
         rewards.append(reward)
     finish_episode(rewards)
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
-    tab_rewards.append(running_reward)
+    tab_rewards.append(-running_reward)
     if i % INTER_DISP == 0:
         viz.line(X=np.arange(i+1), Y=np.array(tab_rewards), win=win)
     print(-running_reward)
