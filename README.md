@@ -41,29 +41,27 @@ def tensordot(float(N, C1, C2, H, W) I0,
     O(n, c1, c3, h, w) +=! I0(n, c1, r_c2, h, w) * I1(n, r_c2, c3, h, w)
 }
   )TC";
-  tc::ATenCompilationUnit<tc::CudaBackend> atCompl;
-  atCompl.define(tc);
 
   // 2. Allocate tensors with random data.
   at::Tensor I0 = at::CUDA(at::kFloat).rand({32,  8, 16, 17, 25});
   at::Tensor I1 = at::CUDA(at::kFloat).rand({32, 16, 2, 17, 25});
 
   // 3. Run autotuning with evolutionary search starting from a naive option.
-  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
-  tc::autotune::GeneticAutotunerATen geneticAutotuneATen(tc);
-  auto bestOption = geneticAutotuneATen.tune(
-    "/tmp/save_results", "tensordot", {I0, I1}, options);
+  auto naiveOptions = Backend::MappingOptionsType::makeNaiveMappingOptions();
+  tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>
+      geneticAutotuneATen(tc);
+  auto bestOption =
+      geneticAutotuneATen.tune("tensordot", {I0, I1}, {naiveOptions});
 
-  // 4. Compile and run the TC with the best option.
-  // Outputs get allocated; could also be pre-allocated and passed.
-  auto handle = atCompl.compile("tensordot", {I0, I1}, bestOption.getValue());
-  std::vector<at::Tensor> outputs;
-  auto duration = atCompl.run("tensordot", {I0, I1}, outputs, handle, true);
-  std::cout
-       << "tensordot size I0: " << I0.sizes() << ", "
-       << "size I1: " << I1.sizes() << " ran in: "
-       << std::chrono::duration_cast<std::chrono::microseconds>(duration).count()
-       << "us\n";
+  // 4. Compile and run the TC with the best option after allocating output
+  //    tensors.
+  auto pExecutor =
+      tc::aten::compile<Backend>(tc, "tensordot", {I0, I1}, bestOption[0]);
+  auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
+  auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
+  std::cout << "tensordot size I0: " << I0.sizes() << ", "
+            << "size I1: " << I1.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds() << "us\n";
 }
 ```
 
@@ -76,15 +74,15 @@ for (auto sizes : std::vector<std::pair<at::IntList, at::IntList>>{
          {{4, 9, 7, 16, 14}, {4, 7, 3, 16, 14}},
          {{8, 5, 11, 10, 10}, {8, 11, 16, 10, 10}},
      }) {
-  at::Tensor I0 = at::CUDA(at::kFloat).rand(sizes.first);
-  at::Tensor I1 = at::CUDA(at::kFloat).rand(sizes.second);
-  auto handle = atCompl.compile("tensordot", {I0, I1}, bestOption.getValue());
-  std::vector<at::Tensor> outputs;
-  auto duration = atCompl.run("tensordot", {I0, I1}, outputs, handle, true);
+  at::Tensor I0 = makeATenTensor<Backend>(sizes.first);
+  at::Tensor I1 = makeATenTensor<Backend>(sizes.second);
+  auto pExecutor =
+      tc::aten::compile<Backend>(tc, "tensordot", {I0, I1}, bestOption[0]);
+  auto outputs = tc::aten::prepareOutputs(tc, "tensordot", {I0, I1});
+  auto timings = tc::aten::profile(*pExecutor, {I0, I1}, outputs);
   std::cout << "tensordot size I0: " << I0.sizes() << ", "
-            << "size I1: " << I1.sizes() << " ran in: "
-            << std::chrono::duration_cast<std::chrono::microseconds>(duration)
-                   .count()
+            << "size I1: " << I1.sizes()
+            << " ran in: " << timings.kernelRuntime.toMicroSeconds()
             << "us\n";
 }
 ```
@@ -96,11 +94,9 @@ Putting it all together, one may see:
 [----------] Global test environment set-up.
 [----------] 1 test from TensorDot
 [ RUN      ] TensorDot.SimpleAutotune
-Loading proto from: /tmp/save_results.options and /tmp/save_results.cuda
 Generation 0    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 226/4238/7345
 Generation 1    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 220/221/233
 Generation 2    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 220/221/234
-Dumping cache to /tmp/save_results.cuda/options
 tensordot size I0: [16, 8, 16, 17, 25], size I1: [16, 16, 2, 17, 25] ran in: 239us
 tensordot size I0: [4, 9, 7, 16, 14], size I1: [4, 7, 3, 16, 14] ran in: 56us
 tensordot size I0: [8, 5, 11, 10, 10], size I1: [8, 11, 16, 10, 10] ran in: 210us
@@ -109,32 +105,6 @@ tensordot size I0: [8, 5, 11, 10, 10], size I1: [8, 11, 16, 10, 10] ran in: 210u
 
 [----------] Global test environment tear-down
 [==========] 1 test from 1 test case ran. (27812 ms total)
-[  PASSED  ] 1 test.
-```
-
-Tuning results are then available and reusable in ```/tmp/save_results.cuda``` and ```/tmp/save_results.proto```.
-
-Interestingly, note that running the same example again will start form the best saved results and improve upon them.
-Of course this has diminishing returns:
-```shell
-> build$ ./examples/example_simple
-[==========] Running 1 test from 1 test case.
-[----------] Global test environment set-up.
-[----------] 1 test from TensorDot
-[ RUN      ] TensorDot.SimpleAutotune
-Loading proto from: /tmp/save_results.options and /tmp/save_results.cuda
-Generation 0    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 256/258/270
-Generation 1    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 158/255/616
-Generation 2    Jobs(Compiled, GPU)/total  (10, 10)/10   (best/median/worst)us: 157/252/720
-Dumping cache to /tmp/save_results.cuda/options
-tensordot size I0: [16, 8, 16, 17, 25], size I1: [16, 16, 2, 17, 25] ran in: 172us
-tensordot size I0: [4, 9, 7, 16, 14], size I1: [4, 7, 3, 16, 14] ran in: 44us
-tensordot size I0: [8, 5, 11, 10, 10], size I1: [8, 11, 16, 10, 10] ran in: 88us
-[       OK ] TensorDot.SimpleAutotune (28232 ms)
-[----------] 1 test from TensorDot (28232 ms total)
-
-[----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (28232 ms total)
 [  PASSED  ] 1 test.
 ```
 

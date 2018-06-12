@@ -139,16 +139,7 @@ def group_convolution(float(N,G,C,H,W) I, float(G,F,C,KH,KW) W1, float(G,F) B)
       std::string("_KH_") + std::to_string(FLAGS_KH);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix +
-            std::string("/group_convolution_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/group_convolution_best") +
-            suffix,
-        tc,
-        "group_convolution",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "group_convolution", inputs, options, check_fun);
   }
   Check(tc, "group_convolution", options, inputs, check_fun);
 }

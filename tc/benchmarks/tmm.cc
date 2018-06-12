@@ -87,14 +87,7 @@ def tmm(float(M,K) A, float(N,K) B) -> (C) {
       std::to_string(FLAGS_K);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/tmm_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/tmm_best") + suffix,
-        tc,
-        "tmm",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "tmm", inputs, options, check_fun);
     TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "tmm", bestOptions[0], inputs, check_fun);

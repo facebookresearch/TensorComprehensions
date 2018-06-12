@@ -86,13 +86,7 @@ void Moments2_2D_1D::autotuneAndCheck(
       std::string("_K_") + std::to_string(K);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/moments_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/moments_best") + suffix,
-        tc::TC_Moments,
-        entryPoint,
-        inputs,
-        options);
+    bestOptions = autotune(tc::TC_Moments, entryPoint, inputs, options);
     TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc::TC_Moments, entryPoint, bestOptions[0], inputs, checkFun);

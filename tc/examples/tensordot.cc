@@ -34,8 +34,6 @@
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
 
-DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
-
 template <typename Backend>
 void testOnBackend() {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -56,8 +54,8 @@ def tensordot(float(N, C1, C2, H, W) I0,
   auto naiveOptions = Backend::MappingOptionsType::makeNaiveMappingOptions();
   tc::aten::ATenAutotuner<Backend, tc::autotune::GeneticSearch>
       geneticAutotuneATen(tc);
-  auto bestOption = geneticAutotuneATen.tune(
-      "tensordot", {I0, I1}, naiveOptions, FLAGS_proto_path);
+  auto bestOption =
+      geneticAutotuneATen.tune("tensordot", {I0, I1}, {naiveOptions});
   TC_CHECK_GT(bestOption.size(), 0u);
 
   // 4. Compile and run the TC with the best option.
@@ -102,7 +100,6 @@ TEST(TensorDotGPU, SimpleAutotune) {
 // From root, run with:
 //   ./build/examples/tensordot --tuner_threads=10 --tuner_gen_pop_size=10
 //   --tuner_gen_generations=3 --tuner_gen_number_elites=4
-//   --proto_path="/tmp/tensordot"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

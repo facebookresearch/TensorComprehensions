@@ -164,12 +164,14 @@ class Autotuner {
       const std::unordered_map<size_t, std::vector<const DLConstTensor*>>&
           inputs,
       std::unordered_map<size_t, std::vector<const DLTensor*>>& outputs,
-      const MappingOptionsType& baseMapping,
-      const std::string& cacheFileName = "",
+      const std::vector<MappingOptionsType>& baseMapping,
       const TuningParameterFixer& fixedParams = TuningParameterFixer());
 
- private:
-  std::shared_ptr<OptionsCache<Backend>> optionsCache_;
+ public:
+  /// This is accessed by multiple threads in the tuning harness.
+  /// Even though manipulations are threadsafe, you want to be sure tuning
+  /// has finished before accessing the optionsCache.
+  std::shared_ptr<OptionsCache<Backend>> optionsCache;
 };
 
 /// Helper functions that need specializing for various backends.
