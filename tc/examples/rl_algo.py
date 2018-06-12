@@ -11,10 +11,14 @@ from collections import namedtuple
 from torch.distributions import Categorical
 import time
 import tensor_comprehensions as tc
+from visdom import Visdom
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
 NB_EPOCHS = 10000
-BATCH_SZ = 16
+BATCH_SZ = 8
+
+viz = Visdom()
+win = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
 def group_normalization(
@@ -39,8 +43,8 @@ def evalTime(opt):
     #print(cat_val)
     opt = [cat_val[i][opt[i+INIT_INPUT_SZ]] for i in range(NB_HYPERPARAMS)]
     opt = optionsFromVector(opt)
-    warmup = 10
-    iters  = 50
+    warmup = 5
+    iters  = 20
     for i in range(warmup):
         tc_prog(*inp, options=opt)
         torch.cuda.synchronize()
@@ -189,7 +193,10 @@ def finish_episode(final_rewards):
     del net.saved_actions[:]
     net.saved_actions = [[] for i in range(BATCH_SZ)]
 
+INTER_DISP = 50
+
 running_reward = -1
+tab_rewards=[]
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
@@ -199,4 +206,7 @@ for i in range(NB_EPOCHS):
         rewards.append(reward)
     finish_episode(rewards)
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
+    tab_rewards.append(running_reward)
+    if i % INTER_DISP == 0:
+        viz.line(X=np.arange(i+1), Y=np.array(tab_rewards), win=win)
     print(-running_reward)
