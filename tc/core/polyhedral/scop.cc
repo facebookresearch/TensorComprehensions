@@ -103,10 +103,12 @@ std::ostream& operator<<(std::ostream& os, const Scop& s) {
   for (auto i : s.halide.idx) {
     os << i << ", ";
   }
+  os << "}, ";
   os << "reductionIdx: { ";
   for (auto i : s.halide.reductionIdx) {
     os << i << ", ";
   }
+  os << "}, ";
   os << "params: {";
   for (auto p : s.halide.params) {
     os << p.type() << " " << p.name() << ", ";
