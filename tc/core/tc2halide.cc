@@ -37,14 +37,6 @@ Type translateScalarType(int tcType) {
   switch (tcType) {
     case lang::TK_BOOL:
       return UInt(1);
-    case lang::TK_UINT8:
-      return UInt(8);
-    case lang::TK_UINT16:
-      return UInt(16);
-    case lang::TK_UINT32:
-      return UInt(32);
-    case lang::TK_UINT64:
-      return UInt(64);
     case lang::TK_INT8:
       return Int(8);
     case lang::TK_INT16:
@@ -53,6 +45,14 @@ Type translateScalarType(int tcType) {
       return Int(32);
     case lang::TK_INT64:
       return Int(64);
+    case lang::TK_UINT8:
+      return UInt(8);
+    case lang::TK_UINT16:
+      return UInt(16);
+    case lang::TK_UINT32:
+      return UInt(32);
+    case lang::TK_UINT64:
+      return UInt(64);
     case lang::TK_FLOAT16:
       return Float(16);
     case lang::TK_FLOAT32:
@@ -63,6 +63,64 @@ Type translateScalarType(int tcType) {
       return Float(32);
     case lang::TK_DOUBLE:
       return Float(64);
+
+    case lang::TK_VECTOR2_BOOL:
+      return UInt(1, 2);
+    case lang::TK_VECTOR2_INT8:
+      return Int(8, 2);
+    case lang::TK_VECTOR2_INT16:
+      return Int(16, 2);
+    case lang::TK_VECTOR2_INT32:
+      return Int(32, 2);
+    case lang::TK_VECTOR2_INT64:
+      return Int(64, 2);
+    case lang::TK_VECTOR2_UINT8:
+      return UInt(8, 2);
+    case lang::TK_VECTOR2_UINT16:
+      return UInt(16, 2);
+    case lang::TK_VECTOR2_UINT32:
+      return UInt(32, 2);
+    case lang::TK_VECTOR2_UINT64:
+      return UInt(64, 2);
+    case lang::TK_VECTOR2_FLOAT16:
+      return Float(16, 2);
+    case lang::TK_VECTOR2_FLOAT32:
+      return Float(32, 2);
+    case lang::TK_VECTOR2_FLOAT64:
+      return Float(64, 2);
+    case lang::TK_VECTOR2_FLOAT:
+      return Float(32, 2);
+    case lang::TK_VECTOR2_DOUBLE:
+      return Float(64, 2);
+
+    case lang::TK_VECTOR4_BOOL:
+      return UInt(1, 4);
+    case lang::TK_VECTOR4_INT8:
+      return Int(8, 4);
+    case lang::TK_VECTOR4_INT16:
+      return Int(16, 4);
+    case lang::TK_VECTOR4_INT32:
+      return Int(32, 4);
+    case lang::TK_VECTOR4_INT64:
+      return Int(64, 4);
+    case lang::TK_VECTOR4_UINT8:
+      return UInt(8, 4);
+    case lang::TK_VECTOR4_UINT16:
+      return UInt(16, 4);
+    case lang::TK_VECTOR4_UINT32:
+      return UInt(32, 4);
+    case lang::TK_VECTOR4_UINT64:
+      return UInt(64, 4);
+    case lang::TK_VECTOR4_FLOAT16:
+      return Float(16, 4);
+    case lang::TK_VECTOR4_FLOAT32:
+      return Float(32, 4);
+    case lang::TK_VECTOR4_FLOAT64:
+      return Float(64, 4);
+    case lang::TK_VECTOR4_FLOAT:
+      return Float(32, 4);
+    case lang::TK_VECTOR4_DOUBLE:
+      return Float(64, 4);
 
     default:
       LOG(FATAL) << "Unhandled TC scalar type: " << tcType << '\n';
