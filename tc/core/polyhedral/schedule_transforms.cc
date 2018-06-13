@@ -112,6 +112,16 @@ isl::union_set applyAnyFilter(isl::union_set domain, const ScheduleTree* node) {
   return domain;
 }
 
+/*
+ * If "node" is a mapping filter, then intersect "domain" with that filter.
+ */
+isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemMappingFilter>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
 // Get the set of domain elements that are active below
 // the given branch of nodes, filtered using "filter".
 //
@@ -149,6 +159,12 @@ isl::union_set activeDomainPointsHelper(
 }
 
 } // namespace
+
+isl::union_set prefixMappingFilter(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  return collectDomain(root, node->ancestors(root), &applyMapping);
+}
 
 isl::union_set activeDomainPoints(
     const ScheduleTree* root,

@@ -335,6 +335,12 @@ isl::union_set activeDomainPointsNoMappingNoExtension(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 
+// Collect the outer block/thread identifier mappings
+// into a filter on the active domain elements.
+isl::union_set prefixMappingFilter(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node);
+
 // Extract a mapping from the domain elements active at "tree" (in a tree
 // rooted at "root") to identifiers "ids", where all branches in "tree" are
 // assumed to have been mapped to these identifiers.  The result lives in a
