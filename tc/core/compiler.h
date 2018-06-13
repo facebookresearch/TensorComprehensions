@@ -32,7 +32,7 @@
  *   3. parse a TC definition and retrieve the map of TC function to parsed TC
  *      trees.
  *
- * Compilation is backed by a compilation cache, its correspondance is:
+ * Compilation is backed by a compilation cache, its correspondence is:
  * 1 TcExecutor <-> 1 compiled tuple<TC function, input shapes, MappingOptions>
  *
  * The compile function is templated by the Backend type.

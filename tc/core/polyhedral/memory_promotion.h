@@ -38,7 +38,7 @@ enum class AccessType : short { Read, Write };
 // access is not strided, then "offset" is a zero expression and "stride" is 1.
 // The lowerBound and the size are computed after removing the potential stride.
 // The scope is defined by a specific position in a schedule tree (const
-// ScheduleTree*), the user is responsible for maintaining the correspondance
+// ScheduleTree*), the user is responsible for maintaining the correspondence
 // between schedule tree positions and footprints.
 struct ScopedFootprint {
   size_t dim() const {
@@ -66,7 +66,7 @@ struct ScopedFootprint {
 
 // Descriptor of tensor reference in a Scop.
 // May be scoped to a specific position in a schedule tree, the user is
-// responsible for maintaining the correspondance between schedule tree
+// responsible for maintaining the correspondence between schedule tree
 // positions and scoped access relations.
 class TensorReference {
  public:
@@ -104,7 +104,7 @@ typedef std::unordered_map<isl::id, TensorGroupsInfo, isl::IslIdIslHash>
 // memory together to avoid inconsistent values.
 //
 // Scoped to a specific position in a schedule tree, the user is responsible
-// for maintaing the correspondance between schedule tree positions and scoped
+// for maintaining the correspondence between schedule tree positions and scoped
 // access relations of each reference as well as scoped footprints.
 class TensorReferenceGroup {
  private:
