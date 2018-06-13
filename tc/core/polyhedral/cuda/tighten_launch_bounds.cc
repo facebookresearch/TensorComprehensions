@@ -26,13 +26,10 @@
 namespace tc {
 namespace polyhedral {
 namespace {
-// This returns the (inclusive) range of the mapping parameter that is active
-// at node under root given:
-//   1. a context that is the intersection of the specialization context and
-//   the mapping context
-//   2. a MappingId
-// This range corresponds to the blocks/threads active at that particular
-// location in the tree.
+// This returns the (inclusive) range of the mapping parameter "mappingId"
+// within the context "mappingContext".
+// This range corresponds to the blocks/threads active at the particular
+// location in the tree where this mapping is active.
 //
 // This is used to tighten the kernel to only launch on the necessary amount
 // of resources.
@@ -43,23 +40,20 @@ namespace {
 // Otherwise, the range is asserted bounded on the left and to lie in the
 // positive half of the integer axis.
 std::pair<size_t, size_t> rangeOfMappingParameter(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node,
-    isl::set context,
+    isl::set mappingContext,
     mapping::MappingId mappingId) {
-  auto active =
-      activeDomainPoints(root, node).intersect_params(context).params();
-  if (!active.involves_param(mappingId)) {
+  if (!mappingContext.involves_param(mappingId)) {
     return std::make_pair(0, std::numeric_limits<size_t>::max());
   }
-  isl::aff a(isl::aff::param_on_domain_space(active.get_space(), mappingId));
-  auto max = active.max_val(a);
+  auto space = mappingContext.get_space();
+  isl::aff a(isl::aff::param_on_domain_space(space, mappingId));
+  auto max = mappingContext.max_val(a);
   if (max.is_nan() || max.is_infty()) {
     return std::make_pair(0, std::numeric_limits<size_t>::max());
   }
   TC_CHECK(max.is_int()) << max.to_str();
   TC_CHECK(max.is_nonneg()) << max.to_str();
-  auto min = active.min_val(a);
+  auto min = mappingContext.min_val(a);
   TC_CHECK(min.is_int()) << max.to_str();
   TC_CHECK(min.is_nonneg()) << max.to_str();
 
@@ -105,7 +99,8 @@ size_t maxValue(const Scop& scop, const mapping::MappingId& id) {
       },
       leaves(root));
   for (auto p : nonSyncLeaves) {
-    auto range = rangeOfMappingParameter(root, p, params, id);
+    auto active = activeDomainPoints(root, p).intersect_params(params).params();
+    auto range = rangeOfMappingParameter(active, id);
     min = std::min(min, range.first);
     max = std::max(max, range.second);
   }
