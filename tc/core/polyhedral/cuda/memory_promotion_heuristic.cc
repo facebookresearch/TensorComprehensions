@@ -34,24 +34,6 @@ namespace tc {
 namespace polyhedral {
 namespace {
 
-/*
- * Is "tree" a mapping filter that maps identifiers of the type provided as
- * template argument?
- */
-template <typename MappingType>
-bool isMappingTo(const detail::ScheduleTree* tree) {
-  using namespace detail;
-
-  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
-    for (auto& kvp : filterNode->mapping) {
-      if (kvp.first.is<MappingType>()) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 // Map global<->shared copy bands to threads, starting from the innermost
 // loop as it iterates over the last subscript and will result in coalescing.
 void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
@@ -245,6 +227,8 @@ isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
 const detail::ScheduleTree* findThreadMappingAncestor(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
+  using namespace tc::polyhedral::detail;
+
   auto ancestors = node->ancestors(root);
   ancestors = functional::Filter(isMappingTo<mapping::ThreadId>, ancestors);
   if (ancestors.size() < 1) {

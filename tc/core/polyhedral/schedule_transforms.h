@@ -345,6 +345,22 @@ isl::multi_union_pw_aff extractDomainToIds(
     const std::vector<mapping::MappingId>& ids,
     isl::id tupleId);
 
+// Is "tree" a mapping filter that maps identifiers of the type provided as
+// template argument?
+template <typename MappingType>
+bool isMappingTo(const detail::ScheduleTree* tree) {
+  using namespace detail;
+
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+    for (auto& kvp : filterNode->mapping) {
+      if (kvp.first.is<MappingType>()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 } // namespace polyhedral
 } // namespace tc
 
