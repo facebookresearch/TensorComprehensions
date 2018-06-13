@@ -75,6 +75,50 @@ inline std::vector<const detail::ScheduleTree*> leaves(
       [](const detail::ScheduleTree* st) { return st->numChildren() == 0; },
       detail::ScheduleTree::collect(tree));
 }
+
+/*
+ * Compute the maximal value attained by the mapping parameter "id".
+ * Return std::numeric_limits<size_t>::max() if this value cannot
+ * be determined.
+ */
+size_t maxValue(const Scop& scop, const mapping::MappingId& id) {
+  auto root = scop.scheduleRoot();
+  auto params = scop.context();
+  size_t sizetMax = std::numeric_limits<size_t>::max();
+  size_t max = 0;
+  size_t min = sizetMax;
+  auto nonSyncLeaves = functional::Filter(
+      [root, params](const detail::ScheduleTree* node) {
+        auto f = node->elemAsBase<detail::ScheduleTreeElemFilter>();
+        if (!f) {
+          return true;
+        }
+        if (f->filter_.n_set() != 1) {
+          std::stringstream ss;
+          ss << "In tree:\n"
+             << *root << "\nnot a single set in filter: " << f->filter_;
+          throw tightening::TighteningException(ss.str());
+        }
+        auto single = isl::set::from_union_set(f->filter_);
+        auto single_id = single.get_tuple_id();
+        return !Scop::isSyncId(single_id) && !Scop::isWarpSyncId(single_id);
+      },
+      leaves(root));
+  for (auto p : nonSyncLeaves) {
+    auto range = rangeOfMappingParameter(root, p, params, id);
+    min = std::min(min, range.first);
+    max = std::max(max, range.second);
+  }
+  // Ignore min for now but there is a future possibility for shifting
+  LOG_IF(WARNING, min > 0)
+      << "Opportunity for tightening launch bounds with shifting -> min:"
+      << min;
+  // Inclusive range needs + 1 to translate to sizes
+  if (max < sizetMax) { // avoid overflow
+    return max + 1;
+  }
+  return sizetMax;
+}
 } // namespace
 
 // Takes grid/block launch bounds that have been passed to mapping and
@@ -84,56 +128,16 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
     const Scop& scop,
     const tc::Grid& grid,
     const tc::Block& block) {
-  auto root = scop.scheduleRoot();
-  auto params = scop.context();
-
-  auto maxValue = [root, params](const mapping::MappingId& id) -> size_t {
-    size_t sizetMax = std::numeric_limits<size_t>::max();
-    size_t max = 0;
-    size_t min = sizetMax;
-    auto nonSyncLeaves = functional::Filter(
-        [root, params](const detail::ScheduleTree* node) {
-          auto f = node->elemAsBase<detail::ScheduleTreeElemFilter>();
-          if (!f) {
-            return true;
-          }
-          if (f->filter_.n_set() != 1) {
-            std::stringstream ss;
-            ss << "In tree:\n"
-               << *root << "\nnot a single set in filter: " << f->filter_;
-            throw tightening::TighteningException(ss.str());
-          }
-          auto single = isl::set::from_union_set(f->filter_);
-          auto single_id = single.get_tuple_id();
-          return !Scop::isSyncId(single_id) && !Scop::isWarpSyncId(single_id);
-        },
-        leaves(root));
-    for (auto p : nonSyncLeaves) {
-      auto range = rangeOfMappingParameter(root, p, params, id);
-      min = std::min(min, range.first);
-      max = std::max(max, range.second);
-    }
-    // Ignore min for now but there is a future possibility for shifting
-    LOG_IF(WARNING, min > 0)
-        << "Opportunity for tightening launch bounds with shifting -> min:"
-        << min;
-    // Inclusive range needs + 1 to translate to sizes
-    if (max < sizetMax) { // avoid overflow
-      return max + 1;
-    }
-    return sizetMax;
-  };
-
   USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
   // Corner case: take the min with the current size to avoid degenerate
   // range in the unbounded case.
   return std::make_pair(
-      tc::Grid({std::min(maxValue(BX), BX.mappingSize(grid)),
-                std::min(maxValue(BY), BY.mappingSize(grid)),
-                std::min(maxValue(BZ), BZ.mappingSize(grid))}),
-      tc::Block({std::min(maxValue(TX), TX.mappingSize(block)),
-                 std::min(maxValue(TY), TY.mappingSize(block)),
-                 std::min(maxValue(TZ), TZ.mappingSize(block))}));
+      tc::Grid({std::min(maxValue(scop, BX), BX.mappingSize(grid)),
+                std::min(maxValue(scop, BY), BY.mappingSize(grid)),
+                std::min(maxValue(scop, BZ), BZ.mappingSize(grid))}),
+      tc::Block({std::min(maxValue(scop, TX), TX.mappingSize(block)),
+                 std::min(maxValue(scop, TY), TY.mappingSize(block)),
+                 std::min(maxValue(scop, TZ), TZ.mappingSize(block))}));
 }
 } // namespace polyhedral
 } // namespace tc
