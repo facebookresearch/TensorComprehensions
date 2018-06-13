@@ -18,6 +18,13 @@ import torch
 dump_backward_overhead = False
 
 ################################################################################
+# The purpose of these examples is to demonstrate the usage of the python
+# bindings to build a simple, low-overhead, python abstraction.
+# We demonstrate the bnidings by building a series of examples leading to a
+# MultiTcFunction abstraction for PyTorch autograd.
+################################################################################
+
+################################################################################
 # 0. Initializations
 ################################################################################
 from tensor_comprehensions.tclib import MappingOptions
@@ -33,7 +40,7 @@ def time_tc(iters, prepend, runFun, tc_name, inputs):
         start = time.clock()
         if dump_backward_overhead:
             dump_backward_overhead = time.clock()
-        outputs = runFun(tc_name, inputs, ())
+        outputs = runFun(tc_name, inputs)
         timesCPU.append(time.clock() - start)
         torch.cuda.synchronize()
         timesCPUAndGPU.append(time.clock() - start)
@@ -68,7 +75,33 @@ def matmul_grad(float(M,N) A, float(N,K) B, float(M,K) d_O) -> (d_A, d_B) {
 mat1, mat2 = torch.randn(300, 400).cuda(), torch.randn(400, 500).cuda()
 
 ################################################################################
-# 1. Use the C++ API to build a low-overhead compilation cache and time it
+# 1. Use the simple high-overhead compile/run C++ API
+#    If one can keep state in their layer or wishes to experiment with TC,
+#    this is a simple entry point.
+#    If state cannot be kept, be aware that this API has a non-trivial overhead
+#    when outputs sizes need to be inferred and outputs allocated.
+#    Compilation itself has a prohibitive cost and needs to be memoized either
+#    by holding on to the executor or by using the low-overhead abstraction, see
+#    below
+################################################################################
+from tensor_comprehensions.tclib import compile
+
+executor = compile(mm, "matmul", (mat1, mat2), MappingOptions())
+outputs = executor.run((mat1, mat2), ())
+outputs = executor.unchecked_run((mat1, mat2), tuple(outputs))
+time_tc(100,
+        "simple API\t",
+        lambda name, ins: executor.unchecked_run(ins, tuple(outputs)),
+        "matmul",
+        (mat1, mat2))
+time_tc(100,
+        "simple API (with allocation overhead)\t",
+        lambda name, ins: executor.unchecked_run(ins, ()),
+        "matmul",
+        (mat1, mat2))
+
+################################################################################
+# 2. Use the C++ API to build a low-overhead compilation cache and time it
 ################################################################################
 from tensor_comprehensions.tclib import CompilationCache
 
@@ -76,15 +109,17 @@ compilation_cache = CompilationCache(mm)
 # Compilation returns an allocated tuple of outputs with the proper shapes.
 # Allocation overhead is negligible compared to compilation overhead.
 compilation_cache.compile("matmul", (mat1, mat2), MappingOptions())
+# Run once without timing
+compilation_cache.unchecked_run("matmul", (mat1, mat2), ())
 # unchecked_run on  tensors
 time_tc(100,
         "raw unchecked_run naive options\t",
-        lambda name, ins, outs: compilation_cache.unchecked_run(name, ins, outs),
+        lambda name, ins: compilation_cache.unchecked_run(name, ins, ()),
         "matmul",
         (mat1, mat2))
 
 ################################################################################
-# 2. Short tuning run saving to file then load the best option to create a
+# 3. Short tuning run saving to file then load the best option to create a
 #    compilation cache
 ################################################################################
 from tensor_comprehensions.tclib import Tuner
@@ -111,12 +146,12 @@ assert top1.__str__() == top10[0].__str__()
 compilation_cache.compile("matmul", (mat1, mat2), top1)
 time_tc(100,
         "raw unchecked_run tuned options\t",
-        lambda name, ins, outs: compilation_cache.unchecked_run(name, ins, outs),
+        lambda name, ins: compilation_cache.unchecked_run(name, ins, ()),
         "matmul",
         (mat1, mat2))
 
 ################################################################################
-# 3. Simple TC builder
+# 4. Simple TC builder
 ################################################################################
 class TcBuilder():
     def __init__(self,
@@ -200,12 +235,12 @@ tcb = TcBuilder(
 tcb.compileOrTune(name = "matmul", inputs = (mat1, mat2))
 time_tc(100,
         "TcBuilder unchecked_run\t",
-        lambda name, ins, outs: tcb.compilation_cache.unchecked_run(name, ins, outs),
+        lambda name, ins: tcb.compilation_cache.unchecked_run(name, ins, ()),
         "matmul",
         (mat1, mat2))
 
 ################################################################################
-# 4. Simple torch.autograd.Function backed by TcBuilder
+# 5. Simple torch.autograd.Function backed by TcBuilder
 ################################################################################
 class TcFunction(torch.autograd.Function):
     @staticmethod
@@ -283,7 +318,7 @@ tcb = TcBuilder(
 
 time_tc(100,
         "TcFunction forward unchecked_run\t",
-        lambda name, ins, outs: TcFunction.apply(tcb, *ins),
+        lambda name, ins: TcFunction.apply(tcb, *ins),
         "matmul",
         (mat1, mat2))
 
@@ -306,7 +341,7 @@ outputs[0].backward(grad_sized_tensor, retain_graph = True)
 dump_backward_overhead = False
 time_tc(100,
         "TcFunction backward unchecked_run\t",
-        lambda name, ins, outs: outputs[0].backward(grad_sized_tensor, retain_graph = True),
+        lambda name, ins: outputs[0].backward(grad_sized_tensor, retain_graph = True),
         "matmul",
         (mat1, mat2))
 
@@ -316,7 +351,7 @@ v = outputs[0].sum()
 v.backward(retain_graph = True)
 
 ################################################################################
-# 5. Multi-TC builder
+# 6. Multi-TC builder
 ################################################################################
 class MultiTcBuilder():
     def __init__(self,
@@ -404,12 +439,12 @@ tcb = MultiTcBuilder(
 tcb.compileOrTune(name = "matmul", inputs = (mat1, mat2))
 time_tc(100,
         "MultiTcBuilder unchecked_run\t",
-        lambda name, ins, outs: tcb.compilation_cache.unchecked_run(name, ins, outs),
+        lambda name, ins: tcb.compilation_cache.unchecked_run(name, ins, ()),
         "matmul",
         (mat1, mat2))
 
 ################################################################################
-# 6. Multi-TC torch.autograd.Function backed by MultiTcBuilder
+# 7. Multi-TC torch.autograd.Function backed by MultiTcBuilder
 ################################################################################
 class MultiTcFunction(torch.autograd.Function):
     @staticmethod
@@ -508,7 +543,7 @@ tcb = MultiTcBuilder(
 
 time_tc(100,
         "MultiTcFunction forward unchecked_run\t",
-        lambda name, ins, outs: MultiTcFunction.apply(tcb, *ins),
+        lambda name, ins: MultiTcFunction.apply(tcb, *ins),
         "matmul",
         (mat1, mat2))
 
@@ -531,7 +566,7 @@ outputs[0].backward(grad_sized_tensor, retain_graph = True)
 dump_backward_overhead = False
 time_tc(100,
         "MultiTcFunction backward unchecked_run\t",
-        lambda name, ins, outs: outputs[0].backward(grad_sized_tensor, retain_graph = True),
+        lambda name, ins: outputs[0].backward(grad_sized_tensor, retain_graph = True),
         "matmul",
         (mat1, mat2))
 

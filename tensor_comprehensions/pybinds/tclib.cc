@@ -236,6 +236,42 @@ class Tuner : public ATenCudaGeneticTuner {
   std::string cacheFileName;
 };
 
+struct TcExecutor {
+  py::list run(
+      const py::tuple& inputs,
+      const py::tuple& outputs = py::tuple()) {
+    if (outputs.size() > 0) {
+      auto atOutputs = getATenTensors(outputs);
+      auto atInputs = getATenTensors(inputs);
+      tc::aten::run(*executor, atInputs, atOutputs);
+      return py::list(outputs);
+    } else {
+      auto atInputs = getATenTensors(inputs);
+      auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+      tc::aten::run(*executor, atInputs, atOutputs);
+      return convertToPyObjects(atOutputs);
+    }
+  }
+  py::list uncheckedRun(
+      const py::tuple& inputs,
+      const py::tuple& outputs = py::tuple()) {
+    if (outputs.size() > 0) {
+      auto atOutputs = getATenTensors(outputs);
+      auto atInputs = getATenTensors(inputs);
+      tc::aten::uncheckedRun(*executor, atInputs, atOutputs);
+      return py::list(outputs);
+    } else {
+      auto atInputs = getATenTensors(inputs);
+      auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+      tc::aten::uncheckedRun(*executor, atInputs, atOutputs);
+      return convertToPyObjects(atOutputs);
+    }
+  }
+  std::string tc;
+  std::string entryPoint;
+  std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
+};
+
 class TunerConfig {
  public:
   TunerConfig(
@@ -344,6 +380,20 @@ PYBIND11_MODULE(tclib, m) {
   });
   m.def(
       "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
+
+  py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
+      .def("run", &TcExecutor::run)
+      .def("unchecked_run", &TcExecutor::uncheckedRun);
+  m.def(
+      "compile",
+      [](const std::string& tc,
+         const std::string& entryPoint,
+         const py::tuple& inputs,
+         const tc::CudaMappingOptions& options) {
+        auto execUPtr = tc::aten::compile<tc::CudaBackend>(
+            tc, entryPoint, getATenTensors(inputs), options);
+        return TcExecutor{tc, entryPoint, std::move(execUPtr)};
+      });
 
   py::class_<TunerConfig>(m, "TunerConfig", py::module_local())
       .def(
