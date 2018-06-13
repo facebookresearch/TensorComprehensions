@@ -458,6 +458,7 @@ Autotuner<Backend, SearchStrategy>::tune(
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (sigint_) {
       tuningHarness.stopAfterCurrentIteration();
+      break;
     }
     if (sigterm_) {
       std::cerr << "Autotuning aborted." << std::endl;

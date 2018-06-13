@@ -77,6 +77,8 @@ std::vector<const DLTensor*> extractRawPtrs(
  * It is serializable to protobuf and stored directly in the cache.
  */
 struct TensorInfo {
+  static constexpr int kAlignment = 256;
+
   DLDataType dtype;
   uint64_t alignment;
   std::vector<int64_t> shape;

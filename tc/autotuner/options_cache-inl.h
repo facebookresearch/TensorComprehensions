@@ -336,10 +336,10 @@ std::vector<typename Backend::MappingOptionsType> loadTopKFromCacheFile(
 
 template <typename Backend>
 void appendTopKToCacheFile(
-    const std::shared_ptr<OptionsCache<Backend>>& cache,
+    const OptionsCache<Backend>& cache,
     const std::string& cacheFilename,
     uint32_t count) {
-  OptionsCache<Backend> copy(*cache);
+  OptionsCache<Backend> copy(cache);
   copy.pruneKeepTopK(count);
   auto proto = copy.toProtobuf();
   OptionsCache<Backend> optionsCache;

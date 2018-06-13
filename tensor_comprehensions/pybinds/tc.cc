@@ -106,7 +106,7 @@ PYBIND11_MODULE(tc, m) {
   m.def(
       "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
-  py::class_<ATenCudaTuner>(m, "ATenCudaTuner")
+  py::class_<ATenCudaTuner>(m, "ATenCudaTuner", py::module_local())
       .def(py::init<const std::string>())
       .def(
           "pop_size",
@@ -204,7 +204,8 @@ PYBIND11_MODULE(tc, m) {
                 numCandidates);
           });
 
-  py::class_<ATenCudaCompilationUnit>(m, "ATenCompilationUnit")
+  py::class_<ATenCudaCompilationUnit>(
+      m, "ATenCompilationUnit", py::module_local())
       .def(py::init<>())
       .def("define", &ATenCudaCompilationUnit::define, "Define the TC language")
       .def(
@@ -255,7 +256,8 @@ PYBIND11_MODULE(tc, m) {
   py::class_<tc::CudaMappingOptions>(
       m,
       "CudaMappingOptions",
-      "MappingCudaMappingOptions for a Tensor Comprehensions (TC)")
+      "CudaMappingOptions for a Tensor Comprehensions (TC)",
+      py::module_local())
       .def(
           py::init([](std::string type) {
             if (type == "naive") {
