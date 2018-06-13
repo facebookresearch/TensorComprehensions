@@ -31,9 +31,20 @@ namespace code {
 namespace c {
 
 constexpr auto types = R"C(
+// Can't include system dependencies with NVRTC
+// Can't include cuda_fp16.h with NVRTC due to transitive system dependencies
+// #include <cuda_fp16.h>
+
 // Halide type handling
+typedef char int8;
+typedef short int16;
 typedef int int32;
 typedef long int64;
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef unsigned long uint64;
+// typedef half float16;
 typedef float float32;
 typedef double float64;
 )C";
