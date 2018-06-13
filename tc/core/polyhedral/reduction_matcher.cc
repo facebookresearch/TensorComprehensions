@@ -45,32 +45,23 @@ bool isSupportedReduction(Halide::Internal::Stmt stmt) {
   return false;
 }
 
-// TODO: the function currently available in Scop only works _after_ inserting
-// the reduction.  that is a kind of internal state dependence we want to avoid
 // If id is the statement identifier of an update statement
 // of a supported type of reduction, then return true.
-bool isReductionUpdateId(isl::id id, const Scop& scop) {
+bool isSupportedReductionUpdateId(isl::id id, const Scop& scop) {
   TC_CHECK_EQ(scop.halide.statements.count(id), 1u)
       << "id is not a statement in scop" << id;
   auto provideNode = scop.halide.statements.at(id);
-  if (!isSupportedReduction(provideNode)) {
-    return false;
-  }
-  for (auto const& iup : scop.halide.reductions) {
-    if (iup.update.same_as(provideNode)) {
-      return true;
-    }
-  }
-  return false;
+  return isSupportedReduction(provideNode);
 }
 
 } // namespace
 
 isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop) {
+  domain = scop.body.reductions.intersect_domain(domain).domain();
   auto update = isl::union_set::empty(domain.get_space());
   domain.foreach_set([&update, &scop](isl::set set) {
     auto setId = set.get_tuple_id();
-    if (isReductionUpdateId(setId, scop)) {
+    if (isSupportedReductionUpdateId(setId, scop)) {
       update = update.unite(set);
     }
   });
