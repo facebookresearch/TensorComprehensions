@@ -334,6 +334,14 @@ std::pair<isl::union_map, isl::union_map> extractAccesses(
   return {finder.reads, finder.writes};
 }
 
+bool isReductionUpdate(const Provide* op) {
+  if (const Call* call = op->values[0].as<Call>()) {
+    return call->is_intrinsic(tc2halide::kReductionUpdate);
+  } else {
+    return false;
+  }
+}
+
 /*
  * Take a parametric expression "f" and convert it into an expression
  * on the iteration domains in "domain" by reinterpreting the parameters
@@ -487,14 +495,6 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
 std::vector<Reduction> findReductions(const Stmt& s) {
   class FindReductions : public IRVisitor {
     using IRVisitor::visit;
-
-    bool isReductionUpdate(const Provide* op) {
-      if (const Call* call = op->values[0].as<Call>()) {
-        return call->is_intrinsic(tc2halide::kReductionUpdate);
-      } else {
-        return false;
-      }
-    }
 
     // Keep track of any reduction variable name for use in visit(Provide*)
     void visit(const Variable* op) {
