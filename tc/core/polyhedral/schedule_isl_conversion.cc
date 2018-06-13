@@ -66,7 +66,7 @@ isl::schedule_node insertBranch(
     const std::vector<size_t>& pos) {
   auto filters = isl::union_set_list(node.get_ctx(), st->numChildren());
   for (size_t i = 0; i < pos.size(); ++i) {
-    auto filter = st->child({pos[i]})->elemAsBase<ScheduleTreeElemFilter>();
+    auto filter = st->child({pos[i]})->elemAs<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     filters = filters.add(filter->filter_);
   }
