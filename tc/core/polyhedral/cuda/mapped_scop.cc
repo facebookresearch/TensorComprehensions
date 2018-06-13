@@ -268,11 +268,11 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   updates.foreach_set([&updateIds](isl::set set) {
     updateIds.emplace_back(set.get_tuple_id());
   });
-  // The reduction member needs to appear right underneath
-  // the coincident members.
-  auto reductionDim = nCoincident;
-  auto member = band->mupa_.get_union_pw_aff(reductionDim);
-  if (!isReductionMember(member, updates, scop())) {
+  // The outer (coincident) members, together with the prefix schedule,
+  // need to determine a single reduction.
+  auto prefix = prefixScheduleMupa(schedule(), tree);
+  prefix = prefix.range_product(band->memberRange(0, nCoincident));
+  if (!isSingleReductionWithin(updates, prefix, scop())) {
     return false;
   }
   // Order the other statements (if any) before the update statements

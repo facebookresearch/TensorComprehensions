@@ -29,11 +29,12 @@ namespace polyhedral {
 // that appear in "domain".
 isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop);
 
-// Does the band member with the given partial schedule correspond
-// to a reduction on all statements with a domain in "domain"?
-bool isReductionMember(
-    isl::union_pw_aff member,
+// Does "prefix" partition "domain" into individual reductions?
+// In particular, do the elements of "domain" access a single tensor
+// element within "prefix"?
+bool isSingleReductionWithin(
     isl::union_set domain,
+    isl::multi_union_pw_aff prefix,
     const Scop& scop);
 
 } // namespace polyhedral
