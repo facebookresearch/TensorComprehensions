@@ -70,7 +70,7 @@ python setup.py install
 ./test_python/run_test.sh
 
 for f in $(find ./python/examples -name "*.py"); do
-    python $f
+    python $f -v
 done
 
 FILTER_OUT="benchmark_MLP_model benchmark_kronecker" ./test.sh
