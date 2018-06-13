@@ -102,24 +102,34 @@ isl::union_map partialSchedule(
 }
 
 namespace {
+/*
+ * If "node" is any filter, then intersect "domain" with that filter.
+ */
+isl::union_set applyAnyFilter(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAsBase<ScheduleTreeElemFilter>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
 // Get the set of domain elements that are active below
-// the given branch of nodes.
+// the given branch of nodes, filtered using "filter".
 //
-// Domain elements are introduced by the root domain node.  Filter nodes
-// disable the points that do not intersect with the filter.  Extension nodes
+// Domain elements are introduced by the root domain node.  Some nodes
+// refine this set of elements based on "filter".  Extension nodes
 // are considered to introduce additional domain points.
-isl::union_set activeDomainPointsHelper(
+isl::union_set collectDomain(
     const ScheduleTree* root,
-    const vector<const ScheduleTree*>& nodes) {
+    const vector<const ScheduleTree*>& nodes,
+    isl::union_set (*filter)(isl::union_set domain, const ScheduleTree* node)) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
   TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
   for (auto anc : nodes) {
-    if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
-      domain = domain.intersect(filterElem->filter_);
-    } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
+    domain = filter(domain, anc);
+    if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
@@ -129,6 +139,15 @@ isl::union_set activeDomainPointsHelper(
   }
   return domain;
 }
+
+// Get the set of domain elements that are active below
+// the given branch of nodes.
+isl::union_set activeDomainPointsHelper(
+    const ScheduleTree* root,
+    const vector<const ScheduleTree*>& nodes) {
+  return collectDomain(root, nodes, &applyAnyFilter);
+}
+
 } // namespace
 
 isl::union_set activeDomainPoints(
