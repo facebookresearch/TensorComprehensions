@@ -35,19 +35,6 @@ namespace polyhedral {
 namespace {
 
 /*
- * Is "id" a mapping of the type provided as template argument?
- */
-template <typename MappingType>
-bool isMappingIdType(const mapping::MappingId& id) {
-  for (size_t i = 0; i < MappingType::kMaxDim; ++i) {
-    if (id == MappingType::makeId(i)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/*
  * Is "tree" a mapping filter that maps identifiers of the type provided as
  * template argument?
  */
@@ -57,7 +44,7 @@ bool isMappingTo(const detail::ScheduleTree* tree) {
 
   if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
     for (auto& kvp : filterNode->mapping) {
-      if (isMappingIdType<MappingType>(kvp.first)) {
+      if (kvp.first.is<MappingType>()) {
         return true;
       }
     }
