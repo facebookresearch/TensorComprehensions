@@ -736,7 +736,9 @@ namespace {
 void gist(ScheduleTree* tree, isl::union_set context) {
   if (auto bandElem = tree->elemAs<ScheduleTreeElemBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
-  } else if (auto filterElem = tree->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+    filterElem->filter_ = filterElem->filter_.gist(context);
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemFilter>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
     if (filterElem->filter_.is_empty()) {
       tree->detachChildren();
@@ -748,7 +750,7 @@ void gist(ScheduleTree* tree, isl::union_set context) {
   if (tree->elemAs<ScheduleTreeElemSequence>()) {
     for (auto i = tree->numChildren(); i > 0; --i) {
       auto child = tree->child({i - 1});
-      if (auto filterElem = child->elemAsBase<ScheduleTreeElemFilter>()) {
+      if (auto filterElem = child->elemAs<ScheduleTreeElemFilter>()) {
         if (filterElem->filter_.is_empty()) {
           tree->detachChild(i - 1);
         }
