@@ -55,7 +55,7 @@ isl::union_map extendSchedule(
       schedule =
           schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
     }
-  } else if (auto filterElem = node->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
     schedule = schedule.intersect_domain(filterElem->filter_);
   } else if (auto extensionElem = node->elemAs<ScheduleTreeElemExtension>()) {
     // FIXME: we may need to restrict the range of reversed extension map to
