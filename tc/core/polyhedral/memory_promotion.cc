@@ -115,7 +115,7 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::set TensorReferenceGroup::approximateFootprint() const {
+isl::map TensorReferenceGroup::approximateFootprint() const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
@@ -134,7 +134,7 @@ isl::set TensorReferenceGroup::approximateFootprint() const {
 
     accessed = accessed & partial;
   }
-  return accessed.range();
+  return accessed;
 }
 
 isl::multi_aff ScopedFootprint::lowerBounds() const {
@@ -517,9 +517,8 @@ ScheduleTree* insertCopiesUnder(
       isl::set::universe(promotionSpace.domain().unwrap().domain());
   auto arrayId =
       promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
-  auto approximatedRead = scheduleUniverse.product(
-      group.approximateFootprint().set_tuple_id(arrayId).intersect(
-          tensorElements));
+  auto approximatedRead =
+      group.approximateFootprint().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
   auto readExtension = extension.intersect_range(approximatedRead)
                            .set_tuple_id(isl::dim_type::out, readId);
