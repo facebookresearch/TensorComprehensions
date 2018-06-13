@@ -64,7 +64,6 @@ ScopUPtr Scop::makeScop(
   scop->body = tree.body;
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
-  scop->halide.reductions = halide2isl::findReductions(components.stmt);
   scop->halide.domains = std::move(tree.domains);
 
   return scop;

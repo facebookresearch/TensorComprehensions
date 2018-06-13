@@ -105,17 +105,5 @@ ScheduleTreeAndAccesses makeScheduleTree(
     isl::space paramSpace,
     const Halide::Internal::Stmt& s);
 
-/// Enumerate all reductions in a statement, by looking for the
-/// ReductionUpdate markers inserted during lowering
-/// (see tc2halide.h).
-/// Each reduction object stores a reference to
-/// the update statement, and a list of reduction dimensions
-/// in the domain of the update statement.
-struct Reduction {
-  Halide::Internal::Stmt update;
-  std::vector<size_t> dims;
-};
-std::vector<Reduction> findReductions(const Halide::Internal::Stmt& s);
-
 } // namespace halide2isl
 } // namespace tc

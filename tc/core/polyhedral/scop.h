@@ -485,7 +485,6 @@ struct Scop {
     std::vector<std::string> idx, reductionIdx;
     std::vector<Halide::ImageParam> inputs;
     std::vector<Halide::OutputImageParam> outputs;
-    std::vector<halide2isl::Reduction> reductions;
     std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
         statements;
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
