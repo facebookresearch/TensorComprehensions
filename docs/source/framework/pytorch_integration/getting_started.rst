@@ -63,20 +63,21 @@ let's see a simple example of writing :code:`matmul` layer with TC in PyTorch.
 Example
 -------
 
-For demonstration purpose, we will pick a simple example for :code:`matmul` layer.
+For demonstration purposes, we illustrate a simple :code:`matmul` operation
+backed by TC.
 
 .. code-block:: python
 
     import tensor_comprehensions as tc
     import torch
-    lang = """
+    mm = """
     def matmul(float(M,K) A, float(N,K) B) -> (output) {
         output(m, n) +=! A(m, r_k) * B(n, r_k)
     }
     """
-    matmul = tc.define(lang, name="matmul")
+    matmul = tc.define(mm, "matmul", tc.MappingOptions('naive'))
     mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
     out = matmul(mat1, mat2)
 
-As you can see, with just 3-4 lines of code, you can get a reasonably fast CUDA
-code for an operation you want. Read the documentation for finding out more.
+With a few lines of code, you can get a functional CUDA implementation for an
+operation expressed in TC. Read the documentation for finding out more.
