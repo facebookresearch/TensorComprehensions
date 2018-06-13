@@ -62,45 +62,27 @@ std::pair<size_t, size_t> rangeOfMappingParameter(
       static_cast<size_t>(max.get_num_si()));
 }
 
-// Look for nodes with no children.
-inline std::vector<const detail::ScheduleTree*> leaves(
-    const detail::ScheduleTree* tree) {
-  return functional::Filter(
-      [](const detail::ScheduleTree* st) { return st->numChildren() == 0; },
-      detail::ScheduleTree::collect(tree));
-}
-
 /*
  * Compute the maximal value attained by the mapping parameter "id".
  * Return std::numeric_limits<size_t>::max() if this value cannot
  * be determined.
  */
-size_t maxValue(const Scop& scop, const mapping::MappingId& id) {
+template <typename MappingIdType>
+size_t maxValue(const Scop& scop, const MappingIdType& id) {
+  using namespace polyhedral::detail;
+
   auto root = scop.scheduleRoot();
   auto params = scop.context();
   size_t sizetMax = std::numeric_limits<size_t>::max();
   size_t max = 0;
   size_t min = sizetMax;
-  auto nonSyncLeaves = functional::Filter(
-      [root, params](const detail::ScheduleTree* node) {
-        auto f = node->elemAsBase<detail::ScheduleTreeElemFilter>();
-        if (!f) {
-          return true;
-        }
-        if (f->filter_.n_set() != 1) {
-          std::stringstream ss;
-          ss << "In tree:\n"
-             << *root << "\nnot a single set in filter: " << f->filter_;
-          throw tightening::TighteningException(ss.str());
-        }
-        auto single = isl::set::from_union_set(f->filter_);
-        auto single_id = single.get_tuple_id();
-        return !Scop::isSyncId(single_id) && !Scop::isWarpSyncId(single_id);
-      },
-      leaves(root));
-  for (auto p : nonSyncLeaves) {
-    auto active = activeDomainPoints(root, p).intersect_params(params).params();
-    auto range = rangeOfMappingParameter(active, id);
+  auto filters = root->collect(root, ScheduleTreeType::MappingFilter);
+  filters = functional::Filter(isMappingTo<MappingIdType>, filters);
+  for (auto p : filters) {
+    auto mappingNode = p->elemAs<ScheduleTreeElemMappingFilter>();
+    auto active = activeDomainPoints(root, p).intersect_params(params);
+    active = active.intersect(mappingNode->filter_);
+    auto range = rangeOfMappingParameter(active.params(), id);
     min = std::min(min, range.first);
     max = std::max(max, range.second);
   }
