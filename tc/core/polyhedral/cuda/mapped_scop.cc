@@ -461,6 +461,8 @@ bool hasOuterSequentialMember(
   return false;
 }
 
+// Name of the space of blocks inside the grid
+constexpr auto kGrid = "grid";
 // Name of the space of threads inside a block
 constexpr auto kBlock = "block";
 // Name of the space of warps
@@ -508,6 +510,16 @@ isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
   }
   auto tupleId = isl::id(tree->ctx_, kBlock);
   return extractDomainToIds(tree, ids, tupleId);
+}
+
+isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
+    const detail::ScheduleTree* tree) const {
+  std::vector<mapping::MappingId> ids;
+  for (size_t i = 0; i < numBlocks.view.size(); ++i) {
+    ids.emplace_back(mapping::BlockId::makeId(i));
+  }
+  auto tupleId = isl::id(tree->ctx_, kGrid);
+  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
 Scop::SyncLevel MappedScop::findBestSync(
