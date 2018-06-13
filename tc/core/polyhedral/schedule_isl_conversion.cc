@@ -103,7 +103,7 @@ std::vector<size_t> findCorePositions(
   std::vector<size_t> positions;
   TC_CHECK(st->elemAs<ScheduleTreeElemSequence>());
   for (size_t i = 0; i < st->numChildren(); ++i) {
-    auto filter = st->child({i})->elemAsBase<ScheduleTreeElemFilter>();
+    auto filter = st->child({i})->elemAs<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     if (!filter->filter_.intersect(domain).is_empty()) {
       positions.emplace_back(i);
