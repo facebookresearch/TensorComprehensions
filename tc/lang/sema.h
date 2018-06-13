@@ -29,25 +29,61 @@ namespace lang {
 // modify the behavior in the future
 struct TypeInfo {
   enum Code { Int, UInt, Float };
-  TypeInfo(Code code_, uint8_t bits_) : code_(code_), bits_(bits_) {}
+  TypeInfo(Code code_, uint8_t bits_, uint8_t lanes_ = 1)
+      : code_(code_), bits_(bits_), lanes_(lanes_) {}
   TypeInfo(TreeRef scalar_type) {
     switch (scalar_type->kind()) {
-#define TYPE_INFO_OPTION(tok, c, b) \
-  case tok:                         \
-    code_ = c;                      \
-    bits_ = b;                      \
+#define TYPE_INFO_OPTION(tok, c, b, l) \
+  case tok:                            \
+    code_ = c;                         \
+    bits_ = b;                         \
+    lanes_ = l;                        \
     break;
-      TYPE_INFO_OPTION(TK_BOOL, UInt, 1)
-      TYPE_INFO_OPTION(TK_UINT8, UInt, 8)
-      TYPE_INFO_OPTION(TK_UINT16, UInt, 16)
-      TYPE_INFO_OPTION(TK_UINT32, UInt, 32)
-      TYPE_INFO_OPTION(TK_UINT64, UInt, 64)
-      TYPE_INFO_OPTION(TK_INT8, Int, 8)
-      TYPE_INFO_OPTION(TK_INT16, Int, 16)
-      TYPE_INFO_OPTION(TK_INT32, Int, 32)
-      TYPE_INFO_OPTION(TK_INT64, Int, 64)
-      TYPE_INFO_OPTION(TK_FLOAT, Float, 32)
-      TYPE_INFO_OPTION(TK_DOUBLE, Float, 64)
+      TYPE_INFO_OPTION(TK_BOOL, UInt, 1, 1)
+      TYPE_INFO_OPTION(TK_UINT8, UInt, 8, 1)
+      TYPE_INFO_OPTION(TK_UINT16, UInt, 16, 1)
+      TYPE_INFO_OPTION(TK_UINT32, UInt, 32, 1)
+      TYPE_INFO_OPTION(TK_UINT64, UInt, 64, 1)
+      TYPE_INFO_OPTION(TK_INT8, Int, 8, 1)
+      TYPE_INFO_OPTION(TK_INT16, Int, 16, 1)
+      TYPE_INFO_OPTION(TK_INT32, Int, 32, 1)
+      TYPE_INFO_OPTION(TK_INT64, Int, 64, 1)
+      TYPE_INFO_OPTION(TK_FLOAT16, Float, 16, 1)
+      TYPE_INFO_OPTION(TK_FLOAT32, Float, 32, 1)
+      TYPE_INFO_OPTION(TK_FLOAT64, Float, 64, 1)
+      TYPE_INFO_OPTION(TK_FLOAT, Float, 32, 1)
+      TYPE_INFO_OPTION(TK_DOUBLE, Float, 64, 1)
+
+      TYPE_INFO_OPTION(TK_VECTOR2_BOOL, UInt, 1, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_UINT8, UInt, 8, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_UINT16, UInt, 16, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_UINT32, UInt, 32, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_UINT64, UInt, 64, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_INT8, Int, 8, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_INT16, Int, 16, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_INT32, Int, 32, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_INT64, Int, 64, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_FLOAT16, Float, 16, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_FLOAT32, Float, 32, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_FLOAT64, Float, 64, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_FLOAT, Float, 32, 2)
+      TYPE_INFO_OPTION(TK_VECTOR2_DOUBLE, Float, 64, 2)
+
+      TYPE_INFO_OPTION(TK_VECTOR4_BOOL, UInt, 1, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_UINT8, UInt, 8, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_UINT16, UInt, 16, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_UINT32, UInt, 32, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_UINT64, UInt, 64, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_INT8, Int, 8, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_INT16, Int, 16, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_INT32, Int, 32, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_INT64, Int, 64, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_FLOAT16, Float, 16, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_FLOAT32, Float, 32, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_FLOAT64, Float, 64, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_FLOAT, Float, 32, 4)
+      TYPE_INFO_OPTION(TK_VECTOR4_DOUBLE, Float, 64, 4)
+
 #undef TYPE_INFO_OPTION
       default:
         throw ErrorReport(scalar_type)
@@ -55,39 +91,116 @@ struct TypeInfo {
     }
   }
   int toScalarToken() const {
-    switch (code()) {
-      case UInt:
-        switch (bits()) {
-          case 1:
-            return TK_BOOL;
-          case 8:
-            return TK_UINT8;
-          case 16:
-            return TK_UINT16;
-          case 32:
-            return TK_UINT32;
-          case 64:
-            return TK_UINT64;
-        }
-      case Int:
-        switch (bits()) {
-          case 8:
-            return TK_INT8;
-          case 16:
-            return TK_INT16;
-          case 32:
-            return TK_INT32;
-          case 64:
-            return TK_INT64;
-        }
-      case Float:
-        switch (bits()) {
-          case 32:
-            return TK_FLOAT;
-          case 64:
-            return TK_DOUBLE;
-        }
+    if (lanes() == 1) {
+      switch (code()) {
+        case UInt:
+          switch (bits()) {
+            case 1:
+              return TK_BOOL;
+            case 8:
+              return TK_UINT8;
+            case 16:
+              return TK_UINT16;
+            case 32:
+              return TK_UINT32;
+            case 64:
+              return TK_UINT64;
+          }
+        case Int:
+          switch (bits()) {
+            case 8:
+              return TK_INT8;
+            case 16:
+              return TK_INT16;
+            case 32:
+              return TK_INT32;
+            case 64:
+              return TK_INT64;
+          }
+        case Float:
+          switch (bits()) {
+            case 16:
+              return TK_FLOAT16;
+            case 32:
+              return TK_FLOAT;
+            case 64:
+              return TK_DOUBLE;
+          }
+      }
+    } else if (lanes() == 2) {
+      switch (code()) {
+        case UInt:
+          switch (bits()) {
+            case 1:
+              return TK_VECTOR2_BOOL;
+            case 8:
+              return TK_VECTOR2_UINT8;
+            case 16:
+              return TK_VECTOR2_UINT16;
+            case 32:
+              return TK_VECTOR2_UINT32;
+            case 64:
+              return TK_VECTOR2_UINT64;
+          }
+        case Int:
+          switch (bits()) {
+            case 8:
+              return TK_VECTOR2_INT8;
+            case 16:
+              return TK_VECTOR2_INT16;
+            case 32:
+              return TK_VECTOR2_INT32;
+            case 64:
+              return TK_VECTOR2_INT64;
+          }
+        case Float:
+          switch (bits()) {
+            case 16:
+              return TK_VECTOR2_FLOAT16;
+            case 32:
+              return TK_VECTOR2_FLOAT;
+            case 64:
+              return TK_VECTOR2_DOUBLE;
+          }
+      }
+    } else if (lanes() == 4) {
+      switch (code()) {
+        case UInt:
+          switch (bits()) {
+            case 1:
+              return TK_VECTOR4_BOOL;
+            case 8:
+              return TK_VECTOR4_UINT8;
+            case 16:
+              return TK_VECTOR4_UINT16;
+            case 32:
+              return TK_VECTOR4_UINT32;
+            case 64:
+              return TK_VECTOR4_UINT64;
+          }
+        case Int:
+          switch (bits()) {
+            case 8:
+              return TK_VECTOR4_INT8;
+            case 16:
+              return TK_VECTOR4_INT16;
+            case 32:
+              return TK_VECTOR4_INT32;
+            case 64:
+              return TK_VECTOR4_INT64;
+          }
+        case Float:
+          switch (bits()) {
+            case 16:
+              return TK_VECTOR4_FLOAT16;
+            case 32:
+              return TK_VECTOR4_FLOAT;
+            case 64:
+              return TK_VECTOR4_DOUBLE;
+          }
+      }
     }
+
     throw std::runtime_error("Unknown type info?");
   }
   Code code() const {
@@ -95,6 +208,9 @@ struct TypeInfo {
   }
   uint8_t bits() const {
     return bits_;
+  }
+  uint8_t lanes() const {
+    return lanes_;
   }
   bool is_float() const {
     return code_ == Float;
@@ -106,10 +222,11 @@ struct TypeInfo {
  private:
   Code code_;
   uint8_t bits_;
+  uint8_t lanes_;
 };
 
 static inline bool operator==(TypeInfo a, TypeInfo b) {
-  return a.bits() == b.bits() && a.code() == b.code();
+  return a.bits() == b.bits() && a.code() == b.code() && a.lanes() == b.lanes();
 }
 
 static inline TreeRef match_types(TreeRef a, TreeRef b) {
@@ -118,34 +235,49 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
   if (ta == tb)
     return a;
 
-  if (!ta.is_float() && tb.is_float()) {
+#define NO_MATCH()                                                 \
+  throw ErrorReport(b) << "Could not match types: "                \
+                       << kindToString(ta.toScalarToken()) << ", " \
+                       << kindToString(tb.toScalarToken());
+
+  if (!ta.is_float() && ta.lanes() == 1 && tb.is_float()) {
     // int(a) * float(b) -> float(b)
     // uint(a) * float(b) -> float(b)
     return b;
-  } else if (ta.is_float() && !tb.is_float()) {
+  } else if (ta.is_float() && !tb.is_float() && tb.lanes() == 1) {
     return a;
   } else if (ta.is_float() && tb.is_float()) {
     // float(a) * float(b) -> float(max(a, b))
-    if (ta.bits() > tb.bits())
+    if (ta.bits() > tb.bits() && tb.lanes() == 1)
       return a;
-    else
+    else if (ta.lanes() == 1)
       return b;
-  } else if (ta.is_uint() && tb.is_uint()) {
+    else {
+      NO_MATCH();
+    }
+  } else if (ta.is_uint() && tb.is_uint() && tb.lanes() == 1) {
     // uint(a) * uint(b) -> uint(max(a, b))
-    if (ta.bits() > tb.bits())
+    if (ta.bits() > tb.bits() && tb.lanes() == 1)
       return a;
-    else
+    else if (ta.lanes() == 1)
       return b;
+    else {
+      NO_MATCH();
+    }
   } else if (!ta.is_float() && !tb.is_float()) {
     // int(a) * (u)int(b) -> int(max(a, b))
     int bits = std::max(ta.bits(), tb.bits());
+    if ((bits == ta.bits() && tb.lanes() != 1) ||
+        (bits == tb.bits() && ta.lanes() != 1)) {
+      NO_MATCH();
+    }
     return Compound::create(
         TypeInfo(TypeInfo::Int, bits).toScalarToken(), a->range(), {});
   } else {
-    throw ErrorReport(b) << "Could not match types: "
-                         << kindToString(ta.toScalarToken()) << ", "
-                         << kindToString(tb.toScalarToken());
+    NO_MATCH();
   }
+
+#undef NO_MATCH
 }
 
 /// Semantic analysis transforms the raw AST into a

@@ -59,9 +59,22 @@ std::vector<at::Tensor> prepareOutputs(
   auto atenBackend = inputs[0].type().backend();
   for (size_t i = 0; i < outTensorInfo.size(); ++i) {
     TensorInfo info(outTensorInfo[i]);
-    auto stype = at::toScalarType(info.dtype);
-    outputs.push_back(
-        at::getType(atenBackend, stype).tensor(at::IntList(info.shape)));
+    if (info.dtype.lanes == 1) {
+      auto stype = at::toScalarType(info.dtype);
+      outputs.push_back(
+          at::getType(atenBackend, stype).tensor(at::IntList(info.shape)));
+    } else {
+      // "Cast" to a larger strided tensor with 1 lane
+      auto lanes = info.dtype.lanes;
+      TC_CHECK(lanes == 2 || lanes == 4);
+      info.dtype.lanes = 1;
+      info.shape[info.shape.size() - 1] *= lanes;
+      auto stype = at::toScalarType(info.dtype);
+      auto T = at::getType(atenBackend, stype).tensor(at::IntList(info.shape));
+
+      info.shape[info.shape.size() - 1] /= lanes;
+      outputs.push_back(T.set_(*T.storage(), 0, info.shape));
+    }
   }
   return outputs;
 }

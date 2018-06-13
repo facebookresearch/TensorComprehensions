@@ -34,57 +34,92 @@ namespace lang {
 // Some kinds TK_APPLY, TK_LIST are only used in the AST and are not seen in the
 // lexer.
 
-#define TC_FORALL_TOKEN_KINDS(_)                 \
-  _(TK_EOF, "eof", "")                           \
-  _(TK_NUMBER, "number", "")                     \
-  _(TK_BOOL_VALUE, "bool_value", "")             \
-  _(TK_MIN, "min", "min")                        \
-  _(TK_MAX, "max", "max")                        \
-  _(TK_WHERE, "where", "where")                  \
-  _(TK_FLOAT, "float", "float")                  \
-  _(TK_DOUBLE, "double", "double")               \
-  _(TK_DEF, "def", "def")                        \
-  _(TK_ARROW, "arrow", "->")                     \
-  _(TK_EQUIVALENT, "equivalent", "<=>")          \
-  _(TK_IDENT, "ident", "")                       \
-  _(TK_STRING, "string", "")                     \
-  _(TK_CONST, "const", "")                       \
-  _(TK_LIST, "list", "")                         \
-  _(TK_OPTION, "option", "")                     \
-  _(TK_APPLY, "apply", "")                       \
-  _(TK_COMPREHENSION, "comprehension", "")       \
-  _(TK_TENSOR_TYPE, "tensor_type", "")           \
-  _(TK_RANGE_CONSTRAINT, "range_constraint", "") \
-  _(TK_PARAM, "param", "")                       \
-  _(TK_INFERRED, "inferred", "")                 \
-  _(TK_ACCESS, "access", "")                     \
-  _(TK_BUILT_IN, "built-in", "")                 \
-  _(TK_PLUS_EQ, "plus_eq", "+=")                 \
-  _(TK_TIMES_EQ, "times_eq", "*=")               \
-  _(TK_MIN_EQ, "min_eq", "min=")                 \
-  _(TK_MAX_EQ, "max_eq", "max=")                 \
-  _(TK_PLUS_EQ_B, "plus_eq_b", "+=!")            \
-  _(TK_TIMES_EQ_B, "times_eq_b", "*=!")          \
-  _(TK_MIN_EQ_B, "min_eq_b", "min=!")            \
-  _(TK_MAX_EQ_B, "max_eq_b", "max=!")            \
-  _(TK_INT8, "int8", "int8")                     \
-  _(TK_INT16, "int16", "int16")                  \
-  _(TK_INT32, "int32", "int32")                  \
-  _(TK_INT64, "int64", "int64")                  \
-  _(TK_UINT8, "uint8", "uint8")                  \
-  _(TK_UINT16, "uint16", "uint16")               \
-  _(TK_UINT32, "uint32", "uint32")               \
-  _(TK_UINT64, "uint64", "uint64")               \
-  _(TK_BOOL, "bool", "bool")                     \
-  _(TK_CAST, "cast", "")                         \
-  _(TK_IN, "in", "in")                           \
-  _(TK_GE, "ge", ">=")                           \
-  _(TK_LE, "le", "<=")                           \
-  _(TK_EQ, "eq", "==")                           \
-  _(TK_NE, "neq", "!=")                          \
-  _(TK_AND, "and", "&&")                         \
-  _(TK_OR, "or", "||")                           \
-  _(TK_LET, "let", "")                           \
+#define TC_FORALL_TOKEN_KINDS(_)                  \
+  _(TK_EOF, "eof", "")                            \
+  _(TK_NUMBER, "number", "")                      \
+  _(TK_BOOL_VALUE, "bool_value", "")              \
+  _(TK_MIN, "min", "min")                         \
+  _(TK_MAX, "max", "max")                         \
+  _(TK_WHERE, "where", "where")                   \
+  _(TK_DEF, "def", "def")                         \
+  _(TK_ARROW, "arrow", "->")                      \
+  _(TK_EQUIVALENT, "equivalent", "<=>")           \
+  _(TK_IDENT, "ident", "")                        \
+  _(TK_STRING, "string", "")                      \
+  _(TK_CONST, "const", "")                        \
+  _(TK_LIST, "list", "")                          \
+  _(TK_OPTION, "option", "")                      \
+  _(TK_APPLY, "apply", "")                        \
+  _(TK_COMPREHENSION, "comprehension", "")        \
+  _(TK_TENSOR_TYPE, "tensor_type", "")            \
+  _(TK_RANGE_CONSTRAINT, "range_constraint", "")  \
+  _(TK_PARAM, "param", "")                        \
+  _(TK_INFERRED, "inferred", "")                  \
+  _(TK_ACCESS, "access", "")                      \
+  _(TK_BUILT_IN, "built-in", "")                  \
+  _(TK_PLUS_EQ, "plus_eq", "+=")                  \
+  _(TK_TIMES_EQ, "times_eq", "*=")                \
+  _(TK_MIN_EQ, "min_eq", "min=")                  \
+  _(TK_MAX_EQ, "max_eq", "max=")                  \
+  _(TK_PLUS_EQ_B, "plus_eq_b", "+=!")             \
+  _(TK_TIMES_EQ_B, "times_eq_b", "*=!")           \
+  _(TK_MIN_EQ_B, "min_eq_b", "min=!")             \
+  _(TK_MAX_EQ_B, "max_eq_b", "max=!")             \
+                                                  \
+  _(TK_BOOL, "bool", "bool")                      \
+  _(TK_UINT8, "uint8", "uint8")                   \
+  _(TK_UINT16, "uint16", "uint16")                \
+  _(TK_UINT32, "uint32", "uint32")                \
+  _(TK_UINT64, "uint64", "uint64")                \
+  _(TK_INT8, "int8", "int8")                      \
+  _(TK_INT16, "int16", "int16")                   \
+  _(TK_INT32, "int32", "int32")                   \
+  _(TK_INT64, "int64", "int64")                   \
+  _(TK_FLOAT16, "float16", "float16")             \
+  _(TK_FLOAT32, "float32", "float32")             \
+  _(TK_FLOAT64, "float64", "float64")             \
+  _(TK_FLOAT, "float", "float")                   \
+  _(TK_DOUBLE, "double", "double")                \
+                                                  \
+  _(TK_VECTOR2_BOOL, "boolx2", "boolx2")          \
+  _(TK_VECTOR2_UINT8, "uint8x2", "uint8x2")       \
+  _(TK_VECTOR2_UINT16, "uint16x2", "uint16x2")    \
+  _(TK_VECTOR2_UINT32, "uint32x2", "uint32x2")    \
+  _(TK_VECTOR2_UINT64, "uint64x2", "uint64x2")    \
+  _(TK_VECTOR2_INT8, "int8x2", "int8x2")          \
+  _(TK_VECTOR2_INT16, "int16x2", "int16x2")       \
+  _(TK_VECTOR2_INT32, "int32x2", "int32x2")       \
+  _(TK_VECTOR2_INT64, "int64x2", "int64x2")       \
+  _(TK_VECTOR2_FLOAT16, "float16x2", "float16x2") \
+  _(TK_VECTOR2_FLOAT32, "float32x2", "float32x2") \
+  _(TK_VECTOR2_FLOAT64, "float64x2", "float64x2") \
+  _(TK_VECTOR2_FLOAT, "floatx2", "floatx2")       \
+  _(TK_VECTOR2_DOUBLE, "doublex2", "doublex2")    \
+                                                  \
+  _(TK_VECTOR4_BOOL, "boolx4", "boolx4")          \
+  _(TK_VECTOR4_UINT8, "uint8x4", "uint8x4")       \
+  _(TK_VECTOR4_UINT16, "uint16x4", "uint16x4")    \
+  _(TK_VECTOR4_UINT32, "uint32x4", "uint32x4")    \
+  _(TK_VECTOR4_UINT64, "uint64x4", "uint64x4")    \
+  _(TK_VECTOR4_INT8, "int8x4", "int8x4")          \
+  _(TK_VECTOR4_INT16, "int16x4", "int16x4")       \
+  _(TK_VECTOR4_INT32, "int32x4", "int32x4")       \
+  _(TK_VECTOR4_INT64, "int64x4", "int64x4")       \
+  _(TK_VECTOR4_FLOAT16, "float16x4", "float16x4") \
+  _(TK_VECTOR4_FLOAT32, "float32x4", "float32x4") \
+  _(TK_VECTOR4_FLOAT64, "float64x4", "float64x4") \
+  _(TK_VECTOR4_FLOAT, "floatx4", "floatx4")       \
+  _(TK_VECTOR4_DOUBLE, "doublex4", "doublex4")    \
+                                                  \
+  _(TK_CAST, "cast", "")                          \
+  _(TK_IN, "in", "in")                            \
+  _(TK_GE, "ge", ">=")                            \
+  _(TK_LE, "le", "<=")                            \
+  _(TK_EQ, "eq", "==")                            \
+  _(TK_NE, "neq", "!=")                           \
+  _(TK_AND, "and", "&&")                          \
+  _(TK_OR, "or", "||")                            \
+  _(TK_LET, "let", "")                            \
   _(TK_EXISTS, "exists", "exists")
 
 static const char* valid_single_char_tokens = "+-*/()[]?:,={}><!%";
@@ -271,17 +306,50 @@ struct SharedParserData {
   }
   bool isScalarType(int kind) {
     switch (kind) {
-      case TK_INT8:
-      case TK_INT16:
-      case TK_INT32:
-      case TK_INT64:
+      case TK_BOOL:
       case TK_UINT8:
       case TK_UINT16:
       case TK_UINT32:
       case TK_UINT64:
-      case TK_BOOL:
+      case TK_INT8:
+      case TK_INT16:
+      case TK_INT32:
+      case TK_INT64:
+      case TK_FLOAT16:
+      case TK_FLOAT32:
+      case TK_FLOAT64:
       case TK_FLOAT:
       case TK_DOUBLE:
+
+      case TK_VECTOR2_BOOL:
+      case TK_VECTOR2_UINT8:
+      case TK_VECTOR2_UINT16:
+      case TK_VECTOR2_UINT32:
+      case TK_VECTOR2_UINT64:
+      case TK_VECTOR2_INT8:
+      case TK_VECTOR2_INT16:
+      case TK_VECTOR2_INT32:
+      case TK_VECTOR2_INT64:
+      case TK_VECTOR2_FLOAT16:
+      case TK_VECTOR2_FLOAT32:
+      case TK_VECTOR2_FLOAT64:
+      case TK_VECTOR2_FLOAT:
+      case TK_VECTOR2_DOUBLE:
+
+      case TK_VECTOR4_BOOL:
+      case TK_VECTOR4_UINT8:
+      case TK_VECTOR4_UINT16:
+      case TK_VECTOR4_UINT32:
+      case TK_VECTOR4_UINT64:
+      case TK_VECTOR4_INT8:
+      case TK_VECTOR4_INT16:
+      case TK_VECTOR4_INT32:
+      case TK_VECTOR4_INT64:
+      case TK_VECTOR4_FLOAT16:
+      case TK_VECTOR4_FLOAT32:
+      case TK_VECTOR4_FLOAT64:
+      case TK_VECTOR4_FLOAT:
+      case TK_VECTOR4_DOUBLE:
         return true;
       default:
         return false;

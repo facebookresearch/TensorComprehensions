@@ -275,6 +275,72 @@ def cast(float(M,N) A, int32 four) -> (int32(M,N) output) {
   TC_CHECK_EQ(r, 0);
 }
 
+TEST_F(CompilationTest, Types) {
+  struct TypeMatch {
+    std::string s;
+    at::ScalarType a;
+    uint8_t lanes;
+  };
+  for (auto type :
+       {// TypeMatch{"bool", at::ScalarType::Bool, 1},    // no aten version
+        TypeMatch{"uint8", at::ScalarType::Byte, 1},
+        // TypeMatch{"uint16", at::ScalarType::Short, 1}, // no aten version
+        // TypeMatch{"uint32", at::ScalarType::Int, 1},   // no aten version
+        // TypeMatch{"uint64", at::ScalarType::Long, 1},  // no aten version
+        TypeMatch{"int8", at::ScalarType::Char, 1},
+        TypeMatch{"int16", at::ScalarType::Short, 1},
+        TypeMatch{"int32", at::ScalarType::Int, 1},
+        TypeMatch{"int64", at::ScalarType::Long, 1},
+        // NVRTC include transitive dependencies issue
+        // TypeMatch{"float16", at::ScalarType::Half, 1},
+        TypeMatch{"float32", at::ScalarType::Float, 1},
+        TypeMatch{"float64", at::ScalarType::Double, 1},
+        TypeMatch{"float", at::ScalarType::Float, 1},
+        TypeMatch{"double", at::ScalarType::Double, 1},
+
+        // TypeMatch{"boolx2", at::ScalarType::Bool, 2},    // no aten version
+        TypeMatch{"uint8x2", at::ScalarType::Byte, 2},
+        // TypeMatch{"uint16x2", at::ScalarType::Short, 2}, // no aten version
+        // TypeMatch{"uint32x2", at::ScalarType::Int, 2},   // no aten version
+        // TypeMatch{"uint64x2", at::ScalarType::Long, 2},  // no aten version
+        TypeMatch{"int8x2", at::ScalarType::Char, 2},
+        TypeMatch{"int16x2", at::ScalarType::Short, 2},
+        TypeMatch{"int32x2", at::ScalarType::Int, 2},
+        TypeMatch{"int64x2", at::ScalarType::Long, 2},
+        // NVRTC include transitive dependencies issue
+        // TypeMatch{"float16x2", at::ScalarType::Half, 2},
+        TypeMatch{"float32x2", at::ScalarType::Float, 2},
+        TypeMatch{"float64x2", at::ScalarType::Double, 2},
+        TypeMatch{"floatx2", at::ScalarType::Float, 2},
+        TypeMatch{"doublex2", at::ScalarType::Double, 2},
+
+        // TypeMatch{"boolx4", at::ScalarType::Bool, 4},    // no aten version
+        TypeMatch{"uint8x4", at::ScalarType::Byte, 4},
+        // TypeMatch{"uint16x4", at::ScalarType::Short, 4}, // no aten version
+        // TypeMatch{"uint32x4", at::ScalarType::Int, 4},   // no aten version
+        // TypeMatch{"uint64x4", at::ScalarType::Long, 4},  // no aten version
+        TypeMatch{"int8x4", at::ScalarType::Char, 4},
+        TypeMatch{"int16x4", at::ScalarType::Short, 4},
+        TypeMatch{"int32x4", at::ScalarType::Int, 4},
+        TypeMatch{"int64x4", at::ScalarType::Long, 4},
+        // NVRTC include transitive dependencies issue
+        // TypeMatch{"float16x4", at::ScalarType::Half, 4},
+        TypeMatch{"float32x4", at::ScalarType::Float, 4},
+        TypeMatch{"float64x4", at::ScalarType::Double, 4},
+        TypeMatch{"floatx4", at::ScalarType::Float, 4},
+        TypeMatch{"doublex4", at::ScalarType::Double, 4}}) {
+    std::string tc = std::string("def test_type(") + std::string(type.s) +
+        std::string("(N) A) -> (B) { B(k) +=! A(i) where k in 0:1 }");
+
+    auto T = at::CUDA(type.a).ones({100 * type.lanes});
+    std::vector<at::Tensor> outputs = Check(
+        tc,
+        "test_type",
+        tc::CudaMappingOptions::makeNaiveMappingOptions(),
+        {T.set_(*T.storage(), {100}, {type.lanes})});
+  }
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

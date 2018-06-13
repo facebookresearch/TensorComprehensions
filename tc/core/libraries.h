@@ -31,11 +31,92 @@ namespace code {
 namespace c {
 
 constexpr auto types = R"C(
+// Can't include system dependencies with NVRTC
+// Can't include cuda_fp16.h with NVRTC due to transitive system dependencies
+// #include <cuda_fp16.h>
+
 // Halide type handling
+typedef char int8;
+typedef short int16;
 typedef int int32;
 typedef long int64;
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef unsigned long uint64;
+// typedef half float16;
 typedef float float32;
 typedef double float64;
+
+template <typename T>
+struct array2 {
+  T x, y;
+  array2(T t) : x(t), y(t) {}
+  array2(T x, T y) : x(x), y(y) {}
+  array2<T> operator+(const array2<T>& a) const {
+    return array2<T>{
+      static_cast<T>(x + a.x),
+      static_cast<T>(y + a.y)
+    };
+  }
+  array2<T>& operator+=(const array2<T>& a) {
+    x += a.x;
+    y += a.y;
+    return *this;
+  }
+};
+template <typename Type>
+array2<Type> x2(Type t) {
+  return array2<Type>(t);
+}
+typedef array2<char> int8x2;
+typedef array2<short> int16x2;
+typedef array2<int> int32x2;
+typedef array2<long> int64x2;
+typedef array2<unsigned char> uint8x2;
+typedef array2<unsigned short> uint16x2;
+typedef array2<unsigned int> uint32x2;
+typedef array2<unsigned long> uint64x2;
+// typedef array2<half> float16x2;
+typedef array2<float> float32x2;
+typedef array2<double> float64x2;
+
+template <typename T>
+struct array4 {
+  T x, y, z, w;
+  array4(T t) : x(t), y(t), z(t), w(t) {}
+  array4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w) {}
+  array4<T> operator+(const array4<T>& a) const {
+    return array4<T>{
+      static_cast<T>(x + a.x),
+      static_cast<T>(y + a.y),
+      static_cast<T>(z + a.z),
+      static_cast<T>(w + a.w)
+    };
+  }
+  array4<T>& operator+=(const array4<T>& a) {
+    x += a.x;
+    y += a.y;
+    z += a.z;
+    w += a.w;
+    return *this;
+  }
+};
+template <typename Type>
+array4<Type> x4(Type t) {
+  return array4<Type>(t);
+}
+typedef array4<char> int8x4;
+typedef array4<short> int16x4;
+typedef array4<int> int32x4;
+typedef array4<long> int64x4;
+typedef array4<unsigned char> uint8x4;
+typedef array4<unsigned short> uint16x4;
+typedef array4<unsigned int> uint32x4;
+typedef array4<unsigned long> uint64x4;
+// typedef array4<half> float16x4;
+typedef array4<float> float32x4;
+typedef array4<double> float64x4;
 )C";
 
 constexpr auto defines = R"C(
