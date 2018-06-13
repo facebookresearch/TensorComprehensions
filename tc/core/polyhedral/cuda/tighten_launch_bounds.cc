@@ -64,8 +64,6 @@ std::pair<size_t, size_t> rangeOfMappingParameter(
 
 /*
  * Compute the maximal value attained by the mapping parameter "id".
- * Return std::numeric_limits<size_t>::max() if this value cannot
- * be determined.
  */
 template <typename MappingIdType>
 size_t maxValue(const Scop& scop, const MappingIdType& id) {
@@ -90,12 +88,26 @@ size_t maxValue(const Scop& scop, const MappingIdType& id) {
   LOG_IF(WARNING, min > 0)
       << "Opportunity for tightening launch bounds with shifting -> min:"
       << min;
+  TC_CHECK(max < sizetMax) << "missing mapping to " << id << *root;
   // Inclusive range needs + 1 to translate to sizes
-  if (max < sizetMax) { // avoid overflow
-    return max + 1;
-  }
-  return sizetMax;
+  return max + 1;
 }
+
+/*
+ * Take grid or block launch bounds "size" and replace them
+ * by the tightened, actual, launch bounds used in practice.
+ */
+template <typename MappingIdType, typename Size>
+Size launchBounds(const Scop& scop, Size size) {
+  Size tightened;
+
+  for (size_t i = 0; i < size.view.size(); ++i) {
+    tightened.view[i] = maxValue(scop, MappingIdType::makeId(i));
+  }
+
+  return tightened;
+}
+
 } // namespace
 
 // Takes grid/block launch bounds that have been passed to mapping and
@@ -105,16 +117,9 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
     const Scop& scop,
     const tc::Grid& grid,
     const tc::Block& block) {
-  USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-  // Corner case: take the min with the current size to avoid degenerate
-  // range in the unbounded case.
   return std::make_pair(
-      tc::Grid({std::min(maxValue(scop, BX), BX.mappingSize(grid)),
-                std::min(maxValue(scop, BY), BY.mappingSize(grid)),
-                std::min(maxValue(scop, BZ), BZ.mappingSize(grid))}),
-      tc::Block({std::min(maxValue(scop, TX), TX.mappingSize(block)),
-                 std::min(maxValue(scop, TY), TY.mappingSize(block)),
-                 std::min(maxValue(scop, TZ), TZ.mappingSize(block))}));
+      launchBounds<mapping::BlockId>(scop, grid),
+      launchBounds<mapping::ThreadId>(scop, block));
 }
 } // namespace polyhedral
 } // namespace tc
