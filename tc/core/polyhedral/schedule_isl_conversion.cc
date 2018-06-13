@@ -196,7 +196,9 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     node = bandNode;
   } else if (auto context = st->elemAs<ScheduleTreeElemContext>()) {
     node = node.insert_context(context->context_);
-  } else if (auto filter = st->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filter = st->elemAs<ScheduleTreeElemFilter>()) {
+    node = node.insert_filter(filter->filter_);
+  } else if (auto filter = st->elemAs<ScheduleTreeElemMappingFilter>()) {
     node = node.insert_filter(filter->filter_);
   } else if (
       st->elemAs<ScheduleTreeElemSet>() ||
