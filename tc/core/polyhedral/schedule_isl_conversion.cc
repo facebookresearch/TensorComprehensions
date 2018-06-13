@@ -121,7 +121,7 @@ std::vector<size_t> findCorePositions(
 isl::schedule_node graftFromFilterSubtree(
     const ScheduleTree* st,
     isl::union_map extension) {
-  auto filter = st->elemAsBase<ScheduleTreeElemFilter>();
+  auto filter = st->elemAs<ScheduleTreeElemFilter>();
   TC_CHECK(filter);
   auto filterExtension = extension.intersect_range(filter->filter_);
   auto extensionNode = isl::schedule_node::from_extension(filterExtension);
