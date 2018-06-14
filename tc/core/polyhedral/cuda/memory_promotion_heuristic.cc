@@ -734,8 +734,6 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
 
 // Promote at the positions of the thread specific markers.
 void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
-  using namespace tc::polyhedral::detail;
-
   auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
   auto markers = findThreadSpecificMarkers(root);
