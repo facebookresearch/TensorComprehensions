@@ -56,8 +56,6 @@ struct ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemContext : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Context;
   isl::set context_;
@@ -77,8 +75,6 @@ struct ScheduleTreeElemContext : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemDomain : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Domain;
   isl::union_set domain_;
@@ -98,8 +94,6 @@ struct ScheduleTreeElemDomain : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemExtension : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Extension;
   isl::union_map extension_;
@@ -119,8 +113,6 @@ struct ScheduleTreeElemExtension : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::MappingFilter};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Filter;
   isl::union_set filter_;
@@ -144,8 +136,6 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemBase {
       mapping::MappingId,
       isl::union_pw_aff,
       typename mapping::MappingId::Hash>;
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::MappingFilter;
   ScheduleTreeElemMappingFilter() = delete;
@@ -186,8 +176,6 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
   explicit ScheduleTreeElemSequence() {}
@@ -204,8 +192,6 @@ struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemSet : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
   explicit ScheduleTreeElemSet() {}
@@ -226,8 +212,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   ScheduleTreeElemBand() = default;
 
  public:
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Band;
 
@@ -280,8 +264,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
  * underneath the innermost band member mapped to threads.
  */
 struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
   explicit ScheduleTreeElemThreadSpecificMarker() {}

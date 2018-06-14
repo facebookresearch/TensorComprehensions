@@ -32,24 +32,6 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
-// static constexpr std::initializer_list need both definition and declaration
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemExtension::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSequence::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSet::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemDomain::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemMappingFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemBand::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemContext::NodeDerivedTypes;
-
 namespace {
 
 isl::schedule_node insertChild(isl::schedule_node node, const ScheduleTree* st);
