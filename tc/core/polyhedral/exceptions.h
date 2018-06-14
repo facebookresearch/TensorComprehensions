@@ -25,8 +25,8 @@ struct EmptyFilterException : public std::runtime_error {
   explicit EmptyFilterException(const std::string& s) : std::runtime_error(s) {}
 };
 
-struct EmptyMappingFilterException : public std::runtime_error {
-  explicit EmptyMappingFilterException(const std::string& s)
+struct EmptyMappingException : public std::runtime_error {
+  explicit EmptyMappingException(const std::string& s)
       : std::runtime_error(s) {}
 };
 

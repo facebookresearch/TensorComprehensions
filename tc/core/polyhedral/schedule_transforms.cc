@@ -113,10 +113,10 @@ isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
 }
 
 /*
- * If "node" is a mapping filter, then intersect "domain" with that filter.
+ * If "node" is a mapping, then intersect "domain" with its filter.
  */
 isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
-  if (auto filterElem = node->elemAs<ScheduleTreeElemMappingFilter>()) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemMapping>()) {
     return domain.intersect(filterElem->filter_);
   }
   return domain;
@@ -736,7 +736,7 @@ namespace {
 void gist(ScheduleTree* tree, isl::union_set context) {
   if (auto bandElem = tree->elemAs<ScheduleTreeElemBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
-  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemMapping>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
   } else if (auto filterElem = tree->elemAs<ScheduleTreeElemFilter>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
@@ -855,8 +855,8 @@ isl::multi_union_pw_aff extractDomainToIds(
   auto zero = isl::multi_val::zero(space);
   auto domainToIds = isl::multi_union_pw_aff(empty, zero);
 
-  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
-    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
+  for (auto mapping : tree->collect(tree, ScheduleTreeType::Mapping)) {
+    auto mappingNode = mapping->elemAs<ScheduleTreeElemMapping>();
     auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
     for (auto id : ids) {
       if (mappingNode->mapping.count(id) == 0) {

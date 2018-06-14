@@ -21,13 +21,13 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 template <typename MappingIdType>
-inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
+inline ScheduleTreeUPtr ScheduleTree::makeMapping(
     const std::vector<MappingIdType>& mappedIds,
     isl::union_pw_aff_list mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
   TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
       << "expected as many mapped ids as affs";
-  ScheduleTreeElemMappingFilter::Mapping mapping;
+  ScheduleTreeElemMapping::Mapping mapping;
   for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
     mapping.emplace(mappedIds.at(i), mappedAffs.get(i));
   }
@@ -36,9 +36,9 @@ inline ScheduleTreeUPtr ScheduleTree::makeMappingFilter(
       << "some id is used more than once in the mapping";
   auto ctx = mappedIds[0].get_ctx();
   ScheduleTreeUPtr res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemMappingFilter>(
-      new ScheduleTreeElemMappingFilter(mapping));
-  res->type_ = ScheduleTreeType::MappingFilter;
+  res->elem_ = std::unique_ptr<ScheduleTreeElemMapping>(
+      new ScheduleTreeElemMapping(mapping));
+  res->type_ = ScheduleTreeType::Mapping;
   res->appendChildren(std::move(children));
   return res;
 }

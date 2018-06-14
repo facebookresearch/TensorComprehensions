@@ -111,7 +111,7 @@ std::unique_ptr<ScheduleTreeElemBase> ScheduleTreeElemBase::make(
   ELEM_MAKE_CASE(ScheduleTreeElemDomain)
   ELEM_MAKE_CASE(ScheduleTreeElemExtension)
   ELEM_MAKE_CASE(ScheduleTreeElemFilter)
-  ELEM_MAKE_CASE(ScheduleTreeElemMappingFilter)
+  ELEM_MAKE_CASE(ScheduleTreeElemMapping)
   ELEM_MAKE_CASE(ScheduleTreeElemSequence)
   ELEM_MAKE_CASE(ScheduleTreeElemSet)
   ELEM_MAKE_CASE(ScheduleTreeElemThreadSpecificMarker)
@@ -256,8 +256,8 @@ bool ScheduleTreeElemFilter::operator==(
   return res;
 }
 
-bool ScheduleTreeElemMappingFilter::operator==(
-    const ScheduleTreeElemMappingFilter& other) const {
+bool ScheduleTreeElemMapping::operator==(
+    const ScheduleTreeElemMapping& other) const {
   auto res = filter_.is_equal(other.filter_);
   return res;
 }
@@ -288,7 +288,7 @@ bool elemEquals(
   ELEM_EQUALS_CASE(ScheduleTreeElemDomain)
   ELEM_EQUALS_CASE(ScheduleTreeElemExtension)
   ELEM_EQUALS_CASE(ScheduleTreeElemFilter)
-  ELEM_EQUALS_CASE(ScheduleTreeElemMappingFilter)
+  ELEM_EQUALS_CASE(ScheduleTreeElemMapping)
   ELEM_EQUALS_CASE(ScheduleTreeElemSequence)
   ELEM_EQUALS_CASE(ScheduleTreeElemSet)
   else {

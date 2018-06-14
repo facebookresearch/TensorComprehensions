@@ -272,7 +272,7 @@ struct ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   template <typename MappingIdType>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       const std::vector<MappingIdType>& mappedIds,
       isl::union_pw_aff_list mappedAffs,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -312,12 +312,12 @@ struct ScheduleTree {
   }
 
   template <typename MappingIdType, typename... Args>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       isl::union_set filter,
       const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
           mappingIds,
       Args&&... args) {
-    return makeMappingFilter(
+    return makeMapping(
         filter,
         mappingIds,
         vectorFromArgs<ScheduleTreeUPtr>(std::forward<Args>(args)...));

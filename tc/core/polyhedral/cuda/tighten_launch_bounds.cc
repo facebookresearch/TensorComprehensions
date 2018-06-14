@@ -74,10 +74,10 @@ size_t maxValue(const Scop& scop, const MappingIdType& id) {
   size_t sizetMax = std::numeric_limits<size_t>::max();
   size_t max = 0;
   size_t min = sizetMax;
-  auto filters = root->collect(root, ScheduleTreeType::MappingFilter);
+  auto filters = root->collect(root, ScheduleTreeType::Mapping);
   filters = functional::Filter(isMappingTo<MappingIdType>, filters);
   for (auto p : filters) {
-    auto mappingNode = p->elemAs<ScheduleTreeElemMappingFilter>();
+    auto mappingNode = p->elemAs<ScheduleTreeElemMapping>();
     auto active = activeDomainPoints(root, p).intersect_params(params);
     active = active.intersect(mappingNode->filter_);
     auto range = rangeOfMappingParameter(active.params(), id);

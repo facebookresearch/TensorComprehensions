@@ -232,7 +232,7 @@ const detail::ScheduleTree* findThreadMappingAncestor(
   auto ancestors = node->ancestors(root);
   ancestors = functional::Filter(isMappingTo<mapping::ThreadId>, ancestors);
   if (ancestors.size() < 1) {
-    throw promotion::PromotionLogicError("missing MappingFilter");
+    throw promotion::PromotionLogicError("missing Mapping");
   }
   return ancestors[0];
 }
@@ -301,12 +301,12 @@ template <typename MappingType>
 isl::union_set collectMappingsTo(const Scop& scop) {
   auto root = scop.scheduleRoot();
   auto domain = scop.domain();
-  auto mappingFilters = detail::ScheduleTree::collect(
-      root, detail::ScheduleTreeType::MappingFilter);
+  auto mappingFilters =
+      detail::ScheduleTree::collect(root, detail::ScheduleTreeType::Mapping);
   mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
   auto mapping = isl::union_set::empty(domain.get_space());
   for (auto mf : mappingFilters) {
-    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMappingFilter>();
+    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMapping>();
     auto filter = filterNode->filter_.intersect(activeDomainPoints(root, mf));
     mapping = mapping.unite(filterNode->filter_);
   }

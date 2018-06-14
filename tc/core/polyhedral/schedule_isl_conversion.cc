@@ -180,7 +180,7 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     node = node.insert_context(context->context_);
   } else if (auto filter = st->elemAs<ScheduleTreeElemFilter>()) {
     node = node.insert_filter(filter->filter_);
-  } else if (auto filter = st->elemAs<ScheduleTreeElemMappingFilter>()) {
+  } else if (auto filter = st->elemAs<ScheduleTreeElemMapping>()) {
     node = node.insert_filter(filter->filter_);
   } else if (
       st->elemAs<ScheduleTreeElemSet>() ||

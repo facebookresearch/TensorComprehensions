@@ -348,7 +348,7 @@ template <typename MappingType>
 bool isMappingTo(const detail::ScheduleTree* tree) {
   using namespace detail;
 
-  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMapping>()) {
     for (auto& kvp : filterNode->mapping) {
       if (kvp.first.is<MappingType>()) {
         return true;

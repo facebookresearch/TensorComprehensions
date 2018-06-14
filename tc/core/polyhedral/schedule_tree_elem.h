@@ -38,7 +38,7 @@ enum class ScheduleTreeType {
   Filter,
   Sequence,
   Set,
-  MappingFilter,
+  Mapping,
   ThreadSpecificMarker,
   Any,
 };
@@ -131,17 +131,17 @@ struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
   }
 };
 
-struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemBase {
+struct ScheduleTreeElemMapping : public ScheduleTreeElemBase {
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
       typename mapping::MappingId::Hash>;
   static constexpr detail::ScheduleTreeType NodeType =
-      detail::ScheduleTreeType::MappingFilter;
-  ScheduleTreeElemMappingFilter() = delete;
-  ScheduleTreeElemMappingFilter(const ScheduleTreeElemMappingFilter& eb)
+      detail::ScheduleTreeType::Mapping;
+  ScheduleTreeElemMapping() = delete;
+  ScheduleTreeElemMapping(const ScheduleTreeElemMapping& eb)
       : mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeElemMappingFilter(const Mapping& mapping)
+  ScheduleTreeElemMapping(const Mapping& mapping)
       : mapping(mapping), filter_(isl::union_set()) {
     TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
@@ -159,9 +159,9 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemBase {
       filter_ = filter_.intersect(upa.zero_union_set());
     }
   }
-  virtual ~ScheduleTreeElemMappingFilter() override {}
-  bool operator==(const ScheduleTreeElemMappingFilter& other) const;
-  bool operator!=(const ScheduleTreeElemMappingFilter& other) const {
+  virtual ~ScheduleTreeElemMapping() override {}
+  bool operator==(const ScheduleTreeElemMapping& other) const;
+  bool operator!=(const ScheduleTreeElemMapping& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;

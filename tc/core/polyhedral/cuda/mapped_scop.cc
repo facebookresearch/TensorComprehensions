@@ -65,7 +65,7 @@ void validate(const detail::ScheduleTree* root) {
       filter(
           [](isl::union_set uset) { return !uset || uset.is_empty(); }, any()),
       root);
-  throwIfHasPattern<EmptyMappingFilterException>(
+  throwIfHasPattern<EmptyMappingException>(
       mapping_filter(
           [](isl::union_set uset) { return !uset || uset.is_empty(); }, any()),
       root);
@@ -130,7 +130,7 @@ detail::ScheduleTree* MappedScop::map(
     idList.emplace_back(id);
   }
 
-  auto mapping = detail::ScheduleTree::makeMappingFilter(idList, affList);
+  auto mapping = detail::ScheduleTree::makeMapping(idList, affList);
   tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
 
   return tree;
