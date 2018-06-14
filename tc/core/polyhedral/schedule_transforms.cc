@@ -105,8 +105,8 @@ namespace {
 /*
  * If "node" is any filter, then intersect "domain" with that filter.
  */
-isl::union_set applyAnyFilter(isl::union_set domain, const ScheduleTree* node) {
-  if (auto filterElem = node->elemAsBase<ScheduleTreeElemFilter>()) {
+isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
     return domain.intersect(filterElem->filter_);
   }
   return domain;
@@ -155,7 +155,7 @@ isl::union_set collectDomain(
 isl::union_set activeDomainPointsHelper(
     const ScheduleTree* root,
     const vector<const ScheduleTree*>& nodes) {
-  return collectDomain(root, nodes, &applyAnyFilter);
+  return collectDomain(root, nodes, &applyFilter);
 }
 
 } // namespace
