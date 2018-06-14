@@ -139,7 +139,7 @@ struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
   }
 };
 
-struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
+struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemBase {
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
@@ -150,9 +150,9 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
       detail::ScheduleTreeType::MappingFilter;
   ScheduleTreeElemMappingFilter() = delete;
   ScheduleTreeElemMappingFilter(const ScheduleTreeElemMappingFilter& eb)
-      : ScheduleTreeElemFilter(eb.filter_), mapping(eb.mapping) {}
+      : mapping(eb.mapping), filter_(eb.filter_) {}
   ScheduleTreeElemMappingFilter(const Mapping& mapping)
-      : ScheduleTreeElemFilter(isl::union_set()), mapping(mapping) {
+      : mapping(mapping), filter_(isl::union_set()) {
     TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
     auto domain = mapping.cbegin()->second.domain();
@@ -181,6 +181,8 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
 
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
+  // Assignment of the affine functions to the identifiers as parameters.
+  isl::union_set filter_;
 };
 
 struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
