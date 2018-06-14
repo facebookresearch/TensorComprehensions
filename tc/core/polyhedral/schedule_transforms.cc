@@ -102,7 +102,7 @@ isl::union_map partialSchedule(
 }
 
 namespace {
-// Get a set of domain elements that are active below
+// Get the set of domain elements that are active below
 // the given branch of nodes.
 //
 // Domain elements are introduced by the root domain node.  Filter nodes
