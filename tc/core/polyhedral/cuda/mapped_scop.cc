@@ -226,6 +226,11 @@ bool separatedOut(
 } // namespace
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
+  // Do not bother with reductions if block is of size 1 in the x direction.
+  if (numThreads.view.size() == 0 || numThreads.view[0] == 1) {
+    return false;
+  }
+
   bool found = false;
   for (auto c : tree->children()) {
     found |= detectReductions(c);
