@@ -151,7 +151,7 @@ class MappedScop {
   void mapToBlocksAndScaleBand(
       detail::ScheduleTree* band,
       std::vector<size_t> tileSizes);
-  // Look for innermost reduction band members.
+  // Look for innermost reduction bands.
   // Store them in reductionBandUpdates_.
   // Return true if any were found.
   bool detectReductions(detail::ScheduleTree* band);
