@@ -87,7 +87,7 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
   auto root = scop.scheduleRoot();
   auto params = scop.context();
 
-  auto max = [root, params](const mapping::MappingId& id) -> size_t {
+  auto maxValue = [root, params](const mapping::MappingId& id) -> size_t {
     size_t sizetMax = std::numeric_limits<size_t>::max();
     size_t max = 0;
     size_t min = sizetMax;
@@ -128,12 +128,12 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
   // Corner case: take the min with the current size to avoid degenerate
   // range in the unbounded case.
   return std::make_pair(
-      tc::Grid({std::min(max(BX), BX.mappingSize(grid)),
-                std::min(max(BY), BY.mappingSize(grid)),
-                std::min(max(BZ), BZ.mappingSize(grid))}),
-      tc::Block({std::min(max(TX), TX.mappingSize(block)),
-                 std::min(max(TY), TY.mappingSize(block)),
-                 std::min(max(TZ), TZ.mappingSize(block))}));
+      tc::Grid({std::min(maxValue(BX), BX.mappingSize(grid)),
+                std::min(maxValue(BY), BY.mappingSize(grid)),
+                std::min(maxValue(BZ), BZ.mappingSize(grid))}),
+      tc::Block({std::min(maxValue(TX), TX.mappingSize(block)),
+                 std::min(maxValue(TY), TY.mappingSize(block)),
+                 std::min(maxValue(TZ), TZ.mappingSize(block))}));
 }
 } // namespace polyhedral
 } // namespace tc
