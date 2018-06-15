@@ -300,7 +300,7 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   auto nMember = reductionBand->nMember();
   auto reductionDim = reductionBand->nOuterCoincident();
   auto nMappedThreads = numThreads.view.size();
-  TC_CHECK_GE(nMember, reductionDim);
+  TC_CHECK_GE(nMember, reductionDim + 1);
   reductionSchedule = reductionSchedule.drop_dims(
       isl::dim_type::set, reductionDim + 1, nMember - (reductionDim + 1));
   reductionSchedule = reductionSchedule.drop_dims(
