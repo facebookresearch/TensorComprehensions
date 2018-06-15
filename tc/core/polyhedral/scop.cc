@@ -243,6 +243,13 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
       ++i;
     }
   }
+  insertSyncsAroundSeqChildren(seqNode);
+}
+
+void Scop::insertSyncsAroundSeqChildren(detail::ScheduleTree* seqNode) {
+  TC_CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>())
+      << "expected sequence node, got\n"
+      << *seqNode;
   insertSync(seqNode, 0);
   insertSync(seqNode, seqNode->numChildren());
 }
