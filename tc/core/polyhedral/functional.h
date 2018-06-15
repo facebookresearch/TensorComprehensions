@@ -100,6 +100,18 @@ I Reduce(std::function<I(I&&, I&&)> red, std::vector<I>&& vec) {
   return res;
 }
 
+namespace {
+// Allow combinations:
+//     LHS     RHS
+// const T and T
+// const T and const T
+template <typename LHS, typename RHS>
+struct is_same_allow_rhs_non_const {
+  const static bool value =
+      std::is_same<LHS, typename std::add_const<RHS>::type>::value;
+};
+} // namespace
+
 /*
  * Return a copy of the vector that contains only those elements for which
  * function "f" returns true.
@@ -108,8 +120,12 @@ I Reduce(std::function<I(I&&, I&&)> red, std::vector<I>&& vec) {
  * functor) with signature <bool(T)>.
  *
  * Template argument deduction takes care of vector<const T> cases
- * automatically.  Note that the signature of "f" must use the same type, that
- * is "const T".
+ * automatically.   Additionally, accept vectors of (pointers to) non-const
+ * elements and a function with (a pointer to) a const argument.
+ * Note that the function type is a template argument guarded by static asserts
+ * rather than an std::function because template argument deduction fails on
+ * lambdas in the latter case; lambdas are convertible to std::function but are
+ * not an instance of std::function.
  */
 template <typename Func, typename T>
 std::vector<T> Filter(Func f, const std::vector<T>& input) {
@@ -119,9 +135,25 @@ std::vector<T> Filter(Func f, const std::vector<T>& input) {
   static_assert(
       function_traits<Func>::n_args == 1,
       "Filtering function must take one argument");
+
+  // Allow combinations:
+  // Function arg      Vector element
+  //            T  and T
+  //      const T  and T
+  //      const T  and const T
+  //            T* and T*
+  //      const T* and T*
+  //      const T* and const T*
+  using arg0 = typename function_traits<Func>::template arg<0>::type;
+  constexpr bool sameType = std::is_same<arg0, T>::value;
+  constexpr bool sameTypeRightMbConst =
+      is_same_allow_rhs_non_const<arg0, T>::value;
+  constexpr bool ptrToSameTypeRightMbConst = std::is_pointer<arg0>::value &&
+      std::is_pointer<T>::value &&
+      is_same_allow_rhs_non_const<typename std::remove_pointer<arg0>::type,
+                                  typename std::remove_pointer<T>::type>::value;
   static_assert(
-      std::is_same<typename function_traits<Func>::template arg<0>::type, T>::
-          value,
+      sameType || sameTypeRightMbConst || ptrToSameTypeRightMbConst,
       "The argument of the filtering function must have the same type "
       "as the element type of the collection being filtered");
 
