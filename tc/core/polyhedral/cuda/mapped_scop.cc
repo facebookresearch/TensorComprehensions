@@ -461,44 +461,12 @@ bool hasOuterSequentialMember(
   return false;
 }
 
+// Name of the space of blocks inside the grid
+constexpr auto kGrid = "grid";
 // Name of the space of threads inside a block
 constexpr auto kBlock = "block";
 // Name of the space of warps
 constexpr auto kWarp = "warp";
-
-/*
- * Extract a mapping from the domain elements active at "tree"
- * to the thread identifiers, where all branches in "tree"
- * are assumed to have been mapped to thread identifiers.
- * "nThread" is the number of thread identifiers.
- * The result lives in a space of the form block[x, ...].
- */
-isl::multi_union_pw_aff extractDomainToThread(
-    const detail::ScheduleTree* tree,
-    size_t nThread) {
-  using namespace polyhedral::detail;
-
-  auto space = isl::space(tree->ctx_, 0);
-  auto empty = isl::union_set::empty(space);
-  auto id = isl::id(tree->ctx_, kBlock);
-  space = space.named_set_from_params_id(id, nThread);
-  auto zero = isl::multi_val::zero(space);
-  auto domainToThread = isl::multi_union_pw_aff(empty, zero);
-
-  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
-    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
-    auto list = isl::union_pw_aff_list(tree->ctx_, nThread);
-    for (size_t i = 0; i < nThread; ++i) {
-      auto threadId = mapping::ThreadId::makeId(i);
-      auto threadMap = mappingNode->mapping.at(threadId);
-      list = list.add(threadMap);
-    }
-    auto nodeToThread = isl::multi_union_pw_aff(space, list);
-    domainToThread = domainToThread.union_add(nodeToThread);
-  }
-
-  return domainToThread;
-}
 
 /*
  * Construct a mapping
@@ -533,6 +501,26 @@ isl::multi_aff constructThreadToWarp(
   return isl::multi_aff(mapSpace, isl::aff_list(aff));
 }
 } // namespace
+
+isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
+    const detail::ScheduleTree* tree) const {
+  std::vector<mapping::MappingId> ids;
+  for (size_t i = 0; i < numThreads.view.size(); ++i) {
+    ids.emplace_back(mapping::ThreadId::makeId(i));
+  }
+  auto tupleId = isl::id(tree->ctx_, kBlock);
+  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+}
+
+isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
+    const detail::ScheduleTree* tree) const {
+  std::vector<mapping::MappingId> ids;
+  for (size_t i = 0; i < numBlocks.view.size(); ++i) {
+    ids.emplace_back(mapping::BlockId::makeId(i));
+  }
+  auto tupleId = isl::id(tree->ctx_, kGrid);
+  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+}
 
 Scop::SyncLevel MappedScop::findBestSync(
     detail::ScheduleTree* st1,
@@ -724,7 +712,7 @@ void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
 
   auto outer = hasOuterSequentialMember(scop_->scheduleRoot(), seq);
 
-  auto domainToThread = extractDomainToThread(seq, numThreads.view.size());
+  auto domainToThread = threadMappingSchedule(seq);
   auto threadToWarp = constructThreadToWarp(seq->ctx_, 32, numThreads);
   auto domainToWarp = domainToThread.apply(threadToWarp);
 
@@ -1080,7 +1068,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
   // 9. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
-    promoteToRegistersBelowThreads(mappedScop->scop(), -1ull);
+    promoteToRegistersBelowThreads(*mappedScop, -1ull);
   }
 
   LOG_IF(INFO, FLAGS_debug_tc_mapper)

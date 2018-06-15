@@ -192,7 +192,13 @@ void Scop::promoteGroup(
     sizes.back() += 1;
   }
   promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
-  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+  insertCopiesUnder(
+      *this,
+      tree,
+      *gr,
+      tensorId,
+      groupId,
+      kind == PromotedDecl::Kind::Register);
 
   // FIXME: we can now store a unique pointer...
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
@@ -249,7 +255,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   checkFiltersDisjointStatements(scheduleRoot());
   auto schedule = partialSchedule(root, tree);
 
-  auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
+  auto groupMap = TensorReferenceGroup::accessedWithin(schedule, reads, writes);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
       promoteGroup(

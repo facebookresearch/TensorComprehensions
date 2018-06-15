@@ -111,9 +111,10 @@ class TensorReferenceGroup {
   TensorReferenceGroup() {}
 
  public:
-  static TensorGroups accessedBySubtree(
-      const detail::ScheduleTree* tree,
-      const Scop& scop);
+  static TensorGroups accessedWithin(
+      isl::union_map outerSchedule,
+      isl::union_map reads,
+      isl::union_map writes);
 
   bool isReadOnly() const;
 
@@ -213,6 +214,7 @@ detail::ScheduleTree* insertCopiesUnder(
     detail::ScheduleTree* tree,
     const TensorReferenceGroup& group,
     isl::id tensorId,
-    isl::id groupId = isl::id());
+    isl::id groupId,
+    bool unrollAllCopies);
 } // namespace polyhedral
 } // namespace tc

@@ -62,6 +62,10 @@ struct PromotionNYI : public std::logic_error {
 struct GroupingError : public std::logic_error {
   explicit GroupingError(const std::string& s) : std::logic_error(s) {}
 };
+
+struct IncorrectScope : public std::logic_error {
+  explicit IncorrectScope(const std::string& s) : std::logic_error(s) {}
+};
 } // namespace promotion
 
 namespace codegen {

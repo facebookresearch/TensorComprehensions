@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/external/isl.h"
@@ -324,6 +325,25 @@ isl::union_set activeDomainPoints(
 isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
+
+// Get the set of domain points active below the given node without including
+// the points introduced by extension nodes and without treating mapping nodes
+// as filters.  A point is considered active at a schedule node "tree" if it is
+// present in the "root" domain node and was not filtered away on the path from
+// "root" to "tree".  The root must be a domain element.
+isl::union_set activeDomainPointsNoMappingNoExtension(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree);
+
+// Extract a mapping from the domain elements active at "tree" (in a tree
+// rooted at "root") to identifiers "ids", where all branches in "tree" are
+// assumed to have been mapped to these identifiers.  The result lives in a
+// space of the form "tupleId"["ids"...].
+isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree,
+    const std::vector<mapping::MappingId>& ids,
+    isl::id tupleId);
 
 } // namespace polyhedral
 } // namespace tc

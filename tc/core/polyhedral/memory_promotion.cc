@@ -326,17 +326,38 @@ void addSingletonReferenceGroups(
 }
 } // namespace
 
-TensorGroups TensorReferenceGroup::accessedBySubtree(
-    const ScheduleTree* tree,
-    const Scop& scop) {
+// Compute tensor reference groups encapsulating all tensor accesses within
+// "outerSchedule".  Only statement instances present in the domain of
+// "outerSchedule" are considered.  In particular, if this domain is
+// intersected with block and/or thread mapping, the reference groups are
+// computed inside one block and/or thread, even if "outerSchedule" does not
+// include band members mapped to blocks and/or threads.
+//
+// Tensor reference descriptors (TensorReference) contain information about
+// tensor elements accessed through the given reference within "outerSchedule".
+// Several references form a group (TensorReferenceGroup) if the same elements
+// may be accessed through these references, and at least one of the accesses
+// writes to the element.  A group stores a rectangular overapproximation of
+// the set of accessed tensor elements (access footprint).  This
+// overappoximation can be used to create copies of the given tensor elements
+// in another memory space, i.e., to perform memory promotion.  If the domain
+// of "outerSchedule" included thread or block mapping, then the
+// overappoximation is computed per-block or per-thread.
+//
+// Returns a map between tensor ids and vectors of unique pointers to
+// TensorReferenceGroup, with each group potentially containing multiple
+// references.
+TensorGroups TensorReferenceGroup::accessedWithin(
+    isl::union_map outerSchedule,
+    isl::union_map reads,
+    isl::union_map writes) {
   TensorGroups tensorGroups;
-  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
-  auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+  auto domain = outerSchedule.domain();
 
   addSingletonReferenceGroups(
-      tensorGroups, scop.writes, domain, schedule, AccessType::Write);
+      tensorGroups, writes, domain, outerSchedule, AccessType::Write);
   addSingletonReferenceGroups(
-      tensorGroups, scop.reads, domain, schedule, AccessType::Read);
+      tensorGroups, reads, domain, outerSchedule, AccessType::Read);
 
   // For each tensor, join groups whose footprints overlap and at least one
   // access is a write.  Do not join between tensors because no aliasing.
@@ -438,6 +459,11 @@ isl::multi_aff dropDummyTensorDimensions(
   space = add_range(space, list.n());
   return isl::multi_aff(space, list);
 }
+
+inline void unrollAllMembers(detail::ScheduleTreeElemBand* band) {
+  band->unroll_ = std::vector<bool>(band->nMember(), true);
+}
+
 } // namespace
 
 ScheduleTree* insertCopiesUnder(
@@ -445,7 +471,8 @@ ScheduleTree* insertCopiesUnder(
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
     isl::id tensorId,
-    isl::id groupId) {
+    isl::id groupId,
+    bool unrollAllCopies) {
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
   isl::id readId = isl::id(ctx, std::string(kReadIdName));
@@ -454,9 +481,6 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  if (groupId.is_null()) {
-    throw promotion::GroupingError("expected group id");
-  }
   auto promotion =
       isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
   auto promotionSpace = promotion.get_space();
@@ -475,6 +499,11 @@ ScheduleTree* insertCopiesUnder(
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
+
+  if (unrollAllCopies) {
+    unrollAllMembers(readBandNode->elemAs<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(writeBandNode->elemAs<detail::ScheduleTreeElemBand>());
+  }
 
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();
