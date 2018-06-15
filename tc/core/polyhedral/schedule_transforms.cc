@@ -180,18 +180,6 @@ isl::union_set activeDomainPointsBelow(
   return activeDomainPointsHelper(root, ancestors);
 }
 
-isl::union_set activeDomainPointsNoMappingNoExtension(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree) {
-  auto domain = root->elemAs<detail::ScheduleTreeElemDomain>()->domain_;
-  for (auto t : tree->ancestors(root)) {
-    if (auto f = t->elemAs<detail::ScheduleTreeElemFilter>()) {
-      domain = domain.intersect(f->filter_);
-    }
-  }
-  return domain;
-}
-
 vector<ScheduleTree*> collectScheduleTreesPath(
     std::function<ScheduleTree*(ScheduleTree*)> next,
     ScheduleTree* start) {
@@ -851,10 +839,6 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
  * to identifiers "ids", where all branches in "tree"
  * are assumed to have been mapped to these identifiers.
  * The result lives in a space of the form "tupleId"["ids"...].
- *
- * Note: this function only takes into account points that are present in the
- * root domain node.  Those introduced by extension nodes are ignored.  This
- * behavior can change in the future.
  */
 isl::multi_union_pw_aff extractDomainToIds(
     const detail::ScheduleTree* root,
@@ -884,14 +868,14 @@ isl::multi_union_pw_aff extractDomainToIds(
       continue;
     }
     auto nodeToIds = isl::multi_union_pw_aff(space, list);
-    auto active = activeDomainPointsNoMappingNoExtension(root, mapping);
+    auto active = activeDomainPoints(root, mapping);
     TC_CHECK(active.intersect(domainToIds.domain()).is_empty())
         << "conflicting mappings; are the filters in the tree disjoint?";
     nodeToIds = nodeToIds.intersect_domain(active);
     domainToIds = domainToIds.union_add(nodeToIds);
   }
 
-  auto active = activeDomainPointsNoMappingNoExtension(root, tree);
+  auto active = activeDomainPoints(root, tree);
   TC_CHECK(active.is_subset(domainToIds.domain()))
       << "not all domain points of\n"
       << active << "\nwere mapped to the required ids";

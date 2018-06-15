@@ -296,9 +296,6 @@ bool promotionImprovesCoalescing(
 
 /*
  * Returns the union of all mapping filters to "MappingType" in "scop".
- *
- * Note: similarly to MappedScop::[thread|block]MappingSchedule, this function
- * does not take into account elements introduced by extension nodes.
  */
 template <typename MappingType>
 isl::union_set collectMappingsTo(const Scop& scop) {
@@ -310,8 +307,7 @@ isl::union_set collectMappingsTo(const Scop& scop) {
   auto mapping = isl::union_set::empty(domain.get_space());
   for (auto mf : mappingFilters) {
     auto filterNode = mf->elemAs<detail::ScheduleTreeElemMappingFilter>();
-    auto filter = filterNode->filter_.intersect(
-        activeDomainPointsNoMappingNoExtension(root, mf));
+    auto filter = filterNode->filter_.intersect(activeDomainPoints(root, mf));
     mapping = mapping.unite(filterNode->filter_);
   }
   return mapping;
