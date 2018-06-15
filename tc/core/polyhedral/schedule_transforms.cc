@@ -55,7 +55,7 @@ isl::union_map extendSchedule(
       schedule =
           schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
     }
-  } else if (auto filterElem = node->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
     schedule = schedule.intersect_domain(filterElem->filter_);
   } else if (auto extensionElem = node->elemAs<ScheduleTreeElemExtension>()) {
     // FIXME: we may need to restrict the range of reversed extension map to
@@ -102,24 +102,44 @@ isl::union_map partialSchedule(
 }
 
 namespace {
-// Get a set of domain elements that are active below
-// the given branch of nodes.
+/*
+ * If "node" is any filter, then intersect "domain" with that filter.
+ */
+isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
+/*
+ * If "node" is a mapping, then intersect "domain" with its filter.
+ */
+isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemMapping>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
+// Get the set of domain elements that are active below
+// the given branch of nodes, filtered using "filter".
 //
-// Domain elements are introduced by the root domain node.  Filter nodes
-// disable the points that do not intersect with the filter.  Extension nodes
+// Domain elements are introduced by the root domain node.  Some nodes
+// refine this set of elements based on "filter".  Extension nodes
 // are considered to introduce additional domain points.
-isl::union_set activeDomainPointsHelper(
+isl::union_set collectDomain(
     const ScheduleTree* root,
-    const vector<const ScheduleTree*>& nodes) {
+    const vector<const ScheduleTree*>& nodes,
+    isl::union_set (*filter)(isl::union_set domain, const ScheduleTree* node)) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
   TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
   for (auto anc : nodes) {
-    if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
-      domain = domain.intersect(filterElem->filter_);
-    } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
+    domain = filter(domain, anc);
+    if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
@@ -129,7 +149,22 @@ isl::union_set activeDomainPointsHelper(
   }
   return domain;
 }
+
+// Get the set of domain elements that are active below
+// the given branch of nodes.
+isl::union_set activeDomainPointsHelper(
+    const ScheduleTree* root,
+    const vector<const ScheduleTree*>& nodes) {
+  return collectDomain(root, nodes, &applyFilter);
+}
+
 } // namespace
+
+isl::union_set prefixMappingFilter(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  return collectDomain(root, node->ancestors(root), &applyMapping);
+}
 
 isl::union_set activeDomainPoints(
     const ScheduleTree* root,
@@ -143,18 +178,6 @@ isl::union_set activeDomainPointsBelow(
   auto ancestors = node->ancestors(root);
   ancestors.emplace_back(node);
   return activeDomainPointsHelper(root, ancestors);
-}
-
-isl::union_set activeDomainPointsNoMappingNoExtension(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree) {
-  auto domain = root->elemAs<detail::ScheduleTreeElemDomain>()->domain_;
-  for (auto t : tree->ancestors(root)) {
-    if (auto f = t->elemAs<detail::ScheduleTreeElemFilter>()) {
-      domain = domain.intersect(f->filter_);
-    }
-  }
-  return domain;
 }
 
 vector<ScheduleTree*> collectScheduleTreesPath(
@@ -713,7 +736,9 @@ namespace {
 void gist(ScheduleTree* tree, isl::union_set context) {
   if (auto bandElem = tree->elemAs<ScheduleTreeElemBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
-  } else if (auto filterElem = tree->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemMapping>()) {
+    filterElem->filter_ = filterElem->filter_.gist(context);
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemFilter>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
     if (filterElem->filter_.is_empty()) {
       tree->detachChildren();
@@ -725,7 +750,7 @@ void gist(ScheduleTree* tree, isl::union_set context) {
   if (tree->elemAs<ScheduleTreeElemSequence>()) {
     for (auto i = tree->numChildren(); i > 0; --i) {
       auto child = tree->child({i - 1});
-      if (auto filterElem = child->elemAsBase<ScheduleTreeElemFilter>()) {
+      if (auto filterElem = child->elemAs<ScheduleTreeElemFilter>()) {
         if (filterElem->filter_.is_empty()) {
           tree->detachChild(i - 1);
         }
@@ -816,10 +841,6 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
  * to identifiers "ids", where all branches in "tree"
  * are assumed to have been mapped to these identifiers.
  * The result lives in a space of the form "tupleId"["ids"...].
- *
- * Note: this function only takes into account points that are present in the
- * root domain node.  Those introduced by extension nodes are ignored.  This
- * behavior can change in the future.
  */
 isl::multi_union_pw_aff extractDomainToIds(
     const detail::ScheduleTree* root,
@@ -834,8 +855,8 @@ isl::multi_union_pw_aff extractDomainToIds(
   auto zero = isl::multi_val::zero(space);
   auto domainToIds = isl::multi_union_pw_aff(empty, zero);
 
-  for (auto mapping : tree->collect(tree, ScheduleTreeType::MappingFilter)) {
-    auto mappingNode = mapping->elemAs<ScheduleTreeElemMappingFilter>();
+  for (auto mapping : tree->collect(tree, ScheduleTreeType::Mapping)) {
+    auto mappingNode = mapping->elemAs<ScheduleTreeElemMapping>();
     auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
     for (auto id : ids) {
       if (mappingNode->mapping.count(id) == 0) {
@@ -849,14 +870,14 @@ isl::multi_union_pw_aff extractDomainToIds(
       continue;
     }
     auto nodeToIds = isl::multi_union_pw_aff(space, list);
-    auto active = activeDomainPointsNoMappingNoExtension(root, mapping);
+    auto active = activeDomainPoints(root, mapping);
     TC_CHECK(active.intersect(domainToIds.domain()).is_empty())
         << "conflicting mappings; are the filters in the tree disjoint?";
     nodeToIds = nodeToIds.intersect_domain(active);
     domainToIds = domainToIds.union_add(nodeToIds);
   }
 
-  auto active = activeDomainPointsNoMappingNoExtension(root, tree);
+  auto active = activeDomainPoints(root, tree);
   TC_CHECK(active.is_subset(domainToIds.domain()))
       << "not all domain points of\n"
       << active << "\nwere mapped to the required ids";

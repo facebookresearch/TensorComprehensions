@@ -273,10 +273,10 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
     EXPECT_EQ(groups.size(), 3u);
 
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    isl::space blockSpace = isl::space(ctx, 0);
-    isl::set blockZero =
-        isl::makeSpecializationSet<int>(blockSpace, {{BX, 0}, {BY, 0}});
+    isl::space tileSpace = isl::space(ctx, 0).unnamed_set_from_params(2);
+    // Work around missing isl_set_from_multi_aff.
+    auto tileZero =
+        isl::map(isl::multi_aff::zero(tileSpace.from_range())).range();
 
     // Must have groups for these tensors, in arbitrary order.
     unordered_set<string> names{"A", "B", "C"};
@@ -305,8 +305,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       EXPECT_EQ(
           oneGroup->approximation.size(1),
           isl::val(ctx, std::min(tile2, problemSize2)));
-      auto footprint =
-          oneGroup->approximateFootprint().intersect_params(blockZero);
+      auto footprint = tileZero.apply(oneGroup->approximateFootprint());
       size_t np = npoints(footprint);
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));

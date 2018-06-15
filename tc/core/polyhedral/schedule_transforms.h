@@ -326,14 +326,11 @@ isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
-// Get the set of domain points active below the given node without including
-// the points introduced by extension nodes and without treating mapping nodes
-// as filters.  A point is considered active at a schedule node "tree" if it is
-// present in the "root" domain node and was not filtered away on the path from
-// "root" to "tree".  The root must be a domain element.
-isl::union_set activeDomainPointsNoMappingNoExtension(
+// Collect the outer block/thread identifier mappings
+// into a filter on the active domain elements.
+isl::union_set prefixMappingFilter(
     const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree);
+    const detail::ScheduleTree* node);
 
 // Extract a mapping from the domain elements active at "tree" (in a tree
 // rooted at "root") to identifiers "ids", where all branches in "tree" are
@@ -344,6 +341,22 @@ isl::multi_union_pw_aff extractDomainToIds(
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,
     isl::id tupleId);
+
+// Is "tree" a mapping filter that maps identifiers of the type provided as
+// template argument?
+template <typename MappingType>
+bool isMappingTo(const detail::ScheduleTree* tree) {
+  using namespace detail;
+
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMapping>()) {
+    for (auto& kvp : filterNode->mapping) {
+      if (kvp.first.is<MappingType>()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 } // namespace polyhedral
 } // namespace tc

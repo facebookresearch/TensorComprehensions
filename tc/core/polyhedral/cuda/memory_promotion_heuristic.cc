@@ -34,37 +34,6 @@ namespace tc {
 namespace polyhedral {
 namespace {
 
-/*
- * Is "id" a mapping of the type provided as template argument?
- */
-template <typename MappingType>
-bool isMappingIdType(const mapping::MappingId& id) {
-  for (size_t i = 0; i < MappingType::kMaxDim; ++i) {
-    if (id == MappingType::makeId(i)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/*
- * Is "tree" a mapping filter that maps identifiers of the type provided as
- * template argument?
- */
-template <typename MappingType>
-bool isMappingTo(const detail::ScheduleTree* tree) {
-  using namespace detail;
-
-  if (auto filterNode = tree->elemAs<ScheduleTreeElemMappingFilter>()) {
-    for (auto& kvp : filterNode->mapping) {
-      if (isMappingIdType<MappingType>(kvp.first)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
 // Map global<->shared copy bands to threads, starting from the innermost
 // loop as it iterates over the last subscript and will result in coalescing.
 void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
@@ -258,10 +227,12 @@ isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
 const detail::ScheduleTree* findThreadMappingAncestor(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
+  using namespace tc::polyhedral::detail;
+
   auto ancestors = node->ancestors(root);
   ancestors = functional::Filter(isMappingTo<mapping::ThreadId>, ancestors);
   if (ancestors.size() < 1) {
-    throw promotion::PromotionLogicError("missing MappingFilter");
+    throw promotion::PromotionLogicError("missing Mapping");
   }
   return ancestors[0];
 }
@@ -325,22 +296,18 @@ bool promotionImprovesCoalescing(
 
 /*
  * Returns the union of all mapping filters to "MappingType" in "scop".
- *
- * Note: similarly to MappedScop::[thread|block]MappingSchedule, this function
- * does not take into account elements introduced by extension nodes.
  */
 template <typename MappingType>
 isl::union_set collectMappingsTo(const Scop& scop) {
   auto root = scop.scheduleRoot();
   auto domain = scop.domain();
-  auto mappingFilters = detail::ScheduleTree::collect(
-      root, detail::ScheduleTreeType::MappingFilter);
+  auto mappingFilters =
+      detail::ScheduleTree::collect(root, detail::ScheduleTreeType::Mapping);
   mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
   auto mapping = isl::union_set::empty(domain.get_space());
   for (auto mf : mappingFilters) {
-    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMappingFilter>();
-    auto filter = filterNode->filter_.intersect(
-        activeDomainPointsNoMappingNoExtension(root, mf));
+    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMapping>();
+    auto filter = filterNode->filter_.intersect(activeDomainPoints(root, mf));
     mapping = mapping.unite(filterNode->filter_);
   }
   return mapping;

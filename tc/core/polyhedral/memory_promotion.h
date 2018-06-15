@@ -142,8 +142,8 @@ class TensorReferenceGroup {
   }
 
   // Rectangular overapproximation of the set of tensor elements accessed below
-  // the scoping point.
-  isl::set approximateFootprint() const;
+  // and relative to the scoping point.
+  isl::map approximateFootprint() const;
 
   isl::multi_aff promotion() const;
   isl::set promotedFootprint() const;

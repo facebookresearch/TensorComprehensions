@@ -111,10 +111,10 @@ template <typename... Args>
 inline ScheduleTreeMatcher mapping_filter(
     std::function<bool(isl::union_set)> propertyMatcher,
     Args... children) {
-  ScheduleTreeMatcher m(detail::ScheduleTreeType::MappingFilter, children...);
+  ScheduleTreeMatcher m(detail::ScheduleTreeType::Mapping, children...);
   m.propertyMatcher_ = [propertyMatcher](const detail::ScheduleTree* tree) {
     return propertyMatcher(
-        tree->elemAs<detail::ScheduleTreeElemMappingFilter>()->filter_);
+        tree->elemAs<detail::ScheduleTreeElemMapping>()->filter_);
   };
   return m;
 }
@@ -123,7 +123,7 @@ template <typename... Args>
 inline ScheduleTreeMatcher mapping_filter(
     std::function<bool(const detail::ScheduleTree* tree)> propertyMatcher,
     Args... children) {
-  ScheduleTreeMatcher m(detail::ScheduleTreeType::MappingFilter, children...);
+  ScheduleTreeMatcher m(detail::ScheduleTreeType::Mapping, children...);
   m.propertyMatcher_ = propertyMatcher;
   return m;
 }
@@ -138,11 +138,11 @@ template <
         std::is_same<First, ScheduleTreeMatcher>::value>::type>
 inline ScheduleTreeMatcher mapping_filter(First first, Args... children) {
   return ScheduleTreeMatcher(
-      detail::ScheduleTreeType::MappingFilter, first, children...);
+      detail::ScheduleTreeType::Mapping, first, children...);
 }
 
 inline ScheduleTreeMatcher mapping_filter() {
-  return ScheduleTreeMatcher(detail::ScheduleTreeType::MappingFilter);
+  return ScheduleTreeMatcher(detail::ScheduleTreeType::Mapping);
 }
 
 template <typename... Args>

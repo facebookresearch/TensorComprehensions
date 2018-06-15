@@ -1099,7 +1099,7 @@ def fun(float(N) I) -> (O) {
  * Check that isolating the update statements does not introduce
  * an empty mapping filter.
  */
-TEST_F(PolyhedralMapperTest, EmptyMappingFilter) {
+TEST_F(PolyhedralMapperTest, EmptyMapping) {
   constexpr static auto tc = R"TC(
   def var_2D_1D(float(N, K) I, float(N) mean) -> (var)
   {

@@ -28,6 +28,17 @@ struct MappingId : public isl::id {
  public:
   MappingId(const MappingId& id) : isl::id(id), dim(id.dim) {}
 
+  // Is "id" a mapping of the type provided as template argument?
+  template <typename MappingType>
+  bool is() const {
+    for (size_t i = 0; i < MappingType::kMaxDim; ++i) {
+      if (*this == MappingType::makeId(i)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // For indexing into positional arrays
   // TODO: this should go away but this probably requires tinkering with
   // mapping_options.h::Grid/Block.

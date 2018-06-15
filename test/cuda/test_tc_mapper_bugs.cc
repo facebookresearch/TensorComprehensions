@@ -632,7 +632,7 @@ TEST_F(TMM_128_1024_1024, TooStrictPrecisionAfterTuner) {
   Check(options);
 }
 
-// This exercises a former MappingFilter leaf with a union_set of > 1 spaces
+// This exercises a former Mapping leaf with a union_set of > 1 spaces
 TEST_F(TMM_128_1024_1024, Tightening) {
   Init();
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()

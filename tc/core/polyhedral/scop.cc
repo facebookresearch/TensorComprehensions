@@ -141,8 +141,8 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
        ScheduleTree::collect(root, detail::ScheduleTreeType::Sequence)) {
     isl::union_set alreadyVisitedStmts;
     for (auto child : node->children()) {
-      auto filterNode = child->elemAsBase<ScheduleTreeElemFilter>();
-      TC_CHECK(filterNode) << "expected children of seqence to be filters";
+      auto filterNode = child->elemAs<ScheduleTreeElemFilter>();
+      TC_CHECK(filterNode) << "expected children of sequence to be filters";
       auto filter = filterNode->filter_.universe();
       if (!alreadyVisitedStmts.get()) {
         alreadyVisitedStmts = filter;
