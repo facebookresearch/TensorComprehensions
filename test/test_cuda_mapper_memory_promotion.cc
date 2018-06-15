@@ -485,6 +485,28 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
     EXPECT_TRUE(cDeclPos == std::string::npos)
         << "tensor C promoted to register but has no reuse";
   }
+
+  void expectFourOElementsPromoted(const std::string& code) {
+    auto oDeclPos = code.find("float32 _O_0[4][1];");
+    EXPECT_TRUE(oDeclPos != std::string::npos)
+        << "expected O to be promoted to registers";
+
+    expectNoABCPromotion(code);
+
+    auto o00Pos = code.find("_O_0[0][0]");
+    auto o10Pos = code.find("_O_0[1][0]");
+    auto o20Pos = code.find("_O_0[2][0]");
+    auto o30Pos = code.find("_O_0[3][0]");
+
+    EXPECT_TRUE(o00Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o10Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o20Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o30Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+  }
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
@@ -544,25 +566,7 @@ TEST_F(MatMulBias, RegistersAtRoot) {
 
   // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads
   // after tiling by 32.
-  auto oDeclPos = code.find("float32 _O_0[4][1];");
-  EXPECT_TRUE(oDeclPos != std::string::npos)
-      << "expected O to be promoted to registers";
-
-  expectNoABCPromotion(code);
-
-  auto o00Pos = code.find("_O_0[0][0]");
-  auto o10Pos = code.find("_O_0[1][0]");
-  auto o20Pos = code.find("_O_0[2][0]");
-  auto o30Pos = code.find("_O_0[3][0]");
-
-  EXPECT_TRUE(o00Pos != std::string::npos)
-      << "expected constant subscripts in _O_0";
-  EXPECT_TRUE(o10Pos != std::string::npos)
-      << "expected constant subscripts in _O_0";
-  EXPECT_TRUE(o20Pos != std::string::npos)
-      << "expected constant subscripts in _O_0";
-  EXPECT_TRUE(o30Pos != std::string::npos)
-      << "expected constant subscripts in _O_0";
+  expectFourOElementsPromoted(code);
 }
 
 TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
@@ -589,23 +593,24 @@ TEST_F(MatMulBias, RegistersBelowFirstBand) {
   using namespace polyhedral::detail;
 
   // Disable automatic promotion to registers because we are going to call it
-  // manually.
+  // manually.  Use a large unroll size to unroll all loops below the first
+  // band and actually hit registers.
   auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
+                            .unroll(512)
                             .useSharedMemory(false)
                             .usePrivateMemory(false);
   auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
 
-  auto nodes = ScheduleTree::collectDFSPostorder(
+  auto nodes = ScheduleTree::collectDFSPreorder(
       mscop->scop().scheduleRoot(), ScheduleTreeType::Band);
   ASSERT_GT(nodes.size(), 0u);
   auto node = nodes[0];
   promoteToRegistersBelow(*mscop, node);
   auto code = emitCode(mscop);
 
-  auto oDeclPos = code.find("float32 _O_0[1][1];");
-  EXPECT_TRUE(oDeclPos != std::string::npos)
-      << "expected O to be promoted to registers";
-  expectNoABCPromotion(code);
+  // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads
+  // after tiling by 32.
+  expectFourOElementsPromoted(code);
 }
 
 class Strided : public TestMapper {
