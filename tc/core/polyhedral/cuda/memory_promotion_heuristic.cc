@@ -779,16 +779,5 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   }
 }
 
-// Promote at the positions of the thread specific markers.
-void promoteToRegistersBelowThreads(MappedScop& mscop, size_t nRegisters) {
-  auto& scop = mscop.scop();
-  auto root = scop.scheduleRoot();
-  auto markers = findThreadSpecificMarkers(root);
-
-  for (auto marker : markers) {
-    promoteToRegistersBelow(mscop, marker);
-  }
-}
-
 } // namespace polyhedral
 } // namespace tc

@@ -531,8 +531,12 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
+  // Scheduled code has three loops, tile all, the top band gets mapped to 2
+  // blocks, the bottom band gets mapped to 2 threads, test promotion before
+  // thread-mapped loops, that is at depth 3 + 2 = 5.
   auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(32, 32, 32)
+                            .privateDepth(5)
                             .useSharedMemory(false)
                             .usePrivateMemory(true);
 
