@@ -698,6 +698,26 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
           partialSched);
     }
   }
+
+  // Return immediately if nothing was promoted.
+  if (scope->numChildren() == 0 ||
+      !matchOne(extension(sequence(any())), scope->child({0}))) {
+    return;
+  }
+
+  // If promoting above thread mapping, insert synchronizations.
+  // It is possible that promoted array elements are accessed by different
+  // threads outside the current scope (either in different iterations of the
+  // scope loops, or in sibling subtrees).  For now, always insert
+  // synchronizations, similarly to copies to shared memory.
+  //
+  // TODO: The exact check for sync insertion requires the dependences between
+  // the elements in the scope and those before/after the scope and a check if
+  // the dependent instances belong to the same thread.
+  auto ancestors = scope->ancestors(root);
+  if (functional::Filter(isMappingTo<mapping::ThreadId>, ancestors).empty()) {
+    scop.insertSyncsAroundSeqChildren(scope->child({0, 0}));
+  }
 }
 
 // Promote at the positions of the thread specific markers.

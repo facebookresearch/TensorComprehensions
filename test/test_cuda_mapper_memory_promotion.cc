@@ -493,10 +493,12 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 
     expectNoABCPromotion(code);
 
+    auto preCopySyncPos = code.find("__syncthreads()", oDeclPos);
     auto o00Pos = code.find("_O_0[0][0]");
     auto o10Pos = code.find("_O_0[1][0]");
     auto o20Pos = code.find("_O_0[2][0]");
     auto o30Pos = code.find("_O_0[3][0]");
+    auto postCopySyncPos = code.find("__syncthreads()", o30Pos);
 
     EXPECT_TRUE(o00Pos != std::string::npos)
         << "expected constant subscripts in _O_0";
@@ -506,6 +508,25 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
         << "expected constant subscripts in _O_0";
     EXPECT_TRUE(o30Pos != std::string::npos)
         << "expected constant subscripts in _O_0";
+
+    EXPECT_TRUE(preCopySyncPos != std::string::npos)
+        << "expected synchronization to be inserted";
+    EXPECT_TRUE(postCopySyncPos != std::string::npos)
+        << "expected synchronization to be inserted";
+
+    EXPECT_TRUE(
+        preCopySyncPos < o00Pos && preCopySyncPos < o10Pos &&
+        preCopySyncPos < o20Pos && preCopySyncPos < o30Pos)
+        << "expected synchronization before copies to registers";
+
+    o00Pos = code.find("_O_0[0][0]", postCopySyncPos);
+    o10Pos = code.find("_O_0[1][0]", postCopySyncPos);
+    o20Pos = code.find("_O_0[2][0]", postCopySyncPos);
+    o30Pos = code.find("_O_0[3][0]", postCopySyncPos);
+    EXPECT_TRUE(
+        o00Pos == std::string::npos && o10Pos == std::string::npos &&
+        o20Pos == std::string::npos && o20Pos == std::string::npos)
+        << "expected synchronization after copies from registers";
   }
 };
 
