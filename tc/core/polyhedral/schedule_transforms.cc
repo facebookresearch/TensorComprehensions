@@ -397,7 +397,6 @@ ScheduleTree* bandTile(
   auto ebChild = childUPtr->elemAs<ScheduleTreeElemBand>();
   TC_CHECK(ebChild) << "Not a band: " << *childUPtr;
   auto& childBand = *ebChild;
-  // No need for isl_schedule_band_point, it's almost done
   if (tileOptions & TileOptions::ShiftPointLoops) {
     auto mupa = band.mupa_;
     if (!(tileOptions & TileOptions::ScaleTileLoops)) {
