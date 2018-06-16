@@ -363,7 +363,7 @@ ScheduleTree* bandTile(
     return st;
   }
   auto& band = *eb;
-  TC_CHECK(band.permutable_) << "Can't tile an non-permutable band" << band;
+  TC_CHECK(band.permutable_) << "Can't tile a non-permutable band" << band;
 
   auto ts = tileSizes;
   if (band.nMember() > ts.size()) {
