@@ -381,9 +381,7 @@ ScheduleTree* bandTile(
   // Create a child, copy of st before outer tiling
   ScheduleTreeUPtr childUPtr = ScheduleTree::makeScheduleTree(*st);
 
-  for (size_t i = 0;
-       i < std::min(static_cast<size_t>(band.nMember()), ts.size());
-       ++i) {
+  for (size_t i = 0; i < band.nMember(); ++i) {
     auto upa = band.mupa_.get_union_pw_aff(i);
     if (ts[i]) {
       upa = upa.scale_down(isl::val(st->ctx_, ts[i])).floor();
