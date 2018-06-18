@@ -286,8 +286,8 @@ void ProductionModel::runATen1LUT() {
 }
 
 void ProductionModel::run2LUT(const tc::CudaMappingOptions& options) {
-  TC_CHECK_LT(0, E1);
-  TC_CHECK_LT(0, E2);
+  TC_CHECK_LT(0u, E1);
+  TC_CHECK_LT(0u, E2);
   auto ws_init_func = [=](Workspace& w) {
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
