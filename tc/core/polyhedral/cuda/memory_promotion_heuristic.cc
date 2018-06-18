@@ -266,6 +266,7 @@ bool promotionImprovesCoalescing(
     isl::union_map schedule) {
   auto originalAccesses = group.originalAccesses();
 
+  auto tensorDim = group.approximation.dim();
   auto markers = collectBranchMarkers(root, node);
   for (auto marker : markers) {
     auto mapping = findThreadMappingAncestor(root, marker);
@@ -280,8 +281,7 @@ bool promotionImprovesCoalescing(
     for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
       auto scheduleSpace = access.get_space().domain();
       auto tensorSpace = access.get_space().range();
-      auto elementToNext = makeNextElementMap(
-          tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
+      auto elementToNext = makeNextElementMap(tensorSpace, tensorDim - 1);
       auto scheduleToNextX = makeNextElementMap(scheduleSpace, depth - 1);
       auto accessedByAdjacentX =
           scheduleToNextX.apply_domain(access).apply_range(access);
