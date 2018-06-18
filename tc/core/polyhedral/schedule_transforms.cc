@@ -363,7 +363,7 @@ ScheduleTree* bandTile(
     return st;
   }
   auto& band = *eb;
-  TC_CHECK(band.permutable_) << "Can't tile an non-permutable band" << band;
+  TC_CHECK(band.permutable_) << "Can't tile a non-permutable band" << band;
 
   auto ts = tileSizes;
   if (band.nMember() > ts.size()) {
@@ -381,9 +381,7 @@ ScheduleTree* bandTile(
   // Create a child, copy of st before outer tiling
   ScheduleTreeUPtr childUPtr = ScheduleTree::makeScheduleTree(*st);
 
-  for (size_t i = 0;
-       i < std::min(static_cast<size_t>(band.nMember()), ts.size());
-       ++i) {
+  for (size_t i = 0; i < band.nMember(); ++i) {
     auto upa = band.mupa_.get_union_pw_aff(i);
     if (ts[i]) {
       upa = upa.scale_down(isl::val(st->ctx_, ts[i])).floor();
@@ -399,7 +397,6 @@ ScheduleTree* bandTile(
   auto ebChild = childUPtr->elemAs<ScheduleTreeElemBand>();
   TC_CHECK(ebChild) << "Not a band: " << *childUPtr;
   auto& childBand = *ebChild;
-  // No need for isl_schedule_band_point, it's almost done
   if (tileOptions & TileOptions::ShiftPointLoops) {
     auto mupa = band.mupa_;
     if (!(tileOptions & TileOptions::ScaleTileLoops)) {

@@ -528,11 +528,10 @@ isl::multi_aff makeMultiAffAccess(
 
 namespace {
 bool is_identifier_or_nonnegative_integer(isl::ast_expr expr) {
-  if (isl_ast_expr_get_type(expr.get()) == isl_ast_expr_id)
-    return true;
-  if (isl_ast_expr_get_type(expr.get()) != isl_ast_expr_int)
-    return false;
-  return isl::manage(isl_ast_expr_get_val(expr.get())).is_nonneg();
+  if (auto intExpr = expr.as<isl::ast_expr_int>()) {
+    return intExpr.get_val().is_nonneg();
+  }
+  return !expr.as<isl::ast_expr_id>().is_null();
 }
 } // namespace
 

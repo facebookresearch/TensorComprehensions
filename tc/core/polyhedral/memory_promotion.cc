@@ -115,7 +115,7 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::map TensorReferenceGroup::approximateFootprint() const {
+isl::map TensorReferenceGroup::approximateScopedAccesses() const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
@@ -271,8 +271,8 @@ void joinOverlappingWrites(
       if (g1->isReadOnly() && g2->isReadOnly()) {
         continue;
       }
-      if (g1->approximateFootprint()
-              .intersect(g2->approximateFootprint())
+      if (g1->approximateScopedAccesses()
+              .intersect(g2->approximateScopedAccesses())
               .is_empty()) {
         continue;
       }
@@ -518,7 +518,7 @@ ScheduleTree* insertCopiesUnder(
   auto arrayId =
       promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
   auto approximatedRead =
-      group.approximateFootprint().intersect_range(tensorElements).wrap();
+      group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
   auto readExtension = extension.intersect_range(approximatedRead)
                            .set_tuple_id(isl::dim_type::out, readId);

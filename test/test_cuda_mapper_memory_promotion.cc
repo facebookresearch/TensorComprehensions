@@ -305,7 +305,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       EXPECT_EQ(
           oneGroup->approximation.size(1),
           isl::val(ctx, std::min(tile2, problemSize2)));
-      auto footprint = tileZero.apply(oneGroup->approximateFootprint());
+      auto footprint = tileZero.apply(oneGroup->approximateScopedAccesses());
       size_t np = npoints(footprint);
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));
