@@ -206,15 +206,16 @@ bool hasReuseWithin(
  * dimensions unchanged.
  */
 isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
-  if (dim < 0 || dim >= setSpace.dim(isl::dim_type::set)) {
+  auto mapSpace = setSpace.map_from_set();
+  auto identityMA = isl::multi_aff::identity(mapSpace);
+
+  size_t size = identityMA.size();
+  if (dim < 0 || dim >= size) {
     std::stringstream ss;
-    ss << dim << "  is out of [0, " << setSpace.dim(isl::dim_type::set)
-       << ") range";
+    ss << dim << "  is out of [0, " << size << ") range";
     throw promotion::OutOfRangeException(ss.str());
   }
 
-  auto mapSpace = setSpace.map_from_set();
-  auto identityMA = isl::multi_aff::identity(mapSpace);
   auto aff = identityMA.get_aff(dim);
   identityMA = identityMA.set_aff(dim, aff + 1);
   return isl::map(identityMA);
