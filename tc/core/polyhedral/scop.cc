@@ -423,6 +423,8 @@ detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
   return tree;
 }
 
+} // namespace
+
 /*
  * Return the outermost band in the schedule tree with the given root.
  * If there is no single outermost band, then insert a (permutable)
@@ -431,7 +433,8 @@ detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
  * insert the band in the leaf.  If branching is encountered, then
  * insert the band above the branching.
  */
-detail::ScheduleTree* obtainOuterBand(detail::ScheduleTree* root) {
+detail::ScheduleTree* Scop::obtainOuterBand() {
+  auto root = scheduleRoot();
   auto tree = root;
   while (!tree->elemAs<ScheduleTreeElemBand>()) {
     auto n = tree->numChildren();
@@ -449,11 +452,10 @@ detail::ScheduleTree* obtainOuterBand(detail::ScheduleTree* root) {
   }
   return tree;
 }
-} // namespace
 
 detail::ScheduleTree* Scop::tileOuterBand(const TilingView& tileSizes) {
   using namespace tc::polyhedral::detail;
-  auto band = obtainOuterBand(scheduleRoot());
+  auto band = obtainOuterBand();
   auto bandNode = band->elemAs<ScheduleTreeElemBand>();
   std::vector<size_t> sizes = tileSizes.extractVector();
   if (bandNode->nMember() < sizes.size()) {
