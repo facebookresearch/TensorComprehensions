@@ -72,8 +72,12 @@ class MappedScop {
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
-    return std::unique_ptr<MappedScop>(new MappedScop(
+    auto mscop = std::unique_ptr<MappedScop>(new MappedScop(
         std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+    auto band = mscop->scop_->obtainOuterBand();
+    mscop->mapBlocksForward(band, 0);
+    mscop->mapThreadsBackward(band);
+    return mscop;
   }
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
