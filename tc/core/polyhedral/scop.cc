@@ -561,9 +561,9 @@ std::vector<detail::ScheduleTree*> Scop::tileOuterCoincidentBands(
     const TilingView& tileSizes) {
   using namespace tc::polyhedral::detail;
   auto bands = obtainOuterCoincidentBands(scheduleRoot(), scheduleRoot());
-  std::vector<size_t> sizes = tileSizes.extractVector();
   std::vector<detail::ScheduleTree*> tiledBands = {};
   for (auto band : bands) {
+    std::vector<size_t> sizes = tileSizes.extractVector();
     auto bandNode = band->elemAs<ScheduleTreeElemBand>();
     if (bandNode->nMember() < sizes.size()) {
       sizes.resize(bandNode->nMember());
