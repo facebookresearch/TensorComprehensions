@@ -359,9 +359,6 @@ ScheduleTree* bandTile(
   auto eb = st->elemAs<ScheduleTreeElemBand>();
   TC_CHECK(eb) << "Not a band: " << *st;
 
-  if (tileSizes.size() == 0) {
-    return st;
-  }
   auto& band = *eb;
   TC_CHECK(band.permutable_) << "Can't tile a non-permutable band" << band;
 

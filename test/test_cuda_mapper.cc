@@ -1151,6 +1151,21 @@ def local_sparse_convolution(float(N, C, H, W) I, float(O, KC, KH, KW) W1) -> (O
   }
 }
 
+/*
+ * Check that a TC with a single instance gets mapped properly.
+ * tightenLaunchBounds (called during codegen) will complain
+ * if it is not.
+ */
+TEST_F(PolyhedralMapperTest, SingleInstance) {
+  string tc = R"TC(
+def f(float(N) I) -> (a)
+{
+    a = 0
+}
+)TC";
+  codegenMapped(tc, DefaultOptions());
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
