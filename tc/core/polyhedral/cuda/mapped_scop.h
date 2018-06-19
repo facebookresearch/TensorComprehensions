@@ -79,6 +79,9 @@ class MappedScop {
     mscop->mapThreadsBackward(band);
     return mscop;
   }
+  // The MappedScop returned by this method does not satisfy the invariant
+  // of having a mapping to blocks and threads.  It is up to the caller
+  // to insert these mappings.
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
