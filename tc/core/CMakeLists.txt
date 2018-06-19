@@ -49,7 +49,7 @@ target_link_libraries(
   tc_proto
 )
 if (WITH_BINDINGS)
-  add_dependencies(tc_core generate_isl)
+  add_dependencies(tc_core generate_isl_cpp_h)
 endif()
 install(
   TARGETS

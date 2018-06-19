@@ -227,6 +227,8 @@ message(STATUS "Found ATen.so file: ${ATEN_LIBRARIES}")
 # isl
 ################################################################################
 set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
+# use locally generated C++ bindings
+include_directories(AFTER ${PROJECT_SOURCE_DIR}/isl_interface/include)
 include_directories(AFTER ${PROJECT_SOURCE_DIR}/third-party/islpp/include)
 include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/third-party/islpp/include)
 add_subdirectory(third-party/islpp)
@@ -322,4 +324,8 @@ if (WITH_CAFFE2 AND WITH_CUDA)
    add_subdirectory(test/caffe2)
 else()
   message(STATUS "Not building benchmarks, caffe2 or CUDA not available")
+endif()
+
+if (WITH_BINDINGS)
+  add_subdirectory(isl_interface)
 endif()
