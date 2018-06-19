@@ -1068,8 +1068,9 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   std::vector<detail::ScheduleTree*> tiledBands;
   if (useGridSync) {
     tiledBands = scop->tileOuterCoincidentBands(generic.tiling);
-    sharedMemorySize =
-        std::min(sharedMemorySize, sharedMemorySizePerSM / blocksPerSM);
+    sharedMemorySize = std::min(
+        sharedMemorySize,
+        blocksPerSM == 0 ? 0 : sharedMemorySizePerSM / blocksPerSM);
   } else {
     tiledBands = {scop->tileOuterBand(generic.tiling)};
   }
