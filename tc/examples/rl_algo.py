@@ -22,7 +22,8 @@ EPS_DECAY = 200
 steps_done = 0
 
 viz = Visdom()
-win = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
 def group_normalization(
@@ -188,7 +189,7 @@ def finish_episode(final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
     final_rewards = torch.tensor(final_rewards)
-    #final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
+    final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in saved_actions[batch_id]:
             reward = final_rewards[batch_id] - value.item()
@@ -208,6 +209,7 @@ INTER_DISP = 20
 
 running_reward = -0.5
 tab_rewards=[]
+tab_best=[]
 best=-0.5
 v_losses=[]
 p_losses=[]
@@ -222,8 +224,11 @@ for i in range(NB_EPOCHS):
     v_losses.append(vloss)
     p_losses.append(ploss)
     best = max(best, np.max(rewards))
-    running_reward = best #running_reward * 0.99 + np.mean(rewards) * 0.01
+    running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
+    tab_best.append(-best)
     if i % INTER_DISP == 0:
-        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(v_losses), np.array(p_losses))), win=win, opts=dict(legend=["Minus Running reward", "Value loss", "Policy loss"]))
+        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
+        viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)
+    print(-best)
