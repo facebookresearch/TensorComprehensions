@@ -67,7 +67,12 @@ conda install -y -c nicolasvasilache caffe2
 WITH_CAFFE2=ON CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda CLANG_PREFIX=$(${CONDA_PREFIX}/bin/llvm-config --prefix) BUILD_TYPE=Release ./build.sh
 
 python setup.py install
-./test_python/run_test.sh
+
+echo "Running normal TC test"
+python ./test_python/test_tc.py -v
+\
+# echo "Running all PyTorch layers tests"
+# python -m pytest -v --full-trace --junit-xml="/tmp/tensorcomp/python/result.xml" ./test_python/layers/
 
 for f in $(find ./python/examples -name "*.py"); do
     python $f -v

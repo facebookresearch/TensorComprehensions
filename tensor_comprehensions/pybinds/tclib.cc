@@ -277,12 +277,20 @@ class TunerConfig {
   TunerConfig(
       uint32_t generations,
       uint32_t populationSize,
+      uint32_t crossoverRate,
+      uint32_t mutationRate,
+      uint32_t numberElites,
+      uint32_t tunerMinLaunchTotalThreads,
       uint32_t threads,
       std::string devices,
       bool logtostderr,
       uint32_t stderrthreshold) {
     generations_ = generations;
     populationSize_ = populationSize;
+    crossoverRate_ = crossoverRate;
+    mutationRate_ = mutationRate;
+    numberElites_ = numberElites;
+    tunerMinLaunchTotalThreads_ = tunerMinLaunchTotalThreads;
     threads_ = threads;
     devices_ = devices;
     logtostderr_ = logtostderr;
@@ -293,6 +301,10 @@ class TunerConfig {
   void __enter__() const {
     savedGenerations_ = tc::FLAGS_tuner_gen_generations;
     savedPopulationSize_ = tc::FLAGS_tuner_gen_pop_size;
+    savedCrossoverRate_ = tc::FLAGS_tuner_gen_crossover_rate;
+    savedMutationRate_ = tc::FLAGS_tuner_gen_mutation_rate;
+    savedNumberElites_ = tc::FLAGS_tuner_gen_number_elites;
+    savedTunerMinLaunchTotalThreads_ = tc::FLAGS_tuner_min_launch_total_threads;
     savedThreads_ = tc::FLAGS_tuner_threads;
     savedDevices_ = tc::FLAGS_tuner_devices;
     savedLogtostderr_ = FLAGS_logtostderr;
@@ -300,6 +312,10 @@ class TunerConfig {
 
     tc::FLAGS_tuner_gen_generations = generations_;
     tc::FLAGS_tuner_gen_pop_size = populationSize_;
+    tc::FLAGS_tuner_gen_crossover_rate = crossoverRate_;
+    tc::FLAGS_tuner_gen_mutation_rate = mutationRate_;
+    tc::FLAGS_tuner_gen_number_elites = numberElites_;
+    tc::FLAGS_tuner_min_launch_total_threads = tunerMinLaunchTotalThreads_;
     tc::FLAGS_tuner_threads = threads_;
     tc::FLAGS_tuner_devices = devices_;
     FLAGS_logtostderr = logtostderr_;
@@ -308,6 +324,10 @@ class TunerConfig {
   void __exit__() const {
     tc::FLAGS_tuner_gen_generations = savedGenerations_;
     tc::FLAGS_tuner_gen_pop_size = savedPopulationSize_;
+    tc::FLAGS_tuner_gen_crossover_rate = savedCrossoverRate_;
+    tc::FLAGS_tuner_gen_mutation_rate = savedMutationRate_;
+    tc::FLAGS_tuner_gen_number_elites = savedNumberElites_;
+    tc::FLAGS_tuner_min_launch_total_threads = savedTunerMinLaunchTotalThreads_;
     tc::FLAGS_tuner_threads = savedThreads_;
     tc::FLAGS_tuner_devices = savedDevices_;
     FLAGS_logtostderr = savedLogtostderr_;
@@ -317,12 +337,20 @@ class TunerConfig {
  private:
   uint32_t generations_;
   uint32_t populationSize_;
+  uint32_t crossoverRate_;
+  uint32_t mutationRate_;
+  uint32_t numberElites_;
+  uint32_t tunerMinLaunchTotalThreads_;
   uint32_t threads_;
   std::string devices_;
   bool logtostderr_;
   uint32_t stderrthreshold_;
   mutable uint32_t savedGenerations_;
   mutable uint32_t savedPopulationSize_;
+  mutable uint32_t savedCrossoverRate_;
+  mutable uint32_t savedMutationRate_;
+  mutable uint32_t savedNumberElites_;
+  mutable uint32_t savedTunerMinLaunchTotalThreads_;
   mutable uint32_t savedThreads_;
   mutable std::string savedDevices_;
   mutable bool savedLogtostderr_;
@@ -360,28 +388,25 @@ class MappingOptionsCache {
 PYBIND11_MODULE(tclib, m) {
   m.doc() = "Python bindings for Tensor Comprehensions";
 
-  m.def("set_logtostderr", [](bool logtostderr) {
-    FLAGS_logtostderr = logtostderr;
-  });
-  m.def("set_debug_lang", [](bool debug_lang) {
-    tc::FLAGS_debug_lang = debug_lang;
-  });
-  m.def("set_debug_halide", [](bool debug_halide) {
+  // Simple functions to set up debugging
+  m.def(
+      "logtostderr", [](bool logtostderr) { FLAGS_logtostderr = logtostderr; });
+  m.def(
+      "debug_lang", [](bool debug_lang) { tc::FLAGS_debug_lang = debug_lang; });
+  m.def("debug_halide", [](bool debug_halide) {
     tc::FLAGS_debug_halide = debug_halide;
   });
-  m.def("set_debug_tc_mapper", [](bool debug_tc_mapper) {
+  m.def("debug_tc_mapper", [](bool debug_tc_mapper) {
     tc::FLAGS_debug_tc_mapper = debug_tc_mapper;
   });
-  m.def("set_debug_cuda", [](bool debug_cuda) {
-    tc::FLAGS_debug_cuda = debug_cuda;
-  });
-  m.def("set_debug_tuner", [](bool debug_tuner) {
+  m.def("debug_tuner", [](bool debug_tuner) {
     tc::FLAGS_debug_tuner = debug_tuner;
   });
-  m.def(
-      "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
+  m.def("dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
-  py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
+  // Low-level stateful API compile returns an executor on which run and
+  // unchecked_run can be called.
+  py::class_<TcExecutor>(m, "TcExecutor")
       .def("run", &TcExecutor::run)
       .def("unchecked_run", &TcExecutor::uncheckedRun);
   m.def(
@@ -395,82 +420,37 @@ PYBIND11_MODULE(tclib, m) {
         return TcExecutor{tc, entryPoint, std::move(execUPtr)};
       });
 
-  py::class_<TunerConfig>(m, "TunerConfig", py::module_local())
+  // A TunerConfig object can be passed to configure a tuning run
+  py::class_<TunerConfig>(m, "TunerConfig")
       .def(
-          py::init<uint32_t, uint32_t, uint32_t, std::string, bool, uint32_t>(),
+          py::init<
+              uint32_t,
+              uint32_t,
+              uint32_t,
+              uint32_t,
+              uint32_t,
+              uint32_t,
+              uint32_t,
+              std::string,
+              bool,
+              uint32_t>(),
           py::arg("generations") = tc::FLAGS_tuner_gen_generations,
           py::arg("pop_size") = tc::FLAGS_tuner_gen_pop_size,
+          py::arg("crossover_rate") = tc::FLAGS_tuner_gen_crossover_rate,
+          py::arg("mutation_rate") = tc::FLAGS_tuner_gen_mutation_rate,
+          py::arg("number_elites") = tc::FLAGS_tuner_gen_number_elites,
+          py::arg("tuner_min_launch_total_threads") =
+              tc::FLAGS_tuner_min_launch_total_threads,
           py::arg("threads") = tc::FLAGS_tuner_threads,
           py::arg("devices") = tc::FLAGS_tuner_devices,
           py::arg("logtostderr") = false,
           // Suppress non-FATAL errors from the python user
           py::arg("stderrthreshold") = google::FATAL);
 
-  py::class_<Tuner>(m, "Tuner", py::module_local())
+  //
+  py::class_<Tuner>(m, "Tuner")
       .def(py::init<std::string>())
       .def(py::init<std::string, std::string>())
-      .def(
-          "pop_size",
-          [](Tuner& instance, uint32_t& pop_size) {
-            tc::FLAGS_tuner_gen_pop_size = pop_size;
-          })
-      .def(
-          "crossover_rate",
-          [](Tuner& instance, uint32_t& crossover_rate) {
-            tc::FLAGS_tuner_gen_crossover_rate = crossover_rate;
-          })
-      .def(
-          "mutation_rate",
-          [](Tuner& instance, uint32_t& mutation_rate) {
-            tc::FLAGS_tuner_gen_mutation_rate = mutation_rate;
-          })
-      .def(
-          "generations",
-          [](Tuner& instance, uint32_t& generations) {
-            tc::FLAGS_tuner_gen_generations = generations;
-          })
-      .def(
-          "number_elites",
-          [](Tuner& instance, uint32_t& number_elites) {
-            tc::FLAGS_tuner_gen_number_elites = number_elites;
-          })
-      .def(
-          "threads",
-          [](Tuner& instance, uint32_t& threads) {
-            tc::FLAGS_tuner_threads = threads;
-          })
-      .def(
-          "gpus",
-          [](Tuner& instance, std::string& gpus) {
-            tc::FLAGS_tuner_devices = gpus;
-          })
-      .def(
-          "restore_from_proto",
-          [](Tuner& instance, bool restore_from_proto) {
-            tc::FLAGS_tuner_gen_restore_from_proto = restore_from_proto;
-          })
-      .def(
-          "restore_number",
-          [](Tuner& instance, uint32_t& restore_number) {
-            tc::FLAGS_tuner_gen_restore_number = restore_number;
-          })
-      .def(
-          "log_generations",
-          [](Tuner& instance, bool log_generations) {
-            tc::FLAGS_tuner_gen_log_generations = log_generations;
-          })
-      .def(
-          "tuner_min_launch_total_threads",
-          [](Tuner& instance, bool tuner_min_launch_total_threads) {
-            tc::FLAGS_tuner_min_launch_total_threads =
-                tuner_min_launch_total_threads;
-          })
-      .def(
-          "save_best_candidates_count",
-          [](Tuner& instance, bool save_best_candidates_count) {
-            tc::FLAGS_tuner_save_best_candidates_count =
-                save_best_candidates_count;
-          })
       .def(
           "tune",
           [](Tuner& instance,
@@ -496,11 +476,11 @@ PYBIND11_MODULE(tclib, m) {
             }
           });
 
-  py::class_<MappingOptionsCache>(m, "MappingOptionsCache", py::module_local())
+  py::class_<MappingOptionsCache>(m, "MappingOptionsCache")
       .def(py::init<std::string>())
       .def("load", &MappingOptionsCache::load);
 
-  py::class_<CompilationCache>(m, "CompilationCache", py::module_local())
+  py::class_<CompilationCache>(m, "CompilationCache")
       .def(py::init<std::string>())
       .def("is_compiled", &CompilationCache::isCompiled)
       .def("alloc_outputs", &CompilationCache::allocOutputs)
@@ -514,7 +494,9 @@ PYBIND11_MODULE(tclib, m) {
       "MappingOptions for a Tensor Comprehensions (TC)",
       py::module_local())
       .def(
-          py::init([]() {
+          py::init([](const std::string& optionsName) {
+            TC_CHECK_EQ(optionsName, "naive")
+                << "Naive options are the only constructible user-facing options. We recommended using the tuner to get better options or, alternatively, retrieving some from a cache.";
             return tc::CudaMappingOptions::makeNaiveMappingOptions();
           }),
           "Initialize naive CudaMappingOption")
@@ -544,6 +526,10 @@ PYBIND11_MODULE(tclib, m) {
           "Create block-local copies of data in shared memory when this can "
           "leverage data reuse or global memory access coalescing")
       .def(
+          "usePrivateMemory",
+          &tc::CudaMappingOptions::usePrivateMemory,
+          "Create thread-local copies of data in private memory")
+      .def(
           "unrollCopyShared",
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If an unroll "
@@ -556,6 +542,7 @@ PYBIND11_MODULE(tclib, m) {
           "scheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.scheduleFusionStrategy(type);
+            return instance;
           },
           "Set up outerScheduleFusionStrategy and intraTileFusionStrategy "
           "to the given value")
@@ -563,6 +550,7 @@ PYBIND11_MODULE(tclib, m) {
           "outerScheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.outerScheduleFusionStrategy(type);
+            return instance;
           },
           "Require TC to try and execute different TC expressions interleaved "
           "(Max), separately (Min)\n"
@@ -574,6 +562,7 @@ PYBIND11_MODULE(tclib, m) {
           "intraTileScheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.intraTileScheduleFusionStrategy(type);
+            return instance;
           },
           "Require TC to try and execute different TC expressions interleaved "
           "(Max), separately (Min)\n"
@@ -584,7 +573,10 @@ PYBIND11_MODULE(tclib, m) {
           "tile",
           // pybind11 has implicit conversion from tuple -> vector
           [](tc::CudaMappingOptions& instance,
-             std::vector<uint64_t>& tileSizes) { instance.tile(tileSizes); },
+             std::vector<uint64_t>& tileSizes) {
+            instance.tile(tileSizes);
+            return instance;
+          },
           "Perform loop tiling on the generated code with the given sizes. "
           "Independent of mapping to a\n"
           "grid of thread blocks")
@@ -593,6 +585,7 @@ PYBIND11_MODULE(tclib, m) {
           [](tc::CudaMappingOptions& instance,
              std::vector<uint64_t>& threadSizes) {
             instance.mapToThreads(threadSizes);
+            return instance;
           },
           "The configuration of CUDA block, i.e. the number of CUDA threads "
           "in each block along three\n"
@@ -604,6 +597,7 @@ PYBIND11_MODULE(tclib, m) {
           [](tc::CudaMappingOptions& instance,
              std::vector<uint64_t>& blockSizes) {
             instance.mapToBlocks(blockSizes);
+            return instance;
           },
           "The configuration of CUDA grid, i.e. the number of CUDA blocks "
           "along three dimensions. Must be\n"
@@ -613,6 +607,7 @@ PYBIND11_MODULE(tclib, m) {
           "matchLibraryCalls",
           [](tc::CudaMappingOptions& instance, bool match) {
             instance.matchLibraryCalls(match);
+            return instance;
           },
           "Replace computation patterns with calls to highly optimized "
           "libraries (such as CUB, CUTLASS) when possible")
@@ -620,6 +615,7 @@ PYBIND11_MODULE(tclib, m) {
           "fixParametersBeforeScheduling",
           [](tc::CudaMappingOptions& instance, bool fix) {
             instance.fixParametersBeforeScheduling(fix);
+            return instance;
           },
           "Perform automatic loop scheduling taking into account specific "
           "tensor sizes.\n"
@@ -631,6 +627,7 @@ PYBIND11_MODULE(tclib, m) {
           "unroll",
           [](tc::CudaMappingOptions& instance, uint64_t factor) {
             instance.unroll(factor);
+            return instance;
           },
           "Perform loop unrolling on the generated code and produce at "
           "most the given number of statements");
