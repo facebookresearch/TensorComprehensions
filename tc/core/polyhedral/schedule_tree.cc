@@ -187,6 +187,9 @@ vector<size_t> ScheduleTree::positionRelativeTo(
 }
 
 size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
+  if (relativeRoot == this) {
+    return 0;
+  }
   size_t depth = 0;
   for (auto const& anc : ancestors(relativeRoot)) {
     auto bandElem = anc->elemAs<ScheduleTreeElemBand>();

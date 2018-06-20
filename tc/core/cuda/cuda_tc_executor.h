@@ -63,5 +63,6 @@ class CudaTcExecutor : public TcExecutor<CudaBackend> {
   // GPU-specific results of compilation
   Grid grid_;
   Block block_;
+  bool useGridSync_;
 };
 } // namespace tc

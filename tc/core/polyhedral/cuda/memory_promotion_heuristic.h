@@ -21,6 +21,9 @@
 #include "tc/external/isl.h"
 
 namespace tc {
+
+class Block;
+
 namespace polyhedral {
 class MappedScop;
 class Scop;
@@ -36,9 +39,11 @@ class ScheduleTree;
 // "threadIdxXScheduleDepthState" contains the schedule depth at which the
 // computation was mapped to thread x and is used to check whether the global
 // memory is accessed in a coalesced way.
-void promoteGreedilyAtDepth(
+// Return the remaining memory.
+size_t promoteGreedilyAtDepth(
     MappedScop& scop,
-    std::size_t depth,
+    std::vector<detail::ScheduleTree*> trees,
+    std::vector<std::size_t> depths,
     std::size_t sharedMemorySize,
     bool unrollCopies);
 

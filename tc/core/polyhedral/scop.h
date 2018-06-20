@@ -195,7 +195,7 @@ struct Scop {
       isl::id updateId);
 
   // The different level of synchronization.
-  enum class SyncLevel : int { None = 0, Warp = 1, Block = 2 };
+  enum class SyncLevel : int { None = 0, Warp = 1, Block = 2, Grid = 3 };
 
   // Given a sequence node in the schedule tree, insert
   // synchronization before the child at position "pos".
@@ -228,6 +228,10 @@ struct Scop {
     static size_t count = 0;
     return count++;
   }
+  size_t gridSyncUID() const {
+    static size_t count = 0;
+    return count++;
+  }
 
   // Make the synchronization id corresponding to the synchronization level.
   // The level should not be None.
@@ -238,6 +242,9 @@ struct Scop {
         break;
       case SyncLevel::Block:
         return makeSyncId();
+        break;
+      case SyncLevel::Grid:
+        return makeGridSyncId();
         break;
       default:
         TC_CHECK(level != SyncLevel::None);
@@ -254,6 +261,12 @@ struct Scop {
     auto ctx = domain().get_ctx();
     return isl::id(
         ctx, std::string(kWarpSyncIdPrefix) + std::to_string(warpSyncUID()));
+  }
+
+  isl::id makeGridSyncId() const {
+    auto ctx = domain().get_ctx();
+    return isl::id(
+        ctx, std::string(kGridSyncIdPrefix) + std::to_string(gridSyncUID()));
   }
 
   // Check if the id has a name with the expected prefix, followed by a long
@@ -280,6 +293,10 @@ struct Scop {
 
   static bool isWarpSyncId(isl::id id) {
     return isIdWithExpectedPrefix(id, kWarpSyncIdPrefix);
+  }
+
+  static bool isGridSyncId(isl::id id) {
+    return isIdWithExpectedPrefix(id, kGridSyncIdPrefix);
   }
 
   static isl::id makeRefId(isl::ctx ctx) {
@@ -404,6 +421,13 @@ struct Scop {
   // tile loop band.
   detail::ScheduleTree* tileOuterBand(const TilingView& tiling);
 
+  // Tile the outermost coincident bands. See the obtainOuterCoincidentBands
+  // function to see what these bands correspond to.
+  // Splits the bands into tile loop band and point loop band where point loops
+  // have fixed trop counts specified in "tiling", and returns a pointer to
+  // the tile loop bands.
+  std::vector<detail::ScheduleTree*> tileOuterCoincidentBands(
+      const TilingView& tiling);
   // Reschedule the schedule subtree rooted at "tree" with the
   // given scheduler options.
   void reschedule(

@@ -61,6 +61,12 @@ __device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
 #endif
 )C";
 
+constexpr auto gridSyncFunctions = R"C(
+__device__ void __syncgrid() {
+  cudaCGSynchronize(cudaCGGetIntrinsicHandle(cudaCGScopeGrid),0);
+}
+)C";
+
 constexpr auto mathFunctionDecl = R"C(
 
 // BEGIN MATH FUNCTIONS FROM CUDA

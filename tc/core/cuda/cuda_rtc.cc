@@ -25,6 +25,7 @@
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
+#include "tc/version/cuda_version.h"
 
 namespace tc {
 std::mutex nvrtc_mutex;
@@ -50,7 +51,8 @@ void CudaRTCFunction::clear() {
 
 std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
     const std::string& name,
-    const std::string& source) {
+    const std::string& source,
+    bool useGridSync) {
   std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
   res->specializedName = name;
   res->cleared_ = false;
@@ -88,6 +90,9 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
                                       "-DNVRTC_CUB=1",
                                       cudaHome.c_str(),
                                       cubHome.c_str()};
+  if (useGridSync) {
+    nvrtcts.push_back("--relocatable-device-code=true");
+  }
   if (FLAGS_debug_cuda) {
     nvrtcts.push_back(nvrtc_debug_opts[0]);
     nvrtcts.push_back(nvrtc_debug_opts[1]);
@@ -132,6 +137,7 @@ std::ostream& operator<<(std::ostream& os, const std::array<T, 3>& a) {
 Duration CudaRTCFunction::Launch(
     const std::array<size_t, 3>& grid,
     const std::array<size_t, 3>& block,
+    bool useGridSync,
     unsigned int shared_mem,
     cudaStream_t stream,
     std::vector<long> params,
@@ -143,8 +149,28 @@ Duration CudaRTCFunction::Launch(
   if (perGpuModule_.count(dev) == 0) {
     CUmodule module;
     CUfunction function;
-    TC_CUDA_DRIVERAPI_ENFORCE(
-        cuModuleLoadDataEx(&module, nvrtc_ptx.data(), 0, 0, 0));
+    if (useGridSync) {
+      CUlinkState linkState;
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLinkCreate(0, 0, 0, &linkState));
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLinkAddFile(
+          linkState, CU_JIT_INPUT_LIBRARY, cuda_libdevrt_path, 0, 0, 0));
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLinkAddData(
+          linkState,
+          CU_JIT_INPUT_PTX,
+          (void*)nvrtc_ptx.data(),
+          nvrtc_ptx.size(),
+          "device_code.ptx",
+          0,
+          0,
+          0));
+      size_t cubinSize;
+      void* cubin;
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLinkComplete(linkState, &cubin, &cubinSize));
+      TC_CUDA_DRIVERAPI_ENFORCE(cuModuleLoadData(&module, cubin));
+    } else {
+      TC_CUDA_DRIVERAPI_ENFORCE(
+          cuModuleLoadDataEx(&module, nvrtc_ptx.data(), 0, 0, 0));
+    }
     perGpuModule_.emplace(dev, module);
     TC_CUDA_DRIVERAPI_ENFORCE(
         cuModuleGetFunction(&function, module, specializedName.c_str()));
@@ -174,18 +200,32 @@ Duration CudaRTCFunction::Launch(
   unsigned int by = block[1];
   unsigned int bz = block[2];
   auto launch = [&]() {
-    TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchKernel(
-        perGpuKernel_.at(dev),
-        gx,
-        gy,
-        gz,
-        bx,
-        by,
-        bz,
-        shared_mem,
-        stream,
-        args_voidp.data(),
-        0));
+    if (useGridSync) {
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchCooperativeKernel(
+          perGpuKernel_.at(dev),
+          gx,
+          gy,
+          gz,
+          bx,
+          by,
+          bz,
+          shared_mem,
+          stream,
+          args_voidp.data()));
+    } else {
+      TC_CUDA_DRIVERAPI_ENFORCE(cuLaunchKernel(
+          perGpuKernel_.at(dev),
+          gx,
+          gy,
+          gz,
+          bx,
+          by,
+          bz,
+          shared_mem,
+          stream,
+          args_voidp.data(),
+          0));
+    }
   };
 
   if (not profile) {

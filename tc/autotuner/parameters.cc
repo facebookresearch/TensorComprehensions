@@ -347,28 +347,40 @@ TuningConfiguration::TuningConfiguration()
       useReadOnlyCache("use readonly cache (i.e. emit __ldg loads)"),
       matchLibraryCalls("match library calls") {
   addValidator([](const TuningConfiguration& conf) {
-    auto b0v = conf.blockParams.dims.at(0).value();
-    auto b1v = conf.blockParams.dims.at(1).value();
-    auto b2v = conf.blockParams.dims.at(2).value();
+    auto b = conf.blockParams;
+    auto b0v = b.dims.at(0).value();
+    auto b1v = b.dims.at(1).value();
+    auto b2v = b.dims.at(2).value();
+    auto g = conf.gridParams;
+    auto g0v = g.dims.at(0).value();
+    auto g1v = g.dims.at(1).value();
+    auto g2v = g.dims.at(2).value();
     if (b0v <= 0 or b0v > 1024 or b1v <= 0 or b1v > 1024 or b2v <= 0 or
         b2v > 64) {
       return false;
     }
-    auto blockProduct = [&]() {
-      switch (conf.blockParams.numberDims.value()) {
+    auto computeProduct = [&](const CudaDimParameters& p) {
+      switch (p.numberDims.value()) {
         case 3:
-          return b0v * b1v * b2v;
+          return p.dims.at(0).value() * p.dims.at(1).value() *
+              p.dims.at(2).value();
         case 2:
-          return b0v * b1v;
+          return p.dims.at(0).value() * p.dims.at(1).value();
         case 1:
-          return b0v;
+          return p.dims.at(0).value();
         default:
           TC_CHECK(false) << "Must have (1-3) block dims, got: "
                           << conf.blockParams.numberDims.value();
       }
-      return b0v;
-    }();
+      return p.dims.at(0).value();
+    };
+    auto blockProduct = computeProduct(b);
+    auto gridProduct = computeProduct(g);
     if (blockProduct < 32 or blockProduct > 512) {
+      return false;
+    }
+    if (FLAGS_reduce_launch_size and
+        (gridProduct > 128 or blockProduct > 256)) {
       return false;
     }
     return true;

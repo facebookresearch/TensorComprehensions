@@ -41,14 +41,14 @@ class CudaRTCFunction {
  public:
   ~CudaRTCFunction();
 
-  static std::unique_ptr<CudaRTCFunction> Compile(
-      const std::string& name,
-      const std::string& source);
+  static std::unique_ptr<CudaRTCFunction>
+  Compile(const std::string& name, const std::string& source, bool useGridSync);
 
   // if profile is set it returns the kernel runtime
   Duration Launch(
       const std::array<size_t, 3>& grid,
       const std::array<size_t, 3>& block,
+      bool useGridSync,
       unsigned int shared_mem,
       cudaStream_t stream,
       // by copy because we take an address to element when calling the kernel

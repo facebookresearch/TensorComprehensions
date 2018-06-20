@@ -61,11 +61,13 @@ class MappedScop {
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
       ::tc::Block block,
+      bool useGridSync_,
       uint64_t unroll_,
       bool useReadOnlyCache_)
       : scop_(std::move(scop)),
         numBlocks(grid),
         numThreads(block),
+        useGridSync(useGridSync_),
         unroll(unroll_),
         useReadOnlyCache(useReadOnlyCache_) {}
 
@@ -73,7 +75,12 @@ class MappedScop {
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
     auto mscop = std::unique_ptr<MappedScop>(new MappedScop(
-        std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+        std::move(scop),
+        ::tc::Grid{1, 1, 1},
+        ::tc::Block{1, 1, 1},
+        false,
+        1,
+        false));
     auto band = mscop->scop_->obtainOuterBand();
     mscop->mapBlocksForward(band, 0);
     mscop->mapThreadsBackward(band);
@@ -86,10 +93,11 @@ class MappedScop {
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
       ::tc::Block block,
+      bool useGridSync,
       uint64_t unroll,
       bool useReadOnlyCache) {
-    return std::unique_ptr<MappedScop>(
-        new MappedScop(std::move(scop), grid, block, unroll, useReadOnlyCache));
+    return std::unique_ptr<MappedScop>(new MappedScop(
+        std::move(scop), grid, block, useGridSync, unroll, useReadOnlyCache));
   }
 
   // Apply the hand-written OuterBlockInnerThread mapping strategy.
@@ -121,7 +129,7 @@ class MappedScop {
 
   // Generate CUDA code at the current state of transformation provided a
   // name for the generated function.
-  std::tuple<std::string, tc::Grid, tc::Block> codegen(
+  std::tuple<std::string, tc::Grid, tc::Block, bool> codegen(
       const std::string& specializedName) const;
 
   // Accessors..
@@ -215,6 +223,10 @@ class MappedScop {
   // Return a pointer to the split off tile.
   detail::ScheduleTree* splitOutReductionTileAndInsertSyncs(
       detail::ScheduleTree* band);
+  // Insert grid synchronization where needed.
+  // They are inserted in every sequence and below every sequential loop
+  // which are above the outer coincident bands.
+  void insertGridSyncs(const std::vector<detail::ScheduleTree*>& outerBands);
   // Map "band" to thread identifiers using as many blockSizes values as outer
   // coincident dimensions (plus reduction dimension, if any),
   // insert synchronization in case of a reduction, and
@@ -233,6 +245,7 @@ class MappedScop {
  public:
   const ::tc::Grid numBlocks;
   const ::tc::Block numThreads;
+  bool useGridSync;
   const uint64_t unroll;
   const bool useReadOnlyCache;
 

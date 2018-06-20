@@ -34,4 +34,51 @@ inline size_t querySharedMemorySize() {
 #endif
 }
 
+/// Get the shared memory size per sm of the GPU device active in the current
+/// thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+inline size_t querySharedMemorySizePerSM() {
+#ifdef CUDA_HOME
+  return CudaGPUInfo::GPUInfo().SharedMemorySizePerSM();
+#else
+  return 0;
+#endif
+}
+
+/// Get the maximum number of blocks per sm of the GPU device active
+/// in the current thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+inline size_t queryBlocksPerSM() {
+#ifdef CUDA_HOME
+  return CudaGPUInfo::GPUInfo().BlocksPerSM();
+#else
+  return 0;
+#endif
+}
+
+/// Get the maximum number of threads per sm of the GPU device active
+/// in the current thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+inline size_t queryThreadsPerSM() {
+#ifdef CUDA_HOME
+  return CudaGPUInfo::GPUInfo().ThreadsPerSM();
+#else
+  return 0;
+#endif
+}
+
+/// Get the number of sm on the GPU device active in the current thread.
+/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
+/// If a thread has no associated GPU device, return 0.
+inline size_t queryNbOfSM() {
+#ifdef CUDA_HOME
+  return CudaGPUInfo::GPUInfo().NbOfSM();
+#else
+  return 0;
+#endif
+}
+
 } // namespace tc

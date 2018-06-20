@@ -96,8 +96,17 @@ struct WithCudaDevice {
 class CudaGPUInfo {
   CudaGPUInfo(
       const std::vector<std::string>& gpuNames,
-      const std::vector<size_t>& sharedMemSizes)
-      : gpuNames_(gpuNames), sharedMemSizes_(sharedMemSizes) {}
+      const std::vector<size_t>& sharedMemSizes,
+      const std::vector<size_t>& sharedMemSizesPerSM,
+      const std::vector<size_t>& blocksPerSM,
+      const std::vector<size_t>& threadsPerSM,
+      const std::vector<size_t>& nbOfSM)
+      : gpuNames_(gpuNames),
+        sharedMemSizes_(sharedMemSizes),
+        sharedMemSizesPerSM_(sharedMemSizesPerSM),
+        blocksPerSM_(blocksPerSM),
+        threadsPerSM_(threadsPerSM),
+        nbOfSM_(nbOfSM) {}
 
  public:
   static CudaGPUInfo& GPUInfo();
@@ -110,9 +119,17 @@ class CudaGPUInfo {
   std::string GetGPUName(int id = -1) const;
   std::string getCudaDeviceStr() const;
   size_t SharedMemorySize() const;
+  size_t SharedMemorySizePerSM() const;
+  size_t BlocksPerSM() const;
+  size_t ThreadsPerSM() const;
+  size_t NbOfSM() const;
 
   std::vector<std::string> gpuNames_;
   std::vector<size_t> sharedMemSizes_;
+  std::vector<size_t> sharedMemSizesPerSM_;
+  std::vector<size_t> blocksPerSM_;
+  std::vector<size_t> threadsPerSM_;
+  std::vector<size_t> nbOfSM_;
 };
 
 struct CudaProfiler {

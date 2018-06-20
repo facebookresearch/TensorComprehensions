@@ -90,6 +90,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         std::move(scop),
         Grid{1},
         Block{blockSizes[0], blockSizes[1]},
+        false,
         0,
         false);
     auto band = mscop->mapBlocksForward(root->child({0}), 1);
@@ -113,6 +114,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
         std::move(scop),
         Grid{gridSizes[0], gridSizes[1]},
         Block{blockSizes[0], blockSizes[1]},
+        false,
         0,
         false);
 
@@ -666,11 +668,7 @@ def fun() -> (O) {
 
 /*
  * Check that a schedule tree without a single outer band gets mapped
- * properly, i.e., that a band is inserted above the branching.
- * Use the minimal fusion strategy to ensure the scheduler produces
- * an outer sequence.
- * Check that no synchronizations are inserted, since there is no
- * dependences between threads.
+ * on blocks, and has a grid synchronization.
  */
 TEST_F(PolyhedralMapperTest, Copy2) {
   auto tc = R"TC(
@@ -682,14 +680,9 @@ def fun(float(N) I) -> (O1, O2) {
   auto mappingOptions = DefaultOptions();
   mappingOptions.scheduleFusionStrategy(FusionStrategy::Min);
   auto code = codegenMapped(tc, mappingOptions);
-  auto loop = "for (int c0 = t0; c0 < N; c0 += 32)";
-  auto blockSync = "__syncthreads();";
-  auto pos1 = code.find(loop);
-  auto pos2 = code.find(loop, pos1 + 1);
-  auto pos3 = code.find(blockSync);
-  EXPECT_TRUE(pos1 != std::string::npos);
-  EXPECT_TRUE(pos2 != std::string::npos);
-  EXPECT_TRUE(pos3 == std::string::npos);
+  auto gridSync = "__syncgrid()";
+  auto pos = code.find(gridSync);
+  EXPECT_TRUE(pos != std::string::npos);
 }
 
 /*

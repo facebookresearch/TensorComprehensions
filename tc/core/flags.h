@@ -30,6 +30,8 @@ DECLARE_bool(debug_cuda);
 DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
 DECLARE_bool(dump_ptx);
+DECLARE_bool(grid_sync);
+DECLARE_bool(reduce_launch_size);
 
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);

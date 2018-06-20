@@ -57,10 +57,13 @@ CudaTcExecutor::CudaTcExecutor(
   // force unloading in case we JIT with the same name/input/outputs with
   // different options.
   this->clearRuntimeCompiledFunction();
-  rtcFun_ = CudaRTCFunction::Compile(
-      compilationResult.specializedName, compilationResult.source);
   grid_ = compilationResult.grid;
   block_ = compilationResult.block;
+  useGridSync_ = compilationResult.useGridSync;
+  rtcFun_ = CudaRTCFunction::Compile(
+      compilationResult.specializedName,
+      compilationResult.source,
+      useGridSync_);
   auto t1 = std::chrono::high_resolution_clock::now();
   LOG_IF(INFO, FLAGS_debug_tc_mapper)
       << "[COMPILE] Compiling with host JIT compiler took: "
@@ -100,12 +103,14 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
   std::string source;
   Grid grid;
   Block block;
-  std::tie(source, grid, block) = mappedScop->codegen(specializedName);
+  bool useGridSync;
+  std::tie(source, grid, block, useGridSync) =
+      mappedScop->codegen(specializedName);
   LOG_IF(INFO, FLAGS_dump_cuda) << "generatedCuda: " << source << "\n"
                                 << "grid: " << grid << " block: " << block;
 
   return CudaCompilationResult{
-      source, specializedName, parameters, grid, block};
+      source, specializedName, parameters, grid, block, useGridSync};
 }
 
 void CudaTcExecutor::uncheckedRun(
@@ -118,6 +123,7 @@ void CudaTcExecutor::uncheckedRun(
   rtcFun_->Launch(
       grid_.view.extractDefaultedArray(),
       block_.view.extractDefaultedArray(),
+      useGridSync_,
       0,
       info.stream,
       parameters_,
@@ -136,6 +142,7 @@ ProfilingInfo CudaTcExecutor::profileUnchecked(
   Duration kernelRuntime(rtcFun_->Launch(
       grid_.view.extractDefaultedArray(),
       block_.view.extractDefaultedArray(),
+      useGridSync_,
       0,
       stream,
       parameters_,

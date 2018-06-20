@@ -27,10 +27,12 @@
 #include <nvrtc.h>
 
 #include "tc/core/cuda/cuda.h"
+#include "tc/version/cuda_version.h"
 
 std::vector<char> jitCompile(
     std::string cuda,
-    std::vector<const char*> extraCompileOptions = std::vector<const char*>{}) {
+    std::vector<const char*> extraCompileOptions = std::vector<const char*>{},
+    bool useGridSync = false) {
   // Actually do the compiling.
   nvrtcProgram prog;
   TC_NVRTC_CHECK(
@@ -58,6 +60,9 @@ std::vector<char> jitCompile(
                                       "-DNVRTC_CUB=1",
                                       "-lineinfo",
                                       cudaHome.c_str()};
+  if (useGridSync) {
+    nvrtcts.push_back("--relocatable-device-code=true");
+  }
   for (auto o : extraCompileOptions) {
     nvrtcts.push_back(o);
   }
@@ -83,7 +88,7 @@ std::vector<char> jitCompile(
   return PTX;
 }
 
-void loadUnload(const std::string& ptx) {
+void loadUnload(const std::string& ptx, bool useGridSync = false) {
   CUdevice cuDevice;
   CUcontext context;
   TC_CUDA_DRIVERAPI_ENFORCE(cuInit(0));
@@ -92,8 +97,28 @@ void loadUnload(const std::string& ptx) {
 
   CUmodule m;
   CUfunction k;
-  TC_CUDA_DRIVERAPI_ENFORCE(cuModuleLoadDataEx(&m, ptx.c_str(), 0, 0, 0));
-  TC_CUDA_DRIVERAPI_ENFORCE(cuModuleGetFunction(&k, m, "foo"));
+  if (useGridSync) {
+    CUlinkState linkState;
+    TC_CUDA_DRIVERAPI_ENFORCE(cuLinkCreate(0, 0, 0, &linkState));
+    TC_CUDA_DRIVERAPI_ENFORCE(cuLinkAddFile(
+        linkState, CU_JIT_INPUT_LIBRARY, tc::cuda_libdevrt_path, 0, 0, 0));
+    TC_CUDA_DRIVERAPI_ENFORCE(cuLinkAddData(
+        linkState,
+        CU_JIT_INPUT_PTX,
+        (void*)ptx.data(),
+        ptx.size(),
+        "device_code.ptx",
+        0,
+        0,
+        0));
+    size_t cubinSize;
+    void* cubin;
+    TC_CUDA_DRIVERAPI_ENFORCE(cuLinkComplete(linkState, &cubin, &cubinSize));
+    TC_CUDA_DRIVERAPI_ENFORCE(cuModuleLoadData(&m, cubin));
+  } else {
+    TC_CUDA_DRIVERAPI_ENFORCE(cuModuleLoadDataEx(&m, ptx.c_str(), 0, 0, 0));
+    TC_CUDA_DRIVERAPI_ENFORCE(cuModuleGetFunction(&k, m, "foo"));
+  }
   TC_CUDA_DRIVERAPI_ENFORCE(cuModuleUnload(m));
 }
 
@@ -109,6 +134,21 @@ __global__ void foo(int N)
 
   std::string ptx(PTX.data());
   loadUnload(ptx);
+  auto expected = R"E(.visible .entry foo()E";
+  EXPECT_NE(std::string::npos, ptx.find(expected));
+}
+
+TEST(BasicGpuTest, NvrtcGridSync) {
+  auto PTX = jitCompile(R"CUDA(
+extern "C" {
+__global__ void foo(int N)
+{
+  assert(N == 1);
+}
+})CUDA", {"-G"}, true);
+
+  std::string ptx(PTX.data());
+  loadUnload(ptx, true);
   auto expected = R"E(.visible .entry foo()E";
   EXPECT_NE(std::string::npos, ptx.find(expected));
 }
@@ -146,6 +186,26 @@ __global__ void bar(float* o, const float* i) {
   auto expected = R"E(.visible .entry foo()E";
   EXPECT_NE(std::string::npos, ptx.find(expected));
   expected = R"E(.visible .entry bar()E";
+  EXPECT_NE(std::string::npos, ptx.find(expected));
+}
+
+TEST(BasicGpuTest, GridSync) {
+  auto PTX = jitCompile(
+      R"CUDA(
+__device__ void __syncgrid() {
+  cudaCGSynchronize(cudaCGGetIntrinsicHandle(cudaCGScopeGrid),0);
+}
+
+extern "C" {
+__global__ void foo() {
+  __syncgrid();
+}
+})CUDA",
+      {"-G"},
+      true);
+  std::string ptx(PTX.data());
+  loadUnload(ptx, true);
+  auto expected = R"E(.visible .entry foo()E";
   EXPECT_NE(std::string::npos, ptx.find(expected));
 }
 

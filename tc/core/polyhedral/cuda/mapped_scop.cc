@@ -882,6 +882,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
       std::move(scop),
       grid,
       block,
+      mappedScop.useGridSync,
       mappedScop.unroll,
       mappedScop.useReadOnlyCache);
   res->insertMappingContext();
@@ -898,7 +899,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 // Before generating code, make a copy of the scop and insert
 // the context of the original scop as top-level
 // context node in schedule tree.
-std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
+std::tuple<std::string, tc::Grid, tc::Block, bool> MappedScop::codegen(
     const std::string& specializedName) const {
   validate(schedule());
 
@@ -906,7 +907,7 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
 
   std::stringstream code;
   code << code::cpp::boundsAsTemplate << code::c::types << code::c::defines;
-  code << code::c::warpSyncFunctions;
+  code << code::c::warpSyncFunctions << code::c::gridSyncFunctions;
   code << std::endl;
   if (useReadOnlyCache) {
     code << code::cuda::ldg;
@@ -922,7 +923,8 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
   return std::make_tuple(
       code.str(),
       mappedScopForCodegen->numBlocks,
-      mappedScopForCodegen->numThreads);
+      mappedScopForCodegen->numThreads,
+      mappedScopForCodegen->useGridSync);
 }
 
 // Split out a single reduction tile (in the directions other than
@@ -953,16 +955,101 @@ detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
   return child;
 }
 
+namespace {
+// Insert grid synchronizations where needed in st.
+void insertGridSyncsDFS(
+    Scop& scop,
+    const std::vector<detail::ScheduleTree*>& outerBands,
+    detail::ScheduleTree* st) {
+  using namespace polyhedral::detail;
+  // If the root of the schedule tree is an outermost coincident band, there is
+  // no synchronization left.
+  if (std::find(outerBands.begin(), outerBands.end(), st) != outerBands.end()) {
+    return;
+  }
+  auto nChildren = st->numChildren();
+  auto children = st->children();
+  for (size_t i = 0; i < nChildren; ++i) {
+    insertGridSyncsDFS(scop, outerBands, children[i]);
+  }
+
+  // Insert synchronizations in sequences.
+  if (st->elemAs<ScheduleTreeElemSequence>()) {
+    CHECK(nChildren);
+    if (hasOuterSequentialMember(scop.scheduleRoot(), st)) {
+      scop.insertSync(st, nChildren, Scop::SyncLevel::Grid);
+    }
+    for (size_t i = nChildren - 1; i > 0; --i) {
+      scop.insertSync(st, i, Scop::SyncLevel::Grid);
+    }
+  }
+
+  // Insert synchronizations after sequential loops.
+  if (st->elemAs<ScheduleTreeElemBand>()) {
+    scop.insertSyncAfter(st, Scop::SyncLevel::Grid);
+  }
+}
+} // namespace
+
+void MappedScop::insertGridSyncs(
+    const std::vector<detail::ScheduleTree*>& outerBands) {
+  using namespace polyhedral::detail;
+
+  insertGridSyncsDFS(*scop_, outerBands, scop_->scheduleRoot());
+}
+
 std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
     std::unique_ptr<Scop>&& scopUPtr,
     const CudaMappingOptions& cudaOptions) {
   using namespace polyhedral::detail;
+
+  // Query the relevant cuda device information
+  auto nbBlocks = 1;
+  for (size_t i = 0; i < cudaOptions.grid.size(); i++) {
+    nbBlocks *= cudaOptions.grid[i];
+  }
+  auto nbThreads = 1;
+  for (size_t i = 0; i < cudaOptions.block.size(); i++) {
+    nbThreads *= cudaOptions.block[i];
+  }
+  size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
+      ? cudaOptions.proto().max_shared_memory()
+      : querySharedMemorySize();
+  size_t maxBlocksPerSM = cudaOptions.proto().has_max_blocks_per_sm()
+      ? cudaOptions.proto().max_blocks_per_sm()
+      : queryBlocksPerSM();
+  size_t maxThreadsPerSM = cudaOptions.proto().has_max_threads_per_sm()
+      ? cudaOptions.proto().max_threads_per_sm()
+      : queryThreadsPerSM();
+  size_t sharedMemorySizePerSM =
+      cudaOptions.proto().has_max_shared_memory_per_sm()
+      ? cudaOptions.proto().max_shared_memory_per_sm()
+      : querySharedMemorySizePerSM();
+  size_t nbOfSM = cudaOptions.proto().has_nb_of_sm()
+      ? cudaOptions.proto().nb_of_sm()
+      : queryNbOfSM();
+  auto blocksPerSM = nbOfSM == 0 ? 0 : ((nbBlocks + nbOfSM - 1) / nbOfSM);
+  auto threadsPerSM = nbThreads * blocksPerSM;
+
+  bool useGridSync = FLAGS_grid_sync;
+  if (useGridSync) {
+    useGridSync &= nbOfSM * maxBlocksPerSM >= nbBlocks;
+    useGridSync &= maxThreadsPerSM > threadsPerSM;
+  }
+
+  if (useGridSync) {
+    LOG(WARNING) << "Use grid sync" << std::endl;
+  }
+  if (FLAGS_grid_sync && !useGridSync) {
+    LOG(WARNING) << "Can't use grid sync" << std::endl;
+  }
 
   const auto& generic = cudaOptions.generic;
   auto mappedScop = std::unique_ptr<MappedScop>(new MappedScop(
       std::move(scopUPtr),
       ::tc::Grid(cudaOptions.grid),
       ::tc::Block(cudaOptions.block),
+      useGridSync,
       generic.proto.unroll(),
       cudaOptions.proto().use_readonly_cache()));
   auto& scop = mappedScop->scop_;
@@ -975,19 +1062,31 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   // 2. Schedule
   scop = Scop::makeScheduled(*scop, generic.outerScheduleOptions);
 
-  // 3. Tile
+  // 3. Find and Tile outermost coincident bands...
   TC_CHECK_LT(0u, generic.tiling.size())
       << "Must pass tile vector with >= 1 tile sizes";
-  auto outerBand = scop->tileOuterBand(generic.tiling);
+  std::vector<detail::ScheduleTree*> tiledBands;
+  if (useGridSync) {
+    tiledBands = scop->tileOuterCoincidentBands(generic.tiling);
+    sharedMemorySize = std::min(
+        sharedMemorySize,
+        blocksPerSM == 0 ? 0 : sharedMemorySizePerSM / blocksPerSM);
+  } else {
+    tiledBands = {scop->tileOuterBand(generic.tiling)};
+  }
 
   // 4. Optionally reschedule if point loops need a different strategy than
   // tile loops
-  if (generic.outerScheduleOptions != generic.intraTileScheduleOptions) {
-    scop->reschedule(outerBand->child({0}), generic.intraTileScheduleOptions);
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "After intra-tile rescheduling:" << std::endl
-        << *mappedScop->schedule();
+  for (auto outerBand : tiledBands) {
+    if (generic.outerScheduleOptions != generic.intraTileScheduleOptions &&
+        outerBand->numChildren() != 0) {
+      scop->reschedule(outerBand->child({0}), generic.intraTileScheduleOptions);
+    }
   }
+
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After intra-tile rescheduling:" << std::endl
+      << *mappedScop->schedule();
 
   // 1b. ...or after rescheduling
   if (!generic.proto.fix_parameters_before_scheduling()) {
@@ -998,34 +1097,44 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   mappedScop->insertMappingContext();
 
   // 6. Map to threads
-  if (outerBand->numChildren() > 0) {
-    TC_CHECK_EQ(1u, outerBand->numChildren());
-    // 6.1. Optionally detect reductions while mapping to threads
+  for (auto outerBand : tiledBands) {
+    if (outerBand->numChildren() > 0) {
+      TC_CHECK_EQ(1u, outerBand->numChildren());
 
-    if (generic.proto.match_library_calls()) {
-      mappedScop->detectReductions(outerBand->child({0}));
+      // 6.1. Optionally detect reductions while mapping to threads
+      if (generic.proto.match_library_calls()) {
+        mappedScop->detectReductions(outerBand->child({0}));
+      }
+      auto child = outerBand->child({0});
+      size_t numMappedInnerThreads =
+          mappedScop->mapInnermostBandsToThreads(child);
+      fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
     }
-    auto child = outerBand->child({0});
-    size_t numMappedInnerThreads =
-        mappedScop->mapInnermostBandsToThreads(child);
-    fixThreadsBelow(*mappedScop, outerBand, numMappedInnerThreads);
-    LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "After mapping to threads:" << std::endl
-        << *mappedScop->schedule();
   }
 
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After mapping to threads:" << std::endl
+      << *mappedScop->schedule();
+
   // 7. Map to blocks
-  mappedScop->mapToBlocksAndScaleBand(
-      outerBand, generic.tiling.extractVector());
+  for (auto outerBand : tiledBands) {
+    mappedScop->mapToBlocksAndScaleBand(
+        outerBand, generic.tiling.extractVector());
+  }
+
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 8. Promote to shared memory below the loops mapped to blocks.
-  // This may split the outer band, so find the new outer band after promotion.
+  // 8. Insert grid synchronization where needed.
+  mappedScop->insertGridSyncs(tiledBands);
+  LOG_IF(INFO, FLAGS_debug_tc_mapper)
+      << "After inserting grid synchronization:" << std::endl
+      << *mappedScop->schedule();
+
+  // 9. Promote to shared memory below the loops mapped to blocks.
+  // This may split the outer band, so find the new outer band after
+  // promotion.
   if (cudaOptions.proto().use_shared_memory()) {
-    size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
-        ? cudaOptions.proto().max_shared_memory()
-        : querySharedMemorySize();
     // If reductions found, their synchronization requires an opaque cache in
     // shared memory.  Subtract 4k from available shared memory for each
     // reduction found, this is hack based on each thread of max 1024 in the
@@ -1040,33 +1149,50 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       sharedMemorySize -= reductionMemoryRequirement;
     }
 
-    auto band = outerBand->elemAs<ScheduleTreeElemBand>();
-    LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
-        << "Aborting memory promotion because outer band has 0 members (NYI)";
-    if (band->nMember() > 0 && sharedMemorySize > 0) {
+    if (sharedMemorySize > 0) {
       LOG_IF(
           WARNING,
           cudaOptions.proto().unroll_copy_shared() &&
               !generic.proto.has_unroll())
           << "requested to unroll copies to shared memory without providing the unroll size";
+      bool unroll = cudaOptions.proto().unroll_copy_shared() &&
+          generic.proto.has_unroll();
 
-      promoteGreedilyAtDepth(
+      std::vector<size_t> depths;
+      std::vector<ScheduleTree*> bandsWithPromotion;
+      for (auto band : tiledBands) {
+        auto bandElem = band->elemAs<ScheduleTreeElemBand>();
+        LOG_IF(WARNING, FLAGS_debug_tc_mapper && bandElem->nMember() == 0)
+            << "Aborting memory promotion for one band because it has 0 members (NYI)";
+        if (bandElem->nMember() == 0) {
+          continue;
+        }
+        bandsWithPromotion.push_back(band);
+        auto depthBefore = band->scheduleDepth(scop->scheduleRoot());
+        depths.push_back(
+            depthBefore +
+            std::min(
+                bandElem->nOuterCoincident(),
+                mappedScop->numBlocks.view.size()));
+      }
+
+      sharedMemorySize = promoteGreedilyAtDepth(
           *mappedScop,
-          std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
+          bandsWithPromotion,
+          depths,
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
               generic.proto.has_unroll());
 
-      auto bands = ScheduleTree::collectDFSPreorder(
-          scop->scheduleRoot(), ScheduleTreeType::Band);
-      if (bands.size() == 0) { // Sanity check.
+      /*auto bands = ScheduleTree::collectDFSPreorder(
+        scop->scheduleRoot(), ScheduleTreeType::Band);
+        if (bands.size() == 0) { // Sanity check.
         throw NoBandsException("no bands after promotion");
-      }
-      outerBand = bands[0];
+        }*/
     }
   }
 
-  // 9. Promote to registers below the loops mapped to threads.
+  // 10. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
     promoteToRegistersBelowThreads(*mappedScop, -1ull);
   }
