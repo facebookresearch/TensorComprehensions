@@ -21,9 +21,9 @@
 #include <utility>
 
 #include "tc/core/check.h"
+#include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/flags.h"
 #include "tc/core/islpp_wrap.h"
-#include "tc/core/libraries.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
