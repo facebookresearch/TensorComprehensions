@@ -184,7 +184,8 @@ void emitTensorView(
     stringstream& ss,
     Halide::OutputImageParam p,
     const map<string, Halide::Expr>& paramValues,
-    bool constInput = false) {
+    bool constInput = false,
+    const TensorInfo* tinfo = NULL) {
   WS ws;
   stringstream ssViewType;
   for (int i = 1; i < p.dimensions(); ++i) { // Skip the outermost dimension
@@ -192,7 +193,14 @@ void emitTensorView(
     extent = Halide::Internal::substitute(paramValues, extent);
     TC_CHECK(extent.defined())
         << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
-    ssViewType << "[" << extent << "]";
+    // TODO: Handle non-unit stride in the innermost dimension
+    if (tinfo && tinfo->strides.size() == p.dimensions() &&
+        tinfo->strides[p.dimensions() - 1] == 1 &&
+        tinfo->strides[i - 1] != (tinfo->shape[i] * tinfo->strides[i])) {
+      ssViewType << "[" << tinfo->strides[i - 1] << "]";
+    } else {
+      ssViewType << "[" << extent << "]";
+    }
   }
   ss << ws.tab();
   ss << (constInput ? "const " : "") << p.type() << " (*" << p.name() << ")"
@@ -217,9 +225,12 @@ void emitTensorViews(
 void emitTensorViews(
     stringstream& ss,
     const vector<Halide::ImageParam>& params,
-    const map<string, Halide::Expr>& paramValues) {
-  for (auto p : params) {
-    emitTensorView(ss, p, paramValues, true);
+    const map<string, Halide::Expr>& paramValues,
+    const std::vector<TensorInfo>& inputsInfo) {
+  for (size_t i = 0; i < params.size(); ++i) {
+    inputsInfo.size()
+        ? emitTensorView(ss, params[i], paramValues, true, &inputsInfo[i])
+        : emitTensorView(ss, params[i], paramValues, true);
   }
 }
 
@@ -739,7 +750,8 @@ std::unordered_set<isl::id, isl::IslIdIslHash> gatherReadOnlySet(
 
 string emitCudaKernel(
     const std::string& specializedName,
-    const MappedScop& mscop) {
+    const MappedScop& mscop,
+    const std::vector<TensorInfo>& inputsInfo) {
   // Expecting a schedule with domain root and context first child.
   TC_CHECK(mscop.schedule()->elemAs<detail::ScheduleTreeElemDomain>());
   TC_CHECK(
@@ -756,7 +768,7 @@ string emitCudaKernel(
   emitKernelSignature(ss, specializedName, scop);
   emitThreadIdInit(ss, mscop);
   emitTensorViews(ss, scop.halide.outputs, paramValues);
-  emitTensorViews(ss, scop.halide.inputs, paramValues);
+  emitTensorViews(ss, scop.halide.inputs, paramValues, inputsInfo);
   emitTmpDecl(ss, scop);
   emitPromotedArrayViewsHalide(ss, scop);
   NodeInfoMapType nodeInfoMap;

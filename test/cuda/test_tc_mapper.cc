@@ -327,8 +327,8 @@ def tensoraddstrided(float(N, M) I0_view, float(N, M) I1_view) -> (O) {
   auto res = Check(TC, name, options, inputs, checkFun);
   // This test should be modified  when strided tensors are handled
   std::string expected =
-      "const float32 (*I0_view)[64] = "
-      "reinterpret_cast<const float32 (*)[64]>(pI0_view)";
+      "const float32 (*I0_view)[128] = "
+      "reinterpret_cast<const float32 (*)[128]>(pI0_view)";
   ASSERT_NE(std::string::npos, res.second.find(expected))
       << "In resulting code:\n"
       << res.second << "\nfound unexpected: " << expected;
