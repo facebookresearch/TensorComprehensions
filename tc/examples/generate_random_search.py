@@ -13,7 +13,7 @@ import time
 import tensor_comprehensions as tc
 from visdom import Visdom
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
+NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 0
 NB_EPOCHS = 10000
 BATCH_SZ = 8
 EPS_START = 0.9
@@ -45,7 +45,7 @@ def evalTime(opt):
     global tc_prog, inp, cat_val
     #print(opt)
     #print(cat_val)
-    opt = [cat_val[i][opt[i+INIT_INPUT_SZ]] for i in range(NB_HYPERPARAMS)]
+    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
     opt = optionsFromVector(opt)
     warmup = 5
     iters  = 20
@@ -127,10 +127,10 @@ def computeCat(inp):
         cat_sz[i] = len(cat_val[i])
 
 def getRandom():
-    global cat_val
+    global cat_sz
     opt_v = np.zeros(NB_HYPERPARAMS).astype(int)
     for i in range(opt_v.shape[0]):
-        opt_v[i] = np.random.choice(cat_val[i])
+        opt_v[i] = np.random.randint(cat_sz[i])
     return opt_v
 
 N, G, D, H, W = 5, 5, 5, 5, 5
