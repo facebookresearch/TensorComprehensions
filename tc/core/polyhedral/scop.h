@@ -394,6 +394,10 @@ struct Scop {
   static std::unique_ptr<Scop> makeScheduled(
       const Scop& scop,
       const SchedulerOptionsView& schedulerOptions);
+  // Return the outermost band in the schedule tree with the given root.
+  // If there is no single outermost band, then insert a (permutable)
+  // zero-dimensional band and return that.
+  detail::ScheduleTree* obtainOuterBand();
   // Tile the outermost band.
   // Splits the band into tile loop band and point loop band where point loops
   // have fixed trip counts specified in "tiling", and returns a pointer to the

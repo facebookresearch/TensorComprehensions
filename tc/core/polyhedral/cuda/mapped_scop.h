@@ -72,9 +72,16 @@ class MappedScop {
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
-    return std::unique_ptr<MappedScop>(new MappedScop(
+    auto mscop = std::unique_ptr<MappedScop>(new MappedScop(
         std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+    auto band = mscop->scop_->obtainOuterBand();
+    mscop->mapBlocksForward(band, 0);
+    mscop->mapThreadsBackward(band);
+    return mscop;
   }
+  // The MappedScop returned by this method does not satisfy the invariant
+  // of having a mapping to blocks and threads.  It is up to the caller
+  // to insert these mappings.
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,

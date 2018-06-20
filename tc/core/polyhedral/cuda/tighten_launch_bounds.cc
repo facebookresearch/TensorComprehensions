@@ -88,7 +88,8 @@ size_t maxValue(const Scop& scop, const MappingIdType& id) {
   LOG_IF(WARNING, min > 0)
       << "Opportunity for tightening launch bounds with shifting -> min:"
       << min;
-  TC_CHECK(max < sizetMax) << "missing mapping to " << id << *root;
+  TC_CHECK(max < sizetMax) << "missing mapping to " << id << "\n" << *root;
+  TC_CHECK(min < sizetMax) << "missing mapping to " << id << " type\n" << *root;
   // Inclusive range needs + 1 to translate to sizes
   return max + 1;
 }
