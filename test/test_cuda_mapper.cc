@@ -25,8 +25,8 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/constants.h"
+#include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/libraries.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/functional.h"

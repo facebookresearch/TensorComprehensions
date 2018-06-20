@@ -24,9 +24,9 @@
 #include <unordered_set>
 
 #include "tc/core/check.h"
+#include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/flags.h"
 #include "tc/core/gpu.h"
-#include "tc/core/libraries.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
