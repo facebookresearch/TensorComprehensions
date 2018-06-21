@@ -226,7 +226,10 @@ void fixThreadsBelow(MappedScop& mscop, ScheduleTree* tree, size_t begin) {
  * Anything that depends on an update statement is ordered after
  * the update statements.  Anything else is ordered before.
  */
-bool separatedOut(Scop& scop, ScheduleTree* tree, isl::union_set updates) {
+bool separatedOut(
+    Scop& scop,
+    ScheduleTree* tree,
+    isl::UnionSet<Statement> updates) {
   auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
