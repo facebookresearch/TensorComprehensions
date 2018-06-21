@@ -310,18 +310,18 @@ inline isl::set makeParameterContext(
 // that ties the space parameter to the values.
 //
 template <typename T>
-inline isl::set makeSpecializationSet(
-    isl::space space,
+inline isl::Set<> makeSpecializationSet(
+    isl::Space<> space,
     const std::unordered_map<std::string, T>& paramValues) {
   auto ctx = space.get_ctx();
   for (auto kvp : paramValues) {
     space = space.add_param(isl::id(ctx, kvp.first));
   }
-  auto set = isl::set::universe(space);
+  auto set = isl::Set<>::universe(space);
   for (auto kvp : paramValues) {
     auto id = isl::id(ctx, kvp.first);
-    isl::aff affParam(isl::aff::param_on_domain_space(space, id));
-    set = set & (isl::aff_set(affParam) == kvp.second);
+    auto affParam(isl::AffOn<>::param_on_domain_space(space, id));
+    set = set & (affParam - kvp.second).asPwAff().zero_set();
   }
   return set;
 }
