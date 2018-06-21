@@ -505,18 +505,19 @@ constexpr auto kWarp = "warp";
  * (of size "warpSize") to a warp identifier,
  * based on the thread sizes s_x, s_y up to s_z in "block".
  */
-isl::multi_aff constructThreadToWarp(
+isl::MultiAff<Thread, Warp> constructThreadToWarp(
     isl::ctx ctx,
     const unsigned warpSize,
     const Block& block) {
-  auto space = isl::space(ctx, 0);
+  auto space = isl::Space<>(ctx, 0);
   auto id = isl::id(ctx, kBlock);
-  auto blockSpace = space.add_named_tuple_id_ui(id, block.view.size());
-  auto warpSpace = space.add_named_tuple_id_ui(isl::id(ctx, kWarp), 1);
-  auto aff = isl::aff::zero_on_domain(blockSpace);
+  auto blockSpace = space.add_named_tuple_id_ui<Thread>(id, block.view.size());
+  auto warpSpace = space.add_named_tuple_id_ui<Warp>(isl::id(ctx, kWarp), 1);
+  auto aff = isl::AffOn<Thread>::zero_on_domain(blockSpace);
 
   auto nThread = block.view.size();
-  auto identity = isl::multi_aff::identity(blockSpace.map_from_set());
+  auto identity =
+      isl::MultiAff<Thread, Thread>::identity(blockSpace.map_from_set());
   for (int i = nThread - 1; i >= 0; --i) {
     aff = aff.scale(isl::val(ctx, block.view[i]));
     aff = aff.add(identity.get_aff(i));
@@ -524,7 +525,7 @@ isl::multi_aff constructThreadToWarp(
 
   aff = aff.scale_down(isl::val(ctx, warpSize)).floor();
   auto mapSpace = blockSpace.product(warpSpace).unwrap();
-  return isl::multi_aff(mapSpace, isl::aff_list(aff));
+  return isl::MultiAff<Thread, Warp>(mapSpace, aff.asAffList());
 }
 } // namespace
 
