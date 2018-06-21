@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "tc/core/functional.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -233,16 +234,16 @@ void insertExtensionLabelAfter(
 bool canOrderBefore(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences);
 // Is it possible to order the elements in the given filter
 // after the other active elements without violating
 // any of the given dependences?
 bool canOrderAfter(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences);
 
 // Insert a sequence to ensure that the active domain elements
 // in the given filter are executed before the other active domain elements.
