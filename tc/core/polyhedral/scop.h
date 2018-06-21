@@ -486,7 +486,8 @@ struct Scop {
   void computeAllDependences();
   // Return the set of dependences that are active
   // at the given position.
-  isl::union_map activeDependences(detail::ScheduleTree* tree);
+  isl::UnionMap<Statement, Statement> activeDependences(
+      detail::ScheduleTree* tree);
 
  public:
   // Halide stuff
@@ -518,7 +519,7 @@ struct Scop {
   Body body;
 
   // RAW, WAR, and WAW dependences
-  isl::union_map dependences;
+  isl::UnionMap<Statement, Statement> dependences;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise
