@@ -155,10 +155,10 @@ inline isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
     const detail::ScheduleTree* tree) {
   using namespace polyhedral::detail;
 
-  isl::multi_union_pw_aff prefix = prefixScheduleMupa<Schedule>(root, tree);
+  auto prefix = prefixScheduleMupa<Schedule>(root, tree);
   auto band = tree->as<detail::ScheduleTreeBand>();
-  auto partial = band ? prefix.flat_range_product(band->mupa_) : prefix;
-  return isl::MultiUnionPwAff<Statement, Schedule>(partial);
+  return band ? prefix.template flat_range_product<Schedule>(band->mupa_)
+              : prefix;
 }
 
 /*
