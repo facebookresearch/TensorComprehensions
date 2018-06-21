@@ -32,6 +32,7 @@
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -895,7 +896,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   // outer schedule dimensions, so the space of a parameter context code is that
   // of a zero-dimensional space.
   auto root = scop->scheduleRoot();
-  updateTopLevelContext(root, scop->context().from_params());
+  updateTopLevelContext(root, scop->context().from_params<Prefix>());
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;
