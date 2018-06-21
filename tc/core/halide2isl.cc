@@ -258,7 +258,7 @@ isl::map extractAccess(
   // to the outer loop iterators) and then convert this set
   // into a map in terms of the iteration domain.
 
-  isl::space paramSpace = domain.paramSpace;
+  auto paramSpace = isl::Space<>(domain.paramSpace);
   isl::id tensorID(paramSpace.get_ctx(), tensor);
   auto tensorTuple = constructTensorTuple(paramSpace, tensorID, args.size());
   auto tensorSpace = tensorTuple.get_space();
