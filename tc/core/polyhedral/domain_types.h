@@ -10,6 +10,7 @@ struct Statement;
 struct Tag;
 struct Tensor;
 struct Thread;
+struct Unrolled;
 struct Warp;
 
 } // namespace polyhedral
