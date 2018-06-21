@@ -21,6 +21,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -80,13 +81,13 @@ SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components) {
   return builder.table;
 }
 
-isl::aff makeIslAffFromInt(isl::space space, int64_t val) {
+isl::AffOn<> makeIslAffFromInt(isl::Space<> space, int64_t val) {
   isl::val v = isl::val(space.get_ctx(), val);
-  return isl::aff(isl::local_space(space), v);
+  return isl::AffOn<>(isl::aff(isl::local_space(space), v));
 }
 
-std::vector<isl::aff> makeIslAffBoundsFromExpr(
-    isl::space space,
+std::vector<isl::AffOn<>> makeIslAffBoundsFromExpr(
+    isl::Space<> space,
     const Expr& e,
     bool allowMin,
     bool allowMax);
@@ -101,9 +102,9 @@ namespace {
  *   x > max(a,max(b,c)) <=> x > a AND x > b AND x > c
  */
 template <typename T>
-inline std::vector<isl::aff>
-concatAffs(isl::space space, T op, bool allowMin, bool allowMax) {
-  std::vector<isl::aff> result;
+inline std::vector<isl::AffOn<>>
+concatAffs(isl::Space<> space, T op, bool allowMin, bool allowMax) {
+  std::vector<isl::AffOn<>> result;
 
   for (const auto& aff :
        makeIslAffBoundsFromExpr(space, op->a, allowMin, allowMax)) {
@@ -129,10 +130,10 @@ concatAffs(isl::space space, T op, bool allowMin, bool allowMax) {
  *   x < a + max(b,c)  NOT <=>  x < a + b AND x < a + c for negative values.
  */
 template <typename T>
-inline std::vector<isl::aff> combineSingleAffs(
-    isl::space space,
+inline std::vector<isl::AffOn<>> combineSingleAffs(
+    isl::Space<> space,
     T op,
-    isl::aff (isl::aff::*combine)(isl::aff) const) {
+    isl::AffOn<> (isl::AffOn<>::*combine)(const isl::AffOn<>&) const) {
   auto left = makeIslAffBoundsFromExpr(space, op->a, false, false);
   auto right = makeIslAffBoundsFromExpr(space, op->b, false, false);
   TC_CHECK_LE(left.size(), 1u);
@@ -162,8 +163,8 @@ inline std::vector<isl::aff> combineSingleAffs(
  * If a Halide expression cannot be converted into a list of affine expressions,
  * return an empty list.
  */
-std::vector<isl::aff> makeIslAffBoundsFromExpr(
-    isl::space space,
+std::vector<isl::AffOn<>> makeIslAffBoundsFromExpr(
+    isl::Space<> space,
     const Expr& e,
     bool allowMin,
     bool allowMax) {
@@ -178,7 +179,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
   if (const Variable* op = e.as<Variable>()) {
     isl::id id(space.get_ctx(), op->name);
     if (space.has_param(id)) {
-      return {isl::aff::param_on_domain_space(space, id)};
+      return {isl::AffOn<>::param_on_domain_space(space, id)};
     }
     LOG(FATAL) << "Variable not found in isl::space: " << space << ": " << op
                << ": " << op->name << '\n';
@@ -188,13 +189,13 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
   } else if (maxOp != nullptr && allowMax) {
     return concatAffs(space, maxOp, allowMin, allowMax);
   } else if (const Add* op = e.as<Add>()) {
-    return combineSingleAffs(space, op, &isl::aff::add);
+    return combineSingleAffs(space, op, &isl::AffOn<>::add);
   } else if (const Sub* op = e.as<Sub>()) {
-    return combineSingleAffs(space, op, &isl::aff::sub);
+    return combineSingleAffs(space, op, &isl::AffOn<>::sub);
   } else if (const Mul* op = e.as<Mul>()) {
-    return combineSingleAffs(space, op, &isl::aff::mul);
+    return combineSingleAffs(space, op, &isl::AffOn<>::mul);
   } else if (const Div* op = e.as<Div>()) {
-    return combineSingleAffs(space, op, &isl::aff::div);
+    return combineSingleAffs(space, op, &isl::AffOn<>::div);
   } else if (const Mod* op = e.as<Mod>()) {
     std::vector<isl::aff> result;
     // We cannot span multiple constraints if a modulo operation is involved.
@@ -211,7 +212,7 @@ std::vector<isl::aff> makeIslAffBoundsFromExpr(
   return {};
 }
 
-isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
+isl::AffOn<> makeIslAffFromExpr(isl::Space<> space, const Expr& e) {
   auto list = makeIslAffBoundsFromExpr(space, e, false, false);
   TC_CHECK_LE(list.size(), 1u)
       << "Halide expr " << e << " unrolled into more than 1 isl aff"
@@ -219,13 +220,13 @@ isl::aff makeIslAffFromExpr(isl::space space, const Expr& e) {
 
   // Non-affine
   if (list.size() == 0) {
-    return isl::aff();
+    return isl::AffOn<>();
   }
   return list[0];
 }
 
-isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params) {
-  auto space = isl::space(ctx, 0);
+isl::Space<> makeParamSpace(isl::ctx ctx, const ParameterVector& params) {
+  auto space = isl::Space<>(ctx, 0);
   // set parameter names
   for (auto p : params) {
     space = space.add_param(isl::id(ctx, p.name()));
@@ -233,19 +234,29 @@ isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params) {
   return space;
 }
 
-isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params) {
+isl::Set<> makeParamContext(isl::ctx ctx, const ParameterVector& params) {
   auto space = makeParamSpace(ctx, params);
-  auto context = isl::set::universe(space);
+  auto context = isl::Set<>::universe(space);
   for (auto p : params) {
-    isl::aff a(isl::aff::param_on_domain_space(space, isl::id(ctx, p.name())));
-    context = context & (a >= 0);
+    auto a(isl::AffOn<>::param_on_domain_space(space, isl::id(ctx, p.name())));
+    context = context & a.asPwAff().nonneg_set();
   }
   return context;
 }
 
 namespace {
 
-isl::map extractAccess(
+/*
+ * Call the domain_map factory method of the isl::MultiAff
+ * with appropriate template arguments.
+ */
+template <typename Domain, typename Range>
+static isl::MultiAff<isl::Pair<Domain, Range>, Domain> domainMap(
+    isl::Space<Domain, Range> space) {
+  return isl::MultiAff<isl::Pair<Domain, Range>, Domain>::domain_map(space);
+}
+
+isl::Map<isl::Pair<Statement, Tag>, Tensor> extractAccess(
     const IterationDomain& domain,
     const IRNode* op,
     const std::string& tensor,
@@ -258,16 +269,17 @@ isl::map extractAccess(
   // to the outer loop iterators) and then convert this set
   // into a map in terms of the iteration domain.
 
-  auto paramSpace = isl::Space<>(domain.paramSpace);
+  auto paramSpace = domain.paramSpace;
   isl::id tensorID(paramSpace.get_ctx(), tensor);
   auto tensorTuple = constructTensorTuple(paramSpace, tensorID, args.size());
   auto tensorSpace = tensorTuple.get_space();
 
   // Start with a totally unconstrained set - every point in
   // the allocation could be accessed.
-  isl::set access = isl::set::universe(tensorSpace);
+  auto access = isl::Set<Tensor>::universe(tensorSpace);
 
-  auto identity = isl::multi_aff::identity(tensorSpace.map_from_set());
+  auto identity =
+      isl::MultiAff<Tensor, Tensor>::identity(tensorSpace.map_from_set());
   for (size_t i = 0; i < args.size(); i++) {
     // Then add one equality constraint per dimension to encode the
     // point in the allocation actually read/written for each point in
@@ -277,9 +289,9 @@ isl::map extractAccess(
     // The coordinate written to in the range ...
     auto rangePoint = identity.get_aff(i);
     // ... equals the coordinate accessed as a function of the parameters.
-    auto domainPoint = halide2isl::makeIslAffFromExpr(paramSpace, args[i]);
-    if (!domainPoint.is_null()) {
-      domainPoint = domainPoint.unbind_params_insert_domain(tensorTuple);
+    auto paramPoint = halide2isl::makeIslAffFromExpr(paramSpace, args[i]);
+    if (!paramPoint.is_null()) {
+      auto domainPoint = paramPoint.unbind_params_insert_domain(tensorTuple);
       access = access.intersect(domainPoint.eq_set(rangePoint));
     }
   }
@@ -293,14 +305,15 @@ isl::map extractAccess(
   isl::id tagID(domain.paramSpace.get_ctx(), tag);
   accesses->emplace(op, tagID);
   auto domainSpace = map.get_space().domain();
-  auto tagSpace = domainSpace.params().add_named_tuple_id_ui(tagID, 0);
-  domainSpace = domainSpace.product(tagSpace).unwrap();
-  map = map.preimage_domain(isl::multi_aff::domain_map(domainSpace));
-
-  return map;
+  auto tagSpace = domainSpace.params().add_named_tuple_id_ui<Tag>(tagID, 0);
+  auto taggedSpace = domainSpace.product(tagSpace).unwrap();
+  return map.preimage_domain(domainMap(taggedSpace));
 }
 
-std::pair<isl::union_map, isl::union_map> extractAccesses(
+std::pair<
+    isl::UnionMap<isl::Pair<Statement, Tag>, Tensor>,
+    isl::UnionMap<isl::Pair<Statement, Tag>, Tensor>>
+extractAccesses(
     const IterationDomain& domain,
     const Stmt& s,
     AccessMap* accesses) {
@@ -325,7 +338,7 @@ std::pair<isl::union_map, isl::union_map> extractAccesses(
     AccessMap* accesses;
 
    public:
-    isl::union_map reads, writes;
+    isl::UnionMap<isl::Pair<Statement, Tag>, Tensor> reads, writes;
 
     FindAccesses(const IterationDomain& domain, AccessMap* accesses)
         : domain(domain),
@@ -355,24 +368,26 @@ bool isReductionUpdate(const Provide* op) {
  * then converted into an expression on that iteration domain
  * by reinterpreting the parameters as input dimensions.
  */
-static isl::multi_aff mapToOther(
+template <typename Other>
+static isl::MultiAff<Statement, Other> mapToOther(
     const IterationDomain& iterationDomain,
     std::unordered_set<std::string> skip,
     isl::id id) {
   auto ctx = iterationDomain.tuple.get_ctx();
-  auto list = isl::aff_list(ctx, 0);
+  auto list = isl::AffListOn<Statement>(ctx, 0);
   for (auto id : iterationDomain.tuple.get_id_list()) {
     if (skip.count(id.get_name()) == 1) {
       continue;
     }
-    auto aff = isl::aff::param_on_domain_space(iterationDomain.paramSpace, id);
-    aff = aff.unbind_params_insert_domain(iterationDomain.tuple);
-    list = list.add(aff);
+    auto aff =
+        isl::AffOn<>::param_on_domain_space(iterationDomain.paramSpace, id);
+    list = list.add(aff.unbind_params_insert_domain(iterationDomain.tuple));
   }
   auto domainSpace = iterationDomain.tuple.get_space();
-  auto space = domainSpace.params().add_named_tuple_id_ui(id, list.size());
-  space = domainSpace.product(space).unwrap();
-  return isl::multi_aff(space, list);
+  auto space =
+      domainSpace.params().add_named_tuple_id_ui<Other>(id, list.size());
+  auto productSpace = domainSpace.product(space).unwrap();
+  return isl::MultiAff<Statement, Other>(productSpace, list);
 }
 
 /*
@@ -417,7 +432,8 @@ isl::union_map extractReduction(
   }
   auto ctx = iterationDomain.tuple.get_ctx();
   isl::id id(ctx, kReductionLabel + op->name + "_" + std::to_string(index));
-  auto reduction = mapToOther(iterationDomain, finder.reductionVars, id);
+  auto reduction =
+      mapToOther<Reduction>(iterationDomain, finder.reductionVars, id);
   return isl::union_map(isl::map(reduction));
 }
 
@@ -458,7 +474,7 @@ onDomains(isl::aff f, isl::union_set domain, const IterationDomainMap& map) {
  */
 isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
-    isl::set set,
+    isl::Set<> set,
     isl::id_list outer,
     Body* body,
     AccessMap* accesses,
@@ -472,7 +488,7 @@ isl::schedule makeScheduleTreeHelper(
 
     // Construct a variable (affine function) that references
     // the new parameter.
-    auto loopVar = isl::aff::param_on_domain_space(space, id);
+    auto loopVar = isl::AffOn<>::param_on_domain_space(space, id);
 
     // Then we add our new loop bound constraints.
     auto lbs =
@@ -527,16 +543,16 @@ isl::schedule makeScheduleTreeHelper(
     size_t stmtIndex = statements->size();
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
-    auto tupleSpace = isl::space(set.get_ctx(), 0);
-    tupleSpace = tupleSpace.add_named_tuple_id_ui(id, outer.size());
+    auto space = isl::Space<>(set.get_ctx(), 0);
+    auto tupleSpace = space.add_named_tuple_id_ui<Statement>(id, outer.size());
     IterationDomain iterationDomain;
     iterationDomain.paramSpace = set.get_space();
-    iterationDomain.tuple = isl::multi_id(tupleSpace, outer);
+    iterationDomain.tuple = isl::MultiId<Statement>(tupleSpace, outer);
     domains->emplace(id, iterationDomain);
     auto domain = set.unbind_params(iterationDomain.tuple);
     schedule = isl::schedule::from_domain(domain);
 
-    isl::union_map newReads, newWrites;
+    isl::UnionMap<isl::Pair<Statement, Tag>, Tensor> newReads, newWrites;
     std::tie(newReads, newWrites) =
         extractAccesses(iterationDomain, op, accesses);
     // A tensor may be involved in multiple reductions.
@@ -553,7 +569,9 @@ isl::schedule makeScheduleTreeHelper(
   return schedule;
 };
 
-ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
+ScheduleTreeAndAccesses makeScheduleTree(
+    isl::Space<> paramSpace,
+    const Stmt& s) {
   ScheduleTreeAndAccesses result;
 
   Body body(paramSpace);
@@ -562,7 +580,7 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   isl::id_list outer(paramSpace.get_ctx(), 0);
   auto schedule = makeScheduleTreeHelper(
       s,
-      isl::set::universe(paramSpace),
+      isl::Set<>::universe(paramSpace),
       outer,
       &body,
       &result.accesses,
