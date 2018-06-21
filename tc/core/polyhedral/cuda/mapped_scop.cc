@@ -554,15 +554,15 @@ isl::MultiUnionPwAff<Statement, Block> MappedScop::blockMappingSchedule(
 Scop::SyncLevel MappedScop::findBestSync(
     ScheduleTree* st1,
     ScheduleTree* st2,
-    isl::multi_union_pw_aff domainToThread,
-    isl::multi_union_pw_aff domainToWarp) {
+    isl::MultiUnionPwAff<Statement, Thread> domainToThread,
+    isl::MultiUnionPwAff<Statement, Warp> domainToWarp) {
   // Active points in the two schedule trees
   auto stRoot = scop_->scheduleRoot();
   auto activePoints1 = activeDomainPointsBelow(stRoot, st1);
   auto activePoints2 = activeDomainPointsBelow(stRoot, st2);
 
   // The dependences between the two schedule trees
-  isl::union_map dependences = scop_->dependences;
+  auto dependences = scop_->dependences;
   dependences = dependences.intersect_domain(activePoints1);
   dependences = dependences.intersect_range(activePoints2);
   if (dependences.is_empty()) {

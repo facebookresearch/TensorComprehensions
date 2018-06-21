@@ -188,8 +188,8 @@ class MappedScop {
   Scop::SyncLevel findBestSync(
       detail::ScheduleTree* st1,
       detail::ScheduleTree* st2,
-      isl::multi_union_pw_aff domainToThread,
-      isl::multi_union_pw_aff domainToWarp);
+      isl::MultiUnionPwAff<Statement, Thread> domainToThread,
+      isl::MultiUnionPwAff<Statement, Warp> domainToWarp);
 
  public:
   // Find best configuration of synchronizations in a sequence, minimizing
