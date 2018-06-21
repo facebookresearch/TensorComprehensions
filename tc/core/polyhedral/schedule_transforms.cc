@@ -570,7 +570,8 @@ bool canOrderBefore(
     ScheduleTree* tree,
     isl::union_set filter,
     isl::union_map dependences) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+  isl::union_set active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   return canOrder(filter, other, dependences);
 }
 
@@ -579,7 +580,8 @@ bool canOrderAfter(
     ScheduleTree* tree,
     isl::union_set filter,
     isl::union_map dependences) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+  isl::union_set active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   return canOrder(other, filter, dependences);
 }
 
@@ -587,7 +589,8 @@ void orderBefore(
     ScheduleTree* root,
     ScheduleTree* tree,
     isl::union_set filter) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+  isl::union_set active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   auto seq = ScheduleTree::makeSequence(
       gistedFilter(filter, ScheduleTree::makeScheduleTree(*tree)));
   auto parent = tree->ancestor(root, 1);
@@ -597,7 +600,8 @@ void orderBefore(
 }
 
 void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+  isl::union_set active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   auto seq = ScheduleTree::makeSequence(
       gistedFilter(filter, ScheduleTree::makeScheduleTree(*tree)));
   auto parent = tree->ancestor(root, 1);

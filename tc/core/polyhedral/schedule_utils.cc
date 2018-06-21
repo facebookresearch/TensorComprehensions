@@ -93,10 +93,11 @@ isl::union_set prefixMappingFilter(
   return collectDomain(root, node->ancestors(root), &applyMapping);
 }
 
-isl::union_set activeDomainPoints(
+isl::UnionSet<Statement> activeDomainPoints(
     const ScheduleTree* root,
     const ScheduleTree* node) {
-  return activeDomainPointsHelper(root, node->ancestors(root));
+  return isl::UnionSet<Statement>(
+      activeDomainPointsHelper(root, node->ancestors(root)));
 }
 
 isl::union_set activeDomainPointsBelow(
