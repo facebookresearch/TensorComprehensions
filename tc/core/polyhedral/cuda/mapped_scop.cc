@@ -529,7 +529,7 @@ isl::MultiAff<Thread, Warp> constructThreadToWarp(
 }
 } // namespace
 
-isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
+isl::MultiUnionPwAff<Statement, Thread> MappedScop::threadMappingSchedule(
     const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numThreads.view.size(); ++i) {

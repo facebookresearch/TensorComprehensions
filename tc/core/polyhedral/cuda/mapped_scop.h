@@ -210,7 +210,7 @@ class MappedScop {
   // to the thread identifiers, where all branches in "tree"
   // are assumed to have been mapped to thread identifiers.
   // The result lives in a space of the form block[x, ...].
-  isl::multi_union_pw_aff threadMappingSchedule(
+  isl::MultiUnionPwAff<Statement, Thread> threadMappingSchedule(
       const detail::ScheduleTree* tree) const;
 
   // Extract a mapping from the domain elements active at "tree"
