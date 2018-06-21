@@ -296,11 +296,12 @@ isl::UnionSet<Statement> collectMappingsTo(const Scop& scop) {
  * different references may have different values, but all of them remain
  * independent of non-unrolled loop iterators.
  */
+template <typename Outer>
 bool accessSubscriptsAreUnrolledLoops(
     const TensorReferenceGroup& group,
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* scope,
-    isl::multi_union_pw_aff outerSchedule) {
+    isl::MultiUnionPwAff<Statement, Outer> outerSchedule) {
   using namespace detail;
 
   auto nodes = ScheduleTree::collect(scope);
@@ -315,16 +316,16 @@ bool accessSubscriptsAreUnrolledLoops(
   for (auto leaf : leaves) {
     auto ancestors = leaf->ancestors(root);
     ancestors.push_back(leaf);
-    isl::union_set subdomain = activeDomainPointsBelow(root, leaf);
+    auto subdomain = activeDomainPointsBelow(root, leaf);
 
-    auto unrolledDims = isl::union_pw_aff_list(leaf->ctx_, 1);
+    auto unrolledDims = isl::UnionPwAffListOn<Statement>(leaf->ctx_, 1);
     for (auto node : ancestors) {
-      auto band = node->as<detail::ScheduleTreeBand>();
+      auto band = node->template as<detail::ScheduleTreeBand>();
       if (!band) {
         continue;
       }
 
-      isl::multi_union_pw_aff schedule = band->mupa_;
+      auto schedule = band->mupa_;
       schedule = schedule.intersect_domain(subdomain);
       for (size_t i = 0, e = band->nMember(); i < e; ++i) {
         if (!band->unroll_[i]) {
@@ -334,9 +335,10 @@ bool accessSubscriptsAreUnrolledLoops(
       }
     }
 
-    auto space =
-        subdomain.get_space().add_unnamed_tuple_ui(unrolledDims.size());
-    auto unrolledDimsMupa = isl::multi_union_pw_aff(space, unrolledDims);
+    auto space = subdomain.get_space().template add_unnamed_tuple_ui<Unrolled>(
+        unrolledDims.size());
+    auto unrolledDimsMupa =
+        isl::MultiUnionPwAff<Statement, Unrolled>(space, unrolledDims);
 
     // It is possible that no loops are unrolled, in which case
     // unrolledDimsMupa is zero-dimensional and needs an explicit domain
@@ -344,11 +346,12 @@ bool accessSubscriptsAreUnrolledLoops(
     unrolledDimsMupa =
         unrolledDimsMupa.intersect_domain(group.originalAccesses().domain());
 
-    isl::union_map accesses = group.originalAccesses();
-    auto schedule = outerSchedule.flat_range_product(unrolledDimsMupa);
-    accesses = accesses.apply_domain(isl::union_map::from(schedule));
+    auto accesses = group.originalAccesses();
+    auto schedule = outerSchedule.range_product(unrolledDimsMupa);
+    auto scheduleMap = schedule.toUnionMap();
+    auto scheduledAccesses = accesses.apply_domain(scheduleMap);
 
-    if (!accesses.is_single_valued()) {
+    if (!scheduledAccesses.is_single_valued()) {
       return false;
     }
   }
