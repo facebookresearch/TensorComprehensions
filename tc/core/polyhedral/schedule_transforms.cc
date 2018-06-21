@@ -375,7 +375,8 @@ labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
  * Construct a filter node for a zero-dimensional extension statement
  * with the given extension map.
  */
-ScheduleTreeUPtr labelFilterFromExtension(isl::map extension) {
+ScheduleTreeUPtr labelFilterFromExtension(
+    isl::Map<Prefix, Statement> extension) {
   return detail::ScheduleTree::makeFilter(extension.range());
 }
 
