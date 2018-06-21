@@ -58,11 +58,17 @@ namespace {
  * the minimal value of the mapping) may not help much because
  * those identifiers may get used in other parts of the tree.
  * Furthermore, at that point it is too late to change the mapping.
+ *
+ * Also double check that the minimum is non-negative.
+ * This should always be the case since the affine functions in "list"
+ * are all the result of a modulo operation.
+ * A value of NaN means that the domain is empty.
  */
 static void checkMinimum(isl::union_set domain, isl::union_pw_aff_list list) {
   for (auto upa : list) {
     upa = upa.intersect_domain(domain);
     auto min = upa.min_val();
+    TC_CHECK(min.is_nonneg()) << "mapping to negative block/thread" << min;
     LOG_IF(WARNING, min.is_pos())
         << "Opportunity for shifting mapping -> min:" << min;
   }
