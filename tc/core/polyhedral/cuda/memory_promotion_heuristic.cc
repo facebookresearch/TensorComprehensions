@@ -341,7 +341,7 @@ bool accessSubscriptsAreUnrolledLoops(
     unrolledDimsMupa =
         unrolledDimsMupa.intersect_domain(group.originalAccesses().domain());
 
-    auto accesses = group.originalAccesses();
+    isl::union_map accesses = group.originalAccesses();
     auto schedule = outerSchedule.flat_range_product(unrolledDimsMupa);
     accesses = accesses.apply_domain(isl::union_map::from(schedule));
 
