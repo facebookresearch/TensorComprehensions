@@ -19,6 +19,7 @@
 
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -477,7 +478,7 @@ void promoteToSharedBelow(
   auto groupMap = TensorReferenceGroup::accessedWithin(
       partialSched.intersect_domain(mapping), scop.body);
   // Pure affine schedule without (mapping) filters.
-  auto partialSchedMupa = partialScheduleMupa(root, node);
+  auto partialSchedMupa = partialScheduleMupa<Prefix>(root, node);
 
   // Prepare groups for sorting, to have specified order necessary for
   // reproducibility and tests.
@@ -653,7 +654,8 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto blockSchedule = mscop.blockMappingSchedule(mscop.schedule());
 
   // Pure affine schedule without (mapping) filters.
-  auto partialSchedMupa = partialScheduleMupa(root, scope);
+  isl::multi_union_pw_aff partialSchedMupa =
+      partialScheduleMupa<Prefix>(root, scope);
   // Schedule with block mapping filter.
   auto partialSched =
       isl::union_map::from(partialSchedMupa).intersect_domain(blockMapping);

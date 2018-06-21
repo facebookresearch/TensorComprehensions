@@ -19,6 +19,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 
@@ -86,7 +87,8 @@ isl::multi_union_pw_aff prefixScheduleMupa(
 // including that of the node itself.
 // Note that this function does not take into account
 // any intermediate filter nodes.
-isl::multi_union_pw_aff partialScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 

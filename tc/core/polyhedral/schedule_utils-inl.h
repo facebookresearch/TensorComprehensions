@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/external/isl.h"
@@ -137,14 +138,16 @@ inline isl::multi_union_pw_aff prefixScheduleMupa(
   return infixScheduleMupa(root, root, tree);
 }
 
-inline isl::multi_union_pw_aff partialScheduleMupa(
+template <typename Schedule>
+inline isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
   using namespace polyhedral::detail;
 
   auto prefix = prefixScheduleMupa(root, tree);
-  auto band = tree->as<ScheduleTreeBand>();
-  return band ? prefix.flat_range_product(band->mupa_) : prefix;
+  auto band = tree->as<detail::ScheduleTreeBand>();
+  auto partial = band ? prefix.flat_range_product(band->mupa_) : prefix;
+  return isl::MultiUnionPwAff<Statement, Schedule>(partial);
 }
 
 /*
