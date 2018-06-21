@@ -131,7 +131,7 @@ struct Scop {
   // Returns a set that specializes the named scop's subset of
   // parameter space to the integer values passed to the function.
   template <typename T>
-  isl::set makeContext(
+  isl::Set<> makeContext(
       const std::unordered_map<std::string, T>& sizes =
           std::unordered_map<std::string, T>()) const {
     auto s = isl::Space<>(domain().get_space());
