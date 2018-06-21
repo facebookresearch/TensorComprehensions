@@ -560,7 +560,7 @@ Scop::SyncLevel MappedScop::findBestSync(
   auto activePoints2 = activeDomainPointsBelow(stRoot, st2);
 
   // The dependences between the two schedule trees
-  auto dependences = scop_->dependences;
+  isl::union_map dependences = scop_->dependences;
   dependences = dependences.intersect_domain(activePoints1);
   dependences = dependences.intersect_range(activePoints2);
   if (dependences.is_empty()) {
