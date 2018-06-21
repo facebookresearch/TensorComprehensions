@@ -291,17 +291,17 @@ isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
 // 2. each new parameter dimension p(i) is bounded to be in [0, e(i) - 1]
 // 3. if e (i) == 0 then no constraint is set on the corresponding id(i)
 template <typename IterPair>
-inline isl::set makeParameterContext(
-    isl::space paramSpace,
+inline isl::Set<> makeParameterContext(
+    isl::Space<> paramSpace,
     const IterPair begin,
     const IterPair end) {
   for (auto it = begin; it != end; ++it) {
     paramSpace = paramSpace.add_param(it->first);
   }
-  isl::set res(isl::set::universe(paramSpace));
+  auto res(isl::Set<>::universe(paramSpace));
   for (auto it = begin; it != end; ++it) {
-    isl::aff a(isl::aff::param_on_domain_space(paramSpace, it->first));
-    res = res & (isl::aff_set(a) >= 0) & (isl::aff_set(a) < it->second);
+    auto a(isl::AffOn<>::param_on_domain_space(paramSpace, it->first));
+    res = res & a.asPwAff().nonneg_set() & (it->second - a).asPwAff().pos_set();
   }
   return res;
 }

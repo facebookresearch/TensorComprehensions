@@ -866,7 +866,8 @@ void MappedScop::insertMappingContext() {
   auto space = scop.domain().get_space();
   auto mappingContext = makeParameterContext(
       space, mappingIdsWithSizes.begin(), mappingIdsWithSizes.end());
-  updateTopLevelContext(scop.scheduleRoot(), mappingContext.from_params());
+  updateTopLevelContext(
+      scop.scheduleRoot(), mappingContext.from_params<Prefix>());
 }
 
 namespace {
