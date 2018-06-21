@@ -20,76 +20,25 @@
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
-#include "tc/core/polyhedral/functional.h"
-#include "tc/core/polyhedral/schedule_tree.h"
-#include "tc/core/polyhedral/schedule_utils.h"
-#include "tc/core/polyhedral/scop.h"
 
 namespace tc {
 namespace polyhedral {
 namespace {
-// This returns the (inclusive) range of the mapping parameter "mappingId"
-// within the context "mappingContext".
-// This range corresponds to the blocks/threads active at the particular
-// location in the tree where this mapping is active.
-//
-// This is used to tighten the kernel to only launch on the necessary amount
-// of resources.
-//
-// When the range is unbounded on the right, we return the maximal positive
-// range (0, max_size_t). This needs to be intersected with launch bounds to
-// obtain the proper finite range.
-// Otherwise, the range is asserted bounded on the left and to lie in the
-// positive half of the integer axis.
-std::pair<size_t, size_t> rangeOfMappingParameter(
-    isl::set mappingContext,
-    mapping::MappingId mappingId) {
-  if (!mappingContext.involves_param(mappingId)) {
-    return std::make_pair(0, std::numeric_limits<size_t>::max());
-  }
-  auto space = mappingContext.get_space();
-  isl::aff a(isl::aff::param_on_domain_space(space, mappingId));
-  auto max = mappingContext.max_val(a);
-  if (max.is_nan() || max.is_infty()) {
-    return std::make_pair(0, std::numeric_limits<size_t>::max());
-  }
-  TC_CHECK(max.is_int()) << max.to_str();
-  TC_CHECK(max.is_nonneg()) << max.to_str();
-  auto min = mappingContext.min_val(a);
-  TC_CHECK(min.is_int()) << max.to_str();
-  TC_CHECK(min.is_nonneg()) << max.to_str();
-
-  return std::make_pair(
-      static_cast<size_t>(min.get_num_si()),
-      static_cast<size_t>(max.get_num_si()));
-}
-
 /*
- * Compute the maximal value attained by the mapping parameter "id".
+ * Return the mapping to MappingTypeId, i.e, either the mapping to blocks or
+ * the mapping to threads.
  */
-template <typename MappingIdType>
-size_t maxValue(const Scop& scop, const MappingIdType& id) {
-  using namespace polyhedral::detail;
-
-  auto root = scop.scheduleRoot();
-  auto params = scop.context();
-  size_t sizetMax = std::numeric_limits<size_t>::max();
-  size_t max = 0;
-  size_t min = sizetMax;
-  auto filters = root->collect(root, ScheduleTreeType::Mapping);
-  filters = functional::Filter(isMappingTo<MappingIdType>, filters);
-  for (auto p : filters) {
-    auto mappingNode = p->as<ScheduleTreeMapping>();
-    auto active = activeDomainPoints(root, p).intersect_params(params);
-    active = active.intersect(mappingNode->filter_);
-    auto range = rangeOfMappingParameter(active.params(), id);
-    min = std::min(min, range.first);
-    max = std::max(max, range.second);
-  }
-  TC_CHECK(max < sizetMax) << "missing mapping to " << id << "\n" << *root;
-  TC_CHECK(min < sizetMax) << "missing mapping to " << id << " type\n" << *root;
-  // Inclusive range needs + 1 to translate to sizes
-  return max + 1;
+template <typename MappingTypeId>
+static isl::multi_union_pw_aff mappingSchedule(const MappedScop& mscop);
+template <>
+isl::multi_union_pw_aff mappingSchedule<mapping::BlockId>(
+    const MappedScop& mscop) {
+  return mscop.blockMappingSchedule(mscop.schedule());
+}
+template <>
+isl::multi_union_pw_aff mappingSchedule<mapping::ThreadId>(
+    const MappedScop& mscop) {
+  return mscop.threadMappingSchedule(mscop.schedule());
 }
 
 /*
@@ -100,8 +49,17 @@ template <typename MappingIdType, typename Size>
 Size launchBounds(const MappedScop& mscop, Size size) {
   Size tightened;
 
+  auto params = mscop.scop().context();
+  auto mapping = mappingSchedule<MappingIdType>(mscop);
+  mapping = mapping.intersect_params(params);
+  auto max = mapping.max_multi_val();
+
   for (size_t i = 0; i < size.view.size(); ++i) {
-    tightened.view[i] = maxValue(mscop.scop(), MappingIdType::makeId(i));
+    auto maxVal = max.get_val(i);
+    TC_CHECK(maxVal.is_int()) << maxVal.to_str();
+    TC_CHECK(maxVal.is_nonneg()) << maxVal.to_str();
+    // Inclusive range needs + 1 to translate to sizes
+    tightened.view[i] = maxVal.get_num_si() + 1;
   }
 
   return tightened;
