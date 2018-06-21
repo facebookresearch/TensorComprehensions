@@ -79,7 +79,8 @@ isl::multi_union_pw_aff infixScheduleMupa(
 // function on the universe domain of the schedule tree.
 // Note that unlike isl_schedule_node_get_prefix_schedule_multi_union_pw_aff,
 // this function does not take into account any intermediate filter nodes.
-isl::multi_union_pw_aff prefixScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> prefixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 

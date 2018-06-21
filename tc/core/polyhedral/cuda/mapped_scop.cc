@@ -296,7 +296,7 @@ bool MappedScop::detectReductions(ScheduleTree* tree) {
   });
   // The outer (coincident) members, together with the prefix schedule,
   // need to determine a single reduction.
-  auto prefix = prefixScheduleMupa(schedule(), tree);
+  isl::multi_union_pw_aff prefix = prefixScheduleMupa<Prefix>(schedule(), tree);
   prefix = prefix.range_product(band->memberRange(0, nCoincident));
   if (!isSingleReductionWithin(updates, prefix, scop())) {
     return false;
@@ -342,7 +342,7 @@ ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
 
   auto root = scop_->scheduleRoot();
   auto domain = activeDomainPoints(root, st);
-  auto prefixSchedule = prefixScheduleMupa(root, st);
+  auto prefixSchedule = prefixScheduleMupa<Prefix>(root, st);
   auto reductionSchedule = reductionMapSchedule(st);
   auto space = reductionSchedule.get_space();
   auto size = isl::multi_val::zero(space);
