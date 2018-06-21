@@ -58,7 +58,8 @@ isl::union_map partialSchedule(
     const detail::ScheduleTree* node);
 
 // Return the schedule defined by the ancestors of the given node.
-isl::union_map prefixSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> prefixSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 

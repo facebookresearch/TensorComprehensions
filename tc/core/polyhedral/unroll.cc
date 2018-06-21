@@ -184,7 +184,7 @@ void markUnroll(
   }
 
   auto unrollVal = isl::val(st->ctx_, unroll);
-  auto prefix = prefixSchedule(root, st);
+  isl::union_map prefix = prefixSchedule<Prefix>(root, st);
   prefix = prefix.intersect_domain(prefixMappingFilter(root, st));
   boundInstancesAndMarkUnroll(st, prefix, unrollVal);
 }
