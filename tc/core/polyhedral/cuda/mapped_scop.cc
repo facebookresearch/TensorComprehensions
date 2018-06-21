@@ -296,8 +296,8 @@ bool MappedScop::detectReductions(ScheduleTree* tree) {
   });
   // The outer (coincident) members, together with the prefix schedule,
   // need to determine a single reduction.
-  isl::multi_union_pw_aff prefix = prefixScheduleMupa<Prefix>(schedule(), tree);
-  prefix = prefix.range_product(band->memberRange(0, nCoincident));
+  auto prefix = prefixScheduleMupa<Prefix>(schedule(), tree)
+                    .range_product(band->memberRange<Band>(0, nCoincident));
   if (!isSingleReductionWithin(updates, prefix, scop())) {
     return false;
   }
@@ -331,7 +331,7 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   TC_CHECK_GE(nMember, reductionDim + 1);
 
   auto first = reductionDim + 1 - nMappedThreads;
-  return reductionBand->memberRange(first, nMappedThreads);
+  return reductionBand->memberRange<ReductionSchedule>(first, nMappedThreads);
 }
 
 ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
