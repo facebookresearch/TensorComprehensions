@@ -217,7 +217,7 @@ class MappedScop {
   // to the block identifiers, where all branches in "tree"
   // are assumed to have been mapped to block identifiers.
   // The result lives in a space of the form grid[x, ...].
-  isl::multi_union_pw_aff blockMappingSchedule(
+  isl::MultiUnionPwAff<Statement, Block> blockMappingSchedule(
       const detail::ScheduleTree* tree) const;
 
  private:

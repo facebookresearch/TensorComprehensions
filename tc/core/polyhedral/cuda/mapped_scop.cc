@@ -539,7 +539,7 @@ isl::MultiUnionPwAff<Statement, Thread> MappedScop::threadMappingSchedule(
   return extractDomainToIds<Thread>(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
-isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
+isl::MultiUnionPwAff<Statement, Block> MappedScop::blockMappingSchedule(
     const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numBlocks.view.size(); ++i) {
