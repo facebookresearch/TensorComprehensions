@@ -53,7 +53,8 @@ isl::union_map extendSchedule(
 
 // Get the partial schedule defined by ancestors of the given node and the node
 // itself.
-isl::union_map partialSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> partialSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 

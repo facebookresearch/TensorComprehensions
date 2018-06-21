@@ -472,7 +472,7 @@ void promoteToSharedBelow(
     throw promotion::IncorrectScope("cannot promote below a sequence/set node");
   }
 
-  auto partialSched = partialSchedule(root, node);
+  isl::union_map partialSched = partialSchedule<Prefix>(root, node);
   auto mapping = collectMappingsTo<mapping::BlockId>(scop);
 
   auto groupMap = TensorReferenceGroup::accessedWithin(
@@ -646,7 +646,7 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto blockMapping = collectMappingsTo<mapping::BlockId>(scop);
   auto mapping =
       collectMappingsTo<mapping::ThreadId>(scop).intersect(blockMapping);
-  auto schedule = partialSchedule(scop.scheduleRoot(), scope);
+  isl::union_map schedule = partialSchedule<Prefix>(scop.scheduleRoot(), scope);
   auto groupMap = TensorReferenceGroup::accessedWithin(
       schedule.intersect_domain(mapping), scop.body);
 
