@@ -179,7 +179,7 @@ struct ScheduleTreeMapping : public ScheduleTree {
  public:
   using Mapping = std::unordered_map<
       mapping::MappingId,
-      isl::union_pw_aff,
+      isl::UnionPwAffOn<Statement>,
       typename mapping::MappingId::Hash>;
 
   static constexpr detail::ScheduleTreeType NodeType =
