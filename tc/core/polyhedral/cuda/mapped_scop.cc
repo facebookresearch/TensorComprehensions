@@ -906,7 +906,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;
-  std::tie(grid, block) = tightenLaunchBounds(*scop, grid, block);
+  std::tie(grid, block) = tightenLaunchBounds(mappedScop, grid, block);
   auto res = MappedScop::makeMappedScop(
       std::move(scop),
       grid,

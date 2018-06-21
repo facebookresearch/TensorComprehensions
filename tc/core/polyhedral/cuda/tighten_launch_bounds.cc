@@ -17,11 +17,13 @@
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_utils.h"
+#include "tc/core/polyhedral/scop.h"
 
 namespace tc {
 namespace polyhedral {
@@ -95,11 +97,11 @@ size_t maxValue(const Scop& scop, const MappingIdType& id) {
  * by the tightened, actual, launch bounds used in practice.
  */
 template <typename MappingIdType, typename Size>
-Size launchBounds(const Scop& scop, Size size) {
+Size launchBounds(const MappedScop& mscop, Size size) {
   Size tightened;
 
   for (size_t i = 0; i < size.view.size(); ++i) {
-    tightened.view[i] = maxValue(scop, MappingIdType::makeId(i));
+    tightened.view[i] = maxValue(mscop.scop(), MappingIdType::makeId(i));
   }
 
   return tightened;
@@ -111,12 +113,12 @@ Size launchBounds(const Scop& scop, Size size) {
 // computes the tightened, actual, launch bounds used in practice after
 // specialization of the ScheduleTree.
 std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
+    const MappedScop& mscop,
     const tc::Grid& grid,
     const tc::Block& block) {
   return std::make_pair(
-      launchBounds<mapping::BlockId>(scop, grid),
-      launchBounds<mapping::ThreadId>(scop, block));
+      launchBounds<mapping::BlockId>(mscop, grid),
+      launchBounds<mapping::ThreadId>(mscop, block));
 }
 } // namespace polyhedral
 } // namespace tc
