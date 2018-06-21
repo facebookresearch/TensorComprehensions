@@ -35,9 +35,10 @@ isl::UnionSet<Statement> reductionUpdates(
 // Does "prefix" partition "domain" into individual reductions?
 // In particular, do the elements of "domain" access a single tensor
 // element within "prefix"?
+template <typename Prefix>
 bool isSingleReductionWithin(
-    isl::union_set domain,
-    isl::multi_union_pw_aff prefix,
+    isl::UnionSet<Statement> domain,
+    isl::MultiUnionPwAff<Statement, Prefix> prefix,
     const Scop& scop);
 
 } // namespace polyhedral
