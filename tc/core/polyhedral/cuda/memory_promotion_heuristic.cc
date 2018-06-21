@@ -226,7 +226,7 @@ bool promotionImprovesCoalescing(
     auto depth = marker->scheduleDepth(root);
     auto activePoints = activeDomainPoints(root, mapping);
     auto localAccesses = originalAccesses.intersect_domain(activePoints);
-    auto schedule = prefixSchedule(root, marker);
+    auto schedule = prefixSchedule<Prefix>(root, marker);
     auto scheduledAccesses = localAccesses.apply_domain(schedule);
     for (auto access : scheduledAccesses.get_map_list()) {
       auto scheduleSpace = access.get_space().domain();

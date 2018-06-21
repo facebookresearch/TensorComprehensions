@@ -67,7 +67,7 @@ isl::union_set collectDomain(
   for (auto anc : nodes) {
     domain = filter(domain, anc);
     if (auto extensionElem = anc->as<ScheduleTreeExtension>()) {
-      auto parentSchedule = prefixSchedule(root, anc);
+      isl::union_map parentSchedule = prefixSchedule<Prefix>(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
       parentSchedule = parentSchedule.intersect_domain(domain);

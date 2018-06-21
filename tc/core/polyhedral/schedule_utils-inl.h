@@ -73,10 +73,12 @@ inline isl::union_map partialScheduleImpl(
 }
 } // namespace detail
 
-inline isl::union_map prefixSchedule(
+template <typename Schedule>
+inline isl::UnionMap<Statement, Schedule> prefixSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
-  return detail::partialScheduleImpl(root, node, false);
+  auto prefix = detail::partialScheduleImpl(root, node, false);
+  return isl::UnionMap<Statement, Schedule>(prefix);
 }
 
 inline isl::union_map partialSchedule(
