@@ -135,9 +135,9 @@ class TensorReferenceGroup {
   // Access relations in terms of Scop domain elements.
   // The resulting union relations have different domain spaces but identical
   // range spaces.
-  isl::union_map originalWrites() const;
-  isl::union_map originalReads() const;
-  isl::union_map originalAccesses() const {
+  isl::UnionMap<Statement, Tensor> originalWrites() const;
+  isl::UnionMap<Statement, Tensor> originalReads() const;
+  isl::UnionMap<Statement, Tensor> originalAccesses() const {
     return originalWrites().unite(originalReads());
   }
 

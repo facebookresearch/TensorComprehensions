@@ -216,13 +216,13 @@ isl::Map<Prefix, Tensor> TensorReferenceGroup::scopedReads() const {
 }
 
 namespace {
-isl::union_map referenceOriginalAccessesImpl(
+isl::UnionMap<Statement, Tensor> referenceOriginalAccessesImpl(
     const TensorReferenceGroup& group,
     AccessType type) {
   if (group.references.size() == 0) {
     throw promotion::GroupingError("no references in the group");
   }
-  auto accesses = isl::union_map::empty(
+  auto accesses = isl::UnionMap<Statement, Tensor>::empty(
       group.references.front()->originalAccess.get_space().params());
 
   for (const auto& ref : group.references) {
@@ -230,17 +230,17 @@ isl::union_map referenceOriginalAccessesImpl(
       continue;
     }
     auto current = ref->originalAccess;
-    accesses = accesses.unite(isl::union_map(current));
+    accesses = accesses.unite(current.asUnionMap());
   }
   return accesses;
 }
 } // namespace
 
-isl::union_map TensorReferenceGroup::originalWrites() const {
+isl::UnionMap<Statement, Tensor> TensorReferenceGroup::originalWrites() const {
   return referenceOriginalAccessesImpl(*this, AccessType::Write);
 }
 
-isl::union_map TensorReferenceGroup::originalReads() const {
+isl::UnionMap<Statement, Tensor> TensorReferenceGroup::originalReads() const {
   return referenceOriginalAccessesImpl(*this, AccessType::Read);
 }
 
