@@ -312,7 +312,7 @@ bool accessSubscriptsAreUnrolledLoops(
   for (auto leaf : leaves) {
     auto ancestors = leaf->ancestors(root);
     ancestors.push_back(leaf);
-    auto subdomain = activeDomainPointsBelow(root, leaf);
+    isl::union_set subdomain = activeDomainPointsBelow(root, leaf);
 
     auto unrolledDims = isl::union_pw_aff_list(leaf->ctx_, 1);
     for (auto node : ancestors) {
