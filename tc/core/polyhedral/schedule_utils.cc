@@ -84,7 +84,7 @@ isl::UnionSet<Statement> collectDomain(
 
 // Get the set of domain elements that are active below
 // the given branch of nodes.
-isl::union_set activeDomainPointsHelper(
+isl::UnionSet<Statement> activeDomainPointsHelper(
     const ScheduleTree* root,
     const vector<const ScheduleTree*>& nodes) {
   return collectDomain(root, nodes, &applyFilter);
@@ -101,8 +101,7 @@ isl::UnionSet<Statement> prefixMappingFilter(
 isl::UnionSet<Statement> activeDomainPoints(
     const ScheduleTree* root,
     const ScheduleTree* node) {
-  return isl::UnionSet<Statement>(
-      activeDomainPointsHelper(root, node->ancestors(root)));
+  return activeDomainPointsHelper(root, node->ancestors(root));
 }
 
 isl::UnionSet<Statement> activeDomainPointsBelow(
@@ -110,7 +109,7 @@ isl::UnionSet<Statement> activeDomainPointsBelow(
     const ScheduleTree* node) {
   auto ancestors = node->ancestors(root);
   ancestors.emplace_back(node);
-  return isl::UnionSet<Statement>(activeDomainPointsHelper(root, ancestors));
+  return activeDomainPointsHelper(root, ancestors);
 }
 
 vector<ScheduleTree*> collectScheduleTreesPath(
