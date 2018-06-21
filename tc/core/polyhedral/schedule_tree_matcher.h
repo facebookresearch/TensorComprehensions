@@ -29,7 +29,7 @@ namespace polyhedral {
 // Return the union of the reduction update statements
 // that appear in "domain".
 isl::UnionSet<Statement> reductionUpdates(
-    isl::union_set domain,
+    isl::UnionSet<Statement> domain,
     const Scop& scop);
 
 // Does "prefix" partition "domain" into individual reductions?
