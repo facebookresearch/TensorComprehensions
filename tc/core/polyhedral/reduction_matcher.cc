@@ -56,17 +56,17 @@ bool isSupportedReductionUpdateId(isl::id id, const Scop& scop) {
 } // namespace
 
 isl::UnionSet<Statement> reductionUpdates(
-    isl::union_set domain,
+    isl::UnionSet<Statement> domain,
     const Scop& scop) {
   domain = scop.body.reductions.intersect_domain(domain).domain();
-  auto update = isl::union_set::empty(domain.get_space());
-  domain.foreach_set([&update, &scop](isl::set set) {
+  auto update = isl::UnionSet<Statement>::empty(domain.get_space());
+  domain.foreach_set([&update, &scop](isl::Set<Statement> set) {
     auto setId = set.get_tuple_id();
     if (isSupportedReductionUpdateId(setId, scop)) {
       update = update.unite(set);
     }
   });
-  return isl::UnionSet<Statement>(update);
+  return update;
 }
 
 } // namespace polyhedral

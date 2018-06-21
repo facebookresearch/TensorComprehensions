@@ -17,6 +17,7 @@
 
 #include <iostream>
 
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -26,11 +27,13 @@ namespace polyhedral {
 struct Body {
   Body() = default;
   Body(isl::space paramSpace) {
-    reductions = writes = reads = isl::union_map::empty(paramSpace);
+    auto empty = isl::union_map::empty(paramSpace);
+    writes = reads = isl::UnionMap<isl::Pair<Statement, Tag>, Tensor>(empty);
+    reductions = isl::UnionMap<Statement, Reduction>(empty);
   }
 
   // Specialize to the given context.
-  void specialize(isl::set context) {
+  void specialize(isl::Set<> context) {
     reads = reads.intersect_params(context);
     writes = writes.intersect_params(context);
     reductions = reductions.intersect_params(context);
@@ -39,7 +42,7 @@ struct Body {
   // Union maps describing the reads and writes done. Uses the ids in
   // the schedule tree to denote the containing Stmt, and tags each
   // access with a unique reference id of the form __tc_ref_N.
-  isl::union_map reads, writes;
+  isl::UnionMap<isl::Pair<Statement, Tag>, Tensor> reads, writes;
 
   // A function on reduction update statement instances that partitions them
   // into individual reductions, where each reduction consists of
@@ -73,7 +76,7 @@ struct Body {
   // That is, in the example above, it would just be
   //
   //	{ S[i] -> R[] : 0 <= i < 4 }
-  isl::union_map reductions;
+  isl::UnionMap<Statement, Reduction> reductions;
 };
 
 std::ostream& operator<<(std::ostream& os, const Body& body);
