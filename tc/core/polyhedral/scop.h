@@ -95,7 +95,7 @@ struct Scop {
   isl::Set<> context() const {
     auto ctx = domain().get_ctx();
     auto context = halide2isl::makeParamContext(ctx, halide.params);
-    return isl::Set<>(context.intersect(makeContext(parameterValues)));
+    return context.intersect(makeContext(parameterValues));
   }
 
   // Specialize a Scop by fixing the given parameters to the given sizes.
