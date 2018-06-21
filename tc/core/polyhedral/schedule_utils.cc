@@ -100,12 +100,12 @@ isl::UnionSet<Statement> activeDomainPoints(
       activeDomainPointsHelper(root, node->ancestors(root)));
 }
 
-isl::union_set activeDomainPointsBelow(
+isl::UnionSet<Statement> activeDomainPointsBelow(
     const ScheduleTree* root,
     const ScheduleTree* node) {
   auto ancestors = node->ancestors(root);
   ancestors.emplace_back(node);
-  return activeDomainPointsHelper(root, ancestors);
+  return isl::UnionSet<Statement>(activeDomainPointsHelper(root, ancestors));
 }
 
 vector<ScheduleTree*> collectScheduleTreesPath(
