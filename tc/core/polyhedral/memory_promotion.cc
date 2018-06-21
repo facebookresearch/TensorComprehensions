@@ -408,25 +408,26 @@ namespace {
 // each dimension of the tensor is contrained by the min_aff on the left and
 // by the min_aff + extent_aff on the right.  Intersect this set with the
 // context of the scop.
-isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
+isl::Set<Tensor> tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
   auto space = scop.domain().get_space();
   auto nDim = halideParameter.dimensions();
   auto tensorTuple = constructTensorTuple(space, tensorId, nDim);
   auto tensorSpace = tensorTuple.get_space();
 
-  auto tensorElements = isl::set::universe(tensorSpace);
-  auto identity = isl::multi_aff::identity(tensorSpace.map_from_set());
+  auto tensorElements = isl::Set<Tensor>::universe(tensorSpace);
+  auto identity =
+      isl::MultiAff<Tensor, Tensor>::identity(tensorSpace.map_from_set());
   for (int i = 0; i < nDim; ++i) {
-    isl::aff minAff = halide2isl::makeIslAffFromExpr(
+    auto minAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.min_constraint(i));
-    isl::aff extentAff = halide2isl::makeIslAffFromExpr(
+    auto extentAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.extent_constraint(i));
-    minAff = minAff.unbind_params_insert_domain(tensorTuple);
-    extentAff = extentAff.unbind_params_insert_domain(tensorTuple);
+    auto minAff2 = minAff.unbind_params_insert_domain(tensorTuple);
+    auto extentAff2 = extentAff.unbind_params_insert_domain(tensorTuple);
     auto aff = identity.get_aff(i);
-    tensorElements = tensorElements & (minAff <= isl::aff_set(aff)) &
-        (isl::aff_set(aff) < (minAff + extentAff));
+    tensorElements = tensorElements & (minAff2.le_set(aff)) &
+        (aff.lt_set(minAff2 + extentAff2));
   }
 
   tensorElements = tensorElements.intersect_params(scop.context());
