@@ -24,6 +24,7 @@
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tensor.h"
 #include "tc/external/isl.h"
@@ -171,7 +172,8 @@ class MappedScop {
   // Return the schedule that will be used by mapInnermostBandsToThreads
   // for mapping to thread identifiers, with the last function
   // corresponding to thread identifier x.
-  isl::multi_union_pw_aff reductionMapSchedule(const detail::ScheduleTree* st);
+  isl::MultiUnionPwAff<Statement, ReductionSchedule> reductionMapSchedule(
+      const detail::ScheduleTree* st);
   // Separate out reductions that can be mapped to an entire block.
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.

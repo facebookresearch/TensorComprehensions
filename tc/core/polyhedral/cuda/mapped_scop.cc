@@ -319,8 +319,8 @@ bool MappedScop::needReductionSeparation(const ScheduleTree* st) {
   return !reductionBandUpdates_.at(st).separated;
 }
 
-isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
-    const ScheduleTree* st) {
+isl::MultiUnionPwAff<Statement, ReductionSchedule>
+MappedScop::reductionMapSchedule(const ScheduleTree* st) {
   TC_CHECK(reductionBandUpdates_.count(st) == 1);
   auto reductionBand = st->as<ScheduleTreeBand>();
   TC_CHECK(reductionBand);
@@ -345,7 +345,7 @@ ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
   auto prefixSchedule = prefixScheduleMupa<Prefix>(root, st);
   auto reductionSchedule = reductionMapSchedule(st);
   auto space = reductionSchedule.get_space();
-  auto size = isl::multi_val::zero(space);
+  auto size = isl::MultiVal<ReductionSchedule>::zero(space);
   for (size_t i = 0; i < numThreads.view.size(); ++i) {
     auto pos = numThreads.view.size() - 1 - i;
     size = size.set_val(pos, isl::val(st->ctx_, numThreads.view[i]));
