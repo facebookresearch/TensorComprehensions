@@ -47,9 +47,10 @@ std::vector<const detail::ScheduleTree*> collectScheduleTreesPath(
 
 // Given a schedule defined by the ancestors of the given node,
 // extend it to a schedule that also covers the node itself.
-isl::union_map extendSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> extendSchedule(
     const detail::ScheduleTree* node,
-    isl::union_map schedule);
+    isl::UnionMap<Statement, Schedule> schedule);
 
 // Get the partial schedule defined by ancestors of the given node and the node
 // itself.
@@ -113,7 +114,7 @@ isl::UnionSet<Statement> activeDomainPointsBelow(
 
 // Collect the outer block/thread identifier mappings
 // into a filter on the active domain elements.
-isl::union_set prefixMappingFilter(
+isl::UnionSet<Statement> prefixMappingFilter(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 

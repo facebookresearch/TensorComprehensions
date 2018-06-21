@@ -501,8 +501,10 @@ ScheduleTree* insertCopiesUnder(
   auto writeSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
       isl::multi_aff::wrapped_range_map(writeSpace)));
 
-  auto readBandNode = ScheduleTree::makeBand(readSchedule);
-  auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
+  auto readBandNode = ScheduleTree::makeBand(
+      isl::MultiUnionPwAff<Statement, Band>(readSchedule));
+  auto writeBandNode = ScheduleTree::makeBand(
+      isl::MultiUnionPwAff<Statement, Band>(writeSchedule));
 
   if (unrollAllCopies) {
     unrollAllMembers(readBandNode->as<detail::ScheduleTreeBand>());
@@ -552,14 +554,18 @@ ScheduleTree* insertCopiesUnder(
 
   if (reads) {
     insertExtensionBefore(
-        root, tree, tree->child({0}), readExtension, std::move(readFilterNode));
+        root,
+        tree,
+        tree->child({0}),
+        isl::UnionMap<Prefix, Statement>(readExtension),
+        std::move(readFilterNode));
   }
   if (writes) {
     insertExtensionAfter(
         root,
         tree,
         tree->child({0}),
-        writeExtension,
+        isl::UnionMap<Prefix, Statement>(writeExtension),
         std::move(writeFilterNode));
   }
 

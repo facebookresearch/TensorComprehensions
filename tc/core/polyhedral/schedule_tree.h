@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/utils/vararg.h"
@@ -280,7 +281,7 @@ struct ScheduleTree {
   // Factory functions
   //
   static ScheduleTreeUPtr makeBand(
-      isl::multi_union_pw_aff mupa,
+      isl::MultiUnionPwAff<Statement, Band> mupa,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   // Return a zero-dimensional band for use in a tree with the given root.
@@ -291,7 +292,7 @@ struct ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   static ScheduleTreeUPtr makeContext(
-      isl::set context,
+      isl::Set<Prefix> context,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   static ScheduleTreeUPtr makeFilter(
@@ -332,7 +333,7 @@ struct ScheduleTree {
 
   template <typename... Args>
   static ScheduleTreeUPtr makeBand(
-      isl::multi_union_pw_aff mupa,
+      isl::MultiUnionPwAff<Statement, Band> mupa,
       Args&&... args) {
     return makeBand(
         mupa, vectorFromArgs<ScheduleTreeUPtr>(std::forward<Args>(args)...));
@@ -345,7 +346,7 @@ struct ScheduleTree {
   }
 
   template <typename... Args>
-  static ScheduleTreeUPtr makeContext(isl::set context, Args&&... args) {
+  static ScheduleTreeUPtr makeContext(isl::Set<> context, Args&&... args) {
     return makeContext(
         context, vectorFromArgs<ScheduleTreeUPtr>(std::forward<Args>(args)...));
   }

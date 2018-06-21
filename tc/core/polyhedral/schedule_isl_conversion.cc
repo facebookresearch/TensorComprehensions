@@ -243,8 +243,8 @@ std::unique_ptr<ScheduleTreeBand> fromIslScheduleNodeBand(
   for (size_t i = 0; i < n; ++i) {
     coincident[i] = b.member_get_coincident(i);
   }
-  return ScheduleTreeBand::make(
-      b.get_partial_schedule(), b.get_permutable(), coincident, unroll);
+  auto mupa = isl::MultiUnionPwAff<Statement, Band>(b.get_partial_schedule());
+  return ScheduleTreeBand::make(mupa, b.get_permutable(), coincident, unroll);
 }
 
 std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
@@ -252,7 +252,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
   if (auto band = node.as<isl::schedule_node_band>()) {
     return fromIslScheduleNodeBand(band);
   } else if (auto context = node.as<isl::schedule_node_context>()) {
-    auto c = context.get_context();
+    auto c = isl::Set<Prefix>(context.get_context());
     return ScheduleTreeContext::make(c);
   } else if (auto domain = node.as<isl::schedule_node_domain>()) {
     auto c = domain.get_domain();

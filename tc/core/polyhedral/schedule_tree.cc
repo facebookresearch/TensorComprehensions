@@ -200,7 +200,7 @@ size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
-    isl::multi_union_pw_aff mupa,
+    isl::MultiUnionPwAff<Statement, Band> mupa,
     std::vector<ScheduleTreeUPtr>&& children) {
   std::vector<bool> coincident(mupa.size(), false);
   std::vector<bool> unroll(mupa.size(), false);
@@ -212,9 +212,9 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
 ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
   auto domain = root->as<ScheduleTreeDomain>();
   TC_CHECK(domain);
-  auto space = domain->domain_.get_space().set_from_params();
-  auto mv = isl::multi_val::zero(space);
-  auto zero = isl::multi_union_pw_aff(domain->domain_, mv);
+  auto space = domain->domain_.get_space().add_unnamed_tuple_ui<Band>(0);
+  auto mv = isl::MultiVal<Band>::zero(space);
+  auto zero = isl::MultiUnionPwAff<Statement, Band>(domain->domain_, mv);
   return ScheduleTree::makeBand(zero);
 }
 
@@ -225,7 +225,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
-    isl::set context,
+    isl::Set<Prefix> context,
     std::vector<ScheduleTreeUPtr>&& children) {
   return ScheduleTreeContext::make(context, std::move(children));
 }

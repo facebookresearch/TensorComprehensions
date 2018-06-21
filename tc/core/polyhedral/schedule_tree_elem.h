@@ -64,7 +64,7 @@ struct ScheduleTreeContext : public ScheduleTree {
   }
 
  public:
-  isl::set context_;
+  isl::Set<Prefix> context_;
 };
 
 struct ScheduleTreeDomain : public ScheduleTree {
@@ -100,7 +100,7 @@ struct ScheduleTreeDomain : public ScheduleTree {
   }
 
  public:
-  isl::union_set domain_;
+  isl::UnionSet<Statement> domain_;
 };
 
 struct ScheduleTreeExtension : public ScheduleTree {
@@ -136,7 +136,7 @@ struct ScheduleTreeExtension : public ScheduleTree {
   }
 
  public:
-  isl::union_map extension_;
+  isl::UnionMap<Prefix, Statement> extension_;
 };
 
 struct ScheduleTreeFilter : public ScheduleTree {
@@ -172,7 +172,7 @@ struct ScheduleTreeFilter : public ScheduleTree {
   }
 
  public:
-  isl::union_set filter_;
+  isl::UnionSet<Statement> filter_;
 };
 
 struct ScheduleTreeMapping : public ScheduleTree {
@@ -216,7 +216,7 @@ struct ScheduleTreeMapping : public ScheduleTree {
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
   // Assignment of the affine functions to the identifiers as parameters.
-  isl::union_set filter_;
+  isl::UnionSet<Statement> filter_;
 };
 
 struct ScheduleTreeSequence : public ScheduleTree {
@@ -310,7 +310,7 @@ struct ScheduleTreeBand : public ScheduleTree {
   // Replace "mupa" by its greatest integer part to ensure that the
   // schedule is always integral.
   static std::unique_ptr<ScheduleTreeBand> make(
-      isl::multi_union_pw_aff mupa,
+      isl::MultiUnionPwAff<Statement, Band> mupa,
       bool permutable,
       std::vector<bool> coincident,
       std::vector<bool> unroll,
@@ -336,18 +336,17 @@ struct ScheduleTreeBand : public ScheduleTree {
   isl::MultiUnionPwAff<Statement, Range> memberRange(size_t first, size_t n)
       const {
     auto list = mupa_.get_union_pw_aff_list();
-    auto space = mupa_.get_space().params().add_unnamed_tuple_ui(n);
+    auto space = mupa_.get_space().params().add_unnamed_tuple_ui<Range>(n);
     auto end = first + n;
     TC_CHECK_LE(end, nMember());
     list = list.drop(end, nMember() - end);
     list = list.drop(0, first);
-    return isl::MultiUnionPwAff<Statement, Range>(
-        isl::multi_union_pw_aff(space, list));
+    return isl::MultiUnionPwAff<Statement, Range>(space, list);
   }
 
  public:
   bool permutable_{false};
-  isl::multi_union_pw_aff mupa_;
+  isl::MultiUnionPwAff<Statement, Band> mupa_;
 
   std::vector<bool> coincident_;
   // For each member, should the corresponding loop in the generated code
