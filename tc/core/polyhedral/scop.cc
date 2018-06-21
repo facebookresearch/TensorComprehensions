@@ -85,7 +85,7 @@ ScopUPtr Scop::makeScop(
   return makeScop(ctx, tc2halide::translate(ctx, treeRef, compilerOptions));
 }
 
-isl::union_set& Scop::domainRef() {
+isl::UnionSet<Statement>& Scop::domainRef() {
   auto dom = scheduleRoot()->as<ScheduleTreeDomain>();
   TC_CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
   // TODO: activate this when the invariant has a chance of working (i.e. we
@@ -99,7 +99,7 @@ isl::union_set& Scop::domainRef() {
 }
 
 const isl::UnionSet<Statement> Scop::domain() const {
-  return isl::UnionSet<Statement>(const_cast<Scop*>(this)->domainRef());
+  return const_cast<Scop*>(this)->domainRef();
 }
 
 std::ostream& operator<<(std::ostream& os, const Scop& s) {

@@ -509,7 +509,7 @@ struct Scop {
   // By analogy with generalized functions, the domain is the "support" part
   // of the ScheduleTree "function".
  private:
-  isl::union_set& domainRef();
+  isl::UnionSet<Statement>& domainRef();
 
  public:
   const isl::UnionSet<Statement> domain() const;
