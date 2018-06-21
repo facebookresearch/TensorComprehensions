@@ -536,7 +536,7 @@ isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
     ids.emplace_back(mapping::ThreadId::makeId(i));
   }
   auto tupleId = isl::id(tree->ctx_, kBlock);
-  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+  return extractDomainToIds<Thread>(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
 isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
@@ -546,7 +546,7 @@ isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
     ids.emplace_back(mapping::BlockId::makeId(i));
   }
   auto tupleId = isl::id(tree->ctx_, kGrid);
-  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+  return extractDomainToIds<Block>(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
 Scop::SyncLevel MappedScop::findBestSync(

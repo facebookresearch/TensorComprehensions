@@ -121,7 +121,8 @@ isl::union_set prefixMappingFilter(
 // rooted at "root") to identifiers "ids", where all branches in "tree" are
 // assumed to have been mapped to these identifiers.  The result lives in a
 // space of the form "tupleId"["ids"...].
-isl::multi_union_pw_aff extractDomainToIds(
+template <typename MappingType>
+isl::MultiUnionPwAff<Statement, MappingType> extractDomainToIds(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,

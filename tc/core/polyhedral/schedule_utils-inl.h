@@ -162,22 +162,24 @@ inline isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
  * are assumed to have been mapped to these identifiers.
  * The result lives in a space of the form "tupleId"["ids"...].
  */
-inline isl::multi_union_pw_aff extractDomainToIds(
+template <typename MappingType>
+isl::MultiUnionPwAff<Statement, MappingType> extractDomainToIds(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,
     isl::id tupleId) {
   using namespace polyhedral::detail;
 
-  auto space = isl::space(tree->ctx_, 0);
-  auto empty = isl::union_set::empty(space);
-  space = space.add_named_tuple_id_ui(tupleId, ids.size());
-  auto zero = isl::multi_val::zero(space);
-  auto domainToIds = isl::multi_union_pw_aff(empty, zero);
+  auto paramSpace = isl::Space<>(tree->ctx_, 0);
+  auto empty = isl::UnionSet<Statement>::empty(paramSpace);
+  auto space =
+      paramSpace.add_named_tuple_id_ui<MappingType>(tupleId, ids.size());
+  auto zero = isl::MultiVal<MappingType>::zero(space);
+  auto domainToIds = isl::MultiUnionPwAff<Statement, MappingType>(empty, zero);
 
   for (auto mapping : tree->collect(tree, ScheduleTreeType::Mapping)) {
     auto mappingNode = mapping->as<ScheduleTreeMapping>();
-    auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
+    auto list = isl::UnionPwAffListOn<Statement>(tree->ctx_, ids.size());
     for (auto id : ids) {
       if (mappingNode->mapping.count(id) == 0) {
         break;
@@ -189,8 +191,8 @@ inline isl::multi_union_pw_aff extractDomainToIds(
     if (static_cast<size_t>(list.size()) != ids.size()) {
       continue;
     }
-    auto nodeToIds = isl::multi_union_pw_aff(space, list);
-    auto active = activeDomainPoints(root, mapping);
+    auto nodeToIds = isl::MultiUnionPwAff<Statement, MappingType>(space, list);
+    auto active = isl::UnionSet<Statement>(activeDomainPoints(root, mapping));
     TC_CHECK(active.intersect(domainToIds.domain()).is_empty())
         << "conflicting mappings; are the filters in the tree disjoint?";
     nodeToIds = nodeToIds.intersect_domain(active);
