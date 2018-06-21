@@ -285,7 +285,7 @@ bool MappedScop::detectReductions(ScheduleTree* tree) {
   // a single reduction for now.
   // Support for multiple reductions would require a check
   // that these reductions do not interfere with each other.
-  auto domain = band->mupa_.domain();
+  auto domain = isl::UnionSet<Statement>(band->mupa_.domain());
   auto updates = reductionUpdates(domain, scop());
   if (updates.n_set() != 1) {
     return false;
