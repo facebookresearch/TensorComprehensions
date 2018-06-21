@@ -31,6 +31,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/functional.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -544,19 +545,20 @@ ScheduleTreeUPtr gistedFilter(isl::union_set filter, ScheduleTreeUPtr child) {
  * without violating any of the (active) "dependences"?
  */
 bool canOrder(
-    isl::union_set first,
-    isl::union_set second,
-    isl::union_map dependences) {
+    isl::UnionSet<Statement> first,
+    isl::UnionSet<Statement> second,
+    isl::UnionMap<Statement, Statement> dependences) {
   if (first.is_empty() || second.is_empty()) {
     return true;
   }
   // Create an ordering schedule function first -> 0; second -> 1.
   auto ctx = dependences.get_ctx();
-  auto space = isl::space(ctx, 0).add_unnamed_tuple_ui(1);
-  auto zero = isl::multi_val::zero(space);
+  auto space = isl::Space<>(ctx, 0).add_unnamed_tuple_ui<isl::Anonymous>(1);
+  auto zero = isl::MultiVal<isl::Anonymous>::zero(space);
   auto one = zero.set_val(0, isl::val::one(ctx));
-  auto order = isl::multi_union_pw_aff(first, zero);
-  order = order.union_add(isl::multi_union_pw_aff(second, one));
+  auto order = isl::MultiUnionPwAff<Statement, isl::Anonymous>(first, zero);
+  order = order.union_add(
+      isl::MultiUnionPwAff<Statement, isl::Anonymous>(second, one));
 
   // Check that this ordering preserves all dependences.
   auto preserved = dependences.lex_lt_at(order).unite(dependences.eq_at(order));
@@ -568,9 +570,9 @@ bool canOrder(
 bool canOrderBefore(
     ScheduleTree* root,
     ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences) {
-  isl::union_set active = activeDomainPoints(root, tree);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences) {
+  auto active = activeDomainPoints(root, tree);
   auto other = active.subtract(filter);
   return canOrder(filter, other, dependences);
 }
@@ -578,9 +580,9 @@ bool canOrderBefore(
 bool canOrderAfter(
     ScheduleTree* root,
     ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences) {
-  isl::union_set active = activeDomainPoints(root, tree);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences) {
+  auto active = activeDomainPoints(root, tree);
   auto other = active.subtract(filter);
   return canOrder(other, filter, dependences);
 }
