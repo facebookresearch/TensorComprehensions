@@ -27,6 +27,7 @@
 #include "tc/core/functional.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -97,8 +98,8 @@ isl::union_set& Scop::domainRef() {
   return dom->domain_;
 }
 
-const isl::union_set Scop::domain() const {
-  return const_cast<Scop*>(this)->domainRef();
+const isl::UnionSet<Statement> Scop::domain() const {
+  return isl::UnionSet<Statement>(const_cast<Scop*>(this)->domainRef());
 }
 
 std::ostream& operator<<(std::ostream& os, const Scop& s) {

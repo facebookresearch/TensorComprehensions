@@ -27,6 +27,7 @@
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
@@ -508,7 +509,7 @@ struct Scop {
   isl::union_set& domainRef();
 
  public:
-  const isl::union_set domain() const;
+  const isl::UnionSet<Statement> domain() const;
   // The parameter values of a specialized Scop.
   std::unordered_map<std::string, int> parameterValues;
 
