@@ -407,7 +407,7 @@ static isl::MultiAff<Statement, Other> mapToOther(
  * that all statement instances that belong to the same reduction
  * write to the same tensor element.
  */
-isl::union_map extractReduction(
+isl::UnionMap<Statement, Reduction> extractReduction(
     const IterationDomain& iterationDomain,
     const Provide* op,
     size_t index) {
@@ -424,17 +424,19 @@ isl::union_map extractReduction(
   } finder;
 
   if (!isReductionUpdate(op)) {
-    return isl::union_map::empty(iterationDomain.tuple.get_space().params());
+    auto space = iterationDomain.tuple.get_space().params();
+    return isl::UnionMap<Statement, Reduction>::empty(space);
   }
   op->accept(&finder);
   if (finder.reductionVars.size() == 0) {
-    return isl::union_map::empty(iterationDomain.tuple.get_space().params());
+    auto space = iterationDomain.tuple.get_space().params();
+    return isl::UnionMap<Statement, Reduction>(isl::union_map::empty(space));
   }
   auto ctx = iterationDomain.tuple.get_ctx();
   isl::id id(ctx, kReductionLabel + op->name + "_" + std::to_string(index));
   auto reduction =
       mapToOther<Reduction>(iterationDomain, finder.reductionVars, id);
-  return isl::union_map(isl::map(reduction));
+  return reduction.asMap().asUnionMap();
 }
 
 /*
