@@ -135,7 +135,7 @@ struct Scop {
   isl::Set<> makeContext(
       const std::unordered_map<std::string, T>& sizes =
           std::unordered_map<std::string, T>()) const {
-    auto s = isl::Space<>(domain().get_space());
+    auto s = domain().get_space();
     return makeSpecializationSet(s, sizes);
   }
 
