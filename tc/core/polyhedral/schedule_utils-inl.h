@@ -26,15 +26,16 @@
 namespace tc {
 namespace polyhedral {
 
-inline isl::union_map extendSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> extendSchedule(
     const detail::ScheduleTree* node,
-    isl::union_map schedule) {
+    isl::UnionMap<Statement, Schedule> schedule) {
   using namespace polyhedral::detail;
 
   if (auto bandElem = node->as<ScheduleTreeBand>()) {
     if (bandElem->nMember() > 0) {
-      schedule =
-          schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
+      schedule = schedule.template flat_range_product<Schedule>(
+          bandElem->mupa_.toUnionMap());
     }
   } else if (auto filterElem = node->as<ScheduleTreeFilter>()) {
     schedule = schedule.intersect_domain(filterElem->filter_);
@@ -42,15 +43,18 @@ inline isl::union_map extendSchedule(
     // FIXME: we may need to restrict the range of reversed extension map to
     // schedule values that correspond to active domain elements at this
     // point.
-    schedule = schedule.unite(
-        extensionElem->extension_.reverse().intersect_range(schedule.range()));
+    auto extension = extensionElem->extension_.reverse();
+    auto specializedExtension = isl::UnionMap<Statement, Schedule>(extension);
+    schedule =
+        schedule.unite(specializedExtension.intersect_range(schedule.range()));
   }
 
   return schedule;
 }
 
 namespace detail {
-inline isl::union_map partialScheduleImpl(
+template <typename Schedule>
+inline isl::UnionMap<Statement, Schedule> partialScheduleImpl(
     const ScheduleTree* root,
     const ScheduleTree* node,
     bool useNode) {
@@ -61,7 +65,8 @@ inline isl::union_map partialScheduleImpl(
   TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
   auto domain = root->as<ScheduleTreeDomain>();
   TC_CHECK(domain);
-  auto schedule = isl::union_map::from_domain(domain->domain_);
+  auto schedule =
+      isl::UnionMap<Statement, Schedule>::from_domain(domain->domain_);
   for (auto anc : nodes) {
     if (anc->as<ScheduleTreeDomain>()) {
       TC_CHECK(anc == root);
@@ -77,16 +82,14 @@ template <typename Schedule>
 inline isl::UnionMap<Statement, Schedule> prefixSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
-  auto prefix = detail::partialScheduleImpl(root, node, false);
-  return isl::UnionMap<Statement, Schedule>(prefix);
+  return detail::partialScheduleImpl<Schedule>(root, node, false);
 }
 
 template <typename Schedule>
 inline isl::UnionMap<Statement, Schedule> partialSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node) {
-  auto prefix = detail::partialScheduleImpl(root, node, true);
-  return isl::UnionMap<Statement, Schedule>(prefix);
+  return detail::partialScheduleImpl<Schedule>(root, node, true);
 }
 
 namespace detail {

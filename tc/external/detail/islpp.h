@@ -279,9 +279,11 @@ inline bool operator!=(const isl::id& id1, const isl::id& id2) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Given a space and a list of values, this returns the corresponding multi_val.
-template <typename T>
-isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
-  isl::multi_val mv = isl::multi_val::zero(s);
+template <typename Domain, typename T>
+isl::MultiVal<Domain> makeMultiVal(
+    isl::Space<Domain> s,
+    const std::vector<T>& vals) {
+  isl::MultiVal<Domain> mv = isl::MultiVal<Domain>::zero(s);
   TC_CHECK_EQ(vals.size(), static_cast<size_t>(mv.size()));
   for (size_t i = 0; i < vals.size(); ++i) {
     mv = mv.set_val(i, isl::val(s.get_ctx(), vals[i]));

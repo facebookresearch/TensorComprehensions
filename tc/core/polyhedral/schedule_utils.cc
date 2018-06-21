@@ -32,7 +32,9 @@ namespace {
 /*
  * If "node" is any filter, then intersect "domain" with that filter.
  */
-isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
+isl::UnionSet<Statement> applyFilter(
+    isl::UnionSet<Statement> domain,
+    const ScheduleTree* node) {
   if (auto filterElem = node->as<ScheduleTreeFilter>()) {
     return domain.intersect(filterElem->filter_);
   }
@@ -42,7 +44,9 @@ isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
 /*
  * If "node" is a mapping, then intersect "domain" with its filter.
  */
-isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
+isl::UnionSet<Statement> applyMapping(
+    isl::UnionSet<Statement> domain,
+    const ScheduleTree* node) {
   if (auto filterElem = node->as<ScheduleTreeMapping>()) {
     return domain.intersect(filterElem->filter_);
   }
@@ -55,10 +59,11 @@ isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
 // Domain elements are introduced by the root domain node.  Some nodes
 // refine this set of elements based on "filter".  Extension nodes
 // are considered to introduce additional domain points.
-isl::union_set collectDomain(
+isl::UnionSet<Statement> collectDomain(
     const ScheduleTree* root,
     const vector<const ScheduleTree*>& nodes,
-    isl::union_set (*filter)(isl::union_set domain, const ScheduleTree* node)) {
+    isl::UnionSet<Statement> (
+        *filter)(isl::UnionSet<Statement> domain, const ScheduleTree* node)) {
   auto domainElem = root->as<ScheduleTreeDomain>();
   TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
@@ -67,7 +72,7 @@ isl::union_set collectDomain(
   for (auto anc : nodes) {
     domain = filter(domain, anc);
     if (auto extensionElem = anc->as<ScheduleTreeExtension>()) {
-      isl::union_map parentSchedule = prefixSchedule<Prefix>(root, anc);
+      auto parentSchedule = prefixSchedule<Prefix>(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
       parentSchedule = parentSchedule.intersect_domain(domain);
@@ -87,7 +92,7 @@ isl::union_set activeDomainPointsHelper(
 
 } // namespace
 
-isl::union_set prefixMappingFilter(
+isl::UnionSet<Statement> prefixMappingFilter(
     const ScheduleTree* root,
     const ScheduleTree* node) {
   return collectDomain(root, node->ancestors(root), &applyMapping);

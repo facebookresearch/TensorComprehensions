@@ -26,6 +26,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/scope_guard.h"
@@ -185,7 +186,7 @@ std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
 }
 
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
-    isl::multi_union_pw_aff mupa,
+    isl::MultiUnionPwAff<Statement, Band> mupa,
     bool permutable,
     std::vector<bool> coincident,
     std::vector<bool> unroll,
@@ -238,8 +239,8 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   auto list = mupa_.get_union_pw_aff_list();
   auto space = mupa_.get_space().params();
   list = list.drop(pos, n);
-  space = space.add_unnamed_tuple_ui(list.size());
-  mupa_ = isl::multi_union_pw_aff(space, list);
+  auto spaceBand = space.add_unnamed_tuple_ui<Band>(list.size());
+  mupa_ = isl::MultiUnionPwAff<Statement, Band>(spaceBand, list);
 
   std::copy(
       coincident_.begin() + pos + n,

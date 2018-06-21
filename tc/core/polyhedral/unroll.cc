@@ -100,7 +100,7 @@ isl::val boundInstancesAndMarkUnroll(
     auto outerMap = prefix;
     if (i > 0) {
       list = list.drop(i, 1);
-      auto outerSpace = space.add_unnamed_tuple_ui(list.size());
+      auto outerSpace = space.add_unnamed_tuple_ui<Band>(list.size());
       auto outer = isl::multi_union_pw_aff(outerSpace, list);
       outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
     }
@@ -116,7 +116,7 @@ isl::val boundInstancesAndMarkUnroll(
 
 isl::val boundInstancesAndMarkUnroll(
     detail::ScheduleTree* st,
-    isl::union_map prefix,
+    isl::UnionMap<Statement, Prefix> prefix,
     isl::val unrollFactor);
 
 /*
@@ -134,7 +134,7 @@ isl::val boundInstancesAndMarkUnroll(
  */
 isl::val boundChildrenInstancesAndMarkUnroll(
     detail::ScheduleTree* st,
-    isl::union_map prefix,
+    isl::UnionMap<Statement, Prefix> prefix,
     isl::val unrollFactor) {
   if (st->children().size() == 0) {
     return isl::val::one(unrollFactor.get_ctx());
@@ -163,7 +163,7 @@ isl::val boundChildrenInstancesAndMarkUnroll(
  */
 isl::val boundInstancesAndMarkUnroll(
     detail::ScheduleTree* st,
-    isl::union_map prefix,
+    isl::UnionMap<Statement, Prefix> prefix,
     isl::val unrollFactor) {
   auto bound = boundChildrenInstancesAndMarkUnroll(st, prefix, unrollFactor);
 
@@ -184,7 +184,7 @@ void markUnroll(
   }
 
   auto unrollVal = isl::val(st->ctx_, unroll);
-  isl::union_map prefix = prefixSchedule<Prefix>(root, st);
+  auto prefix = prefixSchedule<Prefix>(root, st);
   prefix = prefix.intersect_domain(prefixMappingFilter(root, st));
   boundInstancesAndMarkUnroll(st, prefix, unrollVal);
 }
