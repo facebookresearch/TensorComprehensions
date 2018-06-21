@@ -292,8 +292,8 @@ isl::map extractAccess(
   std::string tag = "__tc_ref_" + std::to_string(accesses->size());
   isl::id tagID(domain.paramSpace.get_ctx(), tag);
   accesses->emplace(op, tagID);
-  isl::space domainSpace = map.get_space().domain();
-  isl::space tagSpace = domainSpace.params().add_named_tuple_id_ui(tagID, 0);
+  auto domainSpace = map.get_space().domain();
+  auto tagSpace = domainSpace.params().add_named_tuple_id_ui(tagID, 0);
   domainSpace = domainSpace.product(tagSpace).unwrap();
   map = map.preimage_domain(isl::multi_aff::domain_map(domainSpace));
 
