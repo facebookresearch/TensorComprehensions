@@ -516,12 +516,12 @@ const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
   return *halide.inputs.begin();
 }
 
-isl::aff Scop::makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e)
-    const {
+isl::AffOn<Statement> Scop::makeIslAffFromStmtExpr(
+    isl::id stmtId,
+    const Halide::Expr& e) const {
   auto domain = halide.domains.at(stmtId);
-  isl::aff aff = halide2isl::makeIslAffFromExpr(domain.paramSpace, e);
-  aff = aff.unbind_params_insert_domain(domain.tuple);
-  return aff;
+  auto aff = halide2isl::makeIslAffFromExpr(domain.paramSpace, e);
+  return aff.unbind_params_insert_domain(domain.tuple);
 }
 
 } // namespace polyhedral

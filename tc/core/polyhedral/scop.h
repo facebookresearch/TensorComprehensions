@@ -422,7 +422,9 @@ struct Scop {
   // Return a null isl::aff if the expression is not affine.  Fail if any
   // of the variables does not correspond to a parameter or
   // an instance identifier of the statement.
-  isl::aff makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e) const;
+  isl::AffOn<Statement> makeIslAffFromStmtExpr(
+      isl::id stmtId,
+      const Halide::Expr& e) const;
 
   // Promote a tensor reference group to a storage of a given "kind",
   // inserting the copy
