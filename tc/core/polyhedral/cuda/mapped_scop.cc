@@ -230,7 +230,7 @@ bool separatedOut(
     Scop& scop,
     ScheduleTree* tree,
     isl::UnionSet<Statement> updates) {
-  isl::union_set domain = activeDomainPoints(scop.scheduleRoot(), tree);
+  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
     return true;

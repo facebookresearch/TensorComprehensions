@@ -300,11 +300,11 @@ namespace {
 
 using namespace tc::polyhedral;
 
-isl::union_map computeDependences(
-    isl::union_map sources,
-    isl::union_map sinks,
+isl::UnionMap<Statement, Statement> computeDependences(
+    isl::UnionMap<Statement, Tensor> sources,
+    isl::UnionMap<Statement, Tensor> sinks,
     isl::schedule schedule) {
-  auto uai = isl::union_access_info(sinks);
+  auto uai = sinks.asUnionAccessInfo();
   uai = uai.set_may_source(sources);
   uai = uai.set_schedule(schedule);
   auto flow = uai.compute_flow();
@@ -369,7 +369,8 @@ void Scop::computeAllDependences() {
   dependences = flowDeps.unite(falseDeps).coalesce();
 }
 
-isl::union_map Scop::activeDependences(detail::ScheduleTree* tree) {
+isl::UnionMap<Statement, Statement> Scop::activeDependences(
+    detail::ScheduleTree* tree) {
   auto prefix = prefixScheduleMupa<Prefix>(scheduleRoot(), tree);
   auto domain = activeDomainPoints(scheduleRoot(), tree);
   auto active = dependences;
