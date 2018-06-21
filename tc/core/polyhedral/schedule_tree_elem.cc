@@ -144,7 +144,8 @@ ScheduleTreeMapping::ScheduleTreeMapping(
     auto id = kvp.first;
     // Create mapping filter by equating the
     // parameter mappedIds[i] to the "i"-th affine function.
-    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
+    upa = upa.sub(
+        isl::UnionPwAffOn<Statement>::param_on_domain(domain.universe(), id));
     filter_ = filter_.intersect(upa.zero_union_set());
   }
 }
