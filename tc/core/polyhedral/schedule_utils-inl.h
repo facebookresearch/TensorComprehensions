@@ -192,7 +192,7 @@ isl::MultiUnionPwAff<Statement, MappingType> extractDomainToIds(
       continue;
     }
     auto nodeToIds = isl::MultiUnionPwAff<Statement, MappingType>(space, list);
-    auto active = isl::UnionSet<Statement>(activeDomainPoints(root, mapping));
+    auto active = activeDomainPoints(root, mapping);
     TC_CHECK(active.intersect(domainToIds.domain()).is_empty())
         << "conflicting mappings; are the filters in the tree disjoint?";
     nodeToIds = nodeToIds.intersect_domain(active);

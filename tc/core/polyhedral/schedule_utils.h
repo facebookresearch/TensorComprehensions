@@ -99,7 +99,7 @@ isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
 // point is active if it was not filtered away on the path from the
 // root to the node.  The root must be a domain element, otherwise no
 // elements would be considered active.
-isl::union_set activeDomainPoints(
+isl::UnionSet<Statement> activeDomainPoints(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
