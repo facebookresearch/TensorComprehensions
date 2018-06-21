@@ -15,6 +15,8 @@
  */
 #include "tc/core/polyhedral/utils.h"
 
+#include "tc/core/polyhedral/domain_types.h"
+
 namespace tc {
 namespace polyhedral {
 
@@ -24,15 +26,15 @@ namespace polyhedral {
  * of the user.
  * Since some names are required, use names of the form "__tc_tensor_arg*".
  */
-isl::multi_id
-constructTensorTuple(isl::space paramSpace, isl::id tensorId, size_t dim) {
-  auto tensorSpace = paramSpace.add_named_tuple_id_ui(tensorId, dim);
+isl::MultiId<Tensor>
+constructTensorTuple(isl::Space<> paramSpace, isl::id tensorId, size_t dim) {
+  auto tensorSpace = paramSpace.add_named_tuple_id_ui<Tensor>(tensorId, dim);
   isl::id_list tensorArgs(paramSpace.get_ctx(), 0);
   for (size_t i = 0; i < dim; ++i) {
     auto name = std::string("__tc_tensor_arg") + std::to_string(i);
     tensorArgs = tensorArgs.add(isl::id(paramSpace.get_ctx(), name));
   }
-  return isl::multi_id(tensorSpace, tensorArgs);
+  return isl::MultiId<Tensor>(tensorSpace, tensorArgs);
 }
 
 } // namespace polyhedral
