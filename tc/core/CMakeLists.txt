@@ -32,7 +32,6 @@ add_library(
   polyhedral/schedule_print.cc
   polyhedral/schedule_utils.cc
   polyhedral/scop.cc
-  polyhedral/separation.cc
   polyhedral/unroll.cc
   polyhedral/utils.cc
 )

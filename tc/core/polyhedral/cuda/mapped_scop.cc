@@ -344,7 +344,7 @@ ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
   reductionBandUpdates_.at(reduction).separated = true;
 
   auto root = scop_->scheduleRoot();
-  isl::union_set domain = activeDomainPoints(root, st);
+  auto domain = activeDomainPoints(root, st);
   auto prefixSchedule = prefixScheduleMupa<Prefix>(root, st);
   auto reductionSchedule = reductionMapSchedule(st);
   auto space = reductionSchedule.get_space();
