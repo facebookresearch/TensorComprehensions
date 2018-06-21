@@ -250,13 +250,13 @@ bool canOrderAfter(
 void orderBefore(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter);
+    isl::UnionSet<Statement> filter);
 // Insert a sequence to ensure that the active domain elements
 // in the given filter are executed after the other active domain elements.
 void orderAfter(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter);
+    isl::UnionSet<Statement> filter);
 
 } // namespace polyhedral
 } // namespace tc
