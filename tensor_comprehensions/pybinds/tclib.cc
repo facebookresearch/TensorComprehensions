@@ -514,7 +514,11 @@ PYBIND11_MODULE(tclib, m) {
       "MappingOptions for a Tensor Comprehensions (TC)",
       py::module_local())
       .def(
-          py::init([]() {
+          py::init([](const std::string& optionsName) {
+            TC_CHECK_EQ(optionsName, "naive")
+                << "Naive options are the only constructible user-facing "
+                << "options. We recommended using the tuner to get better "
+                << "options or, alternatively, retrieving some from a cache.";
             return tc::CudaMappingOptions::makeNaiveMappingOptions();
           }),
           "Initialize naive CudaMappingOption")
@@ -544,6 +548,10 @@ PYBIND11_MODULE(tclib, m) {
           "Create block-local copies of data in shared memory when this can "
           "leverage data reuse or global memory access coalescing")
       .def(
+          "usePrivateMemory",
+          &tc::CudaMappingOptions::usePrivateMemory,
+          "Create thread-local copies of data in private memory")
+      .def(
           "unrollCopyShared",
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If an unroll "
@@ -556,6 +564,7 @@ PYBIND11_MODULE(tclib, m) {
           "scheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.scheduleFusionStrategy(type);
+            return instance;
           },
           "Set up outerScheduleFusionStrategy and intraTileFusionStrategy "
           "to the given value")
@@ -563,6 +572,7 @@ PYBIND11_MODULE(tclib, m) {
           "outerScheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.outerScheduleFusionStrategy(type);
+            return instance;
           },
           "Require TC to try and execute different TC expressions interleaved "
           "(Max), separately (Min)\n"
@@ -574,6 +584,7 @@ PYBIND11_MODULE(tclib, m) {
           "intraTileScheduleFusionStrategy",
           [](tc::CudaMappingOptions& instance, const std::string& type) {
             instance.intraTileScheduleFusionStrategy(type);
+            return instance;
           },
           "Require TC to try and execute different TC expressions interleaved "
           "(Max), separately (Min)\n"
@@ -584,7 +595,10 @@ PYBIND11_MODULE(tclib, m) {
           "tile",
           // pybind11 has implicit conversion from tuple -> vector
           [](tc::CudaMappingOptions& instance,
-             std::vector<uint64_t>& tileSizes) { instance.tile(tileSizes); },
+             std::vector<uint64_t>& tileSizes) {
+            instance.tile(tileSizes);
+            return instance;
+          },
           "Perform loop tiling on the generated code with the given sizes. "
           "Independent of mapping to a\n"
           "grid of thread blocks")
@@ -593,6 +607,7 @@ PYBIND11_MODULE(tclib, m) {
           [](tc::CudaMappingOptions& instance,
              std::vector<uint64_t>& threadSizes) {
             instance.mapToThreads(threadSizes);
+            return instance;
           },
           "The configuration of CUDA block, i.e. the number of CUDA threads "
           "in each block along three\n"
@@ -604,6 +619,7 @@ PYBIND11_MODULE(tclib, m) {
           [](tc::CudaMappingOptions& instance,
              std::vector<uint64_t>& blockSizes) {
             instance.mapToBlocks(blockSizes);
+            return instance;
           },
           "The configuration of CUDA grid, i.e. the number of CUDA blocks "
           "along three dimensions. Must be\n"
@@ -613,6 +629,7 @@ PYBIND11_MODULE(tclib, m) {
           "matchLibraryCalls",
           [](tc::CudaMappingOptions& instance, bool match) {
             instance.matchLibraryCalls(match);
+            return instance;
           },
           "Replace computation patterns with calls to highly optimized "
           "libraries (such as CUB, CUTLASS) when possible")
@@ -620,6 +637,7 @@ PYBIND11_MODULE(tclib, m) {
           "fixParametersBeforeScheduling",
           [](tc::CudaMappingOptions& instance, bool fix) {
             instance.fixParametersBeforeScheduling(fix);
+            return instance;
           },
           "Perform automatic loop scheduling taking into account specific "
           "tensor sizes.\n"
@@ -631,6 +649,7 @@ PYBIND11_MODULE(tclib, m) {
           "unroll",
           [](tc::CudaMappingOptions& instance, uint64_t factor) {
             instance.unroll(factor);
+            return instance;
           },
           "Perform loop unrolling on the generated code and produce at "
           "most the given number of statements");

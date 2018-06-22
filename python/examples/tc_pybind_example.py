@@ -86,7 +86,7 @@ mat1, mat2 = torch.randn(300, 400).cuda(), torch.randn(400, 500).cuda()
 ################################################################################
 from tensor_comprehensions.tclib import compile
 
-executor = compile(mm, "matmul", (mat1, mat2), MappingOptions())
+executor = compile(mm, "matmul", (mat1, mat2), MappingOptions('naive'))
 outputs = executor.run((mat1, mat2), ())
 outputs = executor.unchecked_run((mat1, mat2), tuple(outputs))
 time_tc(100,
@@ -108,7 +108,7 @@ from tensor_comprehensions.tclib import CompilationCache
 compilation_cache = CompilationCache(mm)
 # Compilation returns an allocated tuple of outputs with the proper shapes.
 # Allocation overhead is negligible compared to compilation overhead.
-compilation_cache.compile("matmul", (mat1, mat2), MappingOptions())
+compilation_cache.compile("matmul", (mat1, mat2), MappingOptions('naive'))
 # Run once without timing
 compilation_cache.unchecked_run("matmul", (mat1, mat2), ())
 # unchecked_run on  tensors
@@ -136,7 +136,7 @@ tuner = Tuner(mm, unique_filename)
 top1  = tuner.tune(
     "matmul",
     (mat1, mat2),
-    MappingOptions(),
+    MappingOptions('naive'),
     TunerConfig(threads = 8, pop_size = 25, generations = 3, devices = "0"))
 cache = MappingOptionsCache(unique_filename)
 top10 = cache.load(mm, "matmul", (mat1, mat2), 10)
@@ -213,7 +213,7 @@ class TcBuilder():
                           "########################################################")
 
                 if len(base_options_list) == 0:
-                    mapping_options = MappingOptions()
+                    mapping_options = MappingOptions('naive')
                 else:
                     mapping_options = base_options_list[0]
 
@@ -417,7 +417,7 @@ class MultiTcBuilder():
                           "########################################################")
 
                 if len(base_options_list) == 0:
-                    mapping_options = MappingOptions()
+                    mapping_options = MappingOptions('naive')
                 else:
                     mapping_options = base_options_list[0]
 
