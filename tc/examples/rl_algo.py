@@ -46,7 +46,7 @@ def evalTime(opt):
     global tc_prog, inp, cat_val
     #print(opt)
     #print(cat_val)
-    opt = [cat_val[i][opt[i+INIT_INPUT_SZ]] for i in range(NB_HYPERPARAMS)]
+    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
     opt = optionsFromVector(opt)
     warmup = 5
     iters  = 20
@@ -166,7 +166,7 @@ class FullNetwork(nn.Module):
         for i in range(self.nb_hyperparams):
             sym = self.select_action(x, i, batch_id, int(cat_sz[i]))
             x = torch.cat([x, torch.FloatTensor([sym])])
-        return x
+        return x[INIT_INPUT_SZ:]
 
 N, G, D, H, W = 5, 5, 5, 5, 5
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
@@ -213,6 +213,7 @@ tab_best=[]
 best=-0.5
 v_losses=[]
 p_losses=[]
+best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
@@ -223,12 +224,19 @@ for i in range(NB_EPOCHS):
     vloss, ploss = finish_episode(rewards)
     v_losses.append(vloss)
     p_losses.append(ploss)
-    best = max(best, np.max(rewards))
+    if(best < reward):
+        best=reward
+        best_options = out.numpy().astype(int)
+        print(best_options)
+    #best = max(best, np.max(rewards))
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
     if i % INTER_DISP == 0:
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
-    print(-running_reward)
-    print(-best)
+        print(-running_reward)
+        print(-best)
+
+print("Finally, best options are:")
+print(best_options)
