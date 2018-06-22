@@ -421,15 +421,14 @@ bool isPromotableToRegistersBelow(
     const detail::ScheduleTree* scope,
     isl::multi_union_pw_aff outer,
     isl::multi_union_pw_aff thread) {
-  auto originalAccesses = group.originalAccesses();
-
   if (!accessSubscriptsAreUnrolledLoops(
           group, root, scope, outer.flat_range_product(thread))) {
     return false;
   }
 
+  auto originalAccesses = group.originalAccesses();
   auto map = isl::union_map::from(outer);
-  map = map.range_product(group.originalAccesses());
+  map = map.range_product(originalAccesses);
   map = map.apply_domain(isl::union_map::from(thread));
 
   return map.is_injective();

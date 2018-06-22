@@ -73,14 +73,17 @@ isl::union_map partialScheduleImpl(
     const ScheduleTree* root,
     const ScheduleTree* node,
     bool useNode) {
-  auto schedule = isl::null<isl::union_map>();
   auto nodes = node->ancestors(root);
   if (useNode) {
     nodes.push_back(node);
   }
+  TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
+  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  TC_CHECK(domain);
+  auto schedule = isl::union_map::from_domain(domain->domain_);
   for (auto anc : nodes) {
-    if (auto domainElem = anc->elemAs<ScheduleTreeElemDomain>()) {
-      schedule = isl::union_map::from_domain(domainElem->domain_);
+    if (anc->elemAs<ScheduleTreeElemDomain>()) {
+      TC_CHECK(anc == root);
     } else {
       schedule = extendSchedule(anc, schedule);
     }
