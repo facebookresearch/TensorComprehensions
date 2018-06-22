@@ -9,12 +9,13 @@ import ipdb
 from itertools import count
 from collections import namedtuple
 from torch.distributions import Categorical
-import time
 import tensor_comprehensions as tc
 from visdom import Visdom
 from collections import deque
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
+import my_utils
+
+NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
 BATCH_SZ = 8
 EPS_START = 0.9
@@ -43,91 +44,6 @@ def group_normalization(
 }
 """
 
-def evalTime(opt):
-    global tc_prog, inp, cat_val
-    #print(opt)
-    #print(cat_val)
-    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
-    opt = optionsFromVector(opt)
-    warmup = 5
-    iters  = 20
-    for i in range(warmup):
-        tc_prog(*inp, options=opt)
-        torch.cuda.synchronize()
-
-    liste_t_tc = []
-    now = time.clock()
-    for i in range(iters):
-        before = time.clock()
-        tc_prog(*inp, options=opt)
-        #tcwavenet(Data)
-        torch.cuda.synchronize()
-        after = time.clock()
-        liste_t_tc.append(after - before)
-        torch.cuda.synchronize()
-    total_time = (time.clock() - now)
-    mean_time = total_time / iters
-    return mean_time
-
-def optionsFromVector(vect):
-    options = tc.CudaMappingOptions("naive")
-    #options.outerScheduleFusionStrategy("Max")
-    #options.intraTileScheduleFusionStrategy("Min")
-    options.fixParametersBeforeScheduling(vect[2])
-    options.tile([vect[3]]) #why list in doc?
-    options.unroll(2**vect[4]) #128 is too big? trying 30
-    options.matchLibraryCalls(vect[5])
-    options.mapToBlocks([vect[6]])
-    options.mapToThreads([vect[7]]) #grid?
-    options.useSharedMemory(vect[8])
-    options.usePrivateMemory(vect[9])
-    options.unrollCopyShared(vect[10])
-    #options.maxSharedMemory(vect[11]) #todo 40000 / 0 et divs
-    options.useReadOnlyCache(vect[12])
-    return options
-
-def computeDivs(sz):
-    l = []
-    for i in range(sz): #or 10?
-        l.append((sz+i)//(i+1))
-    return l
-
-def getAllDivs(inp, maxp2=31):
-    p2 = []
-    pp=1
-    for i in range(maxp2+1):
-        p2.append(pp)
-        pp*=2
-    l = []
-    for elem in inp:
-        for sz in elem.shape:
-            l += computeDivs(sz)
-    return list(set(l+p2))
-
-def computeCat(inp):
-    global cat_sz, cat_val
-    cat_sz = np.zeros(NB_HYPERPARAMS).astype(int)
-    cat_val = []
-
-    divs = getAllDivs(inp)
-
-    cat_val.append([1,2,3])
-    cat_val.append([1,2,3])
-    cat_val.append([0,1])
-    cat_val.append(divs + [0])
-    cat_val.append([i for i in range(30)])
-    cat_val.append([0,1])
-    cat_val.append(divs)
-    cat_val.append(divs)
-    cat_val.append([0,1])
-    cat_val.append([0,1])
-    cat_val.append([0,1])
-    cat_val.append([0])
-    cat_val.append([0,1])
-
-    for i in range(13):
-        cat_sz[i] = len(cat_val[i])
-
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 class Predictor(nn.Module):
@@ -148,7 +64,7 @@ class FullNetwork(nn.Module):
         super(FullNetwork, self).__init__()
         self.nb_hyperparams = nb_hyperparams
         self.init_input_sz = init_input_sz
-        self.nets = [Predictor(init_input_sz + i, int(cat_sz[i])) for i in range(nb_hyperparams)]
+        self.nets = [Predictor(init_input_sz + i, int(my_utils.cat_sz[i])) for i in range(nb_hyperparams)]
         self.nets = nn.ModuleList(self.nets)
 
     def select_action(self, x, i, batch_id, out_sz):
@@ -165,7 +81,7 @@ class FullNetwork(nn.Module):
         actions_prob = []
         values = []
         for i in range(self.nb_hyperparams):
-            sym, action_prob, value = self.select_action(x, i, batch_id, int(cat_sz[i]))
+            sym, action_prob, value = self.select_action(x, i, batch_id, int(my_utils.cat_sz[i]))
             actions_prob.append(action_prob)
             values.append(value)
             x = torch.cat([x, torch.FloatTensor([sym])])
@@ -179,7 +95,7 @@ init_input_sz = np.array([N,G,D,H,W])
 init_input_sz = torch.from_numpy(init_input_sz).float()
 
 inp = init_input
-computeCat(inp)
+my_utils.computeCat(inp)
 
 net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ, BATCH_SZ)
 optimizer = optim.Adam(net.parameters())
@@ -212,7 +128,7 @@ def add_to_buffer(actions_probs, values, reward):
     global buff 
     if len(buff) == MAXI_BUFF_SZ:
         buff.popleft()
-    buff.append((actions_probs, values, reward))
+    buff.append({actions_probs, values, reward})
 
 def select_batch():
     #random.sample()
@@ -231,7 +147,7 @@ p_losses=[]
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
-    reward = -evalTime(out_actions.numpy().astype(int))
+    reward = -my_utils.evalTime(out_actions.numpy().astype(int))
     reward=100*reward
     add_to_buffer(out_probs, out_values, reward)
     actions_probs, values, rewards = select_batch()
