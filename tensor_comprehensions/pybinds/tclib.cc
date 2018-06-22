@@ -447,7 +447,9 @@ PYBIND11_MODULE(tclib, m) {
     return res;
   });
 
-  py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
+  // Low-level stateful API compile returns an executor on which run and
+  // unchecked_run can be called.
+  py::class_<TcExecutor>(m, "TcExecutor")
       .def(
           "run",
           &TcExecutor::run,
@@ -470,7 +472,7 @@ PYBIND11_MODULE(tclib, m) {
       });
 
   // A TunerConfig object can be passed to configure a tuning run
-  py::class_<TunerConfig>(m, "TunerConfig", py::module_local(), R"DOC(
+  py::class_<TunerConfig>(m, "TunerConfig", R"DOC(
     Helper class to manage the behavior of the autotuner
 )DOC")
       .def(py::init<>())
@@ -535,7 +537,7 @@ PYBIND11_MODULE(tclib, m) {
               gflags::GetCommandLineFlagInfoOrDie("stderrthreshold"))
               .c_str());
 
-  py::class_<Tuner>(m, "Tuner", py::module_local())
+  py::class_<Tuner>(m, "Tuner")
       .def(py::init<std::string>())
       .def(py::init<std::string, std::string>())
       .def(
@@ -563,8 +565,7 @@ PYBIND11_MODULE(tclib, m) {
             }
           });
 
-  py::class_<MappingOptionsCache>(
-      m, "MappingOptionsCache", py::module_local(), R"DOC(
+  py::class_<MappingOptionsCache>(m, "MappingOptionsCache", R"DOC(
     Helper class to manipulate cache files containing serialized :class:`MappingOptions <tensor_comprehensions.tclib.MappingOptions>`
 )DOC")
       .def(py::init<std::string>())
@@ -590,7 +591,7 @@ PYBIND11_MODULE(tclib, m) {
         A vector of :class:`MappingOptions <tensor_comprehensions.tclib.MappingOptions>`
 )DOC");
 
-  py::class_<CompilationCache>(m, "CompilationCache", py::module_local())
+  py::class_<CompilationCache>(m, "CompilationCache")
       .def(py::init<std::string>())
       .def("is_compiled", &CompilationCache::isCompiled)
       .def("alloc_outputs", &CompilationCache::allocOutputs)
