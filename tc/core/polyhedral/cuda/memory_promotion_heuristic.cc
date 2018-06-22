@@ -525,11 +525,10 @@ void promoteToSharedGreedy(
   // both.
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
-    auto activePoints = activeDomainPoints(root, bandNode);
     auto partialSched = partialSchedule(root, bandNode);
 
-    auto groupMap = TensorReferenceGroup::accessedWithin(
-        partialSched.intersect_domain(activePoints), scop.body);
+    auto groupMap =
+        TensorReferenceGroup::accessedWithin(partialSched, scop.body);
     // Pure affine schedule without (mapping) filters.
     auto partialSchedMupa = partialScheduleMupa(root, bandNode);
 
