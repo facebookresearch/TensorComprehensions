@@ -13,7 +13,7 @@ def set_tcprog(tc_prog_arg):
     global tc_prog
     tc_prog = tc_prog_arg
 
-def set_inp(inp_arg)
+def set_inp(inp_arg):
     global inp
     inp = inp_arg
 
