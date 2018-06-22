@@ -59,7 +59,7 @@ Filter non-rectangular regions with data-dependencies
 -----------------------------------------------------
 
 TC semantics are restricted to (hyper-)rectangular iteration spaces.
-This is a hard requirement to ensure range inference is non-ambiguous (see inference_).
+This is a hard requirement to ensure range inference is non-ambiguous (see :ref:`inference`).
 To simulate non-rectangular iteration spaces, one can use the following:
 
 .. code::

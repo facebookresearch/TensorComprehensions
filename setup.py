@@ -65,8 +65,7 @@ setup(
     cmdclass=cmdclass,
     packages=find_packages(),
     package_data={'tensor_comprehensions': [
-        '*.so',
-        '*.proto',
+        'tclib.so',
     ]},
     install_requires=['pyyaml', 'numpy'],
     author='Tensor Comprehensions Team',

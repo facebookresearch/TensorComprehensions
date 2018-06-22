@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 
+#include <gflags/gflags.h>
 #include <glog/logging.h>
 
 #include <Python.h>
@@ -76,12 +77,19 @@ inline std::vector<VoidPtr> getATenTensorsAsRawPtrs(
   return res;
 }
 
-inline py::list convertToPyObjects(const std::vector<at::Tensor>& tensors) {
+inline py::tuple convertToPyObjects(const std::vector<at::Tensor>& tensors) {
   py::list outputs;
   for (auto& tensor : tensors) {
     outputs.append(py::cast(torch::autograd::make_variable(tensor)));
   }
-  return outputs;
+  return py::tuple(outputs);
+}
+
+inline py::object tupleOrTensor(const py::tuple& t) {
+  if (t.size() > 1) {
+    return t;
+  }
+  return py::cast(t[0].cast<at::Tensor>());
 }
 } // namespace
 
@@ -102,8 +110,8 @@ inline py::list convertToPyObjects(const std::vector<at::Tensor>& tensors) {
  */
 struct CompilationCache {
   struct Key {
-    Key(std::string entryPt, const py::tuple& inputTuple)
-        : entryPoint(entryPt), inputs(getATenTensorsAsTensorInfo(inputTuple)) {}
+    Key(std::string entryPt, const py::tuple& inputs)
+        : entryPoint(entryPt), inputs(getATenTensorsAsTensorInfo(inputs)) {}
     bool operator==(const Key& other) const {
       return entryPoint == other.entryPoint && inputs == other.inputs;
     }
@@ -162,7 +170,7 @@ struct CompilationCache {
     return kvp->second;
   }
 
-  py::list allocOutputs(
+  py::tuple allocOutputs(
       const std::string& entryPoint,
       const py::tuple& inputs) {
     return convertToPyObjects(allocATenOutputTensors(entryPoint, inputs));
@@ -182,40 +190,40 @@ struct CompilationCache {
         tc, entryPoint, getATenTensors(inputs), options);
   }
 
-  py::list run(
+  py::object run(
       const std::string& entryPoint,
       const py::tuple& inputs,
-      const py::tuple& outputs = py::tuple()) {
+      const py::tuple& outputs) {
     if (outputs.size() > 0) {
       auto atOutputs = getATenTensors(outputs);
       auto atInputs = getATenTensors(inputs);
       tc::aten::run(*compiled.at(Key(entryPoint, inputs)), atInputs, atOutputs);
-      return py::list(outputs);
+      return tupleOrTensor(outputs);
     } else {
       auto atOutputs = allocATenOutputTensors(entryPoint, inputs);
       auto atInputs = getATenTensors(inputs);
       tc::aten::run(*compiled.at(Key(entryPoint, inputs)), atInputs, atOutputs);
-      return convertToPyObjects(atOutputs);
+      return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
 
-  py::list uncheckedRun(
+  py::object uncheckedRun(
       const std::string& entryPoint,
       const py::tuple& inputs,
-      const py::tuple& outputs = py::tuple()) {
+      const py::tuple& outputs) {
     if (outputs.size() > 0) {
       compiled.at(Key(entryPoint, inputs))
           ->uncheckedRun(
               getATenTensorsAsRawPtrs<const void*>(inputs),
               getATenTensorsAsRawPtrs<void*>(outputs));
-      return py::list(outputs);
+      return tupleOrTensor(outputs);
     } else {
       auto outputs = allocOutputs(entryPoint, inputs);
       compiled.at(Key(entryPoint, inputs))
           ->uncheckedRun(
               getATenTensorsAsRawPtrs<const void*>(inputs),
               getATenTensorsAsRawPtrs<void*>(outputs));
-      return outputs;
+      return tupleOrTensor(outputs);
     }
   }
 
@@ -237,34 +245,31 @@ class Tuner : public ATenCudaGeneticTuner {
 };
 
 struct TcExecutor {
-  py::list run(
-      const py::tuple& inputs,
-      const py::tuple& outputs = py::tuple()) {
+  py::object run(const py::tuple& inputs, const py::tuple& outputs) {
     if (outputs.size() > 0) {
       auto atOutputs = getATenTensors(outputs);
       auto atInputs = getATenTensors(inputs);
       tc::aten::run(*executor, atInputs, atOutputs);
-      return py::list(outputs);
+      return tupleOrTensor(outputs);
     } else {
       auto atInputs = getATenTensors(inputs);
       auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
       tc::aten::run(*executor, atInputs, atOutputs);
-      return convertToPyObjects(atOutputs);
+      return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
-  py::list uncheckedRun(
-      const py::tuple& inputs,
-      const py::tuple& outputs = py::tuple()) {
+
+  py::object uncheckedRun(const py::tuple& inputs, const py::tuple& outputs) {
     if (outputs.size() > 0) {
       auto atOutputs = getATenTensors(outputs);
       auto atInputs = getATenTensors(inputs);
       tc::aten::uncheckedRun(*executor, atInputs, atOutputs);
-      return py::list(outputs);
+      return tupleOrTensor(outputs);
     } else {
       auto atInputs = getATenTensors(inputs);
       auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
       tc::aten::uncheckedRun(*executor, atInputs, atOutputs);
-      return convertToPyObjects(atOutputs);
+      return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
   std::string tc;
@@ -395,20 +400,19 @@ class MappingOptionsCache {
   std::vector<tc::CudaMappingOptions> load(
       const std::string& tc,
       const std::string& entryPoint,
-      const py::tuple& inputTuple,
-      const size_t numCandidates) {
+      const py::tuple& inputs,
+      const size_t num_candidates) {
     tc::autotune::OptionsCache<tc::CudaBackend> cache;
     cache.loadCacheFromFile(fileName_);
     // This could be made more efficient but loading is premature optimization
-    auto inputsDLTensors =
-        tc::aten::makeDLConstTensors(getATenTensors(inputTuple));
+    auto inputsDLTensors = tc::aten::makeDLConstTensors(getATenTensors(inputs));
     return cache.getTopKOptions(
         lang::canonicalTc(tc::detail::parse(tc).at(entryPoint)),
-        getATenTensorsAsTensorInfo(inputTuple),
+        getATenTensorsAsTensorInfo(inputs),
         tc::inferOutputTensorInfo(
             tc, entryPoint, extractRawPtrs(inputsDLTensors)),
         tc::CudaBackend::backendString(),
-        numCandidates);
+        num_candidates);
   }
 
  private:
@@ -444,8 +448,16 @@ PYBIND11_MODULE(tclib, m) {
   });
 
   py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
-      .def("run", &TcExecutor::run)
-      .def("unchecked_run", &TcExecutor::uncheckedRun);
+      .def(
+          "run",
+          &TcExecutor::run,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple())
+      .def(
+          "unchecked_run",
+          &TcExecutor::uncheckedRun,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple());
   m.def(
       "compile",
       [](const std::string& tc,
@@ -458,20 +470,70 @@ PYBIND11_MODULE(tclib, m) {
       });
 
   // A TunerConfig object can be passed to configure a tuning run
-  py::class_<TunerConfig>(m, "TunerConfig", py::module_local())
+  py::class_<TunerConfig>(m, "TunerConfig", py::module_local(), R"DOC(
+    Helper class to manage the behavior of the autotuner
+)DOC")
       .def(py::init<>())
-      .def("generations", &TunerConfig::generations)
-      .def("pop_size", &TunerConfig::populationSize)
-      .def("crossover_rate", &TunerConfig::crossoverRate)
-      .def("mutation_rate", &TunerConfig::mutationRate)
-      .def("number_elites", &TunerConfig::numberElites)
+      .def(
+          "generations",
+          &TunerConfig::generations,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_gen_generations"))
+              .c_str())
+      .def(
+          "pop_size",
+          &TunerConfig::populationSize,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_gen_pop_size"))
+              .c_str())
+      .def(
+          "crossover_rate",
+          &TunerConfig::crossoverRate,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_gen_crossover_rate"))
+              .c_str())
+      .def(
+          "mutation_rate",
+          &TunerConfig::mutationRate,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_gen_mutation_rate"))
+              .c_str())
+      .def(
+          "number_elites",
+          &TunerConfig::numberElites,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_gen_number_elites"))
+              .c_str())
       .def(
           "tuner_min_launch_total_threads",
-          &TunerConfig::tunerMinLaunchTotalThreads)
-      .def("threads", &TunerConfig::threads)
-      .def("devices", &TunerConfig::devices)
-      .def("logtostderr", &TunerConfig::logtostderr)
-      .def("stderrthreshold", &TunerConfig::stderrthreshold);
+          &TunerConfig::tunerMinLaunchTotalThreads,
+          gflags::DescribeOneFlag(gflags::GetCommandLineFlagInfoOrDie(
+                                      "tuner_min_launch_total_threads"))
+              .c_str())
+      .def(
+          "threads",
+          &TunerConfig::threads,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_threads"))
+              .c_str())
+      .def(
+          "devices",
+          &TunerConfig::devices,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("tuner_devices"))
+              .c_str())
+      .def(
+          "logtostderr",
+          &TunerConfig::logtostderr,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("logtostderr"))
+              .c_str())
+      .def(
+          "stderrthreshold",
+          &TunerConfig::stderrthreshold,
+          gflags::DescribeOneFlag(
+              gflags::GetCommandLineFlagInfoOrDie("stderrthreshold"))
+              .c_str());
 
   py::class_<Tuner>(m, "Tuner", py::module_local())
       .def(py::init<std::string>())
@@ -501,22 +563,55 @@ PYBIND11_MODULE(tclib, m) {
             }
           });
 
-  py::class_<MappingOptionsCache>(m, "MappingOptionsCache", py::module_local())
+  py::class_<MappingOptionsCache>(
+      m, "MappingOptionsCache", py::module_local(), R"DOC(
+    Helper class to manipulate cache files containing serialized :class:`MappingOptions <tensor_comprehensions.tclib.MappingOptions>`
+)DOC")
       .def(py::init<std::string>())
-      .def("load", &MappingOptionsCache::load);
+      .def("load", &MappingOptionsCache::load, R"DOC(
+    Load the best entries from cache.
+
+    :param tc: a string containing one of more TC defs
+    :param entry_point: the TC def to compile and execute
+    :param inputs: Pytorch Tensors whose sizes we build an executor for
+    :param num_candidates: number of candidates to return
+
+    Example:
+        >>> import tensor_comprehensions as tc
+        ... import tensor_comprehensions.tclib as tclib
+        ... cache = tc.MappingOptionsCache(cache_file.name)
+        ... best_options, = cache.load(
+        ...     tensordot_str, entry_point, (I0, I1), 10)
+        ... executor = tclib.compile(
+        ...     mm_str, "matmul", (A, B), tc.MappingOptions('naive'))
+        ... C = executor.run((A, B), ())
+
+    Returns:
+        A vector of :class:`MappingOptions <tensor_comprehensions.tclib.MappingOptions>`
+)DOC");
 
   py::class_<CompilationCache>(m, "CompilationCache", py::module_local())
       .def(py::init<std::string>())
       .def("is_compiled", &CompilationCache::isCompiled)
       .def("alloc_outputs", &CompilationCache::allocOutputs)
       .def("compile", &CompilationCache::compile)
-      .def("run", &CompilationCache::run)
-      .def("unchecked_run", &CompilationCache::uncheckedRun);
+      .def(
+          "run",
+          &CompilationCache::run,
+          py::arg("entryPoint"),
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple())
+      .def(
+          "unchecked_run",
+          &CompilationCache::uncheckedRun,
+          py::arg("entryPoint"),
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple());
 
   py::class_<tc::CudaMappingOptions>(
       m,
       "MappingOptions",
-      "MappingOptions for a Tensor Comprehensions (TC)",
+      "MappingOptions to drive the polyhedral compiler",
       py::module_local())
       .def(
           py::init([](const std::string& optionsName) {
@@ -637,7 +732,7 @@ PYBIND11_MODULE(tclib, m) {
             return instance;
           },
           "Replace computation patterns with calls to highly optimized "
-          "libraries (such as CUB, CUTLASS) when possible")
+          "libraries (such as CUB, CUTLASS, ...) when possible")
       .def(
           "fixParametersBeforeScheduling",
           [](tc::CudaMappingOptions& instance, bool fix) {
