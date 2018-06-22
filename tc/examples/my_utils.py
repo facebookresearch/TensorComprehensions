@@ -13,6 +13,10 @@ def set_tcprog(tc_prog_arg):
     global tc_prog
     tc_prog = tc_prog_arg
 
+def set_inp(inp_arg)
+    global inp
+    inp = inp_arg
+
 def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     global tc_prog, inp, cat_val, cat_sz
     tc_prog = tc_prog_arg
@@ -81,8 +85,9 @@ def getAllDivs(inp, maxp2=31):
             l += computeDivs(sz)
     return list(set(l+p2))
 
-def computeCat(inp):
-    global cat_sz, cat_val
+def computeCat(inp_arg):
+    global cat_sz, cat_val, inp
+    inp = inp_arg
     cat_sz = np.zeros(NB_HYPERPARAMS).astype(int)
     cat_val = []
 
