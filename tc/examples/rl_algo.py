@@ -189,7 +189,7 @@ def finish_episode(final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
     final_rewards = torch.tensor(final_rewards)
-    final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
+    #final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in saved_actions[batch_id]:
             reward = final_rewards[batch_id] - value.item()
