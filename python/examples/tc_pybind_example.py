@@ -137,7 +137,7 @@ top1  = tuner.tune(
     "matmul",
     (mat1, mat2),
     MappingOptions('naive'),
-    TunerConfig(threads = 8, pop_size = 25, generations = 3, devices = "0"))
+    TunerConfig().threads(8).pop_size(25).generations(3).devices("0"))
 cache = MappingOptionsCache(unique_filename)
 top10 = cache.load(mm, "matmul", (mat1, mat2), 10)
 assert top1.__str__() == top10[0].__str__()
@@ -227,10 +227,7 @@ class TcBuilder():
 tcb = TcBuilder(
     tc = mm,
     tuner_cache_file = "/tmp/some_cache_file_we_reuse_for_perf_reinforcement",
-    tuner_config = TunerConfig(threads = 8,
-                               pop_size = 25,
-                               generations = 3,
-                               devices = "0"))
+    tuner_config = TunerConfig().threads(8).pop_size(25).generations(3).devices("0"))
 
 tcb.compileOrTune(name = "matmul", inputs = (mat1, mat2))
 time_tc(100,
@@ -310,10 +307,7 @@ tcb = TcBuilder(
     backward_force_reinforcement_tuning = False,
     check_output_shapes = False,
     tuner_cache_file = "/tmp/some_cache_file_we_reuse_for_perf_reinforcement",
-    tuner_config = TunerConfig(threads = 8,
-                               pop_size = 25,
-                               generations = 3,
-                               devices = "0"),
+    tuner_config = TunerConfig().threads(8).pop_size(25).generations(3).devices("0"),
 )
 
 time_tc(100,
@@ -431,10 +425,7 @@ class MultiTcBuilder():
 tcb = MultiTcBuilder(
     tc = mm,
     tuner_cache_file = "/tmp/some_cache_file_we_reuse_for_perf_reinforcement",
-    tuner_config = TunerConfig(threads = 8,
-                               pop_size = 25,
-                               generations = 3,
-                               devices = "0"))
+    tuner_config = TunerConfig().threads(8).pop_size(25).generations(3).devices("0"))
 
 tcb.compileOrTune(name = "matmul", inputs = (mat1, mat2))
 time_tc(100,
@@ -535,10 +526,7 @@ tcb = MultiTcBuilder(
     backward_force_reinforcement_tunings = (False, ),
     check_output_shapes = False,
     tuner_cache_file = "/tmp/some_cache_file_we_reuse_for_perf_reinforcement",
-    tuner_config = TunerConfig(threads = 8,
-                               pop_size = 25,
-                               generations = 3,
-                               devices = "0"),
+    tuner_config = TunerConfig().threads(8).pop_size(25).generations(3).devices("0"),
 )
 
 time_tc(100,

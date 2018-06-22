@@ -274,25 +274,67 @@ struct TcExecutor {
 
 class TunerConfig {
  public:
-  TunerConfig(
-      uint32_t generations,
-      uint32_t populationSize,
-      uint32_t threads,
-      std::string devices,
-      bool logtostderr,
-      uint32_t stderrthreshold) {
-    generations_ = generations;
-    populationSize_ = populationSize;
-    threads_ = threads;
-    devices_ = devices;
-    logtostderr_ = logtostderr;
-    stderrthreshold_ = stderrthreshold;
+  TunerConfig()
+      : generations_(tc::FLAGS_tuner_gen_generations),
+        populationSize_(tc::FLAGS_tuner_gen_pop_size),
+        crossoverRate_(tc::FLAGS_tuner_gen_crossover_rate),
+        mutationRate_(tc::FLAGS_tuner_gen_mutation_rate),
+        numberElites_(tc::FLAGS_tuner_gen_number_elites),
+        tunerMinLaunchTotalThreads_(tc::FLAGS_tuner_min_launch_total_threads),
+        threads_(tc::FLAGS_tuner_threads),
+        devices_(tc::FLAGS_tuner_devices),
+        logtostderr_(false),
+        // Suppress non-FATAL errors from the python user by default
+        stderrthreshold_(google::FATAL) {}
+
+  TunerConfig& generations(uint32_t val) {
+    generations_ = val;
+    return *this;
   }
-  // __enter__ / __exit__ in case we want to use a ContextManager in Python in
-  // the future. In any case, RAII and Python GC can just never work together.
-  void __enter__() const {
+  TunerConfig& populationSize(uint32_t val) {
+    populationSize_ = val;
+    return *this;
+  }
+  TunerConfig& crossoverRate(uint32_t val) {
+    crossoverRate_ = val;
+    return *this;
+  }
+  TunerConfig& mutationRate(uint32_t val) {
+    mutationRate_ = val;
+    return *this;
+  }
+  TunerConfig& numberElites(uint32_t val) {
+    numberElites_ = val;
+    return *this;
+  }
+  TunerConfig& tunerMinLaunchTotalThreads(uint32_t val) {
+    tunerMinLaunchTotalThreads_ = val;
+    return *this;
+  }
+  TunerConfig& threads(uint32_t val) {
+    threads_ = val;
+    return *this;
+  }
+  TunerConfig& devices(const std::string& val) {
+    devices_ = val;
+    return *this;
+  }
+  TunerConfig& logtostderr(bool val) {
+    logtostderr_ = val;
+    return *this;
+  }
+  TunerConfig& stderrthreshold(uint32_t val) {
+    stderrthreshold_ = val;
+    return *this;
+  }
+
+  void enter() const {
     savedGenerations_ = tc::FLAGS_tuner_gen_generations;
     savedPopulationSize_ = tc::FLAGS_tuner_gen_pop_size;
+    savedCrossoverRate_ = tc::FLAGS_tuner_gen_crossover_rate;
+    savedMutationRate_ = tc::FLAGS_tuner_gen_mutation_rate;
+    savedNumberElites_ = tc::FLAGS_tuner_gen_number_elites;
+    savedTunerMinLaunchTotalThreads_ = tc::FLAGS_tuner_min_launch_total_threads;
     savedThreads_ = tc::FLAGS_tuner_threads;
     savedDevices_ = tc::FLAGS_tuner_devices;
     savedLogtostderr_ = FLAGS_logtostderr;
@@ -300,14 +342,22 @@ class TunerConfig {
 
     tc::FLAGS_tuner_gen_generations = generations_;
     tc::FLAGS_tuner_gen_pop_size = populationSize_;
+    tc::FLAGS_tuner_gen_crossover_rate = crossoverRate_;
+    tc::FLAGS_tuner_gen_mutation_rate = mutationRate_;
+    tc::FLAGS_tuner_gen_number_elites = numberElites_;
+    tc::FLAGS_tuner_min_launch_total_threads = tunerMinLaunchTotalThreads_;
     tc::FLAGS_tuner_threads = threads_;
     tc::FLAGS_tuner_devices = devices_;
     FLAGS_logtostderr = logtostderr_;
     FLAGS_stderrthreshold = stderrthreshold_;
   }
-  void __exit__() const {
+  void exit() const {
     tc::FLAGS_tuner_gen_generations = savedGenerations_;
     tc::FLAGS_tuner_gen_pop_size = savedPopulationSize_;
+    tc::FLAGS_tuner_gen_crossover_rate = savedCrossoverRate_;
+    tc::FLAGS_tuner_gen_mutation_rate = savedMutationRate_;
+    tc::FLAGS_tuner_gen_number_elites = savedNumberElites_;
+    tc::FLAGS_tuner_min_launch_total_threads = savedTunerMinLaunchTotalThreads_;
     tc::FLAGS_tuner_threads = savedThreads_;
     tc::FLAGS_tuner_devices = savedDevices_;
     FLAGS_logtostderr = savedLogtostderr_;
@@ -317,12 +367,20 @@ class TunerConfig {
  private:
   uint32_t generations_;
   uint32_t populationSize_;
+  uint32_t crossoverRate_;
+  uint32_t mutationRate_;
+  uint32_t numberElites_;
+  uint32_t tunerMinLaunchTotalThreads_;
   uint32_t threads_;
   std::string devices_;
   bool logtostderr_;
   uint32_t stderrthreshold_;
   mutable uint32_t savedGenerations_;
   mutable uint32_t savedPopulationSize_;
+  mutable uint32_t savedCrossoverRate_;
+  mutable uint32_t savedMutationRate_;
+  mutable uint32_t savedNumberElites_;
+  mutable uint32_t savedTunerMinLaunchTotalThreads_;
   mutable uint32_t savedThreads_;
   mutable std::string savedDevices_;
   mutable bool savedLogtostderr_;
@@ -390,82 +448,25 @@ PYBIND11_MODULE(tclib, m) {
         return TcExecutor{tc, entryPoint, std::move(execUPtr)};
       });
 
+  // A TunerConfig object can be passed to configure a tuning run
   py::class_<TunerConfig>(m, "TunerConfig", py::module_local())
+      .def(py::init<>())
+      .def("generations", &TunerConfig::generations)
+      .def("pop_size", &TunerConfig::populationSize)
+      .def("crossover_rate", &TunerConfig::crossoverRate)
+      .def("mutation_rate", &TunerConfig::mutationRate)
+      .def("number_elites", &TunerConfig::numberElites)
       .def(
-          py::init<uint32_t, uint32_t, uint32_t, std::string, bool, uint32_t>(),
-          py::arg("generations") = tc::FLAGS_tuner_gen_generations,
-          py::arg("pop_size") = tc::FLAGS_tuner_gen_pop_size,
-          py::arg("threads") = tc::FLAGS_tuner_threads,
-          py::arg("devices") = tc::FLAGS_tuner_devices,
-          py::arg("logtostderr") = false,
-          // Suppress non-FATAL errors from the python user
-          py::arg("stderrthreshold") = google::FATAL);
+          "tuner_min_launch_total_threads",
+          &TunerConfig::tunerMinLaunchTotalThreads)
+      .def("threads", &TunerConfig::threads)
+      .def("devices", &TunerConfig::devices)
+      .def("logtostderr", &TunerConfig::logtostderr)
+      .def("stderrthreshold", &TunerConfig::stderrthreshold);
 
   py::class_<Tuner>(m, "Tuner", py::module_local())
       .def(py::init<std::string>())
       .def(py::init<std::string, std::string>())
-      .def(
-          "pop_size",
-          [](Tuner& instance, uint32_t& pop_size) {
-            tc::FLAGS_tuner_gen_pop_size = pop_size;
-          })
-      .def(
-          "crossover_rate",
-          [](Tuner& instance, uint32_t& crossover_rate) {
-            tc::FLAGS_tuner_gen_crossover_rate = crossover_rate;
-          })
-      .def(
-          "mutation_rate",
-          [](Tuner& instance, uint32_t& mutation_rate) {
-            tc::FLAGS_tuner_gen_mutation_rate = mutation_rate;
-          })
-      .def(
-          "generations",
-          [](Tuner& instance, uint32_t& generations) {
-            tc::FLAGS_tuner_gen_generations = generations;
-          })
-      .def(
-          "number_elites",
-          [](Tuner& instance, uint32_t& number_elites) {
-            tc::FLAGS_tuner_gen_number_elites = number_elites;
-          })
-      .def(
-          "threads",
-          [](Tuner& instance, uint32_t& threads) {
-            tc::FLAGS_tuner_threads = threads;
-          })
-      .def(
-          "gpus",
-          [](Tuner& instance, std::string& gpus) {
-            tc::FLAGS_tuner_devices = gpus;
-          })
-      .def(
-          "restore_from_proto",
-          [](Tuner& instance, bool restore_from_proto) {
-            tc::FLAGS_tuner_gen_restore_from_proto = restore_from_proto;
-          })
-      .def(
-          "restore_number",
-          [](Tuner& instance, uint32_t& restore_number) {
-            tc::FLAGS_tuner_gen_restore_number = restore_number;
-          })
-      .def(
-          "log_generations",
-          [](Tuner& instance, bool log_generations) {
-            tc::FLAGS_tuner_gen_log_generations = log_generations;
-          })
-      .def(
-          "tuner_min_launch_total_threads",
-          [](Tuner& instance, bool tuner_min_launch_total_threads) {
-            tc::FLAGS_tuner_min_launch_total_threads =
-                tuner_min_launch_total_threads;
-          })
-      .def(
-          "save_best_candidates_count",
-          [](Tuner& instance, bool save_best_candidates_count) {
-            tc::FLAGS_tuner_save_best_candidates_count =
-                save_best_candidates_count;
-          })
       .def(
           "tune",
           [](Tuner& instance,
@@ -473,8 +474,8 @@ PYBIND11_MODULE(tclib, m) {
              const py::tuple& inputs,
              tc::CudaMappingOptions& baseMapping,
              const TunerConfig& config) {
-            config.__enter__();
-            ScopeGuard sg([&config]() { config.__exit__(); });
+            config.enter();
+            ScopeGuard sg([&config]() { config.exit(); });
             std::vector<at::Tensor> atInputs = getATenTensors(inputs);
             auto bestOptions =
                 instance.tune(entryPoint, atInputs, {baseMapping});
