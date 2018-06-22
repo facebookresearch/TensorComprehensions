@@ -264,8 +264,7 @@ const detail::ScheduleTree* findThreadMappingAncestor(
 bool promotionImprovesCoalescing(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node,
-    const TensorReferenceGroup& group,
-    isl::union_map schedule) {
+    const TensorReferenceGroup& group) {
   auto originalAccesses = group.originalAccesses();
 
   auto tensorDim = group.approximation.dim();
@@ -279,6 +278,7 @@ bool promotionImprovesCoalescing(
     auto depth = marker->scheduleDepth(root);
     auto activePoints = activeDomainPoints(root, mapping);
     auto localAccesses = originalAccesses.intersect_domain(activePoints);
+    auto schedule = prefixSchedule(root, marker);
     auto scheduledAccesses = localAccesses.apply_domain(schedule);
     for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
       auto scheduleSpace = access.get_space().domain();
@@ -486,14 +486,11 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 /*
  * Promote to shared memory in "scop" below the node "bandNode".  Use at most
  * "remainingMemory" bytes, and update the variable to reflect the amount of
- * available shared memory remaining after promotion.  "fullSched" is the union
- * of schedules at leaves of the schedule tree, expected to be computed by
- * "fullSchedule".
+ * available shared memory remaining after promotion.
  */
 void promoteToSharedBelow(
     Scop& scop,
     detail::ScheduleTree* bandNode,
-    isl::union_map fullSched,
     size_t& remainingMemory) {
   auto root = scop.scheduleRoot();
   auto partialSched = partialSchedule(root, bandNode);
@@ -560,7 +557,7 @@ void promoteToSharedBelow(
       // Do not promote if the group features no reuse and is accessed in a
       // coalesced way.
       if (!hasReuseWithin(*group, partialSchedMupa) &&
-          !promotionImprovesCoalescing(root, bandNode, *group, fullSched)) {
+          !promotionImprovesCoalescing(root, bandNode, *group)) {
         continue;
       }
 
@@ -607,19 +604,14 @@ void promoteToSharedGreedy(
   auto bands = bandsContainingScheduleDepth(root, depth);
   bands = bandsSplitAfterDepth(bands, root, depth);
 
-  // 2. Compute full schedule without mapping filters.  The filters would make
-  // it impossible to test for coalescing by incrementing a member of a band as
-  // only the values divisible by grid or block size pass through the filter.
-  auto fullSched = fullSchedule(root);
-
-  // 3. For each band that ends at "depth", take decisions about promotion
+  // 2. For each band that ends at "depth", take decisions about promotion
   // immediately below it in the tree.  In particular, promote if the
   // approximated footprint fits into the remaining memory, and the reference
   // group either features reuse or is accessed in a non-coalesced way, or
   // both.
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
-    promoteToSharedBelow(scop, bandNode, fullSched, remainingMemory);
+    promoteToSharedBelow(scop, bandNode, remainingMemory);
   }
 }
 
