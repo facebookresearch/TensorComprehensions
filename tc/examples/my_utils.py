@@ -9,6 +9,10 @@ import numpy as np
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
 
+def set_tcprog(tc_prog_arg):
+    global tc_prog
+    tc_prog = tc_prog_arg
+
 def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     global tc_prog, inp, cat_val, cat_sz
     tc_prog = tc_prog_arg
