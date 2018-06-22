@@ -1,0 +1,3 @@
+actor-critic vanilla without norm [ 1  1  1 13 25  0 27 18  1  0  0  0  0]
+actorc_critic vanilla [ 2  1  0 26 27  0  0 32  0  0  0  0  1]
+actor critic memory replay without norm [ 0  0  0  3 26  1 14 26  0  1  0  0  1]
