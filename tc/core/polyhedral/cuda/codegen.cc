@@ -397,8 +397,17 @@ struct LdgWrapper {
 };
 
 template <typename AFF>
+isl::ast_expr buildAccess(AFF access, const CodegenStatementContext& context) {
+  return context.build().access_from(access);
+}
+
+void emitAccess(isl::ast_expr access, const CodegenStatementContext& context) {
+  context.ss << access.to_C_str();
+}
+
+template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
-  context.ss << context.build().access_from(access).to_C_str();
+  emitAccess(buildAccess(access, context), context);
 }
 
 // Print an access to global memory, wrapping the access in an "__ldg()"
