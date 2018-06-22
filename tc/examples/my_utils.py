@@ -24,14 +24,17 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_val = cat_val_arg
     cat_sz = cat_sz_arg
 
-def evalTime(opt):
+def evalTime(opt, iters=20, warmup=5, naive=False):
     global tc_prog, inp, cat_val
     #print(opt)
     #print(cat_val)
     opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
-    opt = optionsFromVector(opt)
-    warmup = 5
-    iters  = 20
+    if naive:
+        opt = tc.CudaMappingOptions("naive")
+    else:
+        opt = optionsFromVector(opt)
+    #warmup = 5
+    #iters  = 20
     for i in range(warmup):
         tc_prog(*inp, options=opt)
         torch.cuda.synchronize()

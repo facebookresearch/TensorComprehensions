@@ -44,7 +44,12 @@ my_utils.computeCat(inp)
 tc_prog = tc.define(code, name="group_normalization")
 my_utils.set_tcprog(tc_prog)
 
+perm = np.random.permutation(3)
+print(perm)
+#set_options = set_options[perm]
 for i in range(len(set_options)):
-    opts = np.array(set_options[i])
-    temps = my_utils.evalTime(opts)
+    opts = np.array(set_options[perm[i]])
+    temps = my_utils.evalTime(opts, 1000, 50)
     print(temps)
+print("and naive")
+print(my_utils.evalTime(set_options[0], 1000, 50, naive=True))
