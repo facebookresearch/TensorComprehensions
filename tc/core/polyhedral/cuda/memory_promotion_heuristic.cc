@@ -133,60 +133,6 @@ std::vector<T> collectBranchMarkers(T root, T node) {
 }
 
 /*
- * Transform schedule bands into a union_map.
- * Takes all partial schedules at leaves as MUPAs (without accounting for
- * intermediate non-band nodes), intersects
- * their domain with the filters between the root and the
- * current leaves and transforms them into union maps.
- * Mapping filters are ignored.
- */
-isl::union_map fullSchedule(const detail::ScheduleTree* root) {
-  using namespace tc::polyhedral::detail;
-
-  if (!root->as<ScheduleTreeDomain>()) {
-    throw promotion::PromotionLogicError("expected root to be a domain node");
-  }
-
-  std::function<bool(const ScheduleTree* tree)> isLeaf =
-      [](const ScheduleTree* tree) { return tree->numChildren() == 0; };
-
-  // Find all innermost nodes.
-  auto leaves = functional::Filter(isLeaf, ScheduleTree::collect(root));
-
-  // Take a union of partial schedules of the innermost nodes.  Because they
-  // are innermost, the partial schedule can no longer be affected by deeper
-  // nodes and hence is full.
-  auto schedule = isl::union_map::empty(
-      root->as<ScheduleTreeDomain>()->domain_.get_space());
-  for (auto node : leaves) {
-    auto domain = root->as<ScheduleTreeDomain>()->domain_;
-    auto prefixMupa = prefixScheduleMupa(root, node);
-    if (auto band = node->as<ScheduleTreeBand>()) {
-      prefixMupa = prefixMupa.flat_range_product(band->mupa_);
-    }
-
-    auto pathToRoot = node->ancestors(root);
-    pathToRoot.push_back(node);
-    for (auto n : pathToRoot) {
-      if (auto filterNode = n->as<ScheduleTreeFilter>()) {
-        domain = domain.intersect(filterNode->filter_);
-      }
-    }
-
-    prefixMupa = prefixMupa.intersect_domain(domain);
-
-    schedule = schedule.unite(isl::union_map::from(prefixMupa));
-    if (!schedule.is_single_valued()) {
-      std::stringstream ss;
-      ss << "schedules must be single-valued " << schedule << std::endl
-         << *root;
-      throw promotion::PromotionLogicError(ss.str());
-    }
-  }
-  return schedule;
-}
-
-/*
  * Check if a reference group features reuse within the "outer" schedule.
  * In particular, check that for some given point in the outer schedule and
  * some given group element, there is more than one statement instance
