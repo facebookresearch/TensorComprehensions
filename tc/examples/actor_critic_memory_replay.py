@@ -81,7 +81,7 @@ class FullNetwork(nn.Module):
         actions_prob = []
         values = []
         for i in range(self.nb_hyperparams):
-            sym, action_prob, value = self.select_action(x, i, int(cat_sz[i]))
+            sym, action_prob, value = self.select_action(x, i, int(my_utils.cat_sz[i]))
             actions_prob.append(action_prob)
             values.append(value)
             x = torch.cat([x, torch.FloatTensor([sym])])
