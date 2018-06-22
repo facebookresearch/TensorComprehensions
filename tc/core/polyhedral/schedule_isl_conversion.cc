@@ -32,24 +32,6 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
-// static constexpr std::initializer_list need both definition and declaration
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemExtension::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSequence::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSet::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemDomain::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemMappingFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemBand::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemContext::NodeDerivedTypes;
-
 namespace {
 
 isl::schedule_node insertChild(isl::schedule_node node, const ScheduleTree* st);
@@ -66,7 +48,7 @@ isl::schedule_node insertBranch(
     const std::vector<size_t>& pos) {
   auto filters = isl::union_set_list(node.get_ctx(), st->numChildren());
   for (size_t i = 0; i < pos.size(); ++i) {
-    auto filter = st->child({pos[i]})->elemAsBase<ScheduleTreeElemFilter>();
+    auto filter = st->child({pos[i]})->elemAs<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     filters = filters.add(filter->filter_);
   }
@@ -103,7 +85,7 @@ std::vector<size_t> findCorePositions(
   std::vector<size_t> positions;
   TC_CHECK(st->elemAs<ScheduleTreeElemSequence>());
   for (size_t i = 0; i < st->numChildren(); ++i) {
-    auto filter = st->child({i})->elemAsBase<ScheduleTreeElemFilter>();
+    auto filter = st->child({i})->elemAs<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     if (!filter->filter_.intersect(domain).is_empty()) {
       positions.emplace_back(i);
@@ -121,7 +103,7 @@ std::vector<size_t> findCorePositions(
 isl::schedule_node graftFromFilterSubtree(
     const ScheduleTree* st,
     isl::union_map extension) {
-  auto filter = st->elemAsBase<ScheduleTreeElemFilter>();
+  auto filter = st->elemAs<ScheduleTreeElemFilter>();
   TC_CHECK(filter);
   auto filterExtension = extension.intersect_range(filter->filter_);
   auto extensionNode = isl::schedule_node::from_extension(filterExtension);
@@ -196,7 +178,9 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     node = bandNode;
   } else if (auto context = st->elemAs<ScheduleTreeElemContext>()) {
     node = node.insert_context(context->context_);
-  } else if (auto filter = st->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filter = st->elemAs<ScheduleTreeElemFilter>()) {
+    node = node.insert_filter(filter->filter_);
+  } else if (auto filter = st->elemAs<ScheduleTreeElemMapping>()) {
     node = node.insert_filter(filter->filter_);
   } else if (
       st->elemAs<ScheduleTreeElemSet>() ||

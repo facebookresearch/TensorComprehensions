@@ -272,7 +272,7 @@ struct ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   template <typename MappingIdType>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       const std::vector<MappingIdType>& mappedIds,
       isl::union_pw_aff_list mappedAffs,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -312,12 +312,12 @@ struct ScheduleTree {
   }
 
   template <typename MappingIdType, typename... Args>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       isl::union_set filter,
       const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
           mappingIds,
       Args&&... args) {
-    return makeMappingFilter(
+    return makeMapping(
         filter,
         mappingIds,
         vectorFromArgs<ScheduleTreeUPtr>(std::forward<Args>(args)...));
@@ -443,34 +443,6 @@ struct ScheduleTree {
         std::is_base_of<ScheduleTreeElemBase, T>::value,
         "Must call with a class derived from ScheduleTreeElemBase");
     if (type_ != T::NodeType) {
-      return nullptr;
-    }
-    return static_cast<const T*>(
-        const_cast<const ScheduleTreeElemBase*>(elem_.get()));
-  }
-
-  // View elem_ as the specified type.
-  // Returns nullptr if neither this type, **nor any of the derived types**,
-  // are T.
-  // Inline impl for now, does not justify an extra -inl.h file
-  template <typename T>
-  T* elemAsBase() {
-    const ScheduleTree* t = this;
-    return const_cast<T*>(t->elemAsBase<const T>());
-  }
-  template <typename T>
-  const T* elemAsBase() const {
-    static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Must call with a class derived from ScheduleTreeElemBase");
-    // These T::NodeDerivedTypes are ugly, let's see if we can improve in the
-    // future but if we want dynamic typing and to avoid enumerations at each
-    // call site, which I claim we absolutely do, then we are not left with
-    // many options.
-    if (type_ != T::NodeType &&
-        std::find(
-            T::NodeDerivedTypes.begin(), T::NodeDerivedTypes.end(), type_) ==
-            T::NodeDerivedTypes.end()) {
       return nullptr;
     }
     return static_cast<const T*>(

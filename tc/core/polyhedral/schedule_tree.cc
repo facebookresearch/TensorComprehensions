@@ -361,7 +361,7 @@ bool ScheduleTree::operator==(const ScheduleTree& other) const {
     return false;
   }
   TC_CHECK(!other.elemAs<ScheduleTreeElemSet>())
-      << "NYI: isl_node_type::set comparison";
+      << "NYI: ScheduleTreeType::Set comparison";
   for (size_t i = 0; i < children_.size(); ++i) {
     if (*children_[i] != *other.children_[i]) {
       return false;

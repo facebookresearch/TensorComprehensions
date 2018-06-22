@@ -46,12 +46,22 @@ struct TypeInfo {
       TYPE_INFO_OPTION(TK_INT16, Int, 16)
       TYPE_INFO_OPTION(TK_INT32, Int, 32)
       TYPE_INFO_OPTION(TK_INT64, Int, 64)
+      TYPE_INFO_OPTION(TK_FLOAT16, Float, 16)
+      TYPE_INFO_OPTION(TK_FLOAT32, Float, 32)
+      TYPE_INFO_OPTION(TK_FLOAT64, Float, 64)
       TYPE_INFO_OPTION(TK_FLOAT, Float, 32)
       TYPE_INFO_OPTION(TK_DOUBLE, Float, 64)
+
 #undef TYPE_INFO_OPTION
       default:
         throw ErrorReport(scalar_type)
             << "Unhandled TC scalar type: " << scalar_type;
+    }
+
+    if (code_ == Code::Float && bits_ == 16) {
+      throw ErrorReport(scalar_type)
+          << "Half precision floating point not supported "
+          << "until we can make NVRTC include system headers";
     }
   }
   int toScalarToken() const {
@@ -82,12 +92,15 @@ struct TypeInfo {
         }
       case Float:
         switch (bits()) {
+          case 16:
+            return TK_FLOAT16;
           case 32:
             return TK_FLOAT;
           case 64:
             return TK_DOUBLE;
         }
     }
+
     throw std::runtime_error("Unknown type info?");
   }
   Code code() const {

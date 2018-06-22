@@ -257,14 +257,7 @@ def _1LUT(float(E1, D) LUT1, int32(B, L1) I1) -> (O1) {
         std::to_string(FLAGS_E1);
     std::vector<tc::CudaMappingOptions> bestOptions{options};
     if (FLAGS_autotune) {
-      bestOptions = autotune(
-          FLAGS_save_tuner_proto_prefix + std::string("/1LUT_cache") + suffix,
-          FLAGS_save_tuner_proto_prefix + std::string("/1LUT_best") + suffix,
-          tc,
-          "_1LUT",
-          inputs,
-          options,
-          check_fun);
+      bestOptions = autotune(tc, "_1LUT", inputs, options, check_fun);
       TC_CHECK_GE(bestOptions.size(), 1u);
     }
     Check(tc, "_1LUT", options, inputs, check_fun);
@@ -293,8 +286,8 @@ void ProductionModel::runATen1LUT() {
 }
 
 void ProductionModel::run2LUT(const tc::CudaMappingOptions& options) {
-  TC_CHECK_LT(0, E1);
-  TC_CHECK_LT(0, E2);
+  TC_CHECK_LT(0u, E1);
+  TC_CHECK_LT(0u, E2);
   auto ws_init_func = [=](Workspace& w) {
     AddDeterministicallyRandomInput<caffe2::CUDABackend, float>(
         w, {E1, D}, "LUT1");
@@ -375,14 +368,7 @@ def _2LUT(float(E1, D) LUT1, int32(B, L1) I1, float(E2, D) LUT2, int32(B, L2) I2
         std::to_string(FLAGS_E2);
     std::vector<tc::CudaMappingOptions> bestOptions{options};
     if (FLAGS_autotune) {
-      bestOptions = autotune(
-          FLAGS_save_tuner_proto_prefix + std::string("/2LUT_cache") + suffix,
-          FLAGS_save_tuner_proto_prefix + std::string("/2LUT_best") + suffix,
-          tc,
-          "_2LUT",
-          inputs,
-          options,
-          check_fun);
+      bestOptions = autotune(tc, "_2LUT", inputs, options, check_fun);
       TC_CHECK_GE(bestOptions.size(), 1u);
     }
     Check(tc, "_2LUT", bestOptions[0], inputs, check_fun);
@@ -444,14 +430,7 @@ def _C3(float(B,WX) I, float(WY, WX) W) -> (C3) {
       std::to_string(FLAGS_WY);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/_C3_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/_C3_best") + suffix,
-        tc,
-        "_C3",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "_C3", inputs, options, check_fun);
     TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "_C3", bestOptions[0], inputs, check_fun);
@@ -509,14 +488,7 @@ def mlp1(float(B,M) I, float(M, N) W1, float(N) B1) -> (O1) {
       std::to_string(FLAGS_N);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/mlp1_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/mlp1_best") + suffix,
-        tc,
-        "mlp1",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "mlp1", inputs, options, check_fun);
     TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "mlp1", bestOptions[0], inputs, check_fun);
@@ -592,14 +564,7 @@ def mlp3(float(B,N) I, float(O,N) W2, float(O) B2, float(P,O) W3, float(P) B3,
       std::to_string(FLAGS_N);
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
-    bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/mlp3_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/mlp3_best") + suffix,
-        tc,
-        "mlp3",
-        inputs,
-        options,
-        check_fun);
+    bestOptions = autotune(tc, "mlp3", inputs, options, check_fun);
     TC_CHECK_GE(bestOptions.size(), 1u);
   }
   Check(tc, "mlp3", bestOptions[0], inputs, check_fun);

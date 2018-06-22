@@ -26,3 +26,22 @@ set_target_properties(tc PROPERTIES DEBUG_POSTFIX "")
 # "Install" to source_dir/tensor_comprehensions for easy inclusion in python
 # package with setuptools. Without this, setuptools is hell.
 install(TARGETS tc DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)
+
+add_library(tclib MODULE tclib.cc)
+target_include_directories(tclib PUBLIC ${PROJECT_SOURCE_DIR}/tc)
+target_link_libraries(
+  tclib
+
+  tc_autotuner
+  tc_aten
+
+  ${PYTHON_LIBRARIES}
+)
+
+set_target_properties(tclib PROPERTIES PREFIX "")
+set_target_properties(tclib PROPERTIES SUFFIX ".so")
+set_target_properties(tclib PROPERTIES DEBUG_POSTFIX "")
+
+# "Install" to source_dir/tensor_comprehensions for easy inclusion in python
+# package with setuptools. Without this, setuptools is hell.
+install(TARGETS tclib DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)

@@ -61,3 +61,8 @@ Another alternative is to use the provided script:
 CLANG=${PATH_TO_CLANG_INSTALL_BINARY}/clang-format ./check_and_fix_format.sh
 ```
 
+## Changes to isl submodule
+
+If you update the isl submodule, then you will typically also need
+to update the C++ bindings in isl_interface.
+To generate these bindings, you need to build with `WITH_BINDINGS=ON`.

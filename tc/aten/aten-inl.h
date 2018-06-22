@@ -25,6 +25,57 @@
 
 namespace tc {
 namespace aten {
+
+// Stolen from ATen, get rid of our copy when ATen exposes the functionality
+// Unfortunately we need to wait for updated conda packages so we just copy
+// for now.
+inline DLDataType getDLDataType(const at::Type& type) {
+  using at::ScalarType;
+
+  DLDataType dtype;
+  dtype.lanes = 1;
+  dtype.bits = type.elementSizeInBytes() * 8;
+  switch (type.scalarType()) {
+    case ScalarType::Byte:
+      dtype.code = DLDataTypeCode::kDLUInt;
+      break;
+    case ScalarType::Char:
+      dtype.code = DLDataTypeCode::kDLInt;
+      break;
+    case ScalarType::Double:
+      dtype.code = DLDataTypeCode::kDLFloat;
+      break;
+    case ScalarType::Float:
+      dtype.code = DLDataTypeCode::kDLFloat;
+      break;
+    case ScalarType::Int:
+      dtype.code = DLDataTypeCode::kDLInt;
+      break;
+    case ScalarType::Long:
+      dtype.code = DLDataTypeCode::kDLInt;
+      break;
+    case ScalarType::Short:
+      dtype.code = DLDataTypeCode::kDLInt;
+      break;
+    case ScalarType::Half:
+      dtype.code = DLDataTypeCode::kDLFloat;
+      break;
+    case ScalarType::Undefined:
+      throw std::logic_error("Undefined is not a valid ScalarType");
+    case ScalarType::NumOptions:
+      throw std::logic_error("NumOptions is not a valid ScalarType");
+  }
+  return dtype;
+}
+
+inline TensorInfo toTensorInfo(const at::Tensor& t) {
+  return TensorInfo(
+      getDLDataType(t.type()),
+      reinterpret_cast<std::uintptr_t>(t.data_ptr()) % TensorInfo::kAlignment,
+      t.sizes(),
+      t.strides());
+}
+
 inline std::vector<DLTensorUPtr> makeDLTensors(
     const std::vector<at::Tensor>& tensors) {
   std::vector<DLTensorUPtr> dlTensors;

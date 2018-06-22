@@ -25,6 +25,8 @@
 namespace tc {
 namespace aten {
 
+inline TensorInfo toTensorInfo(const at::Tensor&);
+
 inline std::vector<DLTensorUPtr> makeDLTensors(
     const std::vector<at::Tensor>& tensors);
 

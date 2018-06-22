@@ -72,9 +72,16 @@ class MappedScop {
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
-    return std::unique_ptr<MappedScop>(new MappedScop(
+    auto mscop = std::unique_ptr<MappedScop>(new MappedScop(
         std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+    auto band = mscop->scop_->obtainOuterBand();
+    mscop->mapBlocksForward(band, 0);
+    mscop->mapThreadsBackward(band);
+    return mscop;
   }
+  // The MappedScop returned by this method does not satisfy the invariant
+  // of having a mapping to blocks and threads.  It is up to the caller
+  // to insert these mappings.
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
@@ -185,6 +192,20 @@ class MappedScop {
       std::vector<std::vector<int>> bestSync,
       size_t nChildren,
       bool hasOuterSequentialMember);
+
+  // Extract a mapping from the domain elements active at "tree"
+  // to the thread identifiers, where all branches in "tree"
+  // are assumed to have been mapped to thread identifiers.
+  // The result lives in a space of the form block[x, ...].
+  isl::multi_union_pw_aff threadMappingSchedule(
+      const detail::ScheduleTree* tree) const;
+
+  // Extract a mapping from the domain elements active at "tree"
+  // to the block identifiers, where all branches in "tree"
+  // are assumed to have been mapped to block identifiers.
+  // The result lives in a space of the form grid[x, ...].
+  isl::multi_union_pw_aff blockMappingSchedule(
+      const detail::ScheduleTree* tree) const;
 
  private:
   // Insert the optimal combination of synchronizations in the sequence

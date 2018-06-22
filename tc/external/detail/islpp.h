@@ -27,7 +27,6 @@
 #include <isl/cpp.h>
 
 #include "tc/core/check.h"
-#include "tc/core/islpp_wrap.h"
 
 namespace isl {
 

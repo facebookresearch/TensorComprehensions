@@ -79,8 +79,7 @@ class ATenAutotuner : public tc::autotune::Autotuner<Backend, SearchStrategy> {
   std::vector<MappingOptionsType> tune(
       const std::string& tcEntryPoint,
       const std::vector<at::Tensor>& inputs,
-      const MappingOptionsType& baseMapping,
-      const std::string& cacheFileName = "",
+      const std::vector<MappingOptionsType>& baseMappings,
       const tc::autotune::TuningParameterFixer& fixedParams = {});
 
  protected:

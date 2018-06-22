@@ -93,7 +93,7 @@ ScheduleTreeAndAccesses makeScheduleTree(
     const Halide::Internal::Stmt& s);
 
 /// Enumerate all reductions in a statement, by looking for the
-/// ReductionInit and ReductionUpdate markers inserted during lowering
+/// ReductionUpdate markers inserted during lowering
 /// (see tc2halide.h).
 /// Each reduction object stores a reference to
 /// the update statement, and a list of reduction dimensions

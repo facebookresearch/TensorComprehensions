@@ -122,7 +122,7 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
     os << "extension";
   } else if (nt == detail::ScheduleTreeType::Filter) {
     os << "filter";
-  } else if (nt == detail::ScheduleTreeType::MappingFilter) {
+  } else if (nt == detail::ScheduleTreeType::Mapping) {
     os << "mapping_filter";
   } else if (nt == detail::ScheduleTreeType::Sequence) {
     os << "sequence";
@@ -185,7 +185,12 @@ std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
 
 std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
   WS w;
-  os << w.tab() << "extension(" << extension_ << ")";
+  os << w.tab() << "extension(";
+  for (const auto& e : extension_.get_map_list()) {
+    WS w2;
+    os << std::endl << w2.tab() << e;
+  }
+  os << ")";
   return os;
 }
 
@@ -200,7 +205,7 @@ std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
+std::ostream& ScheduleTreeElemMapping::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "mapping_filter(ids(";
   for (auto& kvp : mapping) {

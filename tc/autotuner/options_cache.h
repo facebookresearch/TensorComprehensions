@@ -140,7 +140,10 @@ struct OptionsCache {
       const std::string& backendStr,
       size_t K) const;
 
-  /// Drops the (N - K) worst performing options
+  /// Drops the (N - K) worst performing options for each key in the cache.
+  /// That is, for each unique tuple(
+  ///    CanonicalTcString, input TensorInfo, output TensorInfo, backend string)
+  /// this function keeps the best K.
   void pruneKeepTopK(size_t K);
 
  protected:
@@ -162,10 +165,46 @@ struct OptionsCache {
       OptionsCacheValue<Backend>,
       OptionsCacheKeyHash>
       store_;
-};
-} // namespace autotune
 
-std::string makeOptionsFilename(const std::string& fn);
+  // Make friend to access toProtobuf/fromProtobuf
+  template <typename BackendType>
+  friend void appendTopKToCacheFile(
+      const OptionsCache<BackendType>& cache,
+      const std::string& cacheFilename,
+      uint32_t count);
+};
+
+/// Loads at most `count' bets entries from the file `cacheFilename', for the
+/// TC definition corresponding to the entryPoint.
+///
+/// Note that the file manipulation is threadsafe but not IPC-safe.
+/// TODO: implement using a filesystem lock (e.g. flock) if more safety is
+/// needed.
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType> loadTopKFromCacheFile(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::string& cacheFilename,
+    const std::vector<const DLConstTensor*>& inputs,
+    size_t count);
+
+/// Stores at most `count' best entries from the cache into the file
+/// `cacheFilename', if that filename can be written to; otherwise throws.
+/// To avoid spuriously overwriting previous results, this ***appends*** the
+/// at most `count' best entries from cache to the cache loaded from
+/// cacheFilename. If the file is empty or does not exist then this function
+/// just writes instead of appending.
+///
+/// Note that the file manipulation is threadsafe but not IPC-safe.
+/// TODO: implement using a filesystem lock (e.g. flock) if more safety is
+/// needed.
+template <typename Backend>
+void appendTopKToCacheFile(
+    const OptionsCache<Backend>& cache,
+    const std::string& cacheFilename,
+    uint32_t count);
+
+} // namespace autotune
 } // namespace tc
 
 #include "tc/autotuner/options_cache-inl.h"

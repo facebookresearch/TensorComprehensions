@@ -27,6 +27,7 @@
 #include <llvm/ADT/Optional.h>
 
 #include "tc/core/check.h"
+#include "tc/core/compiler.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/math.h"
 #include "tc/core/utils/time.h"
@@ -163,12 +164,10 @@ void OptionsCache<Backend>::storeCacheToFile(
     std::lock_guard<std::mutex> lock(mutex);
     std::fstream serialized(
         filename, std::ios::binary | std::ios::trunc | std::ios::out);
-    if (!serialized.is_open()) {
-      LOG(ERROR) << "Failed to open the output stream for dumping protobuf: "
-                 << filename;
-    } else {
-      proto.SerializePartialToOstream(&serialized);
-    }
+    TC_CHECK(serialized.is_open(), std::invalid_argument)
+        << "Failed to open the output stream for dumping protobuf: "
+        << filename;
+    proto.SerializePartialToOstream(&serialized);
   }
 }
 
@@ -317,9 +316,37 @@ void OptionsCache<Backend>::fromProtobuf(
   }
 }
 
-} // namespace autotune
-
-inline std::string makeOptionsFilename(const std::string& fn) {
-  return fn + ".options";
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType> loadTopKFromCacheFile(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::string& cacheFilename,
+    const std::vector<const DLConstTensor*>& inputs,
+    size_t count) {
+  OptionsCache<Backend> optionsCache;
+  optionsCache.loadCacheFromFile(cacheFilename);
+  auto outputs = tc::inferOutputTensorInfo(tc, entryPoint, inputs);
+  return optionsCache.getTopKOptions(
+      lang::canonicalTc(tc::detail::parse(tc).at(entryPoint)),
+      tc::makeTensorInfoVector(inputs),
+      outputs,
+      Backend::backendString(),
+      count);
 }
+
+template <typename Backend>
+void appendTopKToCacheFile(
+    const OptionsCache<Backend>& cache,
+    const std::string& cacheFilename,
+    uint32_t count) {
+  OptionsCache<Backend> copy(cache);
+  copy.pruneKeepTopK(count);
+  auto proto = copy.toProtobuf();
+  OptionsCache<Backend> optionsCache;
+  optionsCache.loadCacheFromFile(cacheFilename);
+  optionsCache.fromProtobuf(proto);
+  optionsCache.storeCacheToFile(cacheFilename);
+}
+
+} // namespace autotune
 } // namespace tc

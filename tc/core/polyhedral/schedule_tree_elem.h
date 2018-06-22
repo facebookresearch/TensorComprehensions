@@ -38,7 +38,7 @@ enum class ScheduleTreeType {
   Filter,
   Sequence,
   Set,
-  MappingFilter,
+  Mapping,
   ThreadSpecificMarker,
   Any,
 };
@@ -56,8 +56,6 @@ struct ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemContext : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Context;
   isl::set context_;
@@ -77,8 +75,6 @@ struct ScheduleTreeElemContext : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemDomain : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Domain;
   isl::union_set domain_;
@@ -98,8 +94,6 @@ struct ScheduleTreeElemDomain : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemExtension : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Extension;
   isl::union_map extension_;
@@ -119,8 +113,6 @@ struct ScheduleTreeElemExtension : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::MappingFilter};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Filter;
   isl::union_set filter_;
@@ -139,20 +131,18 @@ struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
   }
 };
 
-struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
+struct ScheduleTreeElemMapping : public ScheduleTreeElemBase {
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
       typename mapping::MappingId::Hash>;
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
-      detail::ScheduleTreeType::MappingFilter;
-  ScheduleTreeElemMappingFilter() = delete;
-  ScheduleTreeElemMappingFilter(const ScheduleTreeElemMappingFilter& eb)
-      : ScheduleTreeElemFilter(eb.filter_), mapping(eb.mapping) {}
-  ScheduleTreeElemMappingFilter(const Mapping& mapping)
-      : ScheduleTreeElemFilter(isl::union_set()), mapping(mapping) {
+      detail::ScheduleTreeType::Mapping;
+  ScheduleTreeElemMapping() = delete;
+  ScheduleTreeElemMapping(const ScheduleTreeElemMapping& eb)
+      : mapping(eb.mapping), filter_(eb.filter_) {}
+  ScheduleTreeElemMapping(const Mapping& mapping)
+      : mapping(mapping), filter_(isl::union_set()) {
     TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
     auto domain = mapping.cbegin()->second.domain();
@@ -169,9 +159,9 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
       filter_ = filter_.intersect(upa.zero_union_set());
     }
   }
-  virtual ~ScheduleTreeElemMappingFilter() override {}
-  bool operator==(const ScheduleTreeElemMappingFilter& other) const;
-  bool operator!=(const ScheduleTreeElemMappingFilter& other) const {
+  virtual ~ScheduleTreeElemMapping() override {}
+  bool operator==(const ScheduleTreeElemMapping& other) const;
+  bool operator!=(const ScheduleTreeElemMapping& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
@@ -181,11 +171,11 @@ struct ScheduleTreeElemMappingFilter : public ScheduleTreeElemFilter {
 
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
+  // Assignment of the affine functions to the identifiers as parameters.
+  isl::union_set filter_;
 };
 
 struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
   explicit ScheduleTreeElemSequence() {}
@@ -202,8 +192,6 @@ struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
 };
 
 struct ScheduleTreeElemSet : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
   explicit ScheduleTreeElemSet() {}
@@ -224,8 +212,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   ScheduleTreeElemBand() = default;
 
  public:
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Band;
 
@@ -260,7 +246,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // Drop the "n" dimensions starting at "pos" from "band".
   // We apply the transformation even if "n" is zero to ensure consistent
   // behavior with respect to changes in the schedule space.
-  // The caller is responsible for updating the isolate option (Note: why?)
   void drop(size_t pos, size_t n);
 
  public:
@@ -279,8 +264,6 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
  * underneath the innermost band member mapped to threads.
  */
 struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTreeElemBase {
-  static constexpr std::initializer_list<detail::ScheduleTreeType>
-      NodeDerivedTypes{detail::ScheduleTreeType::None};
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
   explicit ScheduleTreeElemThreadSpecificMarker() {}

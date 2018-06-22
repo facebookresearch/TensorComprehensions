@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/external/isl.h"
@@ -324,6 +325,38 @@ isl::union_set activeDomainPoints(
 isl::union_set activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
+
+// Collect the outer block/thread identifier mappings
+// into a filter on the active domain elements.
+isl::union_set prefixMappingFilter(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node);
+
+// Extract a mapping from the domain elements active at "tree" (in a tree
+// rooted at "root") to identifiers "ids", where all branches in "tree" are
+// assumed to have been mapped to these identifiers.  The result lives in a
+// space of the form "tupleId"["ids"...].
+isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree,
+    const std::vector<mapping::MappingId>& ids,
+    isl::id tupleId);
+
+// Is "tree" a mapping filter that maps identifiers of the type provided as
+// template argument?
+template <typename MappingType>
+bool isMappingTo(const detail::ScheduleTree* tree) {
+  using namespace detail;
+
+  if (auto filterNode = tree->elemAs<ScheduleTreeElemMapping>()) {
+    for (auto& kvp : filterNode->mapping) {
+      if (kvp.first.is<MappingType>()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 } // namespace polyhedral
 } // namespace tc

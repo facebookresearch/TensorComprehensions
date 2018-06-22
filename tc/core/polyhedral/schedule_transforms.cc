@@ -31,6 +31,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/scope_guard.h"
@@ -54,7 +55,7 @@ isl::union_map extendSchedule(
       schedule =
           schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
     }
-  } else if (auto filterElem = node->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
     schedule = schedule.intersect_domain(filterElem->filter_);
   } else if (auto extensionElem = node->elemAs<ScheduleTreeElemExtension>()) {
     // FIXME: we may need to restrict the range of reversed extension map to
@@ -72,14 +73,17 @@ isl::union_map partialScheduleImpl(
     const ScheduleTree* root,
     const ScheduleTree* node,
     bool useNode) {
-  auto schedule = isl::null<isl::union_map>();
   auto nodes = node->ancestors(root);
   if (useNode) {
     nodes.push_back(node);
   }
+  TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
+  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  TC_CHECK(domain);
+  auto schedule = isl::union_map::from_domain(domain->domain_);
   for (auto anc : nodes) {
-    if (auto domainElem = anc->elemAs<ScheduleTreeElemDomain>()) {
-      schedule = isl::union_map::from_domain(domainElem->domain_);
+    if (anc->elemAs<ScheduleTreeElemDomain>()) {
+      TC_CHECK(anc == root);
     } else {
       schedule = extendSchedule(anc, schedule);
     }
@@ -101,24 +105,44 @@ isl::union_map partialSchedule(
 }
 
 namespace {
-// Get a set of domain elements that are active below
-// the given branch of nodes.
+/*
+ * If "node" is any filter, then intersect "domain" with that filter.
+ */
+isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
+/*
+ * If "node" is a mapping, then intersect "domain" with its filter.
+ */
+isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
+  if (auto filterElem = node->elemAs<ScheduleTreeElemMapping>()) {
+    return domain.intersect(filterElem->filter_);
+  }
+  return domain;
+}
+
+// Get the set of domain elements that are active below
+// the given branch of nodes, filtered using "filter".
 //
-// Domain elements are introduced by the root domain node.  Filter nodes
-// disable the points that do not intersect with the filter.  Extension nodes
+// Domain elements are introduced by the root domain node.  Some nodes
+// refine this set of elements based on "filter".  Extension nodes
 // are considered to introduce additional domain points.
-isl::union_set activeDomainPointsHelper(
+isl::union_set collectDomain(
     const ScheduleTree* root,
-    const vector<const ScheduleTree*>& nodes) {
+    const vector<const ScheduleTree*>& nodes,
+    isl::union_set (*filter)(isl::union_set domain, const ScheduleTree* node)) {
   auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
   TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
   for (auto anc : nodes) {
-    if (auto filterElem = anc->elemAsBase<ScheduleTreeElemFilter>()) {
-      domain = domain.intersect(filterElem->filter_);
-    } else if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
+    domain = filter(domain, anc);
+    if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
@@ -128,7 +152,22 @@ isl::union_set activeDomainPointsHelper(
   }
   return domain;
 }
+
+// Get the set of domain elements that are active below
+// the given branch of nodes.
+isl::union_set activeDomainPointsHelper(
+    const ScheduleTree* root,
+    const vector<const ScheduleTree*>& nodes) {
+  return collectDomain(root, nodes, &applyFilter);
+}
+
 } // namespace
+
+isl::union_set prefixMappingFilter(
+    const ScheduleTree* root,
+    const ScheduleTree* node) {
+  return collectDomain(root, node->ancestors(root), &applyMapping);
+}
 
 isl::union_set activeDomainPoints(
     const ScheduleTree* root,
@@ -323,11 +362,8 @@ ScheduleTree* bandTile(
   auto eb = st->elemAs<ScheduleTreeElemBand>();
   TC_CHECK(eb) << "Not a band: " << *st;
 
-  if (tileSizes.size() == 0) {
-    return st;
-  }
   auto& band = *eb;
-  TC_CHECK(band.permutable_) << "Can't tile an non-permutable band" << band;
+  TC_CHECK(band.permutable_) << "Can't tile a non-permutable band" << band;
 
   auto ts = tileSizes;
   if (band.nMember() > ts.size()) {
@@ -345,9 +381,7 @@ ScheduleTree* bandTile(
   // Create a child, copy of st before outer tiling
   ScheduleTreeUPtr childUPtr = ScheduleTree::makeScheduleTree(*st);
 
-  for (size_t i = 0;
-       i < std::min(static_cast<size_t>(band.nMember()), ts.size());
-       ++i) {
+  for (size_t i = 0; i < band.nMember(); ++i) {
     auto upa = band.mupa_.get_union_pw_aff(i);
     if (ts[i]) {
       upa = upa.scale_down(isl::val(st->ctx_, ts[i])).floor();
@@ -363,7 +397,6 @@ ScheduleTree* bandTile(
   auto ebChild = childUPtr->elemAs<ScheduleTreeElemBand>();
   TC_CHECK(ebChild) << "Not a band: " << *childUPtr;
   auto& childBand = *ebChild;
-  // No need for isl_schedule_band_point, it's almost done
   if (tileOptions & TileOptions::ShiftPointLoops) {
     auto mupa = band.mupa_;
     if (!(tileOptions & TileOptions::ScaleTileLoops)) {
@@ -473,9 +506,9 @@ isl::multi_union_pw_aff prefixScheduleMupa(
 isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
+  auto prefix = prefixScheduleMupa(root, tree);
   auto band = tree->elemAs<ScheduleTreeElemBand>();
-  TC_CHECK(band);
-  return prefixScheduleMupa(root, tree).flat_range_product(band->mupa_);
+  return band ? prefix.flat_range_product(band->mupa_) : prefix;
 }
 
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
@@ -700,7 +733,9 @@ namespace {
 void gist(ScheduleTree* tree, isl::union_set context) {
   if (auto bandElem = tree->elemAs<ScheduleTreeElemBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
-  } else if (auto filterElem = tree->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemMapping>()) {
+    filterElem->filter_ = filterElem->filter_.gist(context);
+  } else if (auto filterElem = tree->elemAs<ScheduleTreeElemFilter>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
     if (filterElem->filter_.is_empty()) {
       tree->detachChildren();
@@ -712,7 +747,7 @@ void gist(ScheduleTree* tree, isl::union_set context) {
   if (tree->elemAs<ScheduleTreeElemSequence>()) {
     for (auto i = tree->numChildren(); i > 0; --i) {
       auto child = tree->child({i - 1});
-      if (auto filterElem = child->elemAsBase<ScheduleTreeElemFilter>()) {
+      if (auto filterElem = child->elemAs<ScheduleTreeElemFilter>()) {
         if (filterElem->filter_.is_empty()) {
           tree->detachChild(i - 1);
         }
@@ -796,6 +831,55 @@ void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
   auto childPos = tree->positionInParent(parent);
   seq->insertChild(0, gistedFilter(other, parent->detachChild(childPos)));
   parent->insertChild(childPos, std::move(seq));
+}
+
+/*
+ * Extract a mapping from the domain elements active at "tree"
+ * to identifiers "ids", where all branches in "tree"
+ * are assumed to have been mapped to these identifiers.
+ * The result lives in a space of the form "tupleId"["ids"...].
+ */
+isl::multi_union_pw_aff extractDomainToIds(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree,
+    const std::vector<mapping::MappingId>& ids,
+    isl::id tupleId) {
+  using namespace polyhedral::detail;
+
+  auto space = isl::space(tree->ctx_, 0);
+  auto empty = isl::union_set::empty(space);
+  space = space.named_set_from_params_id(tupleId, ids.size());
+  auto zero = isl::multi_val::zero(space);
+  auto domainToIds = isl::multi_union_pw_aff(empty, zero);
+
+  for (auto mapping : tree->collect(tree, ScheduleTreeType::Mapping)) {
+    auto mappingNode = mapping->elemAs<ScheduleTreeElemMapping>();
+    auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
+    for (auto id : ids) {
+      if (mappingNode->mapping.count(id) == 0) {
+        break;
+      }
+      auto idMap = mappingNode->mapping.at(id);
+      list = list.add(idMap);
+    }
+    // Ignore this node if it does not map to all required ids.
+    if (static_cast<size_t>(list.n()) != ids.size()) {
+      continue;
+    }
+    auto nodeToIds = isl::multi_union_pw_aff(space, list);
+    auto active = activeDomainPoints(root, mapping);
+    TC_CHECK(active.intersect(domainToIds.domain()).is_empty())
+        << "conflicting mappings; are the filters in the tree disjoint?";
+    nodeToIds = nodeToIds.intersect_domain(active);
+    domainToIds = domainToIds.union_add(nodeToIds);
+  }
+
+  auto active = activeDomainPoints(root, tree);
+  TC_CHECK(active.is_subset(domainToIds.domain()))
+      << "not all domain points of\n"
+      << active << "\nwere mapped to the required ids";
+
+  return domainToIds;
 }
 
 } // namespace polyhedral

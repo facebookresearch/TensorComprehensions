@@ -45,21 +45,10 @@ Machine Learning.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Caffe2 Integration
-
-   framework/caffe2_integration/integration_with_example
-   framework/caffe2_integration/installation_caffe2_integration
-
-.. toctree::
-   :maxdepth: 1
    :caption: Installation
 
    installation
-   installation_docker_image
-   installation_conda_dep
-   installation_conda
-   installation_non_conda
-
+   installation_colab_research
 
 .. toctree::
    :maxdepth: 1

@@ -60,17 +60,16 @@ DEFINE_bool(
     false,
     "Test on other platforms than we claim perf results for");
 DEFINE_bool(autotune, false, "Enable autotuning");
-DEFINE_string(save_tuner_proto_prefix, "/tmp", "Enable autotuning");
 
 struct Benchmark : public ::testing::Test {
   void SetUp() {
     if (!FLAGS_disable_version_checks) {
       auto cudnnVersion = cudnnGetVersion();
-      TC_CHECK_LE(6021, cudnnVersion)
+      TC_CHECK_LE(6021u, cudnnVersion)
           << "[CUDNN][VERSION] Enforce version compatibility check";
 
       auto cudaRtVersion = cudnnGetCudartVersion();
-      TC_CHECK_LE(8000, cudaRtVersion)
+      TC_CHECK_LE(8000u, cudaRtVersion)
           << "[CUDART][VERSION] Enforce version compatibility check";
 
       int cublasVersion;
@@ -173,8 +172,6 @@ struct Benchmark : public ::testing::Test {
   }
 
   std::vector<tc::CudaMappingOptions> autotune(
-      std::string cacheFilename,
-      std::string resultsFilename,
       std::string tc,
       std::string kernelName,
       std::vector<at::Tensor> inputs,
@@ -191,7 +188,7 @@ struct Benchmark : public ::testing::Test {
         geneticAutotuneATen(tc);
     auto bestOptions = [&]() {
       auto options = geneticAutotuneATen.tune(
-          kernelName, inputs, baseMapping, cacheFilename, fixedParams);
+          kernelName, inputs, {baseMapping}, fixedParams);
       TC_CHECK_GE(options.size(), 1u) << "Benchmark mode: at least one "
                                       << "options expected";
       return options[0];

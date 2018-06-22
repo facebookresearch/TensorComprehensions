@@ -60,7 +60,7 @@ class ATenCudaTuner : public ATenCudaGeneticTuner {
       const std::vector<at::Tensor>& inputs,
       const size_t numCandidates) {
     tc::autotune::OptionsCache<tc::CudaBackend> cache;
-    cache.loadCacheFromFile(tc::makeOptionsFilename(cacheFileName));
+    cache.loadCacheFromFile(cacheFileName + ".options");
     auto inputsDLTensors = tc::aten::makeDLConstTensors(inputs);
     return cache.getTopKOptions(
         lang::canonicalTc(tcEntryPointMap_.at(entryPoint)),
@@ -106,7 +106,7 @@ PYBIND11_MODULE(tc, m) {
   m.def(
       "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
-  py::class_<ATenCudaTuner>(m, "ATenCudaTuner")
+  py::class_<ATenCudaTuner>(m, "ATenCudaTuner", py::module_local())
       .def(py::init<const std::string>())
       .def(
           "pop_size",
@@ -180,7 +180,7 @@ PYBIND11_MODULE(tc, m) {
               const std::string& cacheFileName) {
             std::vector<at::Tensor> atInputs = getATenTensors(inputs, dlpack);
             auto bestOptions =
-                instance.tune(entryPoint, atInputs, baseMapping, cacheFileName);
+                instance.tune(entryPoint, atInputs, {baseMapping});
             if (bestOptions.size() > 0u) {
               return bestOptions[0];
             } else {
@@ -204,7 +204,8 @@ PYBIND11_MODULE(tc, m) {
                 numCandidates);
           });
 
-  py::class_<ATenCudaCompilationUnit>(m, "ATenCompilationUnit")
+  py::class_<ATenCudaCompilationUnit>(
+      m, "ATenCompilationUnit", py::module_local())
       .def(py::init<>())
       .def("define", &ATenCudaCompilationUnit::define, "Define the TC language")
       .def(
@@ -255,7 +256,8 @@ PYBIND11_MODULE(tc, m) {
   py::class_<tc::CudaMappingOptions>(
       m,
       "CudaMappingOptions",
-      "MappingCudaMappingOptions for a Tensor Comprehensions (TC)")
+      "CudaMappingOptions for a Tensor Comprehensions (TC)",
+      py::module_local())
       .def(
           py::init([](std::string type) {
             if (type == "naive") {

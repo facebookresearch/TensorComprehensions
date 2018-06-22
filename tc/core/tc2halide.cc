@@ -53,10 +53,17 @@ Type translateScalarType(int tcType) {
       return Int(32);
     case lang::TK_INT64:
       return Int(64);
+    case lang::TK_FLOAT16:
+      return Float(16);
+    case lang::TK_FLOAT32:
+      return Float(32);
+    case lang::TK_FLOAT64:
+      return Float(64);
     case lang::TK_FLOAT:
       return Float(32);
     case lang::TK_DOUBLE:
       return Float(64);
+
     default:
       LOG(FATAL) << "Unhandled TC scalar type: " << tcType << '\n';
       return Type();
