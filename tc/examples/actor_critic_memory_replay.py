@@ -108,7 +108,7 @@ def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
     final_rewards = torch.tensor(list(final_rewards))
-    final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
+    #final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in zip(actions_probs[batch_id], values[batch_id]):
             reward = final_rewards[batch_id] - value.item()
@@ -145,6 +145,7 @@ tab_best=[]
 best=-0.5
 v_losses=[]
 p_losses=[]
+best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
@@ -155,7 +156,10 @@ for i in range(NB_EPOCHS):
     vloss, ploss = finish_episode(actions_probs, values, rewards)
     v_losses.append(vloss)
     p_losses.append(ploss)
-    best = max(best, reward)
+    if(best < reward):
+        best=reward
+        best_options = out_actions.numpy().astype(int)
+        print(best_options)
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
@@ -164,3 +168,6 @@ for i in range(NB_EPOCHS):
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)
     print(-best)
+
+print("Finally, best options are:")
+print(best_options)
