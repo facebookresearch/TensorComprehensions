@@ -360,26 +360,21 @@ class MappingOptionsCache {
 PYBIND11_MODULE(tclib, m) {
   m.doc() = "Python bindings for Tensor Comprehensions";
 
-  m.def("set_logtostderr", [](bool logtostderr) {
-    FLAGS_logtostderr = logtostderr;
-  });
-  m.def("set_debug_lang", [](bool debug_lang) {
-    tc::FLAGS_debug_lang = debug_lang;
-  });
-  m.def("set_debug_halide", [](bool debug_halide) {
+  // Simple functions to set up debugging
+  m.def(
+      "logtostderr", [](bool logtostderr) { FLAGS_logtostderr = logtostderr; });
+  m.def(
+      "debug_lang", [](bool debug_lang) { tc::FLAGS_debug_lang = debug_lang; });
+  m.def("debug_halide", [](bool debug_halide) {
     tc::FLAGS_debug_halide = debug_halide;
   });
-  m.def("set_debug_tc_mapper", [](bool debug_tc_mapper) {
+  m.def("debug_tc_mapper", [](bool debug_tc_mapper) {
     tc::FLAGS_debug_tc_mapper = debug_tc_mapper;
   });
-  m.def("set_debug_cuda", [](bool debug_cuda) {
-    tc::FLAGS_debug_cuda = debug_cuda;
-  });
-  m.def("set_debug_tuner", [](bool debug_tuner) {
+  m.def("debug_tuner", [](bool debug_tuner) {
     tc::FLAGS_debug_tuner = debug_tuner;
   });
-  m.def(
-      "set_dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
+  m.def("dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
   py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
       .def("run", &TcExecutor::run)
