@@ -398,8 +398,15 @@ struct LdgWrapper {
 
 template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
-  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
   context.ss << context.build().access_from(access).to_C_str();
+}
+
+// Print an access to global memory, wrapping the access in an "__ldg()"
+// call if the accessed tensor is known to be read-only.
+template <typename AFF>
+void emitGlobalAccess(AFF access, const CodegenStatementContext& context) {
+  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
+  emitAccess(access, context);
 }
 } // namespace
 
@@ -414,9 +421,9 @@ void emitCopyStmt(const CodegenStatementContext& context) {
   if (isRead) {
     emitAccess(isl::multi_pw_aff(promoted), context);
     context.ss << " = ";
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
   } else {
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
     context.ss << " = ";
     emitAccess(isl::multi_pw_aff(promoted), context);
   }
