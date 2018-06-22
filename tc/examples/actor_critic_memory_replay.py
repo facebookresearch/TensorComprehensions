@@ -60,14 +60,14 @@ class Predictor(nn.Module):
         return out_action, out_value
 
 class FullNetwork(nn.Module):
-    def __init__(self, nb_hyperparams, init_input_sz, batch_size):
+    def __init__(self, nb_hyperparams, init_input_sz):
         super(FullNetwork, self).__init__()
         self.nb_hyperparams = nb_hyperparams
         self.init_input_sz = init_input_sz
         self.nets = [Predictor(init_input_sz + i, int(my_utils.cat_sz[i])) for i in range(nb_hyperparams)]
         self.nets = nn.ModuleList(self.nets)
 
-    def select_action(self, x, i, batch_id, out_sz):
+    def select_action(self, x, i, out_sz):
         geps = 0.1
         proba = np.random.rand()
         probs, state_value = self.nets[i](x)
@@ -77,11 +77,11 @@ class FullNetwork(nn.Module):
         action = m.sample()
         return action.item(), m.log_prob(action), state_value
 
-    def forward(self, x, batch_id):
+    def forward(self, x):
         actions_prob = []
         values = []
         for i in range(self.nb_hyperparams):
-            sym, action_prob, value = self.select_action(x, i, batch_id, int(my_utils.cat_sz[i]))
+            sym, action_prob, value = self.select_action(x, i, int(cat_sz[i]))
             actions_prob.append(action_prob)
             values.append(value)
             x = torch.cat([x, torch.FloatTensor([sym])])
@@ -97,7 +97,7 @@ init_input_sz = torch.from_numpy(init_input_sz).float()
 inp = init_input
 my_utils.computeCat(inp)
 
-net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ, BATCH_SZ)
+net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
@@ -106,7 +106,7 @@ tc_prog = tc.define(code, name="group_normalization")
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
-    final_rewards = torch.tensor(final_rewards)
+    final_rewards = torch.tensor(list(final_rewards))
     final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in zip(actions_probs[batch_id], values[batch_id]):
@@ -117,7 +117,7 @@ def finish_episode(actions_probs, values, final_rewards):
     vloss = torch.stack([torch.stack(value_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
     ploss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
     loss = ploss + vloss
-    loss.backward()
+    loss.backward(retain_graph=True)
     optimizer.step()
     return vloss.item(), ploss.item()
 
@@ -125,14 +125,14 @@ buff = deque()
 MAXI_BUFF_SZ = 32
 
 def add_to_buffer(actions_probs, values, reward):
-    global buff 
+    global buff
     if len(buff) == MAXI_BUFF_SZ:
         buff.popleft()
     buff.append({actions_probs, values, reward})
 
 def select_batch():
     #random.sample()
-    batch = [np.random.choice(buff) for i in range(BATCH_SZ)]
+    batch = [buff[np.random.randint(len(buff))] for i in range(BATCH_SZ)]
     batch=np.array(batch)
     return batch[:,0], batch[:,1], batch[:,2]
 
