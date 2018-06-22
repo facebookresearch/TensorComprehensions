@@ -54,9 +54,10 @@ def evalTime(opt, iters=20, warmup=5, naive=False):
     return mean_time
 
 def optionsFromVector(vect):
+    strat_str = ["Max", "Preserve3Coincident", "Min"]
     options = tc.CudaMappingOptions("naive")
-    #options.outerScheduleFusionStrategy("Max")
-    #options.intraTileScheduleFusionStrategy("Min")
+    options.outerScheduleFusionStrategy(strat_str[vect[0]])
+    options.intraTileScheduleFusionStrategy(strat_str[vect[1]])
     options.fixParametersBeforeScheduling(vect[2])
     options.tile([vect[3]]) #why list in doc?
     options.unroll(2**vect[4]) #128 is too big? trying 30
