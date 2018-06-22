@@ -434,6 +434,15 @@ PYBIND11_MODULE(tclib, m) {
   });
   m.def("dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
 
+  // Access the names of the defs in a TC string
+  m.def("parse_defs", [](const std::string& tc) {
+    std::vector<std::string> res;
+    for (auto kvp : tc::detail::parse(tc)) {
+      res.push_back(kvp.first);
+    }
+    return res;
+  });
+
   py::class_<TcExecutor>(m, "TcExecutor", py::module_local())
       .def("run", &TcExecutor::run)
       .def("unchecked_run", &TcExecutor::uncheckedRun);
