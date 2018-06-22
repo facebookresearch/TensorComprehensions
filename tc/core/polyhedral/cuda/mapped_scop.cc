@@ -105,7 +105,7 @@ template <typename MappingTypeId>
 detail::ScheduleTree* MappedScop::map(
     detail::ScheduleTree* tree,
     isl::union_pw_aff_list list) {
-  size_t nToMap = list.n();
+  size_t nToMap = list.size();
   const auto& extent = mappingSize<MappingTypeId>(this).view;
   TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
 
@@ -116,7 +116,7 @@ detail::ScheduleTree* MappedScop::map(
   auto affList = isl::union_pw_aff_list(list.get_ctx(), 0);
   for (size_t i = 0; i < nToMap; ++i) {
     auto id = MappingTypeId::makeId(i);
-    auto upa = list.get(i);
+    auto upa = list.get_at(i);
     TC_CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
     upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
     affList = affList.add(upa);
@@ -143,7 +143,7 @@ detail::ScheduleTree* MappedScop::mapBlocksForward(
   TC_CHECK(bandNode) << "expected a band, got " << *band;
 
   auto list = bandNode->mupa_.get_union_pw_aff_list();
-  list = list.drop(nToMap, list.n() - nToMap);
+  list = list.drop(nToMap, list.size() - nToMap);
   return map<mapping::BlockId>(band, list);
 }
 
@@ -369,7 +369,7 @@ detail::ScheduleTree* MappedScop::mapThreadsBackward(
   insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
 
   auto list = bandNode->mupa_.get_union_pw_aff_list().reverse();
-  list = list.drop(nToMap, list.n() - nToMap);
+  list = list.drop(nToMap, list.size() - nToMap);
   return map<mapping::ThreadId>(band, list);
 }
 

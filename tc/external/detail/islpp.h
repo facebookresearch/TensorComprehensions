@@ -367,7 +367,7 @@ struct ListIter {
     pos_++;
   }
   E operator*() {
-    return list_.get(pos_);
+    return list_.get_at(pos_);
   }
 
  private:
@@ -376,13 +376,13 @@ struct ListIter {
 };
 
 template <typename L>
-auto begin(L& list) -> ListIter<decltype(list.get(0)), L> {
-  return ListIter<decltype(list.get(0)), L>(list, 0);
+auto begin(L& list) -> ListIter<decltype(list.get_at(0)), L> {
+  return ListIter<decltype(list.get_at(0)), L>(list, 0);
 }
 
 template <typename L>
-auto end(L& list) -> ListIter<decltype(list.get(0)), L> {
-  return ListIter<decltype(list.get(0)), L>(list, list.n());
+auto end(L& list) -> ListIter<decltype(list.get_at(0)), L> {
+  return ListIter<decltype(list.get_at(0)), L>(list, list.size());
 }
 
 } // namespace detail

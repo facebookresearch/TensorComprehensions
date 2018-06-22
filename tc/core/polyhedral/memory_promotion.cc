@@ -449,14 +449,14 @@ isl::multi_aff dropDummyTensorDimensions(
   auto list = schedule.get_aff_list();
   auto space = schedule.get_space().domain();
 
-  auto n = list.n();
+  auto n = list.size();
   for (int i = n - 1; i >= 0; --i) {
     if (decl.sizes[i] == 1) {
       list = list.drop(i, 1);
     }
   }
 
-  space = add_range(space, list.n());
+  space = add_range(space, list.size());
   return isl::multi_aff(space, list);
 }
 
