@@ -485,19 +485,6 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
     EXPECT_TRUE(cDeclPos == std::string::npos)
         << "tensor C promoted to register but has no reuse";
   }
-
-  void expectNoSymbolicSubscript(const std::string& code) {
-    // We don't know the exact name of the iterator, but it starts with c.
-    auto oWithIteratorPos = code.find("_O_0[c");
-    auto oWithThreadPos = code.find("_O_0[t1");
-
-    EXPECT_TRUE(oWithIteratorPos == std::string::npos)
-        << "accessing local arrays with iterators in subscripts makes "
-        << "these arrays placed in local memory instead of registers";
-    EXPECT_TRUE(oWithThreadPos == std::string::npos)
-        << "expected per-thread groups to be computed, i.e. thread "
-        << "identifiers should not appear in the subscripts";
-  }
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
@@ -562,7 +549,6 @@ TEST_F(MatMulBias, RegistersAtRoot) {
       << "expected O to be promoted to registers";
 
   expectNoABCPromotion(code);
-  expectNoSymbolicSubscript(code);
 
   auto o00Pos = code.find("_O_0[0][0]");
   auto o10Pos = code.find("_O_0[1][0]");
@@ -597,7 +583,6 @@ TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
       << "not expected O to be promoted to registers";
 
   expectNoABCPromotion(code);
-  expectNoSymbolicSubscript(code);
 }
 
 TEST_F(MatMulBias, RegistersBelowFirstBand) {
@@ -621,7 +606,6 @@ TEST_F(MatMulBias, RegistersBelowFirstBand) {
   EXPECT_TRUE(oDeclPos != std::string::npos)
       << "expected O to be promoted to registers";
   expectNoABCPromotion(code);
-  expectNoSymbolicSubscript(code);
 }
 
 class Strided : public TestMapper {
