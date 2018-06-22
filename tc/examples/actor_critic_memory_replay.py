@@ -129,7 +129,7 @@ def add_to_buffer(actions_probs, values, reward):
     global buff
     if len(buff) == MAXI_BUFF_SZ:
         buff.popleft()
-    buff.append({actions_probs, values, reward})
+    buff.append((actions_probs, values, reward))
 
 def select_batch():
     #random.sample()
