@@ -102,6 +102,7 @@ optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
 tc_prog = tc.define(code, name="group_normalization")
+my_utils.set_tcprog(tc_prog)
 
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
