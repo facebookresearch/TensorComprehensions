@@ -97,8 +97,8 @@ def computeCat(inp_arg):
 
     divs = getAllDivs(inp)
 
-    cat_val.append([1,2,3])
-    cat_val.append([1,2,3])
+    cat_val.append([0,1,2])
+    cat_val.append([0,1,2])
     cat_val.append([0,1])
     cat_val.append(divs + [0])
     cat_val.append([i for i in range(30)])
