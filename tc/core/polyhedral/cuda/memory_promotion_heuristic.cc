@@ -551,11 +551,7 @@ void promoteToSharedBelow(
  * Only promote if the tensor elements referenced by the group are reused or
  * accessed in a non-coalesced way.
  */
-void promoteToSharedGreedy(
-    Scop& scop,
-    const Block& block,
-    size_t depth,
-    size_t maxMemory) {
+void promoteToSharedGreedy(Scop& scop, size_t depth, size_t maxMemory) {
   using namespace tc::polyhedral::detail;
 
   if (depth == 0) {
@@ -597,8 +593,7 @@ void promoteGreedilyAtDepth(
     size_t sharedMemorySize,
     bool unrollCopies) {
   // 1. Promote using heuristic.
-  promoteToSharedGreedy(
-      mscop.scop(), mscop.numThreads, depth, sharedMemorySize);
+  promoteToSharedGreedy(mscop.scop(), depth, sharedMemorySize);
 
   // 2. Map copies to shared, state by copy
   mapCopiesToThreads(mscop, unrollCopies);
