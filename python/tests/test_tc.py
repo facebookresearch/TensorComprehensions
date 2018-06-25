@@ -129,7 +129,10 @@ class TestTC(unittest.TestCase):
         T = tc.define(tc_str, tc.make_naive_options_factory())
         inp = torch.ones(1, 1, 4, 4, device='cuda')
         out = T.avgpool(inp)
-        # TODO: test results!!!
+
+        from torch.nn.modules.pooling import AvgPool2d
+        ref = AvgPool2d(2, stride=1).forward(inp)
+        tc.assert_almost_equal(ref, out, inp)
 
     #
     # This test implements group normalization as a single TC kernel.
@@ -138,13 +141,16 @@ class TestTC(unittest.TestCase):
     def test_group_norm_fused(self):
         group_normalization = """
             def group_normalization(
-                float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta) -> (Sum, SumSq, O)
+                float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
+            -> (Sum, SumSq, O)
             {
                 Sum(n, g) +=! I(n, g, r_d, r_h, r_w)
               SumSq(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
-                O(n, g, d, h, w) = gamma(g, d)
+                O(n, g, d, h, w) =  gamma(g, d)
                     * ( I(n, g, d, h, w) - Sum(n, g) / (D * H * W))
-                    * rsqrt( (SumSq(n, g) / (D * H * W) - Sum(n, g) * Sum(n, g)) + 1e-5 )
+                    * rsqrt( (SumSq(n, g) - Sum(n, g) * Sum(n, g) / (D * H * W))
+                           / (D * H * W)
+                           + 1e-5)
                     + beta(g, d)
             }
         """
@@ -157,10 +163,15 @@ class TestTC(unittest.TestCase):
                 tuner_config=tuner_config))
         I, gamma, beta = (
             torch.randn(N, G, D, H, W, device='cuda'),
-            torch.randn(G, D, device='cuda'),
-            torch.randn(G, D, device='cuda'))
+            torch.randn(G, D, device='cuda').fill_(1.0),
+            torch.randn(G, D, device='cuda').zero_())
         Sum, SumSq, O = T.group_normalization(I, gamma, beta)
-        # TODO: test results!!!
+
+        from torch.nn.modules.normalization import GroupNorm
+        GN = GroupNorm(G, G*D).cuda()
+        ref = GN.forward(I.view((N, G*D, H, W)))
+
+        tc.assert_almost_equal(ref, O.view((N, G*D, H, W)), I, operations=D*H*W)
 
     #
     # This test implements group normalization as 2 TC kernels
@@ -191,8 +202,8 @@ class TestTC(unittest.TestCase):
         N, G, D, H, W = 32, 32, 4, 56, 56
         I, gamma, beta = (
             torch.randn(N, G, D, H, W, device='cuda'),
-            torch.randn(G, D, device='cuda'),
-            torch.randn(G, D, device='cuda'))
+            torch.randn(G, D, device='cuda').fill_(1.0),
+            torch.randn(G, D, device='cuda').zero_())
 
         T = tc.define(
             group_normalization,
@@ -208,7 +219,12 @@ class TestTC(unittest.TestCase):
         mean, var = T.moments(I.view((N * G, -1)))
         out = T.group_normalization(
             I, gamma, beta, mean.view((N, G)), var.view((N, G)))
-        # TODO: test results!!!
+
+        from torch.nn.modules.normalization import GroupNorm
+        GN = GroupNorm(G, G*D).cuda()
+        ref = GN.forward(I.view((N, G*D, H, W)))
+
+        tc.assert_almost_equal(ref, out.view((N, G*D, H, W)), I, operations=D*H*W)
 
     #
     # TC example without fallback but with tuning starting from MappingOptions('naive').
@@ -239,8 +255,8 @@ class TestTC(unittest.TestCase):
             N, G, D, H, W = 32, 32, 4, 56, 56
             I, gamma, beta = (
                 torch.randn(N, G, D, H, W, device='cuda'),
-                torch.randn(G, D, device='cuda'),
-                torch.randn(G, D, device='cuda'))
+                torch.randn(G, D, device='cuda').fill_(1.0),
+                torch.randn(G, D, device='cuda').zero_())
 
             T = tc.define(
                 group_normalization,
@@ -266,31 +282,40 @@ class TestTC(unittest.TestCase):
             out = T.group_normalization(
                 I, gamma, beta, mean.view((N, G)), var.view((N, G)))
 
+            from torch.nn.modules.normalization import GroupNorm
+            GN = GroupNorm(G, G*D).cuda()
+            ref = GN.forward(I.view((N, G*D, H, W)))
+
+            tc.assert_almost_equal(ref, out.view((N, G*D, H, W)), I, operations=D*H*W)
+
 
     #
     # This tests single kernel forward/backward with tc.make_autograd.
     #
     def test_conv_with_backward_fused(self):
         conv = """
-        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
+        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(M) Bias)
+        -> (O)
+        {
             O(n, m, h, w) +=!
                 I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
+            O(n, m, h, w)  = O(n, m, h, w) + Bias(m)
         }
         def convolution_grad(
-            float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O)
-            -> (d_I, d_W1)
+            float(N,C,H,W) I, float(M,C,KH,KW) W1, float(M) Bias, float(N,M,H,W) d_O)
+            -> (d_I, d_W1, d_Bias)
         {
             d_I(n, c, h, w) +=!
                 d_O(  n, r_m, h - r_kh, w - r_kw) * W1(r_m, c, r_kh, r_kw)
             d_W1(m, c, kh, kw) +=!
                 d_O(r_n,   m, r_h - kh, r_w - kw) *  I(r_n, c,  r_h,  r_w)
+            # TODO: Bias incorrect + check
+            d_Bias(m) = Bias(m)
         }
         """
 
         N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
-        I, W = (
-            torch.randn(N, C, H, W, device='cuda', requires_grad=True),
-            torch.randn(O, C, kH, kW, device='cuda', requires_grad=True))
+        I = torch.randn(N, C, H, W, device='cuda', requires_grad=True)
         T = tc.define(
             conv,
             tc.make_autotuned_options_factory(
@@ -298,13 +323,22 @@ class TestTC(unittest.TestCase):
                 tuner_config=tuner_config))
         convolution = tc.make_autograd(T.convolution, T.convolution_grad)
 
+        # Reference
+        from torch.nn.modules.conv import Conv2d
+        Conv = Conv2d(C, O, 1, stride=1).cuda()
+        ref = Conv.forward(I)
+
+        W = Conv.weight.clone()
+        Bias = Conv.bias.clone()
+
         # First occurrence triggers tuning (make_autotuned_options_factory)
-        out = convolution(I, W)
+        out = convolution(I, W, Bias)
         out.sum().backward()
 
-        out = convolution(I, W)
+        out = convolution(I, W, Bias)
         out.sum().backward()
-        # TODO: test results!!!
+
+        tc.assert_almost_equal(ref, out, I, operations=C * kH * kW)
 
     #
     # This tests 1-kernel forward/ 2-kernel backward with tc.make_autograd.
@@ -314,9 +348,12 @@ class TestTC(unittest.TestCase):
     #
     def test_conv_with_backward_2kernels(self):
         conv = """
-        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
+        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(M) Bias)
+        -> (O)
+        {
             O(n, m, h, w) +=!
                 I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
+            O(n, m, h, w)  = O(n, m, h, w) + Bias(m)
         }
         def convolution_igrad(float(M,C,KH,KW) W1, float(N,M,H,W) d_O)
             -> (d_I)
@@ -329,6 +366,11 @@ class TestTC(unittest.TestCase):
             d_W1(m, c, kh, kw) +=!
                 d_O(r_n,   m, r_h - kh, r_w - kw) *  I(r_n, c,  r_h,  r_w)
         }
+        def convolution_biasgrad(float(M) Bias) -> (d_Bias)
+        {
+            # TODO: Bias incorrect + check
+            d_Bias(m) = Bias(m)
+        }
         """
 
         N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
@@ -337,26 +379,34 @@ class TestTC(unittest.TestCase):
             tc.make_autotuned_options_factory(
                 starting_options='naive',
                 tuner_config=tuner_config))
-        I, W = (
-            torch.randn(N, C, H, W, device='cuda', requires_grad=True),
-            torch.randn(O, C, kH, kW, device='cuda', requires_grad=True))
+        I = torch.randn(N, C, H, W, device='cuda', requires_grad=True)
 
-        def convolution_backward(I, W, d_O):
+        # Reference
+        from torch.nn.modules.conv import Conv2d
+        Conv = Conv2d(C, O, 1, stride=1).cuda()
+        ref = Conv.forward(I)
+
+        W = Conv.weight.clone()
+        Bias = Conv.bias.clone()
+
+        def convolution_backward(I, W, Bias, d_O):
             d_I = T.convolution_igrad(W, d_O)
             d_O = T.convolution_wgrad(I, d_O)
-            return (d_I, d_O)
+            d_Bias = T.convolution_biasgrad(Bias)
+            return (d_I, d_O, d_Bias)
 
         convolution_function = tc.make_autograd(
             T.convolution, convolution_backward)
 
         # First occurrence triggers tuning
-        out = convolution_function(I, W)
+        out = convolution_function(I, W, Bias)
         out.sum().backward()
 
         # Subsequent occurrences do not
-        out = convolution_function(I, W)
+        out = convolution_function(I, W, Bias)
         out.sum().backward()
-        # TODO: test results!!!
+
+        tc.assert_almost_equal(ref, out, I, operations=C * kH * kW)
 
     #
     # This tests the direct use of pybinds which are closer to C++
@@ -424,7 +474,13 @@ class TestTC(unittest.TestCase):
             executor = tclib.compile(
                 tensordot_str, entry_point, (I0, I1), best_options)
             O = executor.run((I0, I1), ())
-            # TODO: test results!!!
+
+            # No simple torch baseline, compare against naive
+            executor = tclib.compile(
+                tensordot_str, entry_point, (I0, I1), tc.MappingOptions('naive'))
+            ref = executor.run((I0, I1), ())
+
+            tc.assert_almost_equal(ref, O, I0, I1, operations=C2)
 
 if __name__ == '__main__':
     unittest.main()
