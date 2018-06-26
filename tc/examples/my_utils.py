@@ -77,7 +77,7 @@ def computeDivs(sz):
         l.append((sz+i)//(i+1))
     return l
 
-def getAllDivs(inp, maxp2=31):
+def getAllDivs(inp, maxp2=8):
     p2 = []
     pp=1
     for i in range(maxp2+1):
