@@ -101,6 +101,8 @@ Build TC with dependencies supplied by conda
 
     .. code-block:: bash
 
+       git clone http://www.github.com/facebookresearch/TensorComprehensions --recursive
+       cd TensorComprehensions
        CLANG_PREFIX=$(${CONDA_PREFIX}/bin/llvm-config --prefix) ./build.sh
 
 You may need to pass the environment variable `CUDA_TOOLKIT_ROOT_DIR` pointing
