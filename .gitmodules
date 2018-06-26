@@ -2,7 +2,7 @@
 [submodule "third-party/islpp"]
 	path = third-party/islpp
 	url = https://github.com/nicolasvasilache/isl.git
-	branch = ntv_dev_cpp
+	branch = ntv_dev
 [submodule "third-party/cub"]
 	path = third-party/cub
         url = https://github.com/nicolasvasilache/cub.git
