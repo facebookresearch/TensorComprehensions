@@ -274,9 +274,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     EXPECT_EQ(groups.size(), 3u);
 
     isl::space tileSpace = isl::space(ctx, 0).unnamed_set_from_params(2);
-    // Work around missing isl_set_from_multi_aff.
-    auto tileZero =
-        isl::map(isl::multi_aff::zero(tileSpace.from_range())).range();
+    auto tileZero = isl::set::from(isl::multi_aff::zero(tileSpace));
 
     // Must have groups for these tensors, in arbitrary order.
     unordered_set<string> names{"A", "B", "C"};

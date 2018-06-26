@@ -2857,6 +2857,7 @@ public:
   inline isl::set flatten() const;
   inline isl::map flatten_map() const;
   inline void foreach_basic_set(const std::function<void(isl::basic_set)> &fn) const;
+  static inline isl::set from(isl::multi_aff ma);
   inline isl::set from_params() const;
   static inline isl::set from_union_set(isl::union_set uset);
   inline isl::basic_set_list get_basic_set_list() const;
@@ -3263,6 +3264,7 @@ public:
   inline void foreach_pw_aff(const std::function<void(isl::pw_aff)> &fn) const;
   inline isl::pw_aff_list get_pw_aff_list() const;
   inline isl::space get_space() const;
+  inline isl::union_pw_aff intersect_domain(isl::union_set uset) const;
   inline bool involves_param(const isl::id &id) const;
   inline isl::union_pw_aff mod_val(isl::val f) const;
   inline int n_pw_aff() const;
@@ -3421,8 +3423,6 @@ public:
   inline bool is_subset(const isl::union_set &uset2) const;
   inline isl::union_set lexmax() const;
   inline isl::union_set lexmin() const;
-  inline isl::multi_val max_multi_union_pw_aff(const isl::multi_union_pw_aff &obj) const;
-  inline isl::multi_val min_multi_union_pw_aff(const isl::multi_union_pw_aff &obj) const;
   inline int n_set() const;
   inline isl::set params() const;
   inline isl::union_set polyhedral_hull() const;
@@ -16993,6 +16993,19 @@ void set::foreach_basic_set(const std::function<void(isl::basic_set)> &fn) const
   return void(res);
 }
 
+isl::set set::from(isl::multi_aff ma)
+{
+  if (ma.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = ma.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_set_from_multi_aff(ma.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  return manage(res);
+}
+
 isl::set set::from_params() const
 {
   if (!ptr)
@@ -19955,6 +19968,18 @@ isl::space union_pw_aff::get_space() const
   return manage(res);
 }
 
+isl::union_pw_aff union_pw_aff::intersect_domain(isl::union_set uset) const
+{
+  if (!ptr || uset.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_union_pw_aff_intersect_domain(copy(), uset.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 bool union_pw_aff::involves_param(const isl::id &id) const
 {
   if (!ptr || id.is_null())
@@ -21086,30 +21111,6 @@ isl::union_set union_set::lexmin() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_union_set_lexmin(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::multi_val union_set::max_multi_union_pw_aff(const isl::multi_union_pw_aff &obj) const
-{
-  if (!ptr || obj.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_set_max_multi_union_pw_aff(get(), obj.get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::multi_val union_set::min_multi_union_pw_aff(const isl::multi_union_pw_aff &obj) const
-{
-  if (!ptr || obj.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_set_min_multi_union_pw_aff(get(), obj.get());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
