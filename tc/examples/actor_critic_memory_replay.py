@@ -17,7 +17,7 @@ import my_utils
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
-BATCH_SZ = 8
+BATCH_SZ = 16
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -123,7 +123,7 @@ def finish_episode(actions_probs, values, final_rewards):
     return vloss.item(), ploss.item()
 
 buff = deque()
-MAXI_BUFF_SZ = 32
+MAXI_BUFF_SZ = 100
 
 def add_to_buffer(actions_probs, values, reward):
     global buff

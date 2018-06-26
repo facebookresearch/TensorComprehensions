@@ -11,7 +11,9 @@ import tensor_comprehensions as tc
 set_options = [
 [ 1, 1, 1, 13, 25, 0, 27, 18, 1, 0, 0, 0, 0],
 [ 2, 1, 0, 26, 27, 0, 0, 32, 0, 0, 0, 0, 1],
-[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
+[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1],
+[ 2, 0, 0, 20, 27, 0, 28, 1, 1, 0, 1, 0, 0],
+[ 1, 2, 1, 2, 15, 1, 16, 25, 0, 0, 0, 0, 1] #batch 16 etc
 ]
 
 code = """
@@ -44,7 +46,7 @@ my_utils.computeCat(inp)
 tc_prog = tc.define(code, name="group_normalization")
 my_utils.set_tcprog(tc_prog)
 
-perm = np.random.permutation(3)
+perm = np.random.permutation(len(set_options))
 print(perm)
 #set_options = set_options[perm]
 for i in range(len(set_options)):

@@ -24,7 +24,7 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_val = cat_val_arg
     cat_sz = cat_sz_arg
 
-def evalTime(opt, iters=20, warmup=5, naive=False):
+def evalTime(opt, iters=50, warmup=30, naive=False):
     global tc_prog, inp, cat_val
     #print(opt)
     #print(cat_val)

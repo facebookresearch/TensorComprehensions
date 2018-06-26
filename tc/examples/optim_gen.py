@@ -37,7 +37,10 @@ I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), to
 
 tc_prog = tc.define(code, name="group_normalization")
 cache = "my_file.txt"
-tc_prog.autotune(I, gamma, beta, **tc.autotuner_settings, cache=cache)
-print(tc.decode(cache + ".options"))
+config = tc.autotuner_settings
+config["pop_size"]=50
+config["generations"]=1
+tc_prog.autotune(I, gamma, beta, **config, cache="./bidule.txt")
+print(tc.decode(cache+".options"))
 
 
