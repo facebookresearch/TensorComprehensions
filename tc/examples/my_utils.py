@@ -101,7 +101,7 @@ def computeCat(inp_arg):
     cat_val.append([0,1,2])
     cat_val.append([0,1])
     cat_val.append(divs + [0])
-    cat_val.append([i for i in range(30)])
+    cat_val.append([i for i in range(10)])
     cat_val.append([0,1])
     cat_val.append(divs)
     cat_val.append(divs)

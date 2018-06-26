@@ -16,8 +16,8 @@ from collections import deque
 import my_utils
 
 set_options = [
-        [ 1, 1, 1, 13, 25, 0, 27, 18, 1, 0, 0, 0, 0],
-        [ 2, 1, 0, 26, 27, 0, 0, 32, 0, 0, 0, 0, 1],
+        [ 1, 1, 1, 0, 25, 0, 27, 18, 1, 0, 0, 0, 0],
+        [ 2, 1, 0, 0, 27, 0, 0, 32, 0, 0, 0, 0, 1],
         [ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
         ]
 
@@ -51,7 +51,7 @@ my_utils.computeCat(inp)
 tc_prog = tc.define(code, name="group_normalization")
 my_utils.set_tcprog(tc_prog)
 
-cache = "my_file.txt"
+cachef = "my_file_2.txt"
 config = tc.autotuner_settings
 config["pop_size"]=50
 config["generations"]=1
@@ -65,7 +65,7 @@ opts = [my_utils.cat_val[i][opts[i]] for i in range(NB_HYPERPARAMS)]
 print(opts)
 opts = my_utils.optionsFromVector(opts)
 
-tc_prog.autotune(I, gamma, beta, options=opts, **config, cache="./bidule.txt")
-print(tc.decode(cache+".options"))
+tc_prog.autotune(I, gamma, beta, options=opts, **config, cache=cachef)
+print(tc.decode(cachef+".options"))
 
 
