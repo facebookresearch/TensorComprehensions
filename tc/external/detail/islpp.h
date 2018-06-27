@@ -280,11 +280,19 @@ inline bool operator!=(const isl::id& id1, const isl::id& id2) {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
+
+// Given a set space, construct a map space with the input as domain and
+// a range of the given size.
+inline isl::space addRange(isl::space space, unsigned dim) {
+  auto range = space.params().unnamed_set_from_params(dim);
+  return space.map_from_domain_and_range(range);
+}
+
 // Given a space and a list of values, this returns the corresponding multi_val.
 template <typename T>
 isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
   isl::multi_val mv = isl::multi_val::zero(s);
-  TC_CHECK_EQ(vals.size(), s.dim(isl::dim_type::set));
+  TC_CHECK_EQ(vals.size(), static_cast<size_t>(mv.size()));
   for (size_t i = 0; i < vals.size(); ++i) {
     mv = mv.set_val(i, isl::val(s.get_ctx(), vals[i]));
   }

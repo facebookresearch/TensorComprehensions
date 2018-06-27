@@ -264,6 +264,7 @@ isl::map extractAccess(
   // the allocation could be accessed.
   isl::set access = isl::set::universe(tensorSpace);
 
+  auto identity = isl::multi_aff::identity(tensorSpace.map_from_set());
   for (size_t i = 0; i < args.size(); i++) {
     // Then add one equality constraint per dimension to encode the
     // point in the allocation actually read/written for each point in
@@ -271,8 +272,7 @@ isl::map extractAccess(
     // have to leave some things unconstrained.
 
     // The coordinate written to in the range ...
-    auto rangePoint =
-        isl::pw_aff(isl::local_space(tensorSpace), isl::dim_type::set, i);
+    auto rangePoint = identity.get_aff(i);
     // ... equals the coordinate accessed as a function of the parameters.
     auto domainPoint = halide2isl::makeIslAffFromExpr(tensorSpace, args[i]);
     if (!domainPoint.is_null()) {
@@ -441,7 +441,7 @@ isl::schedule makeScheduleTreeHelper(
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
     auto tupleSpace = isl::space(set.get_ctx(), 0);
-    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.n());
+    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.size());
     IterationDomain iterationDomain;
     iterationDomain.paramSpace = set.get_space();
     iterationDomain.tuple = isl::multi_id(tupleSpace, outer);

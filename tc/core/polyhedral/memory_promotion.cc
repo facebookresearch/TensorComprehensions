@@ -77,14 +77,6 @@ ScopedFootprint outputRanges(isl::map access) {
   footprint.box = access.get_range_simple_fixed_box_hull();
   return footprint;
 }
-
-// Given a set space, construct a map space with the input as domain and
-// a range of the given size.
-isl::space add_range(isl::space space, unsigned dim) {
-  auto range = space.params().unnamed_set_from_params(dim);
-  return space.map_from_domain_and_range(range);
-}
-
 } // namespace
 
 // Access has the shape :: [S -> ref] -> O
@@ -119,14 +111,14 @@ isl::map TensorReferenceGroup::approximateScopedAccesses() const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
-  auto lspace = isl::local_space(accessed.get_space().range());
 
+  auto identity = isl::multi_aff::identity(space.range().map_from_set());
   for (size_t i = 0; i < approximation.dim(); ++i) {
     auto offset = approximation.lowerBound(i);
     auto stride = approximation.stride(i);
     auto strideOffset = approximation.strideOffset(i);
     auto size = approximation.size(i);
-    auto rhs = isl::aff(lspace, isl::dim_type::set, i);
+    auto rhs = identity.get_aff(i);
     auto lowerBound = offset * stride + strideOffset;
     auto upperBound = (offset + size) * stride + strideOffset;
     auto partial =
@@ -160,9 +152,9 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
   }
 
   isl::set footprint = isl::set::universe(space);
-  auto lspace = isl::local_space(space);
+  auto identity = isl::multi_aff::identity(space.map_from_set());
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
-    auto aff = isl::aff(lspace, isl::dim_type::out, i);
+    auto aff = identity.get_aff(i);
     auto size = sizes.get_val(i);
     footprint =
         footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
@@ -422,12 +414,13 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   space = space.named_set_from_params_id(tensorId, nDim);
 
   auto tensorElements = isl::set::universe(space);
+  auto identity = isl::multi_aff::identity(space.range().map_from_set());
   for (int i = 0; i < nDim; ++i) {
     auto minAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.min_constraint(i));
     auto extentAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.extent_constraint(i));
-    auto aff = isl::aff(isl::local_space(space), isl::dim_type::set, i);
+    auto aff = identity.get_aff(i);
     tensorElements = tensorElements & (minAff <= isl::aff_set(aff)) &
         (isl::aff_set(aff) < (minAff + extentAff));
   }
@@ -456,7 +449,7 @@ isl::multi_aff dropDummyTensorDimensions(
     }
   }
 
-  space = add_range(space, list.size());
+  space = addRange(space, list.size());
   return isl::multi_aff(space, list);
 }
 
