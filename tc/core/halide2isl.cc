@@ -441,7 +441,7 @@ isl::schedule makeScheduleTreeHelper(
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
     auto tupleSpace = isl::space(set.get_ctx(), 0);
-    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.n());
+    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.size());
     IterationDomain iterationDomain;
     iterationDomain.paramSpace = set.get_space();
     iterationDomain.tuple = isl::multi_id(tupleSpace, outer);
