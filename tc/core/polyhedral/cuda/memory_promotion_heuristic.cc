@@ -381,7 +381,7 @@ bool accessSubscriptsAreUnrolledLoops(
       }
     }
 
-    auto space = isl::space(leaf->ctx_, 0, unrolledDims.n())
+    auto space = isl::space(leaf->ctx_, 0, unrolledDims.size())
                      .align_params(subdomain.get_space());
     auto unrolledDimsMupa = isl::multi_union_pw_aff(space, unrolledDims);
 

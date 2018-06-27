@@ -863,7 +863,7 @@ isl::multi_union_pw_aff extractDomainToIds(
       list = list.add(idMap);
     }
     // Ignore this node if it does not map to all required ids.
-    if (static_cast<size_t>(list.n()) != ids.size()) {
+    if (static_cast<size_t>(list.size()) != ids.size()) {
       continue;
     }
     auto nodeToIds = isl::multi_union_pw_aff(space, list);

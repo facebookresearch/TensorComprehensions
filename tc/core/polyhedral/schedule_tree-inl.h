@@ -25,11 +25,11 @@ inline ScheduleTreeUPtr ScheduleTree::makeMapping(
     const std::vector<MappingIdType>& mappedIds,
     isl::union_pw_aff_list mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
-  TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.n()))
+  TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.size()))
       << "expected as many mapped ids as affs";
   ScheduleTreeElemMapping::Mapping mapping;
-  for (size_t i = 0, n = mappedAffs.n(); i < n; ++i) {
-    mapping.emplace(mappedIds.at(i), mappedAffs.get(i));
+  for (size_t i = 0, n = mappedAffs.size(); i < n; ++i) {
+    mapping.emplace(mappedIds.at(i), mappedAffs.get_at(i));
   }
   TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
   TC_CHECK_EQ(mappedIds.size(), mapping.size())
