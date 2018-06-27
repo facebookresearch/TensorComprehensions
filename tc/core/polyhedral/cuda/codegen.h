@@ -136,8 +136,7 @@ struct CodegenStatementContext : CodegenContext {
   // of the variables does not correspond to a parameter or
   // an instance identifier of the statement.
   isl::aff makeIslAffFromExpr(const Halide::Expr& e) const {
-    auto space = iteratorMap().get_space().params();
-    return scop().makeIslAffFromStmtExpr(statementId(), space, e);
+    return scop().makeIslAffFromStmtExpr(statementId(), e);
   }
 
   isl::id astNodeId;

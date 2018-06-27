@@ -64,7 +64,7 @@ ScopUPtr Scop::makeScop(
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
   scop->halide.reductions = halide2isl::findReductions(components.stmt);
-  scop->halide.iterators = std::move(tree.iterators);
+  scop->halide.domains = std::move(tree.domains);
 
   return scop;
 }
@@ -505,20 +505,12 @@ const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
   return *halide.inputs.begin();
 }
 
-isl::aff Scop::makeIslAffFromStmtExpr(
-    isl::id stmtId,
-    isl::space paramSpace,
-    const Halide::Expr& e) const {
-  auto ctx = stmtId.get_ctx();
-  auto iterators = halide.iterators.at(stmtId);
-  auto space = paramSpace.named_set_from_params_id(stmtId, iterators.size());
-  // Set the names of the set dimensions of "space" for use
-  // by halide2isl::makeIslAffFromExpr.
-  for (size_t i = 0; i < iterators.size(); ++i) {
-    isl::id id(ctx, iterators[i]);
-    space = space.set_dim_id(isl::dim_type::set, i, id);
-  }
-  return halide2isl::makeIslAffFromExpr(space, e);
+isl::aff Scop::makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e)
+    const {
+  auto domain = halide.domains.at(stmtId);
+  auto aff = halide2isl::makeIslAffFromExpr(domain.paramSpace, e);
+  aff = aff.unbind_params_insert_domain(domain.tuple);
+  return aff;
 }
 
 } // namespace polyhedral

@@ -53,11 +53,25 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 
 // Make an affine function over a space from a Halide Expr. Returns a
 // null isl::aff if the expression is not affine. Fails if Variable
-// does not correspond to a parameter or set dimension of the space.
+// does not correspond to a parameter of the space.
+// Note that the input space can be either a parameter space or
+// a set space, but the expression can only reference
+// the parameters in the space.
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
-typedef std::unordered_map<isl::id, std::vector<std::string>, isl::IslIdIslHash>
-    IteratorMap;
+// Iteration domain information associated to a statement identifier.
+struct IterationDomain {
+  // All parameters active at the point where the iteration domain
+  // was created, including those corresponding to outer loop iterators.
+  isl::space paramSpace;
+  // The identifier tuple corresponding to the iteration domain.
+  // The identifiers in the tuple are the outer loop iterators,
+  // from outermost to innermost.
+  isl::multi_id tuple;
+};
+
+typedef std::unordered_map<isl::id, IterationDomain, isl::IslIdIslHash>
+    IterationDomainMap;
 typedef std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
     StatementMap;
 typedef std::unordered_map<const Halide::Internal::IRNode*, isl::id> AccessMap;
@@ -81,9 +95,9 @@ struct ScheduleTreeAndAccesses {
   /// refered to above.
   StatementMap statements;
 
-  /// The correspondence between statement ids and the outer loop iterators
+  /// The correspondence between statement ids and the iteration domain
   /// of the corresponding leaf Stmt.
-  IteratorMap iterators;
+  IterationDomainMap domains;
 };
 
 /// Make a schedule tree from a Halide Stmt, along with auxiliary data
