@@ -137,7 +137,7 @@ def select_batch():
     batch=np.array(batch)
     return batch[:,0], batch[:,1], batch[:,2]
 
-INTER_DISP = 20
+INTER_DISP = 5
 
 running_reward = -0.5
 tab_rewards=[]
@@ -159,7 +159,7 @@ for i in range(NB_EPOCHS):
     if(best < reward):
         best=reward
         best_options = out_actions.numpy().astype(int)
-        print(best_options)
+        my_utils.print_opt(best_options)
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
@@ -170,4 +170,4 @@ for i in range(NB_EPOCHS):
     print(-best)
 
 print("Finally, best options are:")
-print(best_options)
+my_utils.print_opt(best_options)

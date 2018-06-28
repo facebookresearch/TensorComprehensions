@@ -144,7 +144,7 @@ for i in range(NB_EPOCHS):
     if(best < reward):
         best=reward
         best_options = out.numpy().astype(int)
-        print(best_options)
+        my_utils.print_opt(best_options)
     #best = max(best, np.max(rewards))
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
@@ -156,4 +156,4 @@ for i in range(NB_EPOCHS):
         print(-best)
 
 print("Finally, best options are:")
-print(best_options)
+my_utils.print_opt(best_options)

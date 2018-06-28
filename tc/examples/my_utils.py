@@ -9,6 +9,9 @@ import numpy as np
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
 
+def print_opt(options):
+    print(options.tolist())
+
 def set_tcprog(tc_prog_arg):
     global tc_prog
     tc_prog = tc_prog_arg
