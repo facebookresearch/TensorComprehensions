@@ -430,6 +430,22 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 }
 
 /*
+ * Check if "node" or any of its ancestors until "root" are thread mappings.
+ */
+bool isInThreadMappedScope(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  auto ancestors = node->ancestors(root);
+  ancestors.push_back(node);
+  for (auto ancestor : ancestors) {
+    if (isMappingTo<mapping::ThreadId>(ancestor)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/*
  * Promote to shared memory in "scop" below "node".  Use at most
  * "remainingMemory" bytes, and update the variable to reflect the amount of
  * available shared memory remaining after promotion.
@@ -443,13 +459,9 @@ void promoteToSharedBelow(
   // Promotion to shared below threads does not make sense because the computed
   // groups would be specific to threads thus not benefiting from coalescing or
   // inter-thread communication through shared memory (use registers instead).
-  auto ancestors = node->ancestors(root);
-  ancestors.push_back(node);
-  for (auto ancestor : ancestors) {
-    if (isMappingTo<mapping::ThreadId>(ancestor)) {
-      throw promotion::IncorrectScope(
-          "shared memory promotion below thread mapping");
-    }
+  if (isInThreadMappedScope(root, node)) {
+    throw promotion::IncorrectScope(
+        "shared memory promotion below thread mapping");
   }
   // Children of a sequence/set band must be filters, but promotion would
   // insert an extension node.
