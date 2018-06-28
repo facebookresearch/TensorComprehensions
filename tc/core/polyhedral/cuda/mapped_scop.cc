@@ -1088,13 +1088,6 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
               generic.proto.has_unroll());
-
-      auto bands = ScheduleTree::collectDFSPreorder(
-          scop->scheduleRoot(), ScheduleTreeType::Band);
-      if (bands.size() == 0) { // Sanity check.
-        throw NoBandsException("no bands after promotion");
-      }
-      outerBand = bands[0];
     }
   }
 
