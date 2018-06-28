@@ -1079,7 +1079,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
               !generic.proto.has_unroll())
           << "requested to unroll copies to shared memory without providing the unroll size";
 
-      promoteGreedilyAtDepth(
+      promoteToSharedAtDepth(
           *mappedScop,
           std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
           sharedMemorySize,

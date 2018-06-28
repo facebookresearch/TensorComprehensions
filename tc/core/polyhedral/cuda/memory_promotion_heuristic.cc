@@ -541,6 +541,16 @@ void promoteToSharedBelow(
 }
 
 /*
+ * Check if "tree" is a band node mapped to threads.  In particular, check that
+ * "tree" is a band and a thread-specific node appears as its only child.
+ */
+inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
+  return matchOne(band(threadSpecific(any())), tree) ||
+      matchOne(band(threadSpecific()), tree);
+}
+} // namespace
+
+/*
  * For every place in the schedule tree where schedule depth (i.e., the number
  * of preceding band members) is "depth", promote tensor reference groups to
  * shared memory.  Split bands if necessary to insert promotions.
@@ -550,14 +560,22 @@ void promoteToSharedBelow(
  *
  * Only promote if the tensor elements referenced by the group are reused or
  * accessed in a non-coalesced way.
+ *
+ * If "unrollCopies" is set, use the unroll factor from "mscop" to unroll the
+ * loops that copy values from global to shared memory and back.
  */
-void promoteToSharedGreedy(Scop& scop, size_t depth, size_t maxMemory) {
+void promoteToSharedAtDepth(
+    MappedScop& mscop,
+    size_t depth,
+    size_t maxMemory,
+    bool unrollCopies) {
   using namespace tc::polyhedral::detail;
 
   if (depth == 0) {
     throw promotion::PromotionNYI("promotion before any band");
   }
 
+  auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
 
   // 1. Collect all bands with a member located at the given depth in the
@@ -575,27 +593,8 @@ void promoteToSharedGreedy(Scop& scop, size_t depth, size_t maxMemory) {
   for (auto bandNode : bands) {
     promoteToSharedBelow(scop, bandNode, remainingMemory);
   }
-}
 
-/*
- * Check if "tree" is a band node mapped to threads.  In particular, check that
- * "tree" is a band and a thread-specific node appears as its only child.
- */
-inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
-  return matchOne(band(threadSpecific(any())), tree) ||
-      matchOne(band(threadSpecific()), tree);
-}
-} // namespace
-
-void promoteGreedilyAtDepth(
-    MappedScop& mscop,
-    size_t depth,
-    size_t sharedMemorySize,
-    bool unrollCopies) {
-  // 1. Promote using heuristic.
-  promoteToSharedGreedy(mscop.scop(), depth, sharedMemorySize);
-
-  // 2. Map copies to shared, state by copy
+  // 3. Map copies to shared.
   mapCopiesToThreads(mscop, unrollCopies);
 }
 

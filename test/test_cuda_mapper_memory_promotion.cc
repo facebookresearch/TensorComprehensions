@@ -392,7 +392,7 @@ def fun(float(N, M) A) -> (B, C) {
       size_t maxSharedMemory) {
     auto mscop = prepareScop(
         tc, {{"N", problemSize1}, {"M", problemSize2}}, {tileSize1, tileSize2});
-    promoteGreedilyAtDepth(*mscop, depth, maxSharedMemory, false);
+    promoteToSharedAtDepth(*mscop, depth, maxSharedMemory, false);
     return mscop;
   }
 };
