@@ -437,12 +437,14 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
       << "expected one reference group to be promoted";
 }
 
-TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192), promotion::IncorrectScope);
+TEST_F(MapperMemoryPromotionRAW, noSharedPromotionBelowThreads) {
+  auto mscop1 = makeWithSharedGreedy(42, 40, 64, 64, 3, 8192);
+  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192), promotion::IncorrectScope);
+  auto mscop2 = makeWithSharedGreedy(42, 40, 64, 64, 4, 8192);
+  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 }
 
 class MatMulBias : public TestMapper {

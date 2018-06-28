@@ -565,7 +565,8 @@ inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
 /*
  * For every place in the schedule tree where schedule depth (i.e., the number
  * of preceding band members) is "depth", promote tensor reference groups to
- * shared memory.  Split bands if necessary to insert promotions.
+ * shared memory if there is no thread mapping above this place.  Split bands
+ * if necessary to insert promotions.
  *
  * Use at most "maxMemory" bytes.  If a groups does not fit the remaining
  * memory, do not promote it and keep looking for a smaller group.
@@ -600,9 +601,16 @@ void promoteToSharedAtDepth(
   // immediately below it in the tree.  In particular, promote if the
   // approximated footprint fits into the remaining memory, and the reference
   // group either features reuse or is accessed in a non-coalesced way, or
-  // both.
+  // both.  Do not promote if the band node is located below the thread mapping
+  // as promotion to shared is not allowed in this context.
   size_t remainingMemory = maxMemory;
   for (auto bandNode : bands) {
+    if (isInThreadMappedScope(root, bandNode)) {
+      LOG_IF(INFO, FLAGS_debug_tc_mapper)
+          << "not promoting subtree to shared because it is below "
+          << "a thread mapping node";
+      continue;
+    }
     promoteToSharedBelow(scop, bandNode, remainingMemory);
   }
 
