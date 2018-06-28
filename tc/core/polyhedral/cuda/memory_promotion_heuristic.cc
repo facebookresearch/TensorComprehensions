@@ -584,10 +584,6 @@ void promoteToSharedAtDepth(
     bool unrollCopies) {
   using namespace tc::polyhedral::detail;
 
-  if (depth == 0) {
-    throw promotion::PromotionNYI("promotion before any band");
-  }
-
   auto& scop = mscop.scop();
   auto root = scop.scheduleRoot();
 
