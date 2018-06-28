@@ -84,7 +84,7 @@ class FullNetwork(nn.Module):
             x = torch.cat([x, torch.FloatTensor([sym])])
         return x[INIT_INPUT_SZ:]
 
-N, G, D, H, W = 5, 5, 5, 5, 5
+N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
 init_input = (I, gamma, beta)

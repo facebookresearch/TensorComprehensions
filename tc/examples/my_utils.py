@@ -8,6 +8,7 @@ import tensor_comprehensions as tc
 import numpy as np
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
+N, G, D, H, W = 5, 5, 5, 5, 5
 
 def print_opt(options):
     print(options.tolist())

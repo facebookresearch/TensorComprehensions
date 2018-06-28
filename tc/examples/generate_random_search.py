@@ -17,7 +17,7 @@ import my_utils
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
-BATCH_SZ = 8
+BATCH_SZ = 1
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -49,7 +49,7 @@ def getRandom():
         opt_v[i] = np.random.randint(my_utils.cat_sz[i])
     return opt_v
 
-N, G, D, H, W = 5, 5, 5, 5, 5
+N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
 init_input = (I, gamma, beta)
