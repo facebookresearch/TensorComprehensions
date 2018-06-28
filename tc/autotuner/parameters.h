@@ -191,6 +191,7 @@ class TuningConfiguration {
   BoolParameter useReadOnlyCache;
   BoolParameter matchLibraryCalls;
   RangeParameter privateDepth;
+  RangeParameter sharedDepth;
 
  private:
   std::vector<std::function<bool(const TuningConfiguration&)>> validators_;
@@ -229,6 +230,7 @@ class TuningParameterFixer {
   llvm::Optional<bool> useReadOnlyCache;
   llvm::Optional<bool> matchLibraryCalls;
   llvm::Optional<uint32_t> privateDepth;
+  llvm::Optional<uint32_t> sharedDepth;
 
   friend class TuningConfiguration;
 };
