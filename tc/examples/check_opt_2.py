@@ -16,9 +16,9 @@ from collections import deque
 import my_utils
 
 set_options = [
-        [ 1, 1, 1, 0, 25, 0, 27, 18, 1, 0, 0, 0, 0],
-        [ 2, 1, 0, 0, 27, 0, 0, 32, 0, 0, 0, 0, 1],
-        [ 0,  2,  1,  1, 13,  1,  4,  1,  1,  0,  0,  0,  0],
+        ,
+        [1, 1, 0, 0, 8, 1, 2, 7, 0, 1, 1, 0, 1],
+        [1, 0, 0, 1, 8, 0, 7, 8, 1, 1, 0, 0, 1],
         #[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
         ]
 
@@ -39,7 +39,7 @@ def group_normalization(
 }
 """
 
-N, G, D, H, W = 5, 5, 5, 5, 5
+N, G, D, H, W = 10, 10, 10, 10, 10
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
 init_input = (I, gamma, beta)

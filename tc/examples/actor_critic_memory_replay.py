@@ -25,24 +25,17 @@ steps_done = 0
 buff = deque()
 MAXI_BUFF_SZ = 50
 
-viz = Visdom()
+viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
-def group_normalization(
-    float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
-    -> (O, mean, var)
+def convolution(float(N,C,H,W) I, float(F,C,KH,KW) W1, float(F) B)
+-> (O)
 {
-    mean(n, g) +=! I(n, g, r_d, r_h, r_w)
-     var(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
-
-    O(n, g, d, h, w) = gamma(g, d)
-      * ( I(n, g, d, h, w) - mean(n, g) * 4 )
-      * rsqrt( var(n, g) * 4
-            - mean(n, g) * mean(n, g) * 4 * 4
-            + 1e-5)
-      + beta(g, d)
+    O(n, f, h, w) +=!
+        I(n, r_c, h + r_kh, w + r_kw) * W1(f, r_c, r_kh, r_kw)
+    O(n, f, h, w)  = O(n, f, h, w) + B(f)
 }
 """
 
@@ -89,11 +82,17 @@ class FullNetwork(nn.Module):
             x = torch.cat([x, torch.FloatTensor([sym])])
         return x[INIT_INPUT_SZ:], actions_prob, values
 
-N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
-I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
+#N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
+N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
+#I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
+I, W = (torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda'))
 
-init_input = (I, gamma, beta)
-init_input_sz = np.array([N,G,D,H,W])
+#init_input = (I, gamma, beta)
+#init_input_sz = np.array([N,G,D,H,W])
+#init_input_sz = torch.from_numpy(init_input_sz).float()
+
+init_input = (I, W)
+init_input_sz = np.array([N,C,H,W,O, kH, kW])
 init_input_sz = torch.from_numpy(init_input_sz).float()
 
 inp = init_input
@@ -103,7 +102,7 @@ net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
-tc_prog = tc.define(code, name="group_normalization")
+tc_prog = tc.define(code, name="convolution")
 my_utils.set_tcprog(tc_prog)
 
 def finish_episode(actions_probs, values, final_rewards):
@@ -141,7 +140,7 @@ INTER_DISP = 20
 running_reward = -0.5
 tab_rewards=[]
 tab_best=[]
-best=-0.5
+best=-2
 v_losses=[]
 p_losses=[]
 best_options = np.zeros(13).astype(int)
@@ -155,10 +154,12 @@ for i in range(NB_EPOCHS):
     vloss, ploss = finish_episode(actions_probs, values, rewards)
     v_losses.append(vloss)
     p_losses.append(ploss)
-    if(best < reward):
+    if(best < reward or i==0):
         best=reward
         best_options = out_actions.numpy().astype(int)
         my_utils.print_opt(best_options)
+    if(i==0):
+        running_reward = reward
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
