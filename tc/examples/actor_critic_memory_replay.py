@@ -44,7 +44,10 @@ class Predictor(nn.Module):
         self.affine2 = nn.Linear(32, nb_actions)
         self.affine3 = nn.Linear(32, 1)
 
+        self.W = nn.Linear(nb_inputs, nb_inputs)
+
     def forward(self, x):
+        x = F.softmax(self.W(x)) * x
         tmp1 = F.relu(self.affine1(x))
         out_action = F.softmax(self.affine2(tmp1))
         out_value = self.affine3(tmp1)
