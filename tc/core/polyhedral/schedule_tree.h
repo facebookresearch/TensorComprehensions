@@ -450,6 +450,10 @@ struct ScheduleTree {
         const_cast<const ScheduleTreeElemBase*>(elem_.get()));
   }
 
+  virtual ScheduleTreeType type() const {
+    return type_;
+  }
+
   //
   // Data members
   //
