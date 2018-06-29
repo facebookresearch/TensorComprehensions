@@ -18,7 +18,8 @@ import my_utils
 set_options = [
         [ 1, 1, 1, 0, 25, 0, 27, 18, 1, 0, 0, 0, 0],
         [ 2, 1, 0, 0, 27, 0, 0, 32, 0, 0, 0, 0, 1],
-        [ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
+        [ 0,  2,  1,  1, 13,  1,  4,  1,  1,  0,  0,  0,  0],
+        #[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
         ]
 
 code = """
@@ -58,10 +59,10 @@ config["generations"]=1
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
 
-opts = np.array(set_options[0])
-print(opts[3])
-print(my_utils.cat_val[3])
-opts = [my_utils.cat_val[i][opts[i]] for i in range(NB_HYPERPARAMS)]
+opts = np.array(set_options[2])
+#print(opts[3])
+#print(my_utils.cat_val[3])
+#opts = [my_utils.cat_val[i][opts[i]] for i in range(NB_HYPERPARAMS)]
 print(opts)
 opts = my_utils.optionsFromVector(opts)
 

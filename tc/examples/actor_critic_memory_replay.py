@@ -22,6 +22,8 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 steps_done = 0
+buff = deque()
+MAXI_BUFF_SZ = 50
 
 viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
@@ -122,9 +124,6 @@ def finish_episode(actions_probs, values, final_rewards):
     optimizer.step()
     return vloss.item(), ploss.item()
 
-buff = deque()
-MAXI_BUFF_SZ = 100
-
 def add_to_buffer(actions_probs, values, reward):
     global buff
     if len(buff) == MAXI_BUFF_SZ:
@@ -137,7 +136,7 @@ def select_batch():
     batch=np.array(batch)
     return batch[:,0], batch[:,1], batch[:,2]
 
-INTER_DISP = 5
+INTER_DISP = 20
 
 running_reward = -0.5
 tab_rewards=[]
