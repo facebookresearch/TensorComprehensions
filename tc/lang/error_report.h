@@ -17,7 +17,11 @@
 
 #include "tc/lang/tree.h"
 
+#include <gflags/gflags.h>
+
 namespace lang {
+
+DECLARE_bool(warn);
 
 struct ErrorReport : public std::exception {
   ErrorReport(const ErrorReport& e)
@@ -43,6 +47,9 @@ struct ErrorReport : public std::exception {
 };
 
 inline void warn(const ErrorReport& err) {
+  if (!FLAGS_warn) {
+    return;
+  }
   std::cerr << "WARNING: " << err.what();
 }
 
