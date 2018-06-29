@@ -30,13 +30,9 @@ win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
-def convolution(float(N,C,H,W) I, float(F,C,KH,KW) W1, float(F) B)
--> (O)
-{
-    O(n, f, h, w) +=!
-        I(n, r_c, h + r_kh, w + r_kw) * W1(f, r_c, r_kh, r_kw)
-    O(n, f, h, w)  = O(n, f, h, w) + B(f)
-}
+def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
+            O(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
+            }
 """
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
@@ -85,13 +81,14 @@ class FullNetwork(nn.Module):
 #N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
 N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
 #I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
-I, W = (torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda'))
+I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
 
 #init_input = (I, gamma, beta)
 #init_input_sz = np.array([N,G,D,H,W])
 #init_input_sz = torch.from_numpy(init_input_sz).float()
 
-init_input = (I, W)
+init_input = (I, W1)
+ipdb.set_trace()
 init_input_sz = np.array([N,C,H,W,O, kH, kW])
 init_input_sz = torch.from_numpy(init_input_sz).float()
 

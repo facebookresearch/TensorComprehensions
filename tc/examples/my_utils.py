@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import tensor_comprehensions as tc
 import numpy as np
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 5
+NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 7
 N, G, D, H, W = 10, 10, 10, 10, 10
 
 def print_opt(options):
