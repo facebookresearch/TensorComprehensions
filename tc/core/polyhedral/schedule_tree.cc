@@ -123,6 +123,32 @@ vector<ScheduleTree*> ancestorsInSubTree(
   return res;
 }
 
+static std::unique_ptr<ScheduleTreeElemBase> makeElem(const ScheduleTree& st) {
+#define ELEM_MAKE_CASE(CLASS)                             \
+  else if (st.type_ == CLASS::NodeType) {                 \
+    return std::unique_ptr<CLASS>(                        \
+        new CLASS(*static_cast<CLASS*>(st.elem_.get()))); \
+  }
+
+  if (st.type_ == detail::ScheduleTreeType::None) {
+    LOG(FATAL) << "Hit Error node!";
+  }
+  ELEM_MAKE_CASE(ScheduleTreeElemBand)
+  ELEM_MAKE_CASE(ScheduleTreeElemContext)
+  ELEM_MAKE_CASE(ScheduleTreeElemDomain)
+  ELEM_MAKE_CASE(ScheduleTreeElemExtension)
+  ELEM_MAKE_CASE(ScheduleTreeElemFilter)
+  ELEM_MAKE_CASE(ScheduleTreeElemMapping)
+  ELEM_MAKE_CASE(ScheduleTreeElemSequence)
+  ELEM_MAKE_CASE(ScheduleTreeElemSet)
+  ELEM_MAKE_CASE(ScheduleTreeElemThreadSpecificMarker)
+
+#undef ELEM_MAKE_CASE
+
+  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
+             << static_cast<int>(st.type_);
+  return nullptr;
+}
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -131,10 +157,7 @@ vector<ScheduleTree*> ancestorsInSubTree(
 ScheduleTree::ScheduleTree(isl::ctx ctx) : ctx_(ctx) {}
 
 ScheduleTree::ScheduleTree(const ScheduleTree& st)
-    : ctx_(st.ctx_),
-      children_(),
-      type_(st.type_),
-      elem_(ScheduleTreeElemBase::make(st)) {
+    : ctx_(st.ctx_), children_(), type_(st.type_), elem_(makeElem(st)) {
   children_.reserve(st.children_.size());
   for (const auto& child : st.children()) {
     children_.push_back(ScheduleTree::makeScheduleTree(*child));

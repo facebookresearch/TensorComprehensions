@@ -37,34 +37,6 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
-std::unique_ptr<ScheduleTreeElemBase> ScheduleTreeElemBase::make(
-    const ScheduleTree& st) {
-#define ELEM_MAKE_CASE(CLASS)                             \
-  else if (st.type_ == CLASS::NodeType) {                 \
-    return std::unique_ptr<CLASS>(                        \
-        new CLASS(*static_cast<CLASS*>(st.elem_.get()))); \
-  }
-
-  if (st.type_ == detail::ScheduleTreeType::None) {
-    LOG(FATAL) << "Hit Error node!";
-  }
-  ELEM_MAKE_CASE(ScheduleTreeElemBand)
-  ELEM_MAKE_CASE(ScheduleTreeElemContext)
-  ELEM_MAKE_CASE(ScheduleTreeElemDomain)
-  ELEM_MAKE_CASE(ScheduleTreeElemExtension)
-  ELEM_MAKE_CASE(ScheduleTreeElemFilter)
-  ELEM_MAKE_CASE(ScheduleTreeElemMapping)
-  ELEM_MAKE_CASE(ScheduleTreeElemSequence)
-  ELEM_MAKE_CASE(ScheduleTreeElemSet)
-  ELEM_MAKE_CASE(ScheduleTreeElemThreadSpecificMarker)
-
-#undef ELEM_MAKE_CASE
-
-  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
-             << static_cast<int>(st.type_);
-  return nullptr;
-}
-
 std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());
