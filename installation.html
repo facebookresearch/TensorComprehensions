@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Installation in the Google Colaboratory environment" href="installation_colab_research.html"/>
-        <link rel="prev" title="Frequently Asked Questions" href="framework/pytorch_integration/frequently_asked_questions.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation in the Google Colaboratory environment" href="installation_colab_research.html" />
+    <link rel="prev" title="Frequently Asked Questions" href="framework/pytorch_integration/frequently_asked_questions.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -381,7 +351,7 @@ it is recommended to build the master from source.</p>
 <h2>Conda installation<a class="headerlink" href="#conda-installation" title="Permalink to this headline">¶</a></h2>
 <p>You can install the latest released package for tensor comprehensions as follows:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c pytorch -c tensorcomp tensor_comprehensions
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -y -c pytorch -c tensorcomp tensor_comprehensions
 </pre></div>
 </div>
 </div></blockquote>
@@ -412,7 +382,7 @@ and libtool. It is generally a good idea to look at the
 which shows the environment we use for testing and building our packages.
 To install on Ubuntu16.04:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>sudo apt-get install libgmp3-dev cmake automake libtool
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get install libgmp3-dev cmake automake libtool
 </pre></div>
 </div>
 </div></blockquote>
@@ -421,7 +391,7 @@ To install on Ubuntu16.04:</p>
 <h3>Conda from scratch (first time configuration)<a class="headerlink" href="#conda-from-scratch-first-time-configuration" title="Permalink to this headline">¶</a></h3>
 <p>Choose and set an INSTALLATION_PATH then run the following:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>wget https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O anaconda.sh <span class="o">&amp;&amp;</span> <span class="se">\</span>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget https://repo.anaconda.com/archive/Anaconda3-5.1.0-Linux-x86_64.sh -O anaconda.sh <span class="o">&amp;&amp;</span> <span class="se">\</span>
 chmod +x anaconda.sh <span class="o">&amp;&amp;</span> <span class="se">\</span>
 ./anaconda.sh -b -p <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span> <span class="o">&amp;&amp;</span> <span class="se">\</span>
 rm anaconda.sh
@@ -433,7 +403,7 @@ conda update -y -n base conda
 </div></blockquote>
 <p>Create a new environment in which TC will be built and install core dependencies:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda create -y --name tc_build <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.6
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda create -y --name tc_build <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.6
 conda activate tc_build
 conda install -y pyyaml mkl-include pytest
 conda install -y -c nicolasvasilache llvm-tapir50 halide
@@ -443,7 +413,7 @@ conda install -y -c nicolasvasilache llvm-tapir50 halide
 <p>Then install the PyTorch version that corresponds to your system binaries
 (e.g. cuda 9.0):</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c pytorch pytorch torchvision cuda90
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -y -c pytorch pytorch torchvision cuda90
 conda remove -y cudatoolkit --force
 </pre></div>
 </div>
@@ -466,7 +436,7 @@ activate conda in
 each new terminal window explicitly (it is discouraged to add this to your
 <cite>.bashrc</cite> or equivalent)</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>. <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span>/bin/activate
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>. <span class="si">${</span><span class="nv">INSTALLATION_PATH</span><span class="si">}</span>/bin/activate
 conda activate tc_build
 </pre></div>
 </div>
@@ -475,7 +445,7 @@ conda activate tc_build
 <div class="section" id="build-tc-with-dependencies-supplied-by-conda">
 <h3>Build TC with dependencies supplied by conda<a class="headerlink" href="#build-tc-with-dependencies-supplied-by-conda" title="Permalink to this headline">¶</a></h3>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span><span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="k">$(</span><span class="si">${</span><span class="nv">CONDA_PREFIX</span><span class="si">}</span>/bin/llvm-config --prefix<span class="k">)</span> ./build.sh
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">CLANG_PREFIX</span><span class="o">=</span><span class="k">$(</span><span class="si">${</span><span class="nv">CONDA_PREFIX</span><span class="si">}</span>/bin/llvm-config --prefix<span class="k">)</span> ./build.sh
 </pre></div>
 </div>
 </div></blockquote>
@@ -488,34 +458,34 @@ cuda installation and can be omitted on most systems). When required, passing
 <h3>Test locally<a class="headerlink" href="#test-locally" title="Permalink to this headline">¶</a></h3>
 <p>Run C++ tests:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>./test.sh
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./test.sh
 </pre></div>
 </div>
 </div></blockquote>
 <p>Install the TC Python package locally to <cite>/tmp</cite> for smoke checking:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python setup.py install --prefix<span class="o">=</span>/tmp
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python setup.py install --prefix<span class="o">=</span>/tmp
 <span class="nb">export</span> <span class="nv">PYTHONPATH</span><span class="o">=</span><span class="si">${</span><span class="nv">PYTHONPATH</span><span class="si">}</span>:<span class="k">$(</span>find /tmp/lib -name site-packages<span class="k">)</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>Run Python smoke checks:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python -c <span class="s1">&#39;import torch&#39;</span>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -c <span class="s1">&#39;import torch&#39;</span>
 python -c <span class="s1">&#39;import tensor_comprehensions&#39;</span>
 </pre></div>
 </div>
 </div></blockquote>
 <p>Run Python tests:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>./test_python/run_test.sh
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python ./test_python/test_tc.py -v
 </pre></div>
 </div>
 </div></blockquote>
 <p>At this point, if things work as expected you can venture installing as
 follows (it is always a good idea to record installed files for easy removal):</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>python setup.py install --record tc_files.txt
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python setup.py install --record tc_files.txt
 </pre></div>
 </div>
 </div></blockquote>
@@ -528,7 +498,7 @@ follows (it is always a good idea to record installed files for easy removal):</
 <p>Optionally if you want to use Caffe2 (this is necessary for building the C++
 benchmarks since Caffe2 is our baseline):</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -y -c conda-forge eigen
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -y -c conda-forge eigen
 conda install -y -c nicolasvasilache caffe2
 </pre></div>
 </div>
@@ -550,7 +520,7 @@ For now this cudnn version is cudnn 7.1.</p>
 <p>If for some reason, one cannot install cudnn 7.1 system-wide, one may resort
 to the following:</p>
 <blockquote>
-<div><div class="highlight-bash"><div class="highlight"><pre><span></span>conda install -c anaconda cudnn
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c anaconda cudnn
 conda remove -y cudatoolkit --force
 </pre></div>
 </div>
@@ -571,9 +541,7 @@ worry about cudnn anymore.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -595,7 +563,7 @@ worry about cudnn anymore.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -614,6 +582,7 @@ worry about cudnn anymore.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -627,19 +596,13 @@ worry about cudnn anymore.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

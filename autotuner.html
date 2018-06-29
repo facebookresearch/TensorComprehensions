@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Performance of TC" href="performance.html"/>
-        <link rel="prev" title="Mapping Options" href="mapping_options.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Performance of TC" href="performance.html" />
+    <link rel="prev" title="Mapping Options" href="mapping_options.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -371,30 +341,30 @@
   <div class="section" id="autotuner">
 <h1>Autotuner<a class="headerlink" href="#autotuner" title="Permalink to this headline">¶</a></h1>
 <p>The genetic-algorithm-based autotuner tries to optimize a TC by tuning the available mapping options.</p>
-<p>Each autotuning session starts with a set (<code class="code docutils literal"><span class="pre">population</span></code>) of candidate options
+<p>Each autotuning session starts with a set (<code class="code docutils literal notranslate"><span class="pre">population</span></code>) of candidate options
 which can be initialized randomly and/or from known starting points. Each
 candidate is benchmarked and the best ones have a higher chance of surviving
 and breeding to produce the next generation of candidates. This procedure is
 repeated for a pre-defined number of generations. In the end, the best candidate
 is returned.</p>
 <p>At the end of each generation new candidates must be selected. Each candidate
-is either a combination of parent candidates (<code class="code docutils literal"><span class="pre">crossover</span></code>) or one that survives
+is either a combination of parent candidates (<code class="code docutils literal notranslate"><span class="pre">crossover</span></code>) or one that survives
 from the previous generation. Both types are potentially randomly changed
-(mutation). The top candidates (<code class="code docutils literal"><span class="pre">elites</span></code>) survive intact (without mutations)
+(mutation). The top candidates (<code class="code docutils literal notranslate"><span class="pre">elites</span></code>) survive intact (without mutations)
 between generations.</p>
 <div class="section" id="parameters-for-autotuning">
 <span id="autotuner-parameters"></span><h2>Parameters for Autotuning<a class="headerlink" href="#parameters-for-autotuning" title="Permalink to this headline">¶</a></h2>
 <p>The parameters that control the autotuner’s behavior are the following:</p>
 <ul class="simple">
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">generations</span></code>: The number of tuning generation to be run.</li>
-<li><code class="code docutils literal"><span class="pre">Population</span> <span class="pre">size</span></code>: The number of candidates in each generation.</li>
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">elites</span></code>: The number of best candidates that are preserved intact between generations (without any mutations).</li>
-<li><code class="code docutils literal"><span class="pre">Crossover</span> <span class="pre">rate</span></code>: The rate at which new candidates are bred instead of just surviving across generations.</li>
-<li><code class="code docutils literal"><span class="pre">Mutation</span> <span class="pre">rate</span></code>: The rate at which candidate options are randomly changed (mutated).</li>
-<li><code class="code docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">threads</span></code>: The number of threads that are used to compile different candidates in parallel.</li>
-<li><code class="code docutils literal"><span class="pre">GPUs</span></code>: A comma separated list of GPUs (ids) to use for evaluating candidates (e.g., “0,1,2,3”).</li>
-<li><code class="code docutils literal"><span class="pre">RNG</span> <span class="pre">state</span></code>: The state used to seed the tuner’s RNG.</li>
-<li><code class="code docutils literal"><span class="pre">min_launch_total_threads</span></code>: Prune out kernels mapped to fewer than this many threads and block. Set this to <code class="code docutils literal"><span class="pre">1</span></code> to avoid pruning.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">generations</span></code>: The number of tuning generation to be run.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Population</span> <span class="pre">size</span></code>: The number of candidates in each generation.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">elites</span></code>: The number of best candidates that are preserved intact between generations (without any mutations).</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Crossover</span> <span class="pre">rate</span></code>: The rate at which new candidates are bred instead of just surviving across generations.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Mutation</span> <span class="pre">rate</span></code>: The rate at which candidate options are randomly changed (mutated).</li>
+<li><code class="code docutils literal notranslate"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">threads</span></code>: The number of threads that are used to compile different candidates in parallel.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">GPUs</span></code>: A comma separated list of GPUs (ids) to use for evaluating candidates (e.g., “0,1,2,3”).</li>
+<li><code class="code docutils literal notranslate"><span class="pre">RNG</span> <span class="pre">state</span></code>: The state used to seed the tuner’s RNG.</li>
+<li><code class="code docutils literal notranslate"><span class="pre">min_launch_total_threads</span></code>: Prune out kernels mapped to fewer than this many threads and block. Set this to <code class="code docutils literal notranslate"><span class="pre">1</span></code> to avoid pruning.</li>
 </ul>
 </div>
 <div class="section" id="caching">
@@ -405,9 +375,7 @@ between generations.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -429,7 +397,7 @@ between generations.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -448,6 +416,7 @@ between generations.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -461,19 +430,13 @@ between generations.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

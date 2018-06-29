@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="../../index.html"/>
-        <link rel="next" title="Writing PyTorch layers with TC" href="writing_layers.html"/>
-        <link rel="prev" title="Coding Conventions" href="../../coding_conventions.html"/> 
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Python API" href="python_api.html" />
+    <link rel="prev" title="Coding Conventions" href="../../coding_conventions.html" /> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -370,77 +340,71 @@
             
   <div class="section" id="getting-started">
 <span id="tc-with-pytorch"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<p><strong>Author</strong>: <a class="reference external" href="https://github.com/prigoyal">Priya Goyal</a></p>
 <p>We provide integration of Tensor Comprehensions (TC) with PyTorch for both
 <strong>training</strong> and <strong>inference</strong> purposes. Using TC with PyTorch, you can express an
-operator using Einstein notation and get the fast CUDA code for that layer with
-just a few lines of code (examples below).</p>
-<p>A <strong>few cases</strong> where TC can be useful:</p>
+operator using Einstein notation and get a fast CUDA implementation for that
+layer with just a few lines of code (examples below).</p>
+<p>Here are a few cases where TC can be useful:</p>
 <ul class="simple">
-<li>if you want to specialize your layer for input tensor sizes like (27, 23, 5, 3) unlike some specific sizes/architectures that have been heavily optimized <em>or</em></li>
-<li>you are interested in fusing layers like group convolution, ReLU, FC <em>or</em></li>
-<li>if you have a different new layer, let’s call it <code class="code docutils literal"><span class="pre">hconv</span></code> (a variant of convolution), for which you wish you had an efficient kernel available <em>or</em></li>
-<li>if you have standard operation on different data layouts that you didn’t want to use because you couldn’t get good kernels for them</li>
+<li>specialize your layer for uncommon tensor sizes and get better performance
+than libraries, <em>or</em></li>
+<li>experiment with layer fusion like group convolution, ReLU, FC, <em>or</em></li>
+<li>synthesize new layers and get an efficient kernel automatically, <em>or</em></li>
+<li>synthesize layers for tensors with unconventional memory layouts</li>
 </ul>
-<p>TC makes its very trivial to get CUDA code for such cases and many more. By providing
-TC integration with PyTorch, we hope to make it further easy for PyTorch users
+<p>TC makes it easy to synthesize CUDA kernels for such cases and more. By providing
+TC integration with PyTorch, we hope to make it easy for PyTorch users
 to express their operations and bridge the gap between research and engineering.</p>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
-<p>We provide <code class="code docutils literal"><span class="pre">conda</span></code> package for Tensor Comprehensions (only <code class="code docutils literal"><span class="pre">linux-64</span></code> package)
-to quickly get started with using TC. Follow the steps below to install TC <code class="code docutils literal"><span class="pre">conda</span></code> package:</p>
+<p>We provide a <code class="code docutils literal notranslate"><span class="pre">conda</span></code> package for Tensor Comprehensions (only <code class="code docutils literal notranslate"><span class="pre">linux-64</span></code> package)
+to quickly get started with TC. Follow the steps below to install TC <code class="code docutils literal notranslate"><span class="pre">conda</span></code> package:</p>
 <p><strong>Step 1:</strong> Setup Anaconda
-If you don’t have Anaconda setup already, please follow the step <span class="xref std std-ref">install_anaconda</span>.
-If you have already installed anaconda3, make sure <code class="code docutils literal"><span class="pre">conda</span></code> bin is in your
-<code class="code docutils literal"><span class="pre">$PATH</span></code>. For that run the following command:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ <span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$HOME</span>/anaconda3/bin:<span class="nv">$PATH</span>
+Make sure <code class="code docutils literal notranslate"><span class="pre">conda</span></code> bin is in your <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>. To verify, run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ which conda
 </pre></div>
 </div>
-<p>To verify, run the following command:</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ which conda
-</pre></div>
-</div>
-<p>This command should print the path of your <code class="code docutils literal"><span class="pre">conda</span></code> bin. If it doesn’t,
-please add <code class="code docutils literal"><span class="pre">conda</span></code> in your <code class="code docutils literal"><span class="pre">$PATH</span></code>.</p>
-<p><strong>Step 2:</strong> Conda Install Tensor Comprehensions</p>
+<p>This command should print the path of your <code class="code docutils literal notranslate"><span class="pre">conda</span></code> bin. If it doesn’t,
+please activate <code class="code docutils literal notranslate"><span class="pre">conda</span></code> (see <a class="reference internal" href="#installation">installation</a>).</p>
+<p><strong>Step 2:</strong> Install Tensor Comprehensions with Anaconda</p>
 <p>Now, go ahead and install Tensor Comprehensions by running following command.</p>
-<div class="highlight-bash"><div class="highlight"><pre><span></span>$ conda install -y -c pytorch -c tensorcomp tensor_comprehensions
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda install -y -c pytorch -c tensorcomp tensor_comprehensions
 </pre></div>
 </div>
-<p>Now, you are ready to start using Tensor Comprehensions with PyTorch. As an example,
-let’s see a simple example of writing <code class="code docutils literal"><span class="pre">matmul</span></code> layer with TC in PyTorch.</p>
+<p>You are now ready to start using Tensor Comprehensions with PyTorch. As an example,
+let’s see a simple example of writing <code class="code docutils literal notranslate"><span class="pre">matmul</span></code> layer with TC in PyTorch.</p>
 </div>
 <div class="section" id="example">
 <h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
-<p>For demonstration purpose, we will pick a simple example for <code class="code docutils literal"><span class="pre">matmul</span></code> layer.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
+<p>For demonstration purposes, we illustrate a simple <code class="code docutils literal notranslate"><span class="pre">matmul</span></code> operation
+backed by TC.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
 <span class="kn">import</span> <span class="nn">torch</span>
-<span class="n">lang</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="n">mm</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
 <span class="s2">def matmul(float(M,K) A, float(N,K) B) -&gt; (output) {</span>
 <span class="s2">    output(m, n) +=! A(m, r_k) * B(n, r_k)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
-<span class="n">matmul</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">lang</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
-<span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">matmul</span><span class="p">(</span><span class="n">mat1</span><span class="p">,</span> <span class="n">mat2</span><span class="p">)</span>
+<span class="n">TC</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">mm</span><span class="p">,</span> <span class="n">tc</span><span class="o">.</span><span class="n">make_naive_options_factory</span><span class="p">())</span>
+<span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">TC</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>As you can see, with just 3-4 lines of code, you can get a reasonably fast CUDA
-code for an operation you want. Read the documentation for finding out more.</p>
+<p>With a few lines of code, you can get a functional CUDA implementation for an
+operation expressed in TC. Note, however, that this simplest example is not
+expected to be fast. Read the documentation to find out more.</p>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="writing_layers.html" class="btn btn-neutral float-right" title="Writing PyTorch layers with TC" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="python_api.html" class="btn btn-neutral float-right" title="Python API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
         <a href="../../coding_conventions.html" class="btn btn-neutral" title="Coding Conventions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
@@ -456,7 +420,7 @@ code for an operation you want. Read the documentation for finding out more.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -475,6 +439,7 @@ code for an operation you want. Read the documentation for finding out more.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -488,19 +453,13 @@ code for an operation you want. Read the documentation for finding out more.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

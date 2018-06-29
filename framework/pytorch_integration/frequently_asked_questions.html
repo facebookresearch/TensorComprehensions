@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="../../index.html"/>
-        <link rel="next" title="Installation Guide" href="../../installation.html"/>
-        <link rel="prev" title="Debugging" href="debugging.html"/> 
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Installation Guide" href="../../installation.html" />
+    <link rel="prev" title="Debugging" href="debugging.html" /> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -370,17 +340,17 @@
             
   <div class="section" id="frequently-asked-questions">
 <h1>Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permalink to this headline">¶</a></h1>
-<p>Below are some frequently asked questions in TC language and Autotuner.</p>
+<p>Below are some frequently asked questions.</p>
 <div class="section" id="tc-language">
 <h2>TC language<a class="headerlink" href="#tc-language" title="Permalink to this headline">¶</a></h2>
 <div class="section" id="how-are-temporary-variables-handled-in-tc">
 <h3>How are temporary variables handled in TC?<a class="headerlink" href="#how-are-temporary-variables-handled-in-tc" title="Permalink to this headline">¶</a></h3>
-<p>Since TC doesn’t do any allocations itself, every variable has to be either an input
+<p>Since TC doesn’t perform any allocations internally, every variable has to be either an input
 or output in the TC language. For example:</p>
 <p><strong>Invalid TC:</strong></p>
-<p>The following TC is Invalid because the variable <code class="code docutils literal"><span class="pre">expSum</span></code> is neither marked
-as input not output.</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, maxVal, expDistance) {
+<p>The following TC is Invalid because the variable <code class="code docutils literal notranslate"><span class="pre">expSum</span></code> is not marked
+as either input or output:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, maxVal, expDistance) {
     maxVal(n) max=! I(n, d)
     expDistance(n, d) = exp(I(n, d) - maxVal(n))
     expSum(n) +=! expDistance(n, d)
@@ -390,7 +360,7 @@ as input not output.</p>
 </div>
 <p><strong>Valid TC</strong></p>
 <p>The correct TC would be:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, maxVal, expDistance, expSum) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, maxVal, expDistance, expSum) {
     maxVal(n) max=! I(n, d)
     expDistance(n, d) = exp(I(n, d) - maxVal(n))
     expSum(n) +=! expDistance(n, d)
@@ -403,7 +373,7 @@ as input not output.</p>
 <h3>Can I re-use a temporary variable?<a class="headerlink" href="#can-i-re-use-a-temporary-variable" title="Permalink to this headline">¶</a></h3>
 <p>You can as long as the tensor dependencies form a DAG. For example:</p>
 <p><strong>Invalid</strong></p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, tmp) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, tmp) {
     tmp(n) max=! I(n, d)
     O(n, d) = exp(I(n, d) - tmp(n))
     tmp(n) +=! O(n, d)
@@ -411,9 +381,9 @@ as input not output.</p>
 }
 </pre></div>
 </div>
-<p>This TC is invalid because <code class="code docutils literal"><span class="pre">tmp</span></code> and <code class="code docutils literal"><span class="pre">O(n,</span> <span class="pre">d)</span></code> have a cyclic dependency.</p>
+<p>This TC is invalid because <code class="code docutils literal notranslate"><span class="pre">tmp</span></code> and <code class="code docutils literal notranslate"><span class="pre">O(n,</span> <span class="pre">d)</span></code> have a cyclic dependency.</p>
 <p><strong>Valid</strong></p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, expsum, maxVal) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def softmax(float(N, D) I) -&gt; (O, expsum, maxVal) {
     maxVal(n) max=! I(n, d)
     expsum(n) +=! exp(I(n, d) - maxVal(n))
     O(n, d) = exp(I(n, d) - maxVal(n)) / expsum(n)
@@ -424,49 +394,36 @@ as input not output.</p>
 </div>
 <div class="section" id="autotuner">
 <h2>Autotuner<a class="headerlink" href="#autotuner" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="at-the-start-of-new-generation-i-see-high-kernel-runtime-why">
-<h3>At the start of new generation, I see high kernel runtime, Why?<a class="headerlink" href="#at-the-start-of-new-generation-i-see-high-kernel-runtime-why" title="Permalink to this headline">¶</a></h3>
-<p>This is not a bug. When the new generation starts and you suddenly see 600us
-instead of 168us from last generation, this is completely okay. The reason is that
-autotuning is multithreaded and each thread has various kernel configurations/mutations to
-evaluate. We don’t enforce strict evaluation order i.e. the best configurations
-from the previous generation might not be evaluated first in next generation. Further,
-the other mutations in generation might be bad, hence the initial jump in time
-at generation (i+1) is expected.</p>
-</div>
-<div class="section" id="i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">
-<h3>I seeded my autotuning but the worse kernel time is still higher. Why?<a class="headerlink" href="#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why" title="Permalink to this headline">¶</a></h3>
-<p>We don’t guarantee anything on the worst time but the best time should be
-better than what you seeded with. In autotuning, we generate a lot of candidates
-and some of the candidates might be very bad leading to the higher worst time.
-Also, we don’t seed all the candidates, for example we generate 10 candidates
-(pop_size) but seed only 5. If you want to start exactly where you left off,
-set the pop_size = seeds.</p>
+<div class="section" id="at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">
+<h3>At the start of a new generation, I see higher kernel runtimes, Why?<a class="headerlink" href="#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why" title="Permalink to this headline">¶</a></h3>
+<p>This is expected behavior. When a new generation starts, the best runtime may
+bump to e.g. 600us when e.g. 168us was found as the best time from the
+previous generation.
+This is expected because the autotuner is multithreaded and we don’t
+enforce a strict order of evaluation: the best configurations
+from the previous generation may not be evaluated first in next generation.
+Furthermore, the other mutations in the current generation may perform worse
+than the last best known configuration. Therefore the initial jump in best runtime at
+generation (i+1) is likely to appear temporarily.</p>
 </div>
 <div class="section" id="i-sometimes-see-fluctuations-in-the-best-kernel-time-why">
 <h3>I sometimes see fluctuations in the best kernel time, why?<a class="headerlink" href="#i-sometimes-see-fluctuations-in-the-best-kernel-time-why" title="Permalink to this headline">¶</a></h3>
 <p>The best time reported is the median of the best candidate runtime and the GPU
-runtime is noisy because of synchronization, kernel launch overheads.
-So 10-20% variation is expected and normal.</p>
-</div>
-<div class="section" id="i-see-some-cuda-errors-during-autotuning-should-i-worry">
-<h3>I see some CUDA errors during autotuning, should I worry?<a class="headerlink" href="#i-see-some-cuda-errors-during-autotuning-should-i-worry" title="Permalink to this headline">¶</a></h3>
-<p>No you shouldn’t worry, autotuning should continue. These errors can happen when
-bad kernel options are generated in the candidate pool.</p>
+runtime may be noisy. So a 10-20% variation is expected and normal.</p>
 </div>
 <div class="section" id="how-do-i-stop-autotuning-early-and-save-cache">
 <h3>How do I stop autotuning early and save cache?<a class="headerlink" href="#how-do-i-stop-autotuning-early-and-save-cache" title="Permalink to this headline">¶</a></h3>
-<p>You can do <code class="code docutils literal"><span class="pre">Ctrl+C</span></code> to stop the autotuning early. For how to save cache,
-refer to the autotuning documentation.</p>
+<p>You can send a SIGINT signal (i.e. hit <code class="code docutils literal notranslate"><span class="pre">Ctrl+C</span></code>) to stop the autotuning
+early. All compilations and evaluations in progress will be completed, but no
+new compilation or evaluation will be started.  Therefore, stopping the
+autotuner may take some time.</p>
 </div>
 </div>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -488,7 +445,7 @@ refer to the autotuning documentation.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -507,6 +464,7 @@ refer to the autotuning documentation.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -520,19 +478,13 @@ refer to the autotuning documentation.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

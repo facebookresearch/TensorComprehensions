@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="../../genindex.html"/>
-        <link rel="search" title="Search" href="../../search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="../../index.html"/>
-        <link rel="next" title="Note about Performance / Autotuning" href="note_about_performance.html"/>
-        <link rel="prev" title="Autotuning layers" href="autotuning_layers.html"/> 
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Debugging" href="debugging.html" />
+    <link rel="prev" title="Writing TC operations" href="writing_layers.html" /> 
 
   
   <script src="../../_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="../../index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -370,165 +340,70 @@
             
   <div class="section" id="autograd-with-tc">
 <h1>Autograd with TC<a class="headerlink" href="#autograd-with-tc" title="Permalink to this headline">¶</a></h1>
-<p>We provide the TC integration with PyTorch <cite>autograd</cite> so that it is easy to write
-a training layer with TC and be able to run backwards as well if the layer is part
-of a network. We do not support double backwards right now. In order to write a
-training layer with TC, you need to follow the steps below:</p>
-<ol class="arabic simple">
-<li>Define your TC language that has two definitions: one for the forward layer and the other for the backward layer and pass it to <code class="code docutils literal"><span class="pre">tc.define</span></code> call. In addition, also pass <code class="code docutils literal"><span class="pre">training=True</span></code> and the name of the backward TC <code class="code docutils literal"><span class="pre">backward</span></code>.</li>
-<li>Create the Input Variables and Parameters. For example, weights should be marked as Parameters and the inputs tensors as Variables.</li>
-<li>Run the layer and get the output of forward pass.</li>
-<li>To see that the backward call works fine, you can call backward on the outputs.</li>
-</ol>
-<p>Let’s see one example to demonstrate the steps above:</p>
-<div class="section" id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="kn">import</span> <span class="n">Variable</span>
-<span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
-<span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
-<span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
-<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
-<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
-<span class="s2">}}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-<span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">convolution</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">CONV_LANG</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;convolution&quot;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="s2">&quot;convolution_grad&quot;</span><span class="p">,</span> <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sh&quot;</span><span class="p">:</span><span class="n">sH</span><span class="p">,</span> <span class="s2">&quot;sw&quot;</span><span class="p">:</span><span class="n">sW</span><span class="p">})</span>
-<span class="n">I</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
-<span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="first admonition-title">Note</p>
-<p class="last">Please note the usage of <code class="code docutils literal"><span class="pre">.cuda()</span></code> i.e. tensor data is declared as the CUDA
-type. Applying <code class="code docutils literal"><span class="pre">Variable</span></code> on the tensor data essentially allows the layer to be
-part of computations graph and if <code class="code docutils literal"><span class="pre">Variable(torch.rand(),</span> <span class="pre">requires_grad=True).cuda()</span></code>
-is done, then the grad will be available for the <cite>Variable.cuda()</cite> and not the actual <cite>Variable/Tensor</cite>.</p>
-</div>
-</div>
-<div class="section" id="specifying-cudamappingoptions">
-<h2>Specifying CudaMappingOptions<a class="headerlink" href="#specifying-cudamappingoptions" title="Permalink to this headline">¶</a></h2>
-<p>We highly recommend passing the mapping options when running the kernel.
-See <a class="reference internal" href="writing_layers.html#must-pass-options"><span class="std std-ref">Specifying CudaMappingOptions</span></a> for more details. When running the training layer,
-you can pass the options for forward and backward layer separately or you can
-pass the same options for them. In case you want to pass different options for
-them, the example for that would be:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="kn">from</span> <span class="nn">torch.autograd</span> <span class="kn">import</span> <span class="n">Variable</span>
-<span class="kn">from</span> <span class="nn">torch.nn.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
-<span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
-<span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
-<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
-<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
-<span class="s2">}}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-<span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">convolution</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">CONV_LANG</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;convolution&quot;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="s2">&quot;convolution_grad&quot;</span><span class="p">,</span> <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sh&quot;</span><span class="p">:</span><span class="n">sH</span><span class="p">,</span> <span class="s2">&quot;sw&quot;</span><span class="p">:</span><span class="n">sW</span><span class="p">})</span>
-<span class="n">I</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;conv&quot;</span><span class="p">),</span> <span class="n">tc</span><span class="o">.</span><span class="n">CudaMappingOptions</span><span class="p">(</span><span class="s2">&quot;group_conv&quot;</span><span class="p">)])</span>
-<span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>In order to obtain options via autotuning for backward and forward layer, keep reading further.</p>
-</div>
-<div class="section" id="autotuning-training-layer">
-<h2>Autotuning training layer<a class="headerlink" href="#autotuning-training-layer" title="Permalink to this headline">¶</a></h2>
-<p>You can autotune a training layer easily. The forward and backward layers will
-be tuned separately in order to ensure maximal performance. Please read <a class="reference internal" href="autotuning_layers.html#pytorch-autotune-layers"><span class="std std-ref">Autotuning layers</span></a>
-for how to set autotuner parameters. We will see how to autotune a training
-layer, save cache and run the layer with help of examples:</p>
-<p>You can either cache to default options or to a file (also see <a class="reference internal" href="autotuning_layers.html#autotuner-cache-choices"><span class="std std-ref">Caching autotuned options</span></a>).
-Let’s see how to cache options to file when we tune a training layer.</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="n">CONV_LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {{</span>
-<span class="s2">  O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
-<span class="s2">}}</span>
-<span class="s2">def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -&gt; (d_I, d_W1) {{</span>
-<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
-<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
-<span class="s2">}}</span>
-<span class="s2">&quot;&quot;&quot;</span>
-<span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">convolution</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">CONV_LANG</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;convolution&quot;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="s2">&quot;convolution_grad&quot;</span><span class="p">,</span> <span class="n">constants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;sh&quot;</span><span class="p">:</span><span class="n">sH</span><span class="p">,</span> <span class="s2">&quot;sw&quot;</span><span class="p">:</span><span class="n">sW</span><span class="p">})</span>
-<span class="n">I</span><span class="p">,</span> <span class="n">W1</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">()</span>
-<span class="n">convolution</span><span class="o">.</span><span class="n">autotune</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="s2">&quot;convolution_train.tc&quot;</span><span class="p">)</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
-<span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
-</pre></div>
-</div>
-<p>You will find a cache file created: <code class="code docutils literal"><span class="pre">convolution_train.options</span></code> has
-options for the forward layer and <code class="code docutils literal"><span class="pre">convolution_train_backward.options</span></code> file
-has options for the grad layer.</p>
-</div>
-<div class="section" id="reordering-grad-outputs">
-<h2>Reordering grad outputs<a class="headerlink" href="#reordering-grad-outputs" title="Permalink to this headline">¶</a></h2>
-<p>In the backward pass, TC uses the list of input tensors in the forward pass and appends
-the output tensors list to it. This is treated as the input to the backward TC definition.
-However, sometimes, the forward layer TC might have some temporary variable for which we don’t
-need gradient in the backward TC. In such cases, users can use <code class="code docutils literal"><span class="pre">reorder_function</span></code>. See
-the example below for how to use it:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="kn">as</span> <span class="nn">tc</span>
-<span class="kn">import</span> <span class="nn">torch</span>
-<span class="n">LANG</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">def convolution(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B) -&gt; (tmp, O) {</span>
-<span class="s2">  tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
-<span class="s2">  O(n, m, h, w) = tmp(n, m, h, w) + B(m)</span>
+<p>To create a <code class="code docutils literal notranslate"><span class="pre">torch.autograd</span></code> function backed by TC one can just use the
+<code class="xref py py-func docutils literal notranslate"><span class="pre">make_autograd()</span></code> helper function.  Note that backward computations must be
+provided explicitly as TC functions.</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">conv</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {</span>
+<span class="s2">    O(n, m, h, w) +=!</span>
+<span class="s2">        I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
 <span class="s2">}</span>
-<span class="s2">def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) d_O)</span>
-<span class="s2">-&gt; (d_I, d_W1, d_B) {</span>
-<span class="s2">   d_I(n, c,  h,  w) +=! d_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
-<span class="s2">  d_W1(m, c, kh, kw) +=! d_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)</span>
-<span class="s2">  d_B(m) +=! d_O(n, m, h, w)</span>
+<span class="s2">def convolution_igrad(float(M,C,KH,KW) W1, float(N,M,H,W) d_O)</span>
+<span class="s2">    -&gt; (d_I)</span>
+<span class="s2">{</span>
+<span class="s2">    d_I(n, c, h, w) +=!</span>
+<span class="s2">        d_O(  n, r_m, h - r_kh, w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="s2">}</span>
+<span class="s2">def convolution_wgrad(float(N,C,H,W) I, float(N,M,H,W) d_O) -&gt; (d_W1)</span>
+<span class="s2">{</span>
+<span class="s2">    d_W1(m, c, kh, kw) +=!</span>
+<span class="s2">        d_O(r_n,   m, r_h - kh, r_w - kw) *  I(r_n, c,  r_h,  r_w)</span>
 <span class="s2">}</span>
 <span class="s2">&quot;&quot;&quot;</span>
 
-<span class="c1"># since the forward layer produces two outputs, one is temporary which is</span>
-<span class="c1"># not needed in the forward pass, we can reorder the grad_outputs as we want.</span>
-<span class="c1"># So, here we return the output grad that we actually use in backwards TC.</span>
-<span class="k">def</span> <span class="nf">reorder</span><span class="p">():</span>
-    <span class="k">def</span> <span class="nf">reorder_function</span><span class="p">(</span><span class="n">grad_outputs</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">grad_outputs</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
-    <span class="k">return</span> <span class="n">reorder_function</span>
+<span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span>
+    <span class="n">conv</span><span class="p">,</span>
+    <span class="n">tc</span><span class="o">.</span><span class="n">make_autotuned_options_factory</span><span class="p">(</span>
+        <span class="n">starting_options</span><span class="o">=</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span>
+        <span class="n">tuner_config</span><span class="o">=</span><span class="n">tuner_config</span><span class="p">))</span>
+<span class="n">I</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">),</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">))</span>
 
-<span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">sH</span><span class="p">,</span> <span class="n">sW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
-<span class="n">convolution</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="n">LANG</span><span class="p">,</span> <span class="n">training</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;convolution&quot;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="s2">&quot;convolution_grad&quot;</span><span class="p">)</span>
-<span class="n">I</span> <span class="o">=</span> <span class="n">Variable</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-<span class="n">W</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
-<span class="n">B</span> <span class="o">=</span> <span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">M</span><span class="p">)</span><span class="o">.</span><span class="n">cuda</span><span class="p">())</span>
-<span class="n">out</span> <span class="o">=</span> <span class="n">convolution</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">reorder_function</span><span class="o">=</span><span class="n">reorder</span><span class="p">())</span>
-<span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">convolution_backward</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">d_O</span><span class="p">):</span>
+    <span class="n">d_I</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">convolution_igrad</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+    <span class="n">d_O</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">convolution_wgrad</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">d_I</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+
+<span class="n">convolution_function</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">make_autograd</span><span class="p">(</span>
+    <span class="n">T</span><span class="o">.</span><span class="n">convolution</span><span class="p">,</span> <span class="n">convolution_backward</span><span class="p">)</span>
+
+<span class="c1"># First occurrence triggers tuning</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">convolution_function</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+<span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+
+<span class="c1"># Subsequent occurrences do not</span>
+<span class="n">out</span> <span class="o">=</span> <span class="n">convolution_function</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+<span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
 </pre></div>
 </div>
-</div>
+</div></blockquote>
 </div>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="note_about_performance.html" class="btn btn-neutral float-right" title="Note about Performance / Autotuning" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="debugging.html" class="btn btn-neutral float-right" title="Debugging" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="autotuning_layers.html" class="btn btn-neutral" title="Autotuning layers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="writing_layers.html" class="btn btn-neutral" title="Writing TC operations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
@@ -541,7 +416,7 @@ the example below for how to use it:</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -560,6 +435,7 @@ the example below for how to use it:</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'../../',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -573,19 +449,13 @@ the example below for how to use it:</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="../../_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

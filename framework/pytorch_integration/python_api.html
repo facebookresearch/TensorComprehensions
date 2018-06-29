@@ -1,0 +1,1052 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Python API &mdash; Tensor Comprehensions v0.1.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Writing TC operations" href="writing_layers.html" />
+    <link rel="prev" title="Getting Started" href="getting_started.html" /> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html">
+          
+
+          
+            
+            <img src="../../_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                v0.1.1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Index</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../introduction.html">What is Tensor Comprehensions?</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html#example-of-using-tc-with-framework">Example of using TC with framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html#tensor-comprehension-notation">Tensor Comprehension Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../introduction.html#examples-of-tc">Examples of TC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../introduction.html#simple-matrix-vector">Simple matrix-vector</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../introduction.html#simple-2-d-convolution-no-stride-no-padding">Simple 2-D convolution (no stride, no padding)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../introduction.html#simple-2d-max-pooling">Simple 2D max pooling</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../semantics.html">Semantics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#types">Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#data-layout">Data Layout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#variable-scoping">Variable Scoping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#implied-reductions-and-operators">Implied Reductions and operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#size-expressions">Size Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#statements">Statements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#expressions">Expressions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../semantics.html#grammar">Grammar</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../inference.html">Range Inference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../inference.html#the-range-inference-algorithm">The Range Inference Algorithm</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../inference.html#preconditions">Preconditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../inference.html#worked-examples">Worked Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../inference.html#inverted-indexing">Inverted indexing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../inference.html#strided-indexing-with-constant-stride">Strided indexing with constant stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../inference.html#strided-indexing-with-offsets">Strided indexing with offsets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../inference.html#strided-indexing-with-dynamic-stride">Strided indexing with dynamic stride</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../inference.html#constant-fill-using-an-exists-clause">Constant fill using an exists clause</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../halide_integration.html">Relation to Halide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../halide_integration.html#use-of-halide-in-tc">Use of Halide in TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../mapping_options.html">Mapping Options</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#how-to-choose-starting-mapping-options">How to choose starting mapping options?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#options-api">Options API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#defaults-provided">Defaults provided</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#available-options">Available options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#impact-on-performance">Impact on Performance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../mapping_options.html#possible-compiler-issues">Possible compiler issues</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../autotuner.html">Autotuner</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../autotuner.html#parameters-for-autotuning">Parameters for Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../autotuner.html#caching">Caching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../performance.html">Performance of TC</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Machine Learning with TC</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../ml_with_tc.html">Positioning of TC in ML Software stacks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../ml_with_tc.html#implications-of-ml-framework-integration">Implications of ML Framework Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#one-tc-function-one-kernel">One TC function one kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#no-variable-allocations">No Variable Allocations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#graph-level">Graph Level</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../ml_with_tc.html#minimal-information-to-write-ml-layers-concisely">Minimal information to write ML layers concisely</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#c-style-loops">C-style loops</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#halide">Halide</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#tc">TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../ml_with_tc.html#matrix-languages">Matrix Languages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../integrating_any_ml_framework.html">Integrating TC with ML framework</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../integrating_any_ml_framework.html#step-1-dlpack-support-in-framework">Step 1: DLpack support in framework</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../integrating_any_ml_framework.html#step-2-integrating-tc">Step 2: Integrating TC</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../coding_conventions.html">Coding Conventions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../coding_conventions.html#a-more-complex-example">A more complex example</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">PyTorch Integration</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="getting_started.html#example">Example</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="writing_layers.html">Writing TC operations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#example">Example</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a></li>
+<li class="toctree-l1"><a class="reference internal" href="debugging.html">Debugging</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="debugging.html#example-usage">Example usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="frequently_asked_questions.html">Frequently Asked Questions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="frequently_asked_questions.html#tc-language">TC language</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#how-are-temporary-variables-handled-in-tc">How are temporary variables handled in TC?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#can-i-re-use-a-temporary-variable">Can I re-use a temporary variable?</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="frequently_asked_questions.html#autotuner">Autotuner</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Installation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#conda-installation">Conda installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#build-from-source">Build from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#conda-from-scratch-first-time-configuration">Conda from scratch (first time configuration)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#activate-conda-in-your-current-terminal">Activate conda in your current terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#build-tc-with-dependencies-supplied-by-conda">Build TC with dependencies supplied by conda</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#test-locally">Test locally</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation.html#advanced-development-mode-installation">Advanced / development mode installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#optional-dependencies">Optional dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../installation.html#cudnn-version-7-1-in-caffe2-dev-mode">Cudnn version 7.1 in Caffe2 / dev mode</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation_colab_research.html">Installation in the Google Colaboratory environment</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-1-create-new-notebook-in-the-google-research-colaboratory">Step 1: Create new Notebook in the Google Research Colaboratory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-2-create-a-new-code-cell-with-the-following-code">Step 2: Create a new Code Cell, with the following code</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../installation_colab_research.html#step-3-use-tc-normally-from-python-torch-environment">Step 3: Use TC normally, from Python/Torch environment</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Paper</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../report.html">Tech Report</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Support</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../contacts.html">Contacts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../contacts.html#bugs-and-features">Bugs and features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contacts.html#mailing-list">Mailing list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contacts.html#contributions">Contributions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../contacts.html#slack-channel">Slack channel</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption"><span class="caption-text">Tutorials Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tensor Comprehensions Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html">Using TC to get fast CUDA code for TensorDot</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#about-tensordot">About TensorDot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-1-write-tc-for-tensordot">Step 1: Write TC for TensorDot</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-2-register-operation-with-tc">Step 2: Register operation with TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-3-create-input-tensors-and-run-tc">Step 3: Create input tensors and run TC</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-4-autotune-and-get-better-performing-kernel">Step 4: Autotune and get better performing kernel</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#early-stopping">Early stopping</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#summary">Summary</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Tensor Comprehensions</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+      <li>Python API</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../../_sources/framework/pytorch_integration/python_api.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-tensor_comprehensions">
+<span id="python-api"></span><h1>Python API<a class="headerlink" href="#module-tensor_comprehensions" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="high-level-api">
+<h2>High-level API<a class="headerlink" href="#high-level-api" title="Permalink to this headline">¶</a></h2>
+<p>We provide a high-level API which allows one to easily experiment with Tensor
+Comprehensions.</p>
+<dl class="function">
+<dt id="tensor_comprehensions.define">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">define</code><span class="sig-paren">(</span><em>tc</em>, <em>mapping_options_factory</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#define"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.define" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a helper class with methods that implement multiple TC defs.</p>
+<p>Parsing a TC string with multiple defs and return a helper object with
+method names that match each of the TC def.
+Later, JIT compilation occurs on-demand the first time one such method is called
+with PyTorch Tensors of new sizes. The returned <code class="xref py py-class docutils literal notranslate"><span class="pre">TC</span></code> helper class is
+backed by a compilation cache which memoizes the results of compilation and
+avoids spurious recompilations. In order to determine the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code>, used for JIT compiling a particular TC def on
+inputs of particular sizes, the <code class="code docutils literal notranslate"><span class="pre">mapping_options_factory</span></code>
+function is called. We provide the factory builder functions
+<code class="xref py py-func docutils literal notranslate"><span class="pre">make_naive_options_factory()</span></code>,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">make_load_from_cache_options_factory()</span></code> and
+<code class="xref py py-func docutils literal notranslate"><span class="pre">make_autotuned_options_factory()</span></code></p>
+<p>Further user-defined factory functions can be easily written to extend
+the behavior.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you chose to benchmark TC using this high-level API, be sure to
+understand how compilation, tuning and memoization interact. More
+generally, the low-level API should be used for benchmarking purposes.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a string containing one of more TC defs.</li>
+<li><strong>mapping_options_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]], <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>]) – a function that takes a string with multiple
+TC defs, an entry_point and input PyTorch Tensors and produces a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">a Callable helper object with methods corresponding to the TC def
+names and backed by a compilation cache.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Examples</p>
+<p>One can define TC functions compiled with naive options for the
+purpose of correctness check debugging:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">T</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span>
+<span class="gp">... </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="gp">... </span><span class="sd">def add(float(N) A, float(N) B) -&gt; (C) { C(i) = A(i) + B(i) }</span>
+<span class="gp">... </span><span class="sd">def sub(float(N) A, float(N) B) -&gt; (C) { C(i) = A(i) - B(i) }</span>
+<span class="gp">... </span><span class="sd">&#39;&#39;&#39;</span><span class="p">,</span>
+<span class="gp">... </span><span class="n">tc</span><span class="o">.</span><span class="n">make_naive_options_factory</span><span class="p">())</span>
+<span class="gp">... </span><span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">C</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">tc</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">),</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">D</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">tc</span><span class="o">.</span><span class="n">assert_almost_equal</span><span class="p">(</span><span class="n">D</span><span class="p">,</span> <span class="p">(</span><span class="n">A</span> <span class="o">-</span> <span class="n">B</span><span class="p">),</span> <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>One can also obtain a reinforced tuning behavior by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tuner_config</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">TunerConfig</span><span class="p">()</span><span class="o">.</span><span class="n">threads</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">generations</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">pop_size</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">cache_file</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">group_normalization</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">... </span><span class="s1">    def moments(float(N, K) I) -&gt; (mean, var) {</span>
+<span class="gp">... </span><span class="s1">        # var = E(x^2) - mean^2.</span>
+<span class="gp">... </span><span class="s1">        mean(n) +=! I(n, r_k)</span>
+<span class="gp">... </span><span class="s1">         var(n) +=! I(n, r_k) * I(n, r_k)</span>
+<span class="gp">... </span><span class="s1">        mean(n)  = mean(n) / (K)</span>
+<span class="gp">... </span><span class="s1">         var(n)  =  var(n) / (K) - mean(n) * mean(n)</span>
+<span class="gp">... </span><span class="s1">    }</span>
+<span class="gp">...</span><span class="s1"></span>
+<span class="gp">... </span><span class="s1">    def group_normalization(</span>
+<span class="gp">... </span><span class="s1">        float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta,</span>
+<span class="gp">... </span><span class="s1">        float(N, G) mean, float(N, G) var) -&gt; (O)</span>
+<span class="gp">... </span><span class="s1">    {</span>
+<span class="gp">... </span><span class="s1">        O(n, g, d, h, w) = gamma(g, d)</span>
+<span class="gp">... </span><span class="s1">            * ( I(n, g, d, h, w) - mean(n, g) )</span>
+<span class="gp">... </span><span class="s1">            * rsqrt( var(n, g) + 1e-5 )</span>
+<span class="gp">... </span><span class="s1">            + beta(g, d)</span>
+<span class="gp">... </span><span class="s1">    }</span>
+<span class="gp">... </span><span class="s1">    &#39;&#39;&#39;</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span>
+<span class="gp">... </span>    <span class="n">I</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="p">(</span>
+<span class="gp">... </span>        <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">),</span>
+<span class="gp">... </span>        <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">D</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="n">T</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">group_normalization</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">tc</span><span class="o">.</span><span class="n">make_autotuned_options_factory</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="n">starting_options</span><span class="o">=</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">tuner_config</span><span class="o">=</span><span class="n">tuner_config</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">cache_filename</span><span class="o">=</span><span class="n">cache_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">store_to_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="gp">... </span>    <span class="c1"># First occurrence triggers tuning from naive options and</span>
+<span class="gp">... </span>    <span class="c1"># stores to cache.</span>
+<span class="gp">... </span>    <span class="n">mean</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">moments</span><span class="p">(</span><span class="n">I</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span> <span class="o">*</span> <span class="n">G</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+<span class="gp">... </span>    <span class="n">out</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">group_normalization</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">I</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mean</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">)),</span> <span class="n">var</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">)))</span>
+<span class="gp">...</span>
+<span class="gp">... </span>    <span class="c1"># Create a new TC object to retrigger tuning, this time</span>
+<span class="gp">... </span>    <span class="c1"># starting from MappingOptions loaded from cache.</span>
+<span class="gp">... </span>    <span class="n">T</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">group_normalization</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">tc</span><span class="o">.</span><span class="n">make_autotuned_options_factory</span><span class="p">(</span>
+<span class="gp">... </span>            <span class="n">tuner_config</span><span class="o">=</span><span class="n">tuner_config</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">cache_filename</span><span class="o">=</span><span class="n">cache_file</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">load_from_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="gp">... </span>            <span class="n">store_to_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="gp">... </span>    <span class="n">mean</span><span class="p">,</span> <span class="n">var</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">moments</span><span class="p">(</span><span class="n">I</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span> <span class="o">*</span> <span class="n">G</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)))</span>
+<span class="gp">... </span>    <span class="n">out</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">group_normalization</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">I</span><span class="p">,</span> <span class="n">gamma</span><span class="p">,</span> <span class="n">beta</span><span class="p">,</span> <span class="n">mean</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">)),</span> <span class="n">var</span><span class="o">.</span><span class="n">view</span><span class="p">((</span><span class="n">N</span><span class="p">,</span> <span class="n">G</span><span class="p">)))</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.make_autograd">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">make_autograd</code><span class="sig-paren">(</span><em>forward_fun</em>, <em>backward_fun</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#make_autograd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.make_autograd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a Callable helper object with torch.autograd support.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>forward_fun</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – a function that takes PyTorch Tensors and implements the
+forward operation. Returns PyTorch Tensors.</li>
+<li><strong>backward_fun</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]], <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – a function that takes PyTorch Tensors and implements the
+forward operation. Returns PyTorch Tensors.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">a Callable helper object with torch.autograd support.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">If you chose to benchmark TC using this high-level API, be sure to
+understand how autogr, compilation, tuning and memoization interact.
+More generally, the low-level API should be used for benchmarking
+purposes.</p>
+</div>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">conv</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">... </span><span class="s1">def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -&gt; (O) {</span>
+<span class="gp">... </span><span class="s1">    O(n, m, h, w) +=!</span>
+<span class="gp">... </span><span class="s1">        I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)</span>
+<span class="gp">... </span><span class="s1">}</span>
+<span class="gp">... </span><span class="s1">def convolution_igrad(float(M,C,KH,KW) W1, float(N,M,H,W) d_O)</span>
+<span class="gp">... </span><span class="s1">    -&gt; (d_I)</span>
+<span class="gp">... </span><span class="s1">{</span>
+<span class="gp">... </span><span class="s1">    d_I(n, c, h, w) +=!</span>
+<span class="gp">... </span><span class="s1">        d_O(  n, r_m, h - r_kh, w - r_kw) * W1(r_m, c, r_kh, r_kw)</span>
+<span class="gp">... </span><span class="s1">}</span>
+<span class="gp">... </span><span class="s1">def convolution_wgrad(float(N,C,H,W) I, float(N,M,H,W) d_O) -&gt; (d_W1)</span>
+<span class="gp">... </span><span class="s1">{</span>
+<span class="gp">... </span><span class="s1">    d_W1(m, c, kh, kw) +=!</span>
+<span class="gp">... </span><span class="s1">        d_O(r_n,   m, r_h - kh, r_w - kw) *  I(r_n, c,  r_h,  r_w)</span>
+<span class="gp">... </span><span class="s1">}</span>
+<span class="gp">... </span><span class="s1">&#39;&#39;&#39;</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">O</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span>
+<span class="gp">... </span><span class="n">T</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">define</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">conv</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">tc</span><span class="o">.</span><span class="n">make_autotuned_options_factory</span><span class="p">(</span>
+<span class="gp">... </span>        <span class="n">starting_options</span><span class="o">=</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span>
+<span class="gp">... </span>        <span class="n">tuner_config</span><span class="o">=</span><span class="n">tuner_config</span><span class="p">))</span>
+<span class="gp">... </span><span class="n">I</span><span class="p">,</span> <span class="n">W</span> <span class="o">=</span> <span class="p">(</span>
+<span class="gp">... </span>    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">N</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="n">O</span><span class="p">,</span> <span class="n">C</span><span class="p">,</span> <span class="n">kH</span><span class="p">,</span> <span class="n">kW</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="k">def</span> <span class="nf">convolution_backward</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">d_O</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="n">d_I</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">convolution_igrad</span><span class="p">(</span><span class="n">W</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="n">d_O</span> <span class="o">=</span> <span class="n">T</span><span class="o">.</span><span class="n">convolution_wgrad</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+<span class="gp">... </span>    <span class="k">return</span> <span class="p">(</span><span class="n">d_I</span><span class="p">,</span> <span class="n">d_O</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="n">convolution_function</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">make_autograd</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">T</span><span class="o">.</span><span class="n">convolution</span><span class="p">,</span> <span class="n">convolution_backward</span><span class="p">)</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># First occurrence triggers tuning</span>
+<span class="gp">... </span><span class="n">out</span> <span class="o">=</span> <span class="n">convolution_function</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="c1"># Subsequent occurrences do not</span>
+<span class="gp">... </span><span class="n">out</span> <span class="o">=</span> <span class="n">convolution_function</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">W</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">out</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="low-level-api">
+<h2>Low-level API<a class="headerlink" href="#low-level-api" title="Permalink to this headline">¶</a></h2>
+<p>We also provide a low-overhead API which avoids implicit behavior and is
+generally useful for benchmarking.</p>
+<dl class="class">
+<dt id="tensor_comprehensions.Executor">
+<em class="property">class </em><code class="descclassname">tensor_comprehensions.</code><code class="descname">Executor</code><span class="sig-paren">(</span><em>executor</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#Executor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.Executor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Callable helper class to hold the result of compiling a TC def with fixed input sizes.</p>
+<blockquote>
+<div><dl class="method">
+<dt id="tensor_comprehensions.Executor.__call__">
+<code class="descname">__call__</code><span class="sig-paren">(</span><em>*inputs</em>, <em>outputs=None</em>, <em>unchecked=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#Executor.__call__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.Executor.__call__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the compiled TC kernel.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – PyTorch Tensors for which the compiled kernel has been
+specialized. You must use tensors of the same sizes as you have
+specialized for otherwise illegal memory accesses will occur.</li>
+<li><strong>outputs</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]) – PyTorch Tensors into which the TC kernel will write. If
+left unspecified, new tensors will be allocated (which will have a
+noticeable performance impact until the caching allocator kicks in).</li>
+<li><strong>unchecked</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Disable shape checks (at your own risk) which reduces
+overhead in the case of low-latency kernels.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">A PyTorch Tensor, or a tuple of Pytorch Tensors in the case of
+multiple return values.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="p">(</span>
+<span class="gp">... </span>    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+<span class="gp">... </span>    <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="gp">... </span><span class="n">add</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="s1">&#39;def add(float(N) A, float(N) B) -&gt; (C) { C(i) = A(i) + B(i) }&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;add&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s1">&#39;naive&#39;</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">... </span><span class="n">C</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">C</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="go">tensor(2., device=&#39;cuda:0&#39;) tensor(2., device=&#39;cuda:0&#39;)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div></blockquote>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.compile">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">compile</code><span class="sig-paren">(</span><em>tc</em>, <em>entry_point</em>, <em>mapping_options</em>, <em>*inputs</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#compile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a compiled, callable, low-overhead <a class="reference internal" href="#tensor_comprehensions.Executor" title="tensor_comprehensions.Executor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code></a>.</p>
+<p>An example of usage is provided in <a class="reference internal" href="#tensor_comprehensions.Executor" title="tensor_comprehensions.Executor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a string containing one of more TC defs.</li>
+<li><strong>entry_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the TC def to compile and execute.</li>
+<li><strong>mapping_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>]) – the options to use for compilation.</li>
+<li><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – PyTorch Tensors for which the compiled kernel is specialized.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#tensor_comprehensions.Executor" title="tensor_comprehensions.Executor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code></a>, a low-overhead callable class to launch the
+kernel compiled from the <code class="code docutils literal notranslate"><span class="pre">entry_point</span></code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.autotune">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">autotune</code><span class="sig-paren">(</span><em>tc</em>, <em>entry_point</em>, <em>*inputs</em>, <em>starting_options=None</em>, <em>tuner_config=&lt;tensor_comprehensions.tclib.TunerConfig object&gt;</em>, <em>cache_filename=None</em>, <em>load_from_cache=False</em>, <em>store_to_cache=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#autotune"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.autotune" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tunes the defined TC function for given inputs.</p>
+<p>The MappingOptions from which tuning starts is either passed explicitly via
+<code class="code docutils literal notranslate"><span class="pre">starting_options</span></code> or loaded from a cache file (when both
+<code class="code docutils literal notranslate"><span class="pre">cache_filename</span></code> and <code class="code docutils literal notranslate"><span class="pre">load_from_cache</span></code> are properly
+specified). Exactly one of <code class="code docutils literal notranslate"><span class="pre">starting_options</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">load_from_cache</span></code> must be specified.</p>
+<p>It is possible to obtain a reinforcement tuning behavior by tuning over
+multiple executions and specifying both <code class="code docutils literal notranslate"><span class="pre">load_from_cache</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">store_to_cache</span></code>. It is recommended to only use a single cache
+file for all TC defs and reinforce it over time.</p>
+<p>An example of usage is provided with <a class="reference internal" href="#tensor_comprehensions.autotune_and_compile" title="tensor_comprehensions.autotune_and_compile"><code class="xref py py-func docutils literal notranslate"><span class="pre">autotune_and_compile()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a string containing one of more TC defs.</li>
+<li><strong>entry_point</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the name of the TC def to compile and execute.</li>
+<li><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – PyTorch Tensors that TC should tune for. The inputs must be
+passed in the order they are also passed in the definition of
+the TC function.</li>
+<li><strong>starting_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – <code class="code docutils literal notranslate"><span class="pre">MappingOptions</span></code> from which tuning should start.</li>
+<li><strong>tuner_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#tensor_comprehensions.tclib.TunerConfig" title="tensor_comprehensions.tclib.TunerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TunerConfig</span></code></a>]) – <code class="code docutils literal notranslate"><span class="pre">TunerConfig</span></code> to control the behavior of the autotuner.</li>
+<li><strong>load_from_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Get the starting MappingOptions by loading from
+<code class="code docutils literal notranslate"><span class="pre">cache_filename</span></code>. If loading fails to recover an entry
+from the cache file for the given input sizes an assertion error
+will trigger.</li>
+<li><strong>store_to_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Optionally store the best result by appending it to
+the backing cache file.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The best options found during this tuning run.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.autotune_and_compile">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">autotune_and_compile</code><span class="sig-paren">(</span><em>tc</em>, <em>entry_point</em>, <em>*inputs</em>, <em>starting_options=None</em>, <em>tuner_config=&lt;tensor_comprehensions.tclib.TunerConfig object&gt;</em>, <em>cache_filename=None</em>, <em>load_from_cache=False</em>, <em>store_to_cache=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#autotune_and_compile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.autotune_and_compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls autotune, compiles with best options then returns an Executor.</p>
+<p>Takes the same arguments as the <a class="reference internal" href="#tensor_comprehensions.autotune" title="tensor_comprehensions.autotune"><code class="xref py py-func docutils literal notranslate"><span class="pre">autotune()</span></code></a> function.</p>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="p">,</span> <span class="n">B</span> <span class="o">=</span> <span class="p">(</span>
+<span class="gp">... </span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="mi">5</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">1.0</span><span class="p">),</span>
+<span class="gp">... </span><span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">10</span> <span class="o">**</span> <span class="mi">5</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fill_</span><span class="p">(</span><span class="mf">1.0</span><span class="p">))</span>
+<span class="gp">... </span><span class="n">add</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">autotune_and_compile</span><span class="p">(</span>
+<span class="gp">... </span>   <span class="s2">&quot;def add(float(N) A, float(N) B) -&gt; (C) { C(i) = A(i) + B(i) }&quot;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="s2">&quot;add&quot;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="n">starting_options</span><span class="o">=</span><span class="s1">&#39;naive&#39;</span><span class="p">,</span>
+<span class="gp">... </span>   <span class="n">tuner_config</span><span class="o">=</span><span class="n">tc</span><span class="o">.</span><span class="n">TunerConfig</span><span class="p">()</span><span class="o">.</span><span class="n">threads</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span><span class="o">.</span><span class="n">generations</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">pop_size</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+<span class="gp">... </span><span class="p">)</span>
+<span class="gp">... </span><span class="n">C</span> <span class="o">=</span> <span class="n">add</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">C</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+<span class="go">tensor(2., device=&#39;cuda:0&#39;) tensor(2., device=&#39;cuda:0&#39;)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#tensor_comprehensions.Executor" title="tensor_comprehensions.Executor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Executor</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Additionally the <code class="code docutils literal notranslate"><span class="pre">assert_almost_equal</span></code> helper function is useful in
+performing numerical checks.</p>
+<dl class="function">
+<dt id="tensor_comprehensions.assert_almost_equal">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">assert_almost_equal</code><span class="sig-paren">(</span><em>actual</em>, <em>expected</em>, <em>*inputs</em>, <em>operations=1</em>, <em>precision=1e-07</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#assert_almost_equal"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.assert_almost_equal" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asserts numerical precision requirements.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>actual</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – the PyTorch Tensor to check.</li>
+<li><strong>expected</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – the expected PyTorch Tensor.</li>
+<li><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – PyTorch Tensors passed as inputs to the TC that produced the
+actual Tensor.</li>
+<li><strong>operations</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]) – maximum number of iterated operations per produced value.
+This is used to compute the required absolute precision.</li>
+<li><strong>precision</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a>]) – relative precision at which to check.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="caching-and-configuration">
+<h2>Caching and Configuration<a class="headerlink" href="#caching-and-configuration" title="Permalink to this headline">¶</a></h2>
+<p>Finally we also document a subset of the helper types for caching and
+configuration that are commonly used.</p>
+<span class="target" id="module-tensor_comprehensions.tclib"></span><p>Python bindings for Tensor Comprehensions</p>
+<dl class="class">
+<dt id="tensor_comprehensions.tclib.MappingOptionsCache">
+<em class="property">class </em><code class="descclassname">tensor_comprehensions.tclib.</code><code class="descname">MappingOptionsCache</code><a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptionsCache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper class to manipulate cache files containing serialized <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a></p>
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptionsCache.load">
+<code class="descname">load</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptionsCache</em>, <em>arg0: str</em>, <em>arg1: str</em>, <em>arg2: tuple</em>, <em>arg3: int</em><span class="sig-paren">)</span> &#x2192; List[tc::CudaMappingOptions]<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptionsCache.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the best entries from cache.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>tc</strong> – a string containing one of more TC defs</li>
+<li><strong>entry_point</strong> – the TC def to compile and execute</li>
+<li><strong>inputs</strong> – Pytorch Tensors whose sizes we build an executor for</li>
+<li><strong>num_candidates</strong> – number of candidates to return</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Example</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">tensor_comprehensions</span> <span class="k">as</span> <span class="nn">tc</span>
+<span class="gp">... </span><span class="kn">import</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">as</span> <span class="nn">tclib</span>
+<span class="gp">... </span><span class="n">cache</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">MappingOptionsCache</span><span class="p">(</span><span class="n">cache_file</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">best_options</span><span class="p">,</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">tensordot_str</span><span class="p">,</span> <span class="n">entry_point</span><span class="p">,</span> <span class="p">(</span><span class="n">I0</span><span class="p">,</span> <span class="n">I1</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+<span class="gp">... </span><span class="n">executor</span> <span class="o">=</span> <span class="n">tclib</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+<span class="gp">... </span>    <span class="n">mm_str</span><span class="p">,</span> <span class="s2">&quot;matmul&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">),</span> <span class="n">tc</span><span class="o">.</span><span class="n">MappingOptions</span><span class="p">(</span><span class="s1">&#39;naive&#39;</span><span class="p">))</span>
+<span class="gp">... </span><span class="n">C</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="n">run</span><span class="p">((</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">),</span> <span class="p">())</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A vector of <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tensor_comprehensions.tclib.MappingOptions">
+<em class="property">class </em><code class="descclassname">tensor_comprehensions.tclib.</code><code class="descname">MappingOptions</code><a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>MappingOptions to drive the polyhedral compiler</p>
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.fixParametersBeforeScheduling">
+<code class="descname">fixParametersBeforeScheduling</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.fixParametersBeforeScheduling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform automatic loop scheduling taking into account specific tensor sizes.
+May produce faster kernels but significantly increases compilation time.
+Note that the mapping will be performed for specific tensor sizes anyway</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.intraTileScheduleFusionStrategy">
+<code class="descname">intraTileScheduleFusionStrategy</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: str</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.intraTileScheduleFusionStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Require TC to try and execute different TC expressions interleaved (Max), separately (Min)
+or interleaved as long as sufficient parallelism is exploited (Preserve3Coincident) by
+performing loop fusion and fission. Applies before tiling</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.mapToBlocks">
+<code class="descname">mapToBlocks</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions, arg0: List[int]</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.mapToBlocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>The configuration of CUDA grid, i.e. the number of CUDA blocks along three dimensions. Must be
+within the range allowed by CUDA (maximum 2^31-1 for the first value and 65535 for the second and third)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.mapToThreads">
+<code class="descname">mapToThreads</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions, arg0: List[int]</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.mapToThreads" title="Permalink to this definition">¶</a></dt>
+<dd><p>The configuration of CUDA block, i.e. the number of CUDA threads in each block along three
+dimensions. Must be within the range allowed by CUDA (maximum 1024 for the first and second value,
+32 for the third, product below 1024)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.matchLibraryCalls">
+<code class="descname">matchLibraryCalls</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.matchLibraryCalls" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replace computation patterns with calls to highly optimized libraries (such as CUB, CUTLASS, …) when possible</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.maxSharedMemory">
+<code class="descname">maxSharedMemory</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.maxSharedMemory" title="Permalink to this definition">¶</a></dt>
+<dd><p>The amount of shared memory to use, in bytes. If not provided, TC will query the active GPU and use all available shared memory.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.outerScheduleFusionStrategy">
+<code class="descname">outerScheduleFusionStrategy</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: str</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.outerScheduleFusionStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Require TC to try and execute different TC expressions interleaved (Max), separately (Min)
+or interleaved as long as sufficient parallelism is exploited (Preserve3Coincident) by
+performing loop fusion and fission. Applies to inner loops created by tiling</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.scheduleFusionStrategy">
+<code class="descname">scheduleFusionStrategy</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: str</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.scheduleFusionStrategy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set up outerScheduleFusionStrategy and intraTileFusionStrategy to the given value</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.serialize">
+<code class="descname">serialize</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em><span class="sig-paren">)</span> &#x2192; bytes<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Serialize the options to a protobuf string</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.tile">
+<code class="descname">tile</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions, arg0: List[int]</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.tile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform loop tiling on the generated code with the given sizes. Independent of mapping to a
+grid of thread blocks</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.unroll">
+<code class="descname">unroll</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.unroll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform loop unrolling on the generated code and produce at most the given number of statements</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.unrollCopyShared">
+<code class="descname">unrollCopyShared</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.unrollCopyShared" title="Permalink to this definition">¶</a></dt>
+<dd><p>Also unroll the copies to and from shared memory. If an unroll value is not provided, has no effect</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.usePrivateMemory">
+<code class="descname">usePrivateMemory</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.usePrivateMemory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create thread-local copies of data in private memory</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.useReadOnlyCache">
+<code class="descname">useReadOnlyCache</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.useReadOnlyCache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use the readonly cache (i.e. emit __ldg loads)</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.MappingOptions.useSharedMemory">
+<code class="descname">useSharedMemory</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.MappingOptions</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.MappingOptions<a class="headerlink" href="#tensor_comprehensions.tclib.MappingOptions.useSharedMemory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create block-local copies of data in shared memory when this can leverage data reuse or global memory access coalescing</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="tensor_comprehensions.tclib.TunerConfig">
+<em class="property">class </em><code class="descclassname">tensor_comprehensions.tclib.</code><code class="descname">TunerConfig</code><a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper class to manage the behavior of the autotuner</p>
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.crossover_rate">
+<code class="descname">crossover_rate</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.crossover_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_gen_crossover_rate (Crossover rate for genetic autotuning)</dt>
+<dd>type: uint32 default: 80</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.devices">
+<code class="descname">devices</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: str</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.devices" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_devices (Comma separated list of GPUs to use for autotuning)</dt>
+<dd>type: string default: “0”</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.generations">
+<code class="descname">generations</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.generations" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_gen_generations (How many generations to run genetic tuning for)</dt>
+<dd>type: uint32 default: 25</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.logtostderr">
+<code class="descname">logtostderr</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: bool</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.logtostderr" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-logtostderr (log messages go to stderr instead of logfiles) type: bool</dt>
+<dd>default: false</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.mutation_rate">
+<code class="descname">mutation_rate</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.mutation_rate" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_gen_mutation_rate (Mutation rate for genetic autotuning)</dt>
+<dd>type: uint32 default: 7</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.number_elites">
+<code class="descname">number_elites</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.number_elites" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_gen_number_elites (The number of best candidates that are preserved</dt>
+<dd>intact between generations) type: uint32 default: 10</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.pop_size">
+<code class="descname">pop_size</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.pop_size" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_gen_pop_size (Population size for genetic autotuning) type: uint32</dt>
+<dd>default: 100</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.stderrthreshold">
+<code class="descname">stderrthreshold</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.stderrthreshold" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-stderrthreshold (log messages at or above this level are copied to stderr</dt>
+<dd>in addition to logfiles.  This flag obsoletes –alsologtostderr.)
+type: int32 default: 2</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.threads">
+<code class="descname">threads</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.threads" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_threads (Number of CPU threads to use when autotuning) type: uint32</dt>
+<dd>default: 8</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="tensor_comprehensions.tclib.TunerConfig.tuner_min_launch_total_threads">
+<code class="descname">tuner_min_launch_total_threads</code><span class="sig-paren">(</span><em>self: tensor_comprehensions.tclib.TunerConfig</em>, <em>arg0: int</em><span class="sig-paren">)</span> &#x2192; tensor_comprehensions.tclib.TunerConfig<a class="headerlink" href="#tensor_comprehensions.tclib.TunerConfig.tuner_min_launch_total_threads" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>-tuner_min_launch_total_threads (Prune out kernels mapped to fewer than</dt>
+<dd>this many threads and block) type: uint64 default: 64</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="writing_layers.html" class="btn btn-neutral float-right" title="Writing TC operations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="getting_started.html" class="btn btn-neutral" title="Getting Started" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2017-present, Facebook, Inc..
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'v0.1.1',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

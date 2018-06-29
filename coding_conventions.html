@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Getting Started" href="framework/pytorch_integration/getting_started.html"/>
-        <link rel="prev" title="Integrating TC with ML framework" href="integrating_any_ml_framework.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="framework/pytorch_integration/getting_started.html" />
+    <link rel="prev" title="Integrating TC with ML framework" href="integrating_any_ml_framework.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -383,33 +353,33 @@ between the two goals. Such examples are provided below.</p>
 Use lower-case names for indices to match the name of the parameter
 corresponding to the dimension upon which they iterate.
 In other words, prefer:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">O</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p>to:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">copy2d</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="n">I</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">O</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span> <span class="o">=</span> <span class="n">I</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 </div>
 <div class="section" id="prefix-reduction-index-names-with-r">
-<h2>Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code><a class="headerlink" href="#prefix-reduction-index-names-with-r" title="Permalink to this headline">¶</a></h2>
+<h2>Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code><a class="headerlink" href="#prefix-reduction-index-names-with-r" title="Permalink to this headline">¶</a></h2>
 <p>By definition, reduction indices are the ones that appear on the RHS of a TC
 expression but not on the LHS. On larger expressions it can get challenging to easily
 detect the reduction variables by mentally parsing the set of indices on the
 RHS and subtracting the set of indices on the LHS from it. To alleviate such
-issues, name the reduction variables with a <code class="code docutils literal"><span class="pre">r_</span></code> prefix.
+issues, name the reduction variables with a <code class="code docutils literal notranslate"><span class="pre">r_</span></code> prefix.
 In other words, prefer:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
     C(m, n) +=! A(m, r_k) * B(r_k, n)
 }
 </pre></div>
 </div>
 <p>to:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def matmul(float(M, K) A, float(K, N) B) -&gt; (C) {
     C(m, n) +=! A(m, k) * B(k, n)
 }
 </pre></div>
@@ -418,9 +388,9 @@ In other words, prefer:</p>
 <div class="section" id="filter-non-rectangular-regions-with-data-dependencies">
 <h2>Filter non-rectangular regions with data-dependencies<a class="headerlink" href="#filter-non-rectangular-regions-with-data-dependencies" title="Permalink to this headline">¶</a></h2>
 <p>TC semantics are restricted to (hyper-)rectangular iteration spaces.
-This is a hard requirement to ensure range inference is non-ambiguous (see <a href="#id1"><span class="problematic" id="id2">inference_</span></a>).
+This is a hard requirement to ensure range inference is non-ambiguous (see <a class="reference internal" href="inference.html#inference"><span class="std std-ref">Range Inference</span></a>).
 To simulate non-rectangular iteration spaces, one can use the following:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
     LU(m1, m2) +=! (r_k &gt;= m1 and r_k =&lt; m2) ? L(m1, r_k) * U(r_k, m2) : 0
 }
 </pre></div>
@@ -428,7 +398,7 @@ To simulate non-rectangular iteration spaces, one can use the following:</p>
 <p>However, non-(hyper)-rectangular iteration spaces (e.g. triangular) are
 incompatible with range inference and will fail the semantic checks in the TC
 compiler:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def matmul(float(M, K) L, float(K, M) U) -&gt; (LU) {
     LU(m1, m2) +=! L(m1, r_k) * U(r_k, m2) where r_k in m1:M, r_k in 0:m2+1
 }
 </pre></div>
@@ -438,11 +408,11 @@ matrix-multiplication of triangular matrices.
 Lowering such operations efficiently from TC is the subject of future work.</p>
 </div>
 <div class="section" id="prefix-gradient-tensors-names-with-d">
-<h2>Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code><a class="headerlink" href="#prefix-gradient-tensors-names-with-d" title="Permalink to this headline">¶</a></h2>
+<h2>Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code><a class="headerlink" href="#prefix-gradient-tensors-names-with-d" title="Permalink to this headline">¶</a></h2>
 <p>When implementing backward operations, pass the inputs to the backwards pass
 in the same order as the outputs of the forward pass and use the same tensor
-name prefixed by <code class="code docutils literal"><span class="pre">d_</span></code>. For instance:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">conv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">KH</span><span class="p">,</span><span class="n">KW</span><span class="p">)</span> <span class="n">Wt</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
+name prefixed by <code class="code docutils literal notranslate"><span class="pre">d_</span></code>. For instance:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">conv</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">N</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">H</span><span class="p">,</span><span class="n">W</span><span class="p">)</span> <span class="n">I</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">M</span><span class="p">,</span><span class="n">C</span><span class="p">,</span><span class="n">KH</span><span class="p">,</span><span class="n">KW</span><span class="p">)</span> <span class="n">Wt</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">O</span><span class="p">)</span> <span class="p">{</span>
     <span class="o">...</span>
 <span class="p">}</span>
 
@@ -457,7 +427,7 @@ name prefixed by <code class="code docutils literal"><span class="pre">d_</span>
 <p>The following shows a possible implementation for a more complex forward and
 backward example. Notice the proper alignment of indices in the backward pass
 and the emergence of an antidiagonal pattern in the reduction accesses:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>def matmul(float(M,K) A, float(K,N) B) -&gt; (C) {
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>def matmul(float(M,K) A, float(K,N) B) -&gt; (C) {
     C(m, n) +=! A(m, r_k) * B(r_k, n)
 }
 def matmul_bw(float(M,K) A, float(K,N) B, float(M,N) d_C) -&gt; (d_A, d_B){
@@ -473,9 +443,7 @@ valuable in other circumstances.</p>
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -497,7 +465,7 @@ valuable in other circumstances.</p>
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -516,6 +484,7 @@ valuable in other circumstances.</p>
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -529,19 +498,13 @@ valuable in other circumstances.</p>
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>

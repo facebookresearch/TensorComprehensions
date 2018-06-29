@@ -24,29 +24,20 @@
 
   
 
-  
-  
-    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
-  
-
-  
-    <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
-  
-
-  
-        <link rel="index" title="Index"
-              href="genindex.html"/>
-        <link rel="search" title="Search" href="search.html"/>
-    <link rel="top" title="Tensor Comprehensions v0.1.1 documentation" href="index.html"/>
-        <link rel="next" title="Range Inference" href="inference.html"/>
-        <link rel="prev" title="What is Tensor Comprehensions?" href="introduction.html"/> 
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/tc_theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Range Inference" href="inference.html" />
+    <link rel="prev" title="What is Tensor Comprehensions?" href="introduction.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
 
 </head>
 
-<body class="wy-body-for-nav" role="document">
+<body class="wy-body-for-nav">
 
    
   <div class="wy-grid-for-nav">
@@ -63,7 +54,7 @@
 
           
             
-            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" />
+            <img src="_static/tc-logo-full-color-with-text-2.png" class="logo" alt="Logo"/>
           
           </a>
 
@@ -177,9 +168,9 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="coding_conventions.html">Coding Conventions</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#use-indices-named-after-parameters">Use indices named after parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal"><span class="pre">r_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-reduction-index-names-with-r">Prefix reduction index names with <code class="code docutils literal notranslate"><span class="pre">r_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#filter-non-rectangular-regions-with-data-dependencies">Filter non-rectangular regions with data-dependencies</a></li>
-<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal"><span class="pre">d_</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#prefix-gradient-tensors-names-with-d">Prefix gradient tensors names with <code class="code docutils literal notranslate"><span class="pre">d_</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="coding_conventions.html#a-more-complex-example">A more complex example</a></li>
 </ul>
 </li>
@@ -191,43 +182,23 @@
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/getting_started.html#example">Example</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing PyTorch layers with TC</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/python_api.html">Python API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#high-level-api">High-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#low-level-api">Low-level API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/python_api.html#caching-and-configuration">Caching and Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html">Writing TC operations</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#tc-define">tc.define</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#reduction-operators">Reduction Operators</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#different-input-sizes-for-same-tc">Different input sizes for same TC</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#multiple-tc-definitions-in-language">Multiple TC definitions in language</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#writing-layers-with-scalars">Writing layers with scalars</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#specifying-mappingoptions">Specifying MappingOptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#loading-from-cache">Loading from cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#autotuning">Autotuning</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html">Autotuning layers</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#example">Example</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#my-layer-autotune">my_layer.autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#autotuning-parameters">Autotuning parameters</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#initial-cudamappingoptions">Initial CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#caching-autotuned-options">Caching autotuned options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-cached-kernel-options">Using Cached kernel options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#using-tuple-sizes-to-autotune">Using tuple sizes to autotune</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#tc-decode">tc.decode</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/autotuning_layers.html#decoding-example">Decoding example</a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#examples">Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#specifying-cudamappingoptions">Specifying CudaMappingOptions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#autotuning-training-layer">Autotuning training layer</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html#reordering-grad-outputs">Reordering grad outputs</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html">Note about Performance / Autotuning</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#reuse-outputs">Reuse outputs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/note_about_performance.html#static-sizes-for-autotuning">Static sizes for autotuning</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a></li>
 <li class="toctree-l1"><a class="reference internal" href="framework/pytorch_integration/debugging.html">Debugging</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#example-usage">Example usage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/debugging.html#printing-tc-generated-cuda-code">Printing TC generated CUDA code</a></li>
@@ -240,10 +211,8 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#autotuner">Autotuner</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-new-generation-i-see-high-kernel-runtime-why">At the start of new generation, I see high kernel runtime, Why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-seeded-my-autotuning-but-the-worse-kernel-time-is-still-higher-why">I seeded my autotuning but the worse kernel time is still higher. Why?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#at-the-start-of-a-new-generation-i-see-higher-kernel-runtimes-why">At the start of a new generation, I see higher kernel runtimes, Why?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-sometimes-see-fluctuations-in-the-best-kernel-time-why">I sometimes see fluctuations in the best kernel time, why?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#i-see-some-cuda-errors-during-autotuning-should-i-worry">I see some CUDA errors during autotuning, should I worry?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="framework/pytorch_integration/frequently_asked_questions.html#how-do-i-stop-autotuning-early-and-save-cache">How do I stop autotuning early and save cache?</a></li>
 </ul>
 </li>
@@ -316,7 +285,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" aria-label="top navigation">
         
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">Tensor Comprehensions</a>
@@ -324,9 +293,10 @@
       </nav>
 
 
-      
       <div class="wy-nav-content">
+        
         <div class="rst-content">
+        
           
 
 
@@ -373,9 +343,9 @@
 <p>Tensor Comprehensions follows the follow semantics.</p>
 <div class="section" id="types">
 <h2>Types<a class="headerlink" href="#types" title="Permalink to this headline">¶</a></h2>
-<p>Values between statements are always tensors of primitive types (e.g. <code class="code docutils literal"><span class="pre">float(A,B)</span></code>, a tensor of rank 2).
-They can be 0-rank and omit the dimension list (e.g <code class="code docutils literal"><span class="pre">float</span></code>).
-Size variables (e.g. <code class="code docutils literal"><span class="pre">A</span></code> and <code class="code docutils literal"><span class="pre">B</span></code> in <code class="code docutils literal"><span class="pre">float(A,B)</span></code>) are used to represent the sizes of the dimensions.
+<p>Values between statements are always tensors of primitive types (e.g. <code class="code docutils literal notranslate"><span class="pre">float(A,B)</span></code>, a tensor of rank 2).
+They can be 0-rank and omit the dimension list (e.g <code class="code docutils literal notranslate"><span class="pre">float</span></code>).
+Size variables (e.g. <code class="code docutils literal notranslate"><span class="pre">A</span></code> and <code class="code docutils literal notranslate"><span class="pre">B</span></code> in <code class="code docutils literal notranslate"><span class="pre">float(A,B)</span></code>) are used to represent the sizes of the dimensions.
 If a size variable is repeated it means that tensors of that type must share the same size in that dimension.
 Size variables evaluate to the size of the dimension when used in expressions.</p>
 <p>The type of output values is omitted and is inferred based on how it is defined as described below.</p>
@@ -393,57 +363,57 @@ Size variables evaluate to the size of the dimension when used in expressions.</
 <li>loop index variables, are implicitly defined when used in a statement.</li>
 </ol>
 <p>When an identifier is used in a statement but is otherwise not in scope, it is defined to be an index variable for that statement.
-Each index variable has an associated range <code class="code docutils literal"><span class="pre">[b,e)</span></code> over which it operates.
+Each index variable has an associated range <code class="code docutils literal notranslate"><span class="pre">[b,e)</span></code> over which it operates.
 That range is inferred by its use, as described below.
-Index variables go out of scope after the statement, allowing the reuse of short variable names like <code class="code docutils literal"><span class="pre">i</span></code>.</p>
+Index variables go out of scope after the statement, allowing the reuse of short variable names like <code class="code docutils literal notranslate"><span class="pre">i</span></code>.</p>
 </div>
 <div class="section" id="implied-reductions-and-operators">
 <h2>Implied Reductions and operators<a class="headerlink" href="#implied-reductions-and-operators" title="Permalink to this headline">¶</a></h2>
 <p>If an index variable appears on the right but not on the left of a statement,
 it is a reduction index for the statement.
-If a statement has one or more reduction variables then it must specify a <code class="code docutils literal"><span class="pre">reduction</span></code>
-operator such as <code class="code docutils literal"><span class="pre">+</span></code> or <code class="code docutils literal"><span class="pre">max</span></code>.
+If a statement has one or more reduction variables then it must specify a <code class="code docutils literal notranslate"><span class="pre">reduction</span></code>
+operator such as <code class="code docutils literal notranslate"><span class="pre">+</span></code> or <code class="code docutils literal notranslate"><span class="pre">max</span></code>.
 There is only one reduction operator for the entire statement because
-combinations like <code class="code docutils literal"><span class="pre">max/+</span></code> on different dimensions have different mathematical meanings depending on loop order.
+combinations like <code class="code docutils literal notranslate"><span class="pre">max/+</span></code> on different dimensions have different mathematical meanings depending on loop order.
 All reduction operators are considered to be associative and commutative to allow for arbitrary order of evaluation.</p>
-<p>Reduction operators may be suffixed with <code class="code docutils literal"><span class="pre">!</span></code> (for example <code class="code docutils literal"><span class="pre">+=!</span></code>) to indicate that the
+<p>Reduction operators may be suffixed with <code class="code docutils literal notranslate"><span class="pre">!</span></code> (for example <code class="code docutils literal notranslate"><span class="pre">+=!</span></code>) to indicate that the
 tensor to which values are accumulated should first be initialized with the identity of the reduction
-operator (e.g., <code class="code docutils literal"><span class="pre">0</span></code> for <code class="code docutils literal"><span class="pre">+</span></code>). Otherwise, values are accumulated directly to the output or
+operator (e.g., <code class="code docutils literal notranslate"><span class="pre">0</span></code> for <code class="code docutils literal notranslate"><span class="pre">+</span></code>). Otherwise, values are accumulated directly to the output or
 temporary tensor passed to the kernel.</p>
 </div>
 <div class="section" id="size-expressions">
 <h2>Size Expressions<a class="headerlink" href="#size-expressions" title="Permalink to this headline">¶</a></h2>
 <p>Size expressions are a subset of normal expressions that can be used in explicit range constraints and in pattern matching.
-They are any expression over integral scalars that do not include tensor reads <code class="code docutils literal"><span class="pre">T(...)</span></code> or any loop index variables.
-They may include size variables, or dimension specifiers <code class="code docutils literal"><span class="pre">T.1</span></code>, for tensors that have already been defined in previous statements.
+They are any expression over integral scalars that do not include tensor reads <code class="code docutils literal notranslate"><span class="pre">T(...)</span></code> or any loop index variables.
+They may include size variables, or dimension specifiers <code class="code docutils literal notranslate"><span class="pre">T.1</span></code>, for tensors that have already been defined in previous statements.
 These values can be computed without performing any tensor-wide loops.</p>
 </div>
 <div class="section" id="statements">
 <h2>Statements<a class="headerlink" href="#statements" title="Permalink to this headline">¶</a></h2>
 <p>A statement specifies a new operation to define, an optional reduction, and a right hand side:</p>
-<div class="code highlight-default"><div class="highlight"><pre><span></span>v(index_variables) reduction=! rhs_expression
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span>v(index_variables) reduction=! rhs_expression
 </pre></div>
 </div>
-<p><code class="code docutils literal"><span class="pre">index_variables</span></code> must be a list of index variables defined in the <code class="code docutils literal"><span class="pre">rhs_expressions</span></code>
-<code class="code docutils literal"><span class="pre">reduction</span></code> is optional if all index variables appear on the left hand side.
-The value computed for tensor <code class="code docutils literal"><span class="pre">v</span></code> is equivalent to first assigning all
-elements of <code class="code docutils literal"><span class="pre">v</span></code> to the identity value of <code class="code docutils literal"><span class="pre">reduction</span></code>, then
-evaluating <code class="code docutils literal"><span class="pre">rhs_expression</span></code> at all points in the iteration space defined
+<p><code class="code docutils literal notranslate"><span class="pre">index_variables</span></code> must be a list of index variables defined in the <code class="code docutils literal notranslate"><span class="pre">rhs_expressions</span></code>
+<code class="code docutils literal notranslate"><span class="pre">reduction</span></code> is optional if all index variables appear on the left hand side.
+The value computed for tensor <code class="code docutils literal notranslate"><span class="pre">v</span></code> is equivalent to first assigning all
+elements of <code class="code docutils literal notranslate"><span class="pre">v</span></code> to the identity value of <code class="code docutils literal notranslate"><span class="pre">reduction</span></code>, then
+evaluating <code class="code docutils literal notranslate"><span class="pre">rhs_expression</span></code> at all points in the iteration space defined
 by the ranges of the loop index variables and reducing into the entry of the
 tensor specified on the left-hand side. The order in which these expressions
 are evaluated should not change the result because the reduction is
-associative and commutative. If <code class="code docutils literal"><span class="pre">!</span></code> is not present, <code class="code docutils literal"><span class="pre">v</span></code> is not
-re-initialized, and the reduction takes into account the existing values in <code class="code docutils literal"><span class="pre">v</span></code>.</p>
+associative and commutative. If <code class="code docutils literal notranslate"><span class="pre">!</span></code> is not present, <code class="code docutils literal notranslate"><span class="pre">v</span></code> is not
+re-initialized, and the reduction takes into account the existing values in <code class="code docutils literal notranslate"><span class="pre">v</span></code>.</p>
 </div>
 <div class="section" id="expressions">
 <h2>Expressions<a class="headerlink" href="#expressions" title="Permalink to this headline">¶</a></h2>
-<p>Mathematical expressions behave as expected, including built-in functions like <code class="code docutils literal"><span class="pre">log(...)</span></code>.</p>
-<p><code class="code docutils literal"><span class="pre">tensor_variable(exp_list)</span></code> represents a read of a tensor at the indices defined by evaluating <code class="code docutils literal"><span class="pre">exp_list</span></code>. <code class="code docutils literal"><span class="pre">exp_list</span></code> can include arbitrary expressions (pattern matching of indices is limited to linear expressions, but actual computation is not). The effect of reading outside of the valid range of the tensor results in undefined behavior.</p>
+<p>Mathematical expressions behave as expected, including built-in functions like <code class="code docutils literal notranslate"><span class="pre">log(...)</span></code>.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">tensor_variable(exp_list)</span></code> represents a read of a tensor at the indices defined by evaluating <code class="code docutils literal notranslate"><span class="pre">exp_list</span></code>. <code class="code docutils literal notranslate"><span class="pre">exp_list</span></code> can include arbitrary expressions (pattern matching of indices is limited to linear expressions, but actual computation is not). The effect of reading outside of the valid range of the tensor results in undefined behavior.</p>
 </div>
 <div class="section" id="grammar">
 <h2>Grammar<a class="headerlink" href="#grammar" title="Permalink to this headline">¶</a></h2>
 <p>The EBNF for the TC comprehension language is:</p>
-<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">num</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">number</span> <span class="n">literal</span> <span class="k">with</span> <span class="n">C</span> <span class="n">syntax</span><span class="o">&gt;</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">num</span> <span class="p">::</span><span class="o">=</span> <span class="o">&lt;</span><span class="n">number</span> <span class="n">literal</span> <span class="k">with</span> <span class="n">C</span> <span class="n">syntax</span><span class="o">&gt;</span>
 <span class="nb">id</span> <span class="p">::</span><span class="o">=</span> <span class="p">[</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">*</span><span class="p">[</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z</span><span class="p">][</span><span class="n">_a</span><span class="o">-</span><span class="n">zA</span><span class="o">-</span><span class="n">Z0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">*</span>
 <span class="n">exp</span> <span class="p">::</span><span class="o">=</span> <span class="n">num</span>
       <span class="o">|</span> <span class="p">(</span> <span class="s1">&#39;-&#39;</span> <span class="o">|</span> <span class="s1">&#39;!&#39;</span> <span class="o">|</span> <span class="o">...</span> <span class="p">)</span> <span class="n">exp</span>
@@ -489,9 +459,7 @@ re-initialized, and the reduction takes into account the existing values in <cod
 
 
            </div>
-           <div class="articleComments">
-            
-           </div>
+           
           </div>
           <footer>
   
@@ -513,7 +481,7 @@ re-initialized, and the reduction takes into account the existing values in <cod
 
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -532,6 +500,7 @@ re-initialized, and the reduction takes into account the existing values in <cod
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
             VERSION:'v0.1.1',
+            LANGUAGE:'None',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true,
@@ -545,19 +514,13 @@ re-initialized, and the reduction takes into account the existing values in <cod
 
   
 
-  
-  
-    <script type="text/javascript" src="_static/js/theme.js"></script>
-  
+  <script type="text/javascript" src="_static/js/theme.js"></script>
 
-  
-  
   <script type="text/javascript">
       jQuery(function () {
-          SphinxRtdTheme.StickyNav.enable();
+          SphinxRtdTheme.Navigation.enable(true);
       });
-  </script>
-   
+  </script> 
 
 </body>
 </html>
