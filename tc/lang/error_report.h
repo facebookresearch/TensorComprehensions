@@ -64,4 +64,20 @@ const ErrorReport& operator<<(const ErrorReport& e, const T& t) {
     throw ::lang::ErrorReport(ctx)                                         \
         << __FILE__ << ":" << __LINE__ << ": assertion failed: " << #cond; \
   }
+
+// Simple RAII to change the value of FLAGS_warn locally to a scope.
+class EnableWarnings {
+ public:
+  explicit EnableWarnings(bool warn) {
+    previous_ = FLAGS_warn;
+    FLAGS_warn = warn;
+  }
+
+  ~EnableWarnings() {
+    FLAGS_warn = previous_;
+  }
+
+ private:
+  bool previous_;
+};
 } // namespace lang
