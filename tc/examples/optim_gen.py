@@ -32,7 +32,7 @@ def group_normalization(
 }
 """
 
-N, G, D, H, W = 5, 5, 5, 5, 5
+N, G, D, H, W = 10, 10, 10, 10, 10
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
 inp = (I, gamma, beta)
@@ -43,9 +43,11 @@ cache = "my_file.txt"
 config = tc.autotuner_settings
 config["pop_size"]=50
 config["generations"]=1
-opts = [1, 0, 0, 1, 8, 0, 7, 8, 1, 1, 0, 0, 1] #[1, 1, 0, 0, 8, 1, 2, 7, 0, 1, 1, 0, 1]
+opts = [1, 0, 0, 1, 8, 0, 7, 8, 1, 1, 0, 0, 1]
+opts = [1, 1, 0, 0, 8, 1, 2, 7, 0, 1, 1, 0, 1]
 opts = [my_utils.cat_val[i][opt] for i,opt in enumerate(opts)]
 opts = my_utils.optionsFromVector(opts)
+opts = tc.CudaMappingOptions("naive")
 tc_prog.autotune(I, gamma, beta, options=opts, **config, cache="./bidule.txt")
 print(tc.decode(cache+".options"))
 
