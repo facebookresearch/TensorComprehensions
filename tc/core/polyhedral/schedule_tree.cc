@@ -156,6 +156,8 @@ static std::unique_ptr<ScheduleTreeElemBase> makeElem(const ScheduleTree& st) {
 ////////////////////////////////////////////////////////////////////////////////
 ScheduleTree::ScheduleTree(isl::ctx ctx) : ctx_(ctx) {}
 
+ScheduleTree::~ScheduleTree() {}
+
 ScheduleTree::ScheduleTree(const ScheduleTree& st)
     : ctx_(st.ctx_), children_(), type_(st.type_), elem_(makeElem(st)) {
   children_.reserve(st.children_.size());

@@ -128,6 +128,7 @@ struct ScheduleTree {
 
  public:
   explicit ScheduleTree(isl::ctx ctx);
+  virtual ~ScheduleTree();
 
   bool operator==(const ScheduleTree& other) const;
   bool operator!=(const ScheduleTree& other) const {
