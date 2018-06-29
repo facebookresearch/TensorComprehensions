@@ -6,7 +6,7 @@ Python API
 High-level API
 --------------
 
-We provide a high-level API which allows to easily experiment with Tensor
+We provide a high-level API which allows one to easily experiment with Tensor
 Comprehensions.
 
 .. autofunction:: define
@@ -36,11 +36,11 @@ performing numerical checks.
 
 .. autofunction:: assert_almost_equal
 
-Python bindings
----------------
+Caching and Configuration
+-------------------------
 
-Finally we also document a subset of the Python bindings that are commonly
-used.
+Finally we also document a subset of the helper types for caching and
+configuration that are commonly used.
 
 .. automodule:: tensor_comprehensions.tclib
 

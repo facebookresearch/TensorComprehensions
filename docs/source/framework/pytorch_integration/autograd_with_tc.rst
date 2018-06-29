@@ -2,7 +2,8 @@ Autograd with TC
 ================
 
 To create a :code:`torch.autograd` function backed by TC one can just use the
-:func:`make_autograd` helper function:
+:func:`make_autograd` helper function.  Note that backward computations must be
+provided explicitly as TC functions.
 
     .. code-block:: python
 

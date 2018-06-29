@@ -78,7 +78,7 @@ This is expected because the autotuner is multithreaded and we don't
 enforce a strict order of evaluation: the best configurations
 from the previous generation may not be evaluated first in next generation.
 Furthermore, the other mutations in the current generation may perform worse
-than the last best knows configuration. Therefore the initial jump in best runtime at
+than the last best known configuration. Therefore the initial jump in best runtime at
 generation (i+1) is likely to appear temporarily.
 
 I sometimes see fluctuations in the best kernel time, why?
@@ -89,5 +89,6 @@ runtime may be noisy. So a 10-20% variation is expected and normal.
 How do I stop autotuning early and save cache?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 You can send a SIGINT signal (i.e. hit :code:`Ctrl+C`) to stop the autotuning
-early. The current compilation and evaluation jobs will be flushed and no new
-jobs will be submitted.
+early. All compilations and evaluations in progress will be completed, but no
+new compilation or evaluation will be started.  Therefore, stopping the
+autotuner may take some time.

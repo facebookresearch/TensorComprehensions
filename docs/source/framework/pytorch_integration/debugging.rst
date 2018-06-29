@@ -1,9 +1,10 @@
 Debugging
 =========
 
-We provide functions to enable debugging information, including the kernels
+We provide functions to enable the output of debugging information, including
+the kernels
 that TC generates. If you are curious about what happens when a TC is compiled
-and run, you can use these function to enable logging:
+and run, you can use these functions to enable logging:
 
 * :code:`dump_cuda`: print the generated cuda code
 
@@ -16,7 +17,9 @@ and run, you can use these function to enable logging:
 * :code:`debug_tuner`: print information logged by the autotuner.
 
 The logging functionality is backed by Google's glog library.
-To activate logging to screen, call :code:`tc.logtostderr(debug)`.
+To activate logging to screen, call :code:`tc.logtostderr(True)`.
+Otherwise, the logs are printed into uniquely-named files in the default
+temporary directory.
 
 Example usage
 -------------

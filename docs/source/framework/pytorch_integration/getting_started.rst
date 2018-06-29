@@ -11,23 +11,23 @@ layer with just a few lines of code (examples below).
 Here are a few cases where TC can be useful:
 
 * specialize your layer for uncommon tensor sizes and get better performance
-  than libraries *or*
+  than libraries, *or*
 
-* experiment with layer fusion like group convolution, ReLU, FC *or*
+* experiment with layer fusion like group convolution, ReLU, FC, *or*
 
-* synthesize new layers and get an efficient kernel automatically *or*
+* synthesize new layers and get an efficient kernel automatically, *or*
 
 * synthesize layers for tensors with unconventional memory layouts
 
 TC makes it easy to synthesize CUDA kernels for such cases and more. By providing
-TC integration with PyTorch, we hope to make it further easy for PyTorch users
+TC integration with PyTorch, we hope to make it easy for PyTorch users
 to express their operations and bridge the gap between research and engineering.
 
 Installation
 ------------
 
 We provide a :code:`conda` package for Tensor Comprehensions (only :code:`linux-64` package)
-to quickly get started with using TC. Follow the steps below to install TC :code:`conda` package:
+to quickly get started with TC. Follow the steps below to install TC :code:`conda` package:
 
 **Step 1:** Setup Anaconda
 Make sure :code:`conda` bin is in your :code:`$PATH`. To verify, run the following command:
@@ -39,7 +39,7 @@ Make sure :code:`conda` bin is in your :code:`$PATH`. To verify, run the followi
 This command should print the path of your :code:`conda` bin. If it doesn't,
 please activate :code:`conda` (see `installation`_).
 
-**Step 2:** Conda Install Tensor Comprehensions
+**Step 2:** Install Tensor Comprehensions with Anaconda
 
 Now, go ahead and install Tensor Comprehensions by running following command.
 
@@ -47,7 +47,7 @@ Now, go ahead and install Tensor Comprehensions by running following command.
 
       $ conda install -y -c pytorch -c tensorcomp tensor_comprehensions
 
-Now, you are ready to start using Tensor Comprehensions with PyTorch. As an example,
+You are now ready to start using Tensor Comprehensions with PyTorch. As an example,
 let's see a simple example of writing :code:`matmul` layer with TC in PyTorch.
 
 Example
@@ -70,4 +70,5 @@ backed by TC.
     C = TC.matmul(A, B)
 
 With a few lines of code, you can get a functional CUDA implementation for an
-operation expressed in TC. Read the documentation to find out more.
+operation expressed in TC. Note, however, that this simplest example is not
+expected to be fast. Read the documentation to find out more.

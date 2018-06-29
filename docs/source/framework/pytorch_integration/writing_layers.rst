@@ -4,15 +4,15 @@ Writing TC operations
 This document focuses on writing TC operations using the high-level API.
 For examples of using the low-level API, see the Python API documentation.
 
-To create a CUDA kernel implementing an operation backed by TC, one can:
+To create a CUDA kernel implementing an operation backed by TC, one should:
 
-1. Create a callable helper object by calling :func:`define`
+1. Create a callable TC object by calling :func:`define`
 2. Create input PyTorch Tensors
-3. Call the helper object with on the input PyTorch Tensors
+3. Call the helper object with the input PyTorch Tensors
 
 When running, the backend ensures the TC is compiled and memoized for the
 given input tensor sizes (see the documentation for :func:`define` for more detals).
-Calling the helper object returned by :func:`define` executes the
+Calling the object returned by :func:`define` executes the
 corresponding operation and returns a list of outputs.
 If the operation has already been compiled, in the following runs, the TC
 backend will reuse the memoized compilation result and run the operation
@@ -23,8 +23,8 @@ Example
 
 The following example demonstrates the steps above.
 We use the :func:`make_naive_options_factory` builder function to provide
-naive :class:`MappingOptions`.
-At this time there is no notion of a default :class:`MappingOptions`.
+naive :class:`MappingOptions`.  Naive options result in poor performance.
+At this time, there is no notion of a default :class:`MappingOptions`.
 Instead one should use the autotuner to perform an evolutionary search
 starting from an initial :class:`MappingOptions` object and return a better
 :class:`MappingOptions` object for a given TC function and sizes (more on this
@@ -48,13 +48,13 @@ below).
 
 
 Specifying MappingOptions
------------------------------
+-------------------------
 
 There are three ways to construct :class:`MappingOptions` when defining a TC:
 
 * **Naive MappingOptions**:
 
-  * :code:`naive`: this is provided to create a basic mapping strategy with
+  * :code:`naive`: this is provided to create a basic GPU mapping strategy with
     3-D tiling by 32x32x32, mapping to 256x256 blocks 32x8 threads. This
     should by no means be considered a good baseline but just a point to
     get started using TC. Once a correct TC is written, we recommend either
@@ -137,7 +137,7 @@ Tuning behavior can be modified by defining the TC with an optional
 Fixed TC, varying input sizes
 -----------------------------
 
-A TC definition can be reused but will trigger recompilatopm for different size
+A TC definition can be reused but will trigger recompilation for different size
 combinations. While we recommend tuning independently for each TC and input size
 variation, the best options found for a particular TC and input size
 combination may transfer well to another input size (especially if
@@ -145,8 +145,8 @@ sizes are close and the kernels exhibit the same type of bottlenecs;
 i.e. memory-bound, latency-bound, instruction-issue-bound,
 compute-bound).
 
-Fake-templating
----------------
+Pseudo-templating
+-----------------
 
 The TC mapper requires statically affine tensor indexing functions.
 Without getting into deeper details, the dependence analysis process is
