@@ -68,7 +68,7 @@ WITH_CAFFE2=ON CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda CLANG_PREFIX=$(${CONDA_PREF
 
 python setup.py install
 
-for f in $(find ./python/ -name "*.py"); do
+for f in $(find ./python/ -name "*.py" | grep -v caffe2); do
     python $f -v
 done
 
