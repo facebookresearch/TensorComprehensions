@@ -237,6 +237,60 @@ isl::schedule toIslSchedule(const ScheduleTree* root) {
 
 namespace {
 
+std::unique_ptr<ScheduleTreeElemBand> fromIslScheduleNodeBand(
+    isl::schedule_node_band b) {
+  auto res =
+      ScheduleTreeElemBand::fromMultiUnionPwAff(b.get_partial_schedule());
+  res->permutable_ = b.get_permutable();
+  for (size_t i = 0; i < b.n_member(); ++i) {
+    res->coincident_[i] = b.member_get_coincident(i);
+  }
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeElemBase> elemFromIslScheduleNode(
+    isl::schedule_node node) {
+  if (auto band = node.as<isl::schedule_node_band>()) {
+    return fromIslScheduleNodeBand(band);
+  } else if (auto context = node.as<isl::schedule_node_context>()) {
+    auto c = context.get_context();
+    return std::unique_ptr<ScheduleTreeElemContext>(
+        new ScheduleTreeElemContext(c));
+  } else if (auto domain = node.as<isl::schedule_node_domain>()) {
+    auto c = domain.get_domain();
+    return std::unique_ptr<ScheduleTreeElemDomain>(
+        new ScheduleTreeElemDomain(c));
+  } else if (auto expansion = node.as<isl::schedule_node_expansion>()) {
+    LOG(FATAL) << "expansion nodes not supported";
+    return nullptr;
+  } else if (auto extension = node.as<isl::schedule_node_extension>()) {
+    auto e = extension.get_extension();
+    return std::unique_ptr<ScheduleTreeElemExtension>(
+        new ScheduleTreeElemExtension(e));
+  } else if (auto filter = node.as<isl::schedule_node_filter>()) {
+    auto f = filter.get_filter();
+    return std::unique_ptr<ScheduleTreeElemFilter>(
+        new ScheduleTreeElemFilter(f));
+  } else if (auto guard = node.as<isl::schedule_node_guard>()) {
+    LOG(FATAL) << "guard nodes not supported";
+    return nullptr;
+  } else if (auto mark = node.as<isl::schedule_node_mark>()) {
+    LOG(FATAL) << "mark nodes not supported";
+    return nullptr;
+  } else if (node.isa<isl::schedule_node_leaf>()) {
+    LOG(FATAL) << "ScheduleTreeElemBase::make called on explicit leaf";
+    return nullptr;
+  } else if (node.isa<isl::schedule_node_sequence>()) {
+    return std::unique_ptr<ScheduleTreeElemSequence>(
+        new ScheduleTreeElemSequence());
+  } else if (node.isa<isl::schedule_node_set>()) {
+    return std::unique_ptr<ScheduleTreeElemSet>(new ScheduleTreeElemSet());
+  }
+  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
+             << isl_schedule_node_get_type(node.get());
+  return nullptr;
+}
+
 /*
  * Create a ScheduleTree of the isl schedule subtree at "node".
  *
@@ -246,7 +300,7 @@ namespace {
  */
 std::unique_ptr<ScheduleTree> fromIslScheduleNode(isl::schedule_node node) {
   unique_ptr<ScheduleTree> res(new ScheduleTree(node.get_ctx()));
-  res->elem_ = ScheduleTreeElemBase::make(node);
+  res->elem_ = elemFromIslScheduleNode(node);
   res->type_ = res->elem_->type();
   auto n = node.n_children();
   if (n == 1 && node.child(0).isa<isl::schedule_node_leaf>()) {

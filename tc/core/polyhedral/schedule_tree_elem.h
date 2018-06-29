@@ -48,7 +48,6 @@ struct ScheduleTree;
 struct ScheduleTreeElemBase {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::None;
-  static std::unique_ptr<ScheduleTreeElemBase> make(isl::schedule_node node);
   static std::unique_ptr<ScheduleTreeElemBase> make(const ScheduleTree& st);
   virtual ~ScheduleTreeElemBase() {}
   virtual std::ostream& write(std::ostream& os) const = 0;
