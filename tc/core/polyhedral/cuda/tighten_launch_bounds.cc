@@ -20,8 +20,8 @@
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/functional.h"
-#include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 
 namespace tc {
 namespace polyhedral {

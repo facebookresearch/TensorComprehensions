@@ -16,8 +16,8 @@
 
 #include "tc/core/polyhedral/unroll.h"
 
-#include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 
 namespace tc {
 namespace polyhedral {

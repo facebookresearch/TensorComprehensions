@@ -30,6 +30,7 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tc2halide.h"
 

@@ -23,6 +23,7 @@
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/memory_promotion.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/polyhedral/scop.h"
 
 using namespace std;
