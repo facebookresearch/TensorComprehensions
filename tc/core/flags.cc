@@ -80,7 +80,7 @@ DEFINE_uint32(
     tuner_gen_number_elites,
     10,
     "The number of best candidates that are preserved intact between generations");
-DEFINE_uint32(tuner_threads, 1, "Number of CPU threads to use when autotuning");
+DEFINE_uint32(tuner_threads, 8, "Number of CPU threads to use when autotuning");
 DEFINE_string(
     tuner_devices,
     "0",

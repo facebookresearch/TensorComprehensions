@@ -1,161 +1,52 @@
 Autograd with TC
 ================
 
-We provide the TC integration with PyTorch `autograd` so that it is easy to write
-a training layer with TC and be able to run backwards as well if the layer is part
-of a network. We do not support double backwards right now. In order to write a
-training layer with TC, you need to follow the steps below:
+To create a :code:`torch.autograd` function backed by TC one can just use the
+:func:`make_autograd` helper function.  Note that backward computations must be
+provided explicitly as TC functions.
 
-1. Define your TC language that has two definitions: one for the forward layer and the other for the backward layer and pass it to :code:`tc.define` call. In addition, also pass :code:`training=True` and the name of the backward TC :code:`backward`.
+    .. code-block:: python
 
-2. Create the Input Variables and Parameters. For example, weights should be marked as Parameters and the inputs tensors as Variables.
+        conv = """
+        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
+            O(n, m, h, w) +=!
+                I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
+        }
+        def convolution_igrad(float(M,C,KH,KW) W1, float(N,M,H,W) d_O)
+            -> (d_I)
+        {
+            d_I(n, c, h, w) +=!
+                d_O(  n, r_m, h - r_kh, w - r_kw) * W1(r_m, c, r_kh, r_kw)
+        }
+        def convolution_wgrad(float(N,C,H,W) I, float(N,M,H,W) d_O) -> (d_W1)
+        {
+            d_W1(m, c, kh, kw) +=!
+                d_O(r_n,   m, r_h - kh, r_w - kw) *  I(r_n, c,  r_h,  r_w)
+        }
+        """
 
-3. Run the layer and get the output of forward pass.
+        N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
+        T = tc.define(
+            conv,
+            tc.make_autotuned_options_factory(
+                starting_options='naive',
+                tuner_config=tuner_config))
+        I, W = (
+            torch.randn(N, C, H, W, device='cuda', requires_grad=True),
+            torch.randn(O, C, kH, kW, device='cuda', requires_grad=True))
 
-4. To see that the backward call works fine, you can call backward on the outputs.
+        def convolution_backward(I, W, d_O):
+            d_I = T.convolution_igrad(W, d_O)
+            d_O = T.convolution_wgrad(I, d_O)
+            return (d_I, d_O)
 
-Let's see one example to demonstrate the steps above:
+        convolution_function = tc.make_autograd(
+            T.convolution, convolution_backward)
 
-Examples
---------
+        # First occurrence triggers tuning
+        out = convolution_function(I, W)
+        out.sum().backward()
 
-.. code-block:: python
-
-     import tensor_comprehensions as tc
-     import torch
-     from torch.autograd import Variable
-     from torch.nn.parameter import Parameter
-     CONV_LANG = """
-     def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
-     }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
-        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
-     }}
-     """
-     N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
-     convolution = tc.define(CONV_LANG, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
-     I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
-     W = Parameter(torch.randn(O, C, kH, kW).cuda())
-     out = convolution(I, W)
-     out[0].sum().backward()
-
-.. note::
-
-    Please note the usage of :code:`.cuda()` i.e. tensor data is declared as the CUDA
-    type. Applying :code:`Variable` on the tensor data essentially allows the layer to be
-    part of computations graph and if :code:`Variable(torch.rand(), requires_grad=True).cuda()`
-    is done, then the grad will be available for the `Variable.cuda()` and not the actual `Variable/Tensor`.
-
-
-Specifying CudaMappingOptions
---------------------------
-
-We highly recommend passing the mapping options when running the kernel.
-See :ref:`must_pass_options` for more details. When running the training layer,
-you can pass the options for forward and backward layer separately or you can
-pass the same options for them. In case you want to pass different options for
-them, the example for that would be:
-
-.. code-block:: python
-
-     import tensor_comprehensions as tc
-     import torch
-     from torch.autograd import Variable
-     from torch.nn.parameter import Parameter
-     CONV_LANG = """
-     def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
-     }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
-        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
-     }}
-     """
-     N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
-     convolution = tc.define(CONV_LANG, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
-     I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
-     W = Parameter(torch.randn(O, C, kH, kW).cuda())
-     out = convolution(I, W, options=[tc.CudaMappingOptions("conv"), tc.CudaMappingOptions("group_conv")])
-     out[0].sum().backward()
-
-In order to obtain options via autotuning for backward and forward layer, keep reading further.
-
-
-Autotuning training layer
--------------------------
-
-You can autotune a training layer easily. The forward and backward layers will
-be tuned separately in order to ensure maximal performance. Please read :ref:`pytorch_autotune_layers`
-for how to set autotuner parameters. We will see how to autotune a training
-layer, save cache and run the layer with help of examples:
-
-You can either cache to default options or to a file (also see :ref:`autotuner_cache_choices`).
-Let's see how to cache options to file when we tune a training layer.
-
-.. code-block:: python
-
-     import tensor_comprehensions as tc
-     import torch
-     CONV_LANG = """
-     def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {{
-       O(n, m, h, w) +=! I(n, r_c, {sh} * h + r_kh, {sw} * w + r_kw) * W1(m, r_c, r_kh, r_kw)
-     }}
-     def convolution_grad(float(N,C,H,W) I, float(M,C,KH,KW) W1, float(N,M,H,W) d_O) -> (d_I, d_W1) {{
-        d_I(n, c,  h,  w) +=! d_O(  n, r_m, {sh} *   h - r_kh, {sw} *   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, {sh} * r_h -   kh, {sw} * r_w -   kw) *  I(r_n, c,  r_h,  r_w)
-     }}
-     """
-     N, C, H, W, O, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
-     convolution = tc.define(CONV_LANG, training=True, name="convolution", backward="convolution_grad", constants={"sh":sH, "sw":sW})
-     I, W1 = torch.randn(N, C, H, W).cuda(), torch.randn(O, C, kH, kW).cuda()
-     convolution.autotune(I, W, cache="convolution_train.tc")
-     out = convolution(I, W)
-     out[0].sum().backward()
-
-You will find a cache file created: :code:`convolution_train.options` has
-options for the forward layer and :code:`convolution_train_backward.options` file
-has options for the grad layer.
-
-Reordering grad outputs
------------------------
-
-In the backward pass, TC uses the list of input tensors in the forward pass and appends
-the output tensors list to it. This is treated as the input to the backward TC definition.
-However, sometimes, the forward layer TC might have some temporary variable for which we don't
-need gradient in the backward TC. In such cases, users can use :code:`reorder_function`. See
-the example below for how to use it:
-
-.. code-block:: python
-
-     import tensor_comprehensions as tc
-     import torch
-     LANG = """
-     def convolution(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B) -> (tmp, O) {
-       tmp(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
-       O(n, m, h, w) = tmp(n, m, h, w) + B(m)
-     }
-     def convolution_grad(float(N, C, H, W) I, float(M, C, KH, KW) W1, float(M) B, float(N, M, H, W) d_O)
-     -> (d_I, d_W1, d_B) {
-        d_I(n, c,  h,  w) +=! d_O(  n, r_m,   h - r_kh,   w - r_kw) * W1(r_m, c, r_kh, r_kw)
-       d_W1(m, c, kh, kw) +=! d_O(r_n,   m, r_h -   kh, r_w -   kw) *  I(r_n, c,  r_h,  r_w)
-       d_B(m) +=! d_O(n, m, h, w)
-     }
-     """
-
-     # since the forward layer produces two outputs, one is temporary which is
-     # not needed in the forward pass, we can reorder the grad_outputs as we want.
-     # So, here we return the output grad that we actually use in backwards TC.
-     def reorder():
-         def reorder_function(grad_outputs):
-             return [grad_outputs[1]]
-         return reorder_function
-
-     N, C, H, W, M, kH, kW, sH, sW = 32, 4, 56, 56, 16, 1, 1, 1, 1
-     convolution = tc.define(LANG, training=True, name="convolution", backward="convolution_grad")
-     I = Variable(torch.randn(N, C, H, W).cuda(), requires_grad=True)
-     W = Parameter(torch.randn(M, C, kH, kW).cuda())
-     B = Parameter(torch.randn(M).cuda())
-     out = convolution(I, W, B, reorder_function=reorder())
-     out[0].sum().backward()
+        # Subsequent occurrences do not
+        out = convolution_function(I, W)
+        out.sum().backward()

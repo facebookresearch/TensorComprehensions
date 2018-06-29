@@ -48,6 +48,18 @@ void CudaRTCFunction::clear() {
   }
 }
 
+void checkOrCreateContext() {
+  static thread_local bool created = false;
+  if (!created) {
+    created = true;
+    CUcontext ctx;
+    TC_CUDA_DRIVERAPI_ENFORCE(cuCtxGetCurrent(&ctx));
+    if (!ctx) {
+      TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+    }
+  }
+}
+
 std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
     const std::string& name,
     const std::string& source) {
@@ -143,6 +155,13 @@ Duration CudaRTCFunction::Launch(
   if (perGpuModule_.count(dev) == 0) {
     CUmodule module;
     CUfunction function;
+    // Checking that a CUDA context exists for the current thread is necessary
+    // when benchmarking the backward of a PyTorch gradient operator:
+    // the backward is called on a different thread whose context may not have
+    // been initialized explicitly.
+    // This call to cudaDeviceSynchronize implicitly creates a new context if
+    // one is not bound to the current CPU.
+    checkOrCreateContext();
     TC_CUDA_DRIVERAPI_ENFORCE(
         cuModuleLoadDataEx(&module, nvrtc_ptx.data(), 0, 0, 0));
     perGpuModule_.emplace(dev, module);
