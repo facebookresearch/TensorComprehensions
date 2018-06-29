@@ -23,6 +23,7 @@
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/polyhedral/unroll.h"
 
 #include <algorithm>
