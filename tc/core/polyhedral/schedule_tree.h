@@ -454,6 +454,12 @@ struct ScheduleTree {
     return type_;
   }
 
+  // Write the textual representation of the node to "os".
+  // Note that this function does _not_ output the child trees.
+  virtual std::ostream& write(std::ostream& os) const {
+    return os;
+  }
+
   //
   // Data members
   //
