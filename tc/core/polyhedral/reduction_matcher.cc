@@ -91,11 +91,8 @@ bool pwAffInvolvesOnlyInputDim(isl::pw_aff pa, int redDimIdx) {
   return true;
 }
 
-// Does pa have the form S(...) -> [(K*r)] where S is either a reduction init
+// Does pa have the form S(...) -> [f(r)] where S is either a reduction init
 // or update statement and r is a known reduction loop in Scop?
-//
-// FIXME: now, K can be any value, including nested integer divisions, to
-// support detection after tiling; tighten this.
 bool isAlmostIdentityReduction(isl::pw_aff pa, const Scop& scop) {
   auto space = pa.get_space();
   if (!space.has_tuple_id(isl::dim_type::in)) {
