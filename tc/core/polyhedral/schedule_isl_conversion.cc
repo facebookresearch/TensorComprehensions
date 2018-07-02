@@ -248,8 +248,7 @@ std::unique_ptr<ScheduleTreeElemBand> fromIslScheduleNodeBand(
   return res;
 }
 
-std::unique_ptr<ScheduleTreeElemBase> elemFromIslScheduleNode(
-    isl::schedule_node node) {
+std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
   if (auto band = node.as<isl::schedule_node_band>()) {
     return fromIslScheduleNodeBand(band);
   } else if (auto context = node.as<isl::schedule_node_context>()) {
@@ -278,7 +277,7 @@ std::unique_ptr<ScheduleTreeElemBase> elemFromIslScheduleNode(
     LOG(FATAL) << "mark nodes not supported";
     return nullptr;
   } else if (node.isa<isl::schedule_node_leaf>()) {
-    LOG(FATAL) << "ScheduleTreeElemBase::make called on explicit leaf";
+    LOG(FATAL) << "ScheduleTree::make called on explicit leaf";
     return nullptr;
   } else if (node.isa<isl::schedule_node_sequence>()) {
     return std::unique_ptr<ScheduleTreeElemSequence>(
@@ -286,7 +285,7 @@ std::unique_ptr<ScheduleTreeElemBase> elemFromIslScheduleNode(
   } else if (node.isa<isl::schedule_node_set>()) {
     return std::unique_ptr<ScheduleTreeElemSet>(new ScheduleTreeElemSet());
   }
-  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
+  LOG(FATAL) << "NYI: ScheduleTree from type: "
              << isl_schedule_node_get_type(node.get());
   return nullptr;
 }
@@ -299,9 +298,7 @@ std::unique_ptr<ScheduleTreeElemBase> elemFromIslScheduleNode(
  * if this single child node is a leaf.
  */
 std::unique_ptr<ScheduleTree> fromIslScheduleNode(isl::schedule_node node) {
-  unique_ptr<ScheduleTree> res(new ScheduleTree(node.get_ctx()));
-  res->elem_ = elemFromIslScheduleNode(node);
-  res->type_ = res->elem_->type();
+  auto res = elemFromIslScheduleNode(node);
   auto n = node.n_children();
   if (n == 1 && node.child(0).isa<isl::schedule_node_leaf>()) {
     return res;

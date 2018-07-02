@@ -40,7 +40,7 @@ namespace detail {
 std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());
-  std::unique_ptr<ScheduleTreeElemBand> band(new ScheduleTreeElemBand);
+  std::unique_ptr<ScheduleTreeElemBand> band(new ScheduleTreeElemBand(ctx));
   band->mupa_ = mupa.floor();
   size_t n = band->mupa_.size();
   band->coincident_ = vector<bool>(n, false);
@@ -202,8 +202,8 @@ bool ScheduleTreeElemSet::operator==(const ScheduleTreeElemSet& other) const {
 }
 
 bool elemEquals(
-    const ScheduleTreeElemBase* e1,
-    const ScheduleTreeElemBase* e2,
+    const ScheduleTree* e1,
+    const ScheduleTree* e2,
     detail::ScheduleTreeType type) {
 #define ELEM_EQUALS_CASE(CLASS)                                              \
   else if (type == CLASS::NodeType) {                                        \
@@ -222,7 +222,7 @@ bool elemEquals(
   ELEM_EQUALS_CASE(ScheduleTreeElemSequence)
   ELEM_EQUALS_CASE(ScheduleTreeElemSet)
   else {
-    LOG(FATAL) << "NYI: ScheduleTreeElemBase::operator== for type: "
+    LOG(FATAL) << "NYI: ScheduleTree::operator== for type: "
                << static_cast<int>(type);
   }
 

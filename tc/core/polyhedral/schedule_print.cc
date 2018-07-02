@@ -137,11 +137,6 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ScheduleTreeElemBase& st) {
-  st.write(os);
-  return os;
-}
-
 std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "band(n(" << coincident_.size() << ") permutable(";
@@ -253,8 +248,8 @@ std::ostream& operator<<(
 }
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& st) {
-  TC_CHECK(st.elem_.get());
-  os << *st.elem_ << "\n";
+  st.write(os);
+  os << "\n";
   os << st.children_;
 
   return os;

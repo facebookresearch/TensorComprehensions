@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
-#include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/utils/vararg.h"
 #include "tc/external/isl.h"
 
@@ -36,6 +36,23 @@ namespace detail {
 // ScheduleTree, convertible to and from isl::schedule.
 //
 struct ScheduleTree;
+struct ScheduleTreeElemSet;
+struct ScheduleTreeElemSequence;
+struct ScheduleTreeElemMapping;
+
+enum class ScheduleTreeType {
+  None,
+  Band,
+  Context,
+  Domain,
+  Extension,
+  Filter,
+  Sequence,
+  Set,
+  Mapping,
+  ThreadSpecificMarker,
+  Any,
+};
 
 } // namespace detail
 
@@ -116,19 +133,20 @@ struct ScheduleTree {
 
  private:
   ScheduleTree() = delete;
+
+ protected:
   ScheduleTree(
       isl::ctx ctx,
       std::vector<ScheduleTreeUPtr>&& children,
-      detail::ScheduleTreeType type,
-      std::unique_ptr<ScheduleTreeElemBase>&& elem)
-      : ctx_(ctx), type_(type), elem_(std::move(elem)) {
+      detail::ScheduleTreeType type)
+      : ctx_(ctx), type_(type) {
     appendChildren(std::move(children));
   }
 
   // Copy constructor for internal use only.
-  // Note that this does not copy the underlying elem_.
+  // Note that this does not account for a specific subclass of ScheduleTree.
   // All callers should use makeScheduleTree(const ScheduleTree&) instead,
-  // which copies the underlying elem_ as well as keeps the memory
+  // which dispatches the copying to subclasses as well as keeps the memory
   // management scheme consistent.
   ScheduleTree(const ScheduleTree& st);
 
@@ -394,23 +412,19 @@ struct ScheduleTree {
   static ScheduleTreeUPtr
   fromList(detail::ScheduleTreeType type, Arg&& arg, Args&&... args) {
     static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Can only construct elements derived from ScheduleTreeElemBase");
+        std::is_base_of<ScheduleTree, T>::value,
+        "Can only construct elements derived from ScheduleTree");
     static_assert(
         std::is_same<
             typename std::remove_reference<Arg>::type,
             ScheduleTreeUPtr>::value,
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
-    auto ctx = arg->ctx_;
-    std::vector<ScheduleTreeUPtr> children =
-        vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...);
-
-    auto res = ScheduleTreeUPtr(new ScheduleTree(
-        ctx,
-        std::move(children),
-        type,
-        std::unique_ptr<ScheduleTreeElemBase>(new T)));
+    auto ctx = arg->ctx_; // FIXME: pass this to the constructor of T
+                          // when possible
+    auto res = ScheduleTreeUPtr(new T);
+    res->appendChildren(
+        vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
 
     if (type == detail::ScheduleTreeType::Sequence ||
         type == detail::ScheduleTreeType::Set) {
@@ -453,7 +467,7 @@ struct ScheduleTree {
       const ScheduleTree* tree,
       detail::ScheduleTreeType type);
 
-  // View elem_ as the specified type.
+  // View this tree node as the specified type.
   // Returns nullptr if this is not the proper type.
   // Inline impl for now, does not justify an extra -inl.h file
   template <typename T>
@@ -464,13 +478,12 @@ struct ScheduleTree {
   template <typename T>
   const T* elemAs() const {
     static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Must call with a class derived from ScheduleTreeElemBase");
+        std::is_base_of<ScheduleTree, T>::value,
+        "Must call with a class derived from ScheduleTree");
     if (type_ != T::NodeType) {
       return nullptr;
     }
-    return static_cast<const T*>(
-        const_cast<const ScheduleTreeElemBase*>(elem_.get()));
+    return static_cast<const T*>(this);
   }
 
   virtual ScheduleTreeType type() const {
@@ -494,7 +507,6 @@ struct ScheduleTree {
 
  public:
   detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
-  std::unique_ptr<ScheduleTreeElemBase> elem_{nullptr};
 };
 
 } // namespace detail
