@@ -198,6 +198,12 @@ functions. For example, assume one wants to use :code:`fmax` CUDA function in TC
         O = T.relu(torch.randn(100, 128, device='cuda'))
 
 TC only supports a subset of built-in CUDA functions.
-Built-in functions supported in TC are listed `here <https://github.com/facebookresearch/TensorComprehensions/blob/master/tc/core/libraries.h#L67>`_.
+Built-in functions supported in TC are listed in `this file <https://github.com/facebookresearch/TensorComprehensions/blob/master/tc/core/libraries.h#L67>`_.
 Documentation
-for these functions is available as part of the official CUDA documentation `here <http://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE>`_.
+for these functions is available as part of the official `CUDA documentation <http://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE>`_.
+
+
+More examples
+-------------
+You can find more examples in our `unit tests <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/tests/test_tc.py>`_.
+We also provide more elaborate examples on how to `compute argmin <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/examples/min_distance.py#L151>`_ as well as a simple TC + PyTorch `python overhead benchmark <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/benchmarks/python_overhead.py>`_.
