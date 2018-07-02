@@ -479,7 +479,7 @@ PYBIND11_MODULE(tclib, m) {
           "unchecked_run",
           &TcExecutor::uncheckedRun,
           py::arg("inputs"),
-          py::arg("outputs") = py::tuple());
+          py::arg("outputs") = py::tuple())
       .def(
           "profile",
           &TcExecutor::profile,
