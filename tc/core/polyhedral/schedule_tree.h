@@ -377,14 +377,12 @@ struct ScheduleTree {
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSet(Args&&... args) {
-    return fromList<ScheduleTreeElemSet>(
-        detail::ScheduleTreeType::Set, std::forward<Args>(args)...);
+    return fromList<ScheduleTreeElemSet>(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSequence(Args&&... args) {
-    return fromList<ScheduleTreeElemSequence>(
-        detail::ScheduleTreeType::Sequence, std::forward<Args>(args)...);
+    return fromList<ScheduleTreeElemSequence>(std::forward<Args>(args)...);
   }
 
   // Flatten nested nodes of the same type.
@@ -409,11 +407,11 @@ struct ScheduleTree {
 
   // disallow empty lists in syntax
   template <typename T, typename Arg, typename... Args>
-  static ScheduleTreeUPtr
-  fromList(detail::ScheduleTreeType type, Arg&& arg, Args&&... args) {
+  static ScheduleTreeUPtr fromList(Arg&& arg, Args&&... args) {
     static_assert(
-        std::is_base_of<ScheduleTree, T>::value,
-        "Can only construct elements derived from ScheduleTree");
+        std::is_same<ScheduleTreeElemSet, T>::value ||
+            std::is_same<ScheduleTreeElemSequence, T>::value,
+        "Can only construct Set or Sequence elements");
     static_assert(
         std::is_same<
             typename std::remove_reference<Arg>::type,
@@ -424,11 +422,7 @@ struct ScheduleTree {
     auto res = ScheduleTreeUPtr(new T(ctx));
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
-
-    if (type == detail::ScheduleTreeType::Sequence ||
-        type == detail::ScheduleTreeType::Set) {
-      res->flattenSequenceOrSet();
-    }
+    res->flattenSequenceOrSet();
     return res;
   }
 
