@@ -394,11 +394,11 @@ struct ScheduleTree {
 
     // Iterate over the changing list of children. If a child has the same list
     // type as a parent, replace it with grandchildren and traverse them too.
-    for (size_t i = 0; i < children_.size(); ++i) {
-      if (children_[i]->type_ != type_) {
+    for (size_t i = 0; i < numChildren(); ++i) {
+      if (child({i})->type_ != type_) {
         continue;
       }
-      auto grandChildren = children_[i]->detachChildren();
+      auto grandChildren = child({i})->detachChildren();
       detachChild(i);
       insertChildren(i, std::move(grandChildren));
       --i;
