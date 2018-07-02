@@ -35,6 +35,7 @@ from tensor_comprehensions.tclib import MappingOptionsCache
 from tensor_comprehensions.tclib import TcExecutor
 from tensor_comprehensions.tclib import Tuner
 from tensor_comprehensions.tclib import TunerConfig
+from tensor_comprehensions.tclib import shared_memory_size
 
 import tensor_comprehensions.tclib as tclib
 
@@ -608,6 +609,7 @@ __all__ = [
     'compile',
     'autotune',
     'autotune_and_compile',
+    'shared_memory_size',
     # Classes exposed by the tclib
     'CompilationCache',
     'MappingOptions',
