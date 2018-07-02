@@ -159,7 +159,7 @@ ScheduleTree::ScheduleTree(isl::ctx ctx) : ctx_(ctx) {}
 ScheduleTree::~ScheduleTree() {}
 
 ScheduleTree::ScheduleTree(const ScheduleTree& st)
-    : ctx_(st.ctx_), children_(), type_(st.type_), elem_(makeElem(st)) {
+    : ctx_(st.ctx_), children_(), type_(st.type_), elem_(nullptr) {
   children_.reserve(st.children_.size());
   for (const auto& child : st.children()) {
     children_.push_back(ScheduleTree::makeScheduleTree(*child));
@@ -167,7 +167,9 @@ ScheduleTree::ScheduleTree(const ScheduleTree& st)
 }
 
 ScheduleTreeUPtr ScheduleTree::makeScheduleTree(const ScheduleTree& tree) {
-  return ScheduleTreeUPtr(new ScheduleTree(tree));
+  auto res = ScheduleTreeUPtr(new ScheduleTree(tree));
+  res->elem_ = makeElem(tree);
+  return res;
 }
 
 ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {

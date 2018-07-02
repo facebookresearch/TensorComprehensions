@@ -124,6 +124,12 @@ struct ScheduleTree {
       : ctx_(ctx), type_(type), elem_(std::move(elem)) {
     appendChildren(std::move(children));
   }
+
+  // Copy constructor for internal use only.
+  // Note that this does not copy the underlying elem_.
+  // All callers should use makeScheduleTree(const ScheduleTree&) instead,
+  // which copies the underlying elem_ as well as keeps the memory
+  // management scheme consistent.
   ScheduleTree(const ScheduleTree& st);
 
  public:
