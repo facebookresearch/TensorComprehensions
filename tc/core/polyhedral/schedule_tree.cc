@@ -286,7 +286,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
       << "some id is used more than once in the mapping";
   auto ctx = mappedIds[0].get_ctx();
   auto res =
-      std::unique_ptr<ScheduleTree>(new ScheduleTreeElemMapping(mapping));
+      std::unique_ptr<ScheduleTree>(new ScheduleTreeElemMapping(ctx, mapping));
   res->appendChildren(std::move(children));
   return res;
 }

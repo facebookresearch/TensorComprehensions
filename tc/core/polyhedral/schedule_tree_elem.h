@@ -120,8 +120,8 @@ struct ScheduleTreeElemMapping : public ScheduleTree {
   ScheduleTreeElemMapping() = delete;
   ScheduleTreeElemMapping(const ScheduleTreeElemMapping& eb)
       : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeElemMapping(const Mapping& mapping)
-      : ScheduleTree(mapping.cbegin()->second.get_ctx(), {}, NodeType),
+  ScheduleTreeElemMapping(isl::ctx ctx, const Mapping& mapping)
+      : ScheduleTree(ctx, {}, NodeType),
         mapping(mapping),
         filter_(isl::union_set()) {
     TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
