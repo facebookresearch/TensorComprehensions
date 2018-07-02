@@ -177,9 +177,8 @@ struct ScheduleTreeElemSequence : public ScheduleTree {
 struct ScheduleTreeElemSet : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
-  explicit ScheduleTreeElemSet()
-      : ScheduleTree(isl::with_exceptions::globalIslCtx(), {}, NodeType) {
-  } // FIXME: accept a ctx instead of using the global ctx
+  explicit ScheduleTreeElemSet(isl::ctx ctx)
+      : ScheduleTree(ctx, {}, NodeType) {}
   ScheduleTreeElemSet(const ScheduleTreeElemSet& eb) : ScheduleTree(eb) {}
   virtual ~ScheduleTreeElemSet() override {}
   bool operator==(const ScheduleTreeElemSet& other) const;
