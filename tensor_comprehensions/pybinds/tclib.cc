@@ -278,19 +278,24 @@ struct TcExecutor {
     if (outputs.size() > 0) {
       auto atOutputs = getATenTensors(outputs);
       auto atInputs = getATenTensors(inputs);
-      tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
+      tc::ProfilingInfo profinfo =
+          tc::aten::profile(*executor, atInputs, atOutputs);
       return profinfo.kernelRuntime.toMicroSeconds();
     } else {
       auto atInputs = getATenTensors(inputs);
       auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
-      tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
+      tc::ProfilingInfo profinfo =
+          tc::aten::profile(*executor, atInputs, atOutputs);
       return profinfo.kernelRuntime.toMicroSeconds();
     }
   }
 
-  size_t profileStats(const py::tuple& inputs, const py::tuple& outputs, const int nb_iters) {
+  size_t profileStats(
+      const py::tuple& inputs,
+      const py::tuple& outputs,
+      const int nb_iters) {
     size_t mean = 0;
-    for(int i = 0; i < nb_iters; i++) {
+    for (int i = 0; i < nb_iters; i++) {
       mean += profile(inputs, outputs);
     }
     return mean / nb_iters;
@@ -500,7 +505,7 @@ PYBIND11_MODULE(tclib, m) {
           py::arg("inputs"),
           py::arg("outputs") = py::tuple(),
           py::arg("nb_iters") = 50);
-  
+
   m.def(
       "compile",
       [](const std::string& tc,
