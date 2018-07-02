@@ -462,10 +462,6 @@ struct ScheduleTree {
     return static_cast<const T*>(this);
   }
 
-  virtual ScheduleTreeType type() const {
-    return type_;
-  }
-
   // Write the textual representation of the node to "os".
   // Note that this function does _not_ output the child trees.
   virtual std::ostream& write(std::ostream& os) const {

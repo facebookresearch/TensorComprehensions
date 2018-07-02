@@ -45,9 +45,6 @@ struct ScheduleTreeElemContext : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemDomain : public ScheduleTree {
@@ -65,9 +62,6 @@ struct ScheduleTreeElemDomain : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemExtension : public ScheduleTree {
@@ -85,9 +79,6 @@ struct ScheduleTreeElemExtension : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemFilter : public ScheduleTree {
@@ -105,9 +96,6 @@ struct ScheduleTreeElemFilter : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemMapping : public ScheduleTree {
@@ -146,9 +134,6 @@ struct ScheduleTreeElemMapping : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
@@ -169,9 +154,6 @@ struct ScheduleTreeElemSequence : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemSet : public ScheduleTree {
@@ -186,9 +168,6 @@ struct ScheduleTreeElemSet : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 struct ScheduleTreeElemBand : public ScheduleTree {
@@ -212,9 +191,6 @@ struct ScheduleTreeElemBand : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 
   // First replace "mupa" by its greatest integer part to ensure that the
   // schedule is always integral.
@@ -266,9 +242,6 @@ struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTree {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 bool elemEquals(
