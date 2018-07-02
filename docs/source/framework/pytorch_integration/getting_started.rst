@@ -26,29 +26,7 @@ to express their operations and bridge the gap between research and engineering.
 Installation
 ------------
 
-We provide a :code:`conda` package for Tensor Comprehensions (only :code:`linux-64` package)
-to quickly get started with TC. Follow the steps below to install TC :code:`conda` package:
-
-**Step 1:** Setup Anaconda
-Make sure :code:`conda` bin is in your :code:`$PATH`. To verify, run the following command:
-
-.. code-block:: bash
-
-      $ which conda
-
-This command should print the path of your :code:`conda` bin. If it doesn't,
-please activate :code:`conda` (see `installation`_).
-
-**Step 2:** Install Tensor Comprehensions with Anaconda
-
-Now, go ahead and install Tensor Comprehensions by running following command.
-
-.. code-block:: bash
-
-      $ conda install -y -c pytorch -c tensorcomp tensor_comprehensions
-
-You are now ready to start using Tensor Comprehensions with PyTorch. As an example,
-let's see a simple example of writing :code:`matmul` layer with TC in PyTorch.
+See instructions here: :ref:`installation_guide`.
 
 Example
 -------
