@@ -1,7 +1,7 @@
 Frequently Asked Questions
 ==========================
 
-Below are some frequently asked questions in TC language and Autotuner.
+Below are some frequently asked questions.
 
 TC language
 -----------
@@ -9,13 +9,13 @@ TC language
 How are temporary variables handled in TC?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Since TC doesn't do any allocations itself, every variable has to be either an input
+Since TC doesn't perform any allocations internally, every variable has to be either an input
 or output in the TC language. For example:
 
 **Invalid TC:**
 
-The following TC is Invalid because the variable :code:`expSum` is neither marked
-as input not output.
+The following TC is Invalid because the variable :code:`expSum` is not marked
+as either input or output:
 
 .. code::
 
@@ -69,37 +69,26 @@ This TC is invalid because :code:`tmp` and :code:`O(n, d)` have a cyclic depende
 Autotuner
 ---------
 
-At the start of new generation, I see high kernel runtime, Why?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This is not a bug. When the new generation starts and you suddenly see 600us
-instead of 168us from last generation, this is completely okay. The reason is that
-autotuning is multithreaded and each thread has various kernel configurations/mutations to
-evaluate. We don't enforce strict evaluation order i.e. the best configurations
-from the previous generation might not be evaluated first in next generation. Further,
-the other mutations in generation might be bad, hence the initial jump in time
-at generation (i+1) is expected.
-
-I seeded my autotuning but the worse kernel time is still higher. Why?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-We don't guarantee anything on the worst time but the best time should be
-better than what you seeded with. In autotuning, we generate a lot of candidates
-and some of the candidates might be very bad leading to the higher worst time.
-Also, we don't seed all the candidates, for example we generate 10 candidates
-(pop_size) but seed only 5. If you want to start exactly where you left off,
-set the pop_size = seeds.
+At the start of a new generation, I see higher kernel runtimes, Why?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This is expected behavior. When a new generation starts, the best runtime may
+bump to e.g. 600us when e.g. 168us was found as the best time from the
+previous generation.
+This is expected because the autotuner is multithreaded and we don't
+enforce a strict order of evaluation: the best configurations
+from the previous generation may not be evaluated first in next generation.
+Furthermore, the other mutations in the current generation may perform worse
+than the last best known configuration. Therefore the initial jump in best runtime at
+generation (i+1) is likely to appear temporarily.
 
 I sometimes see fluctuations in the best kernel time, why?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The best time reported is the median of the best candidate runtime and the GPU
-runtime is noisy because of synchronization, kernel launch overheads.
-So 10-20% variation is expected and normal.
-
-I see some CUDA errors during autotuning, should I worry?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-No you shouldn't worry, autotuning should continue. These errors can happen when
-bad kernel options are generated in the candidate pool.
+runtime may be noisy. So a 10-20% variation is expected and normal.
 
 How do I stop autotuning early and save cache?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-You can do :code:`Ctrl+C` to stop the autotuning early. For how to save cache,
-refer to the autotuning documentation.
+You can send a SIGINT signal (i.e. hit :code:`Ctrl+C`) to stop the autotuning
+early. All compilations and evaluations in progress will be completed, but no
+new compilation or evaluation will be started.  Therefore, stopping the
+autotuner may take some time.

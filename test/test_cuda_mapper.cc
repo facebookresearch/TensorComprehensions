@@ -535,11 +535,7 @@ TEST_F(PolyhedralMapperTest, Match1) {
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto f = match(
-      band(sequence(
-          filter([](isl::union_set f) {
-            return f.get_space().dim(isl::dim_type::param) == 3;
-          }),
-          filter())),
+      band(sequence(filter([](isl::union_set f) { return true; }), filter())),
       schedule);
   EXPECT_EQ(1u, f.size());
 }

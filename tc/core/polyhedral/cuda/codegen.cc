@@ -397,9 +397,48 @@ struct LdgWrapper {
 };
 
 template <typename AFF>
+isl::ast_expr buildAccess(AFF access, const CodegenStatementContext& context) {
+  return context.build().access_from(access);
+}
+
+void emitAccess(isl::ast_expr access, const CodegenStatementContext& context) {
+  context.ss << access.to_C_str();
+}
+
+template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
+  emitAccess(buildAccess(access, context), context);
+}
+
+// Check that the given expression is an access with constant index expressions
+void checkConstantAccess(isl::ast_expr expr) {
+  auto op = expr.as<isl::ast_expr_op>();
+  auto access = op.as<isl::ast_op_access>();
+  TC_CHECK(access);
+  for (int i = 1; i < access.get_n_arg(); ++i) {
+    auto arg = access.get_arg(i);
+    TC_CHECK(arg.as<isl::ast_expr_int>())
+        << "expected constant subscript, got " << arg.to_C_str();
+  }
+}
+
+// Print an access to a(n array of) register(s), checking that
+// the index expressions are constant.
+void emitRegisterAccess(
+    isl::pw_multi_aff access,
+    const CodegenStatementContext& context) {
+  auto expr = buildAccess(access, context);
+  checkConstantAccess(expr);
+  emitAccess(expr, context);
+}
+
+// Print an access to global memory, wrapping the access in an "__ldg()"
+// call if the accessed tensor is known to be read-only.
+void emitGlobalAccess(
+    isl::multi_pw_aff access,
+    const CodegenStatementContext& context) {
   LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
-  context.ss << context.build().access_from(access).to_C_str();
+  emitAccess(access, context);
 }
 } // namespace
 
@@ -414,9 +453,9 @@ void emitCopyStmt(const CodegenStatementContext& context) {
   if (isRead) {
     emitAccess(isl::multi_pw_aff(promoted), context);
     context.ss << " = ";
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
   } else {
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
     context.ss << " = ";
     emitAccess(isl::multi_pw_aff(promoted), context);
   }
@@ -625,7 +664,8 @@ void emitMappedTensorAccess(
     return;
   }
 
-  auto tensorId = context.scop().promotedDecl(promotionInfo.groupId).tensorId;
+  auto decl = context.scop().promotedDecl(promotionInfo.groupId);
+  auto tensorId = decl.tensorId;
 
   // Here and below in comments: D = domain, O = original tensor, P = promoted
   // tensor, S = partial schedule, A = AST loops;
@@ -651,7 +691,11 @@ void emitMappedTensorAccess(
   auto astToPromoted =
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
-  emitAccess(astToPromoted, context);
+  if (decl.kind == Scop::PromotedDecl::Kind::Register) {
+    emitRegisterAccess(astToPromoted, context);
+  } else {
+    emitAccess(astToPromoted, context);
+  }
 }
 
 } // namespace detail

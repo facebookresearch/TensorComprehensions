@@ -159,7 +159,11 @@ void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
   TC_CHECK_GE(nMember(), pos + n) << "range out of bounds";
   auto nBegin = nMember();
 
-  mupa_ = mupa_.drop_dims(isl::dim_type::set, pos, n);
+  auto list = mupa_.get_union_pw_aff_list();
+  auto space = mupa_.get_space().domain();
+  list = list.drop(pos, n);
+  space = addRange(space, list.size());
+  mupa_ = isl::multi_union_pw_aff(space, list);
 
   std::copy(
       coincident_.begin() + pos + n,

@@ -36,10 +36,9 @@ Machine Learning.
    :caption: PyTorch Integration
 
    framework/pytorch_integration/getting_started
+   framework/pytorch_integration/python_api
    framework/pytorch_integration/writing_layers
-   framework/pytorch_integration/autotuning_layers
    framework/pytorch_integration/autograd_with_tc
-   framework/pytorch_integration/note_about_performance
    framework/pytorch_integration/debugging
    framework/pytorch_integration/frequently_asked_questions
 

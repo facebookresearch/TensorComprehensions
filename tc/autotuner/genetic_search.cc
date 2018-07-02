@@ -161,14 +161,14 @@ GeneticSearch::GeneticSearch(
     size_t populationSize,
     uint8_t crossOverRate,
     uint8_t mutationRate,
-    size_t numberElites)
+    size_t numElites)
     : population(),
       lastBestConf(confs[0]),
       numGenerations(numGenerations),
       maxPopulationSize(populationSize),
       crossOverRate(crossOverRate),
       mutationRate(mutationRate),
-      numberElites(numberElites),
+      numberElites(std::min(numElites, populationSize / 2)),
       rng{std::random_device{}()} {
   restoreRngState(rng);
   VALIDATE();
