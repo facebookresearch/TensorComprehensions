@@ -126,6 +126,7 @@ namespace detail {
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
 
+template <typename T>
 void flattenSequenceOrSet(ScheduleTree* tree);
 
 struct ScheduleTree {
@@ -401,11 +402,11 @@ struct ScheduleTree {
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
     auto ctx = arg->ctx_;
-    auto res = ScheduleTreeUPtr(new T(ctx));
+    auto res = new T(ctx);
+    flattenSequenceOrSet(res);
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
-    flattenSequenceOrSet(res.get());
-    return res;
+    return ScheduleTreeUPtr(res);
   }
 
   // Make a (deep) copy of "tree".
@@ -485,11 +486,12 @@ struct ScheduleTree {
 };
 
 // Flatten nested nodes of the same type.
-inline void flattenSequenceOrSet(ScheduleTree* tree) {
-  // This should be enforced by the type system...
-  TC_CHECK(
-      tree->type_ == ScheduleTreeType::Sequence ||
-      tree->type_ == ScheduleTreeType::Set);
+template <typename T>
+inline void flattenSequenceOrSet(T* tree) {
+  static_assert(
+      std::is_same<ScheduleTreeElemSet, T>::value ||
+          std::is_same<ScheduleTreeElemSequence, T>::value,
+      "Only Sequence or Set node can be flattened");
 
   // Iterate over the changing list of children. If a child has the same list
   // type as a parent, replace it with grandchildren and traverse them too.
