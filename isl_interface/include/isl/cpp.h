@@ -406,9 +406,9 @@ public:
   inline isl::aff_list concat(isl::aff_list list2) const;
   inline isl::aff_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::aff)> &fn) const;
-  inline isl::aff get(int index) const;
-  inline int n() const;
+  inline isl::aff get_at(int index) const;
   inline isl::aff_list reverse() const;
+  inline int size() const;
   typedef isl_aff_list* isl_ptr_t;
 };
 
@@ -706,9 +706,9 @@ public:
   inline isl::ast_node_list concat(isl::ast_node_list list2) const;
   inline isl::ast_node_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::ast_node)> &fn) const;
-  inline isl::ast_node get(int index) const;
-  inline int n() const;
+  inline isl::ast_node get_at(int index) const;
   inline isl::ast_node_list reverse() const;
+  inline int size() const;
   typedef isl_ast_node_list* isl_ptr_t;
 };
 
@@ -1375,10 +1375,10 @@ public:
   inline isl::basic_map_list concat(isl::basic_map_list list2) const;
   inline isl::basic_map_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::basic_map)> &fn) const;
-  inline isl::basic_map get(int index) const;
+  inline isl::basic_map get_at(int index) const;
   inline isl::basic_map intersect() const;
-  inline int n() const;
   inline isl::basic_map_list reverse() const;
+  inline int size() const;
   typedef isl_basic_map_list* isl_ptr_t;
 };
 
@@ -1481,9 +1481,9 @@ public:
   inline isl::basic_set_list concat(isl::basic_set_list list2) const;
   inline isl::basic_set_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::basic_set)> &fn) const;
-  inline isl::basic_set get(int index) const;
-  inline int n() const;
+  inline isl::basic_set get_at(int index) const;
   inline isl::basic_set_list reverse() const;
+  inline int size() const;
   typedef isl_basic_set_list* isl_ptr_t;
 };
 
@@ -1564,9 +1564,9 @@ public:
   inline isl::constraint_list concat(isl::constraint_list list2) const;
   inline isl::constraint_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::constraint)> &fn) const;
-  inline isl::constraint get(int index) const;
-  inline int n() const;
+  inline isl::constraint get_at(int index) const;
   inline isl::constraint_list reverse() const;
+  inline int size() const;
   typedef isl_constraint_list* isl_ptr_t;
 };
 
@@ -1667,9 +1667,9 @@ public:
   inline isl::id_list concat(isl::id_list list2) const;
   inline isl::id_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::id)> &fn) const;
-  inline isl::id get(int index) const;
-  inline int n() const;
+  inline isl::id get_at(int index) const;
   inline isl::id_list reverse() const;
+  inline int size() const;
   typedef isl_id_list* isl_ptr_t;
 };
 
@@ -1854,9 +1854,9 @@ public:
   inline isl::map_list concat(isl::map_list list2) const;
   inline isl::map_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::map)> &fn) const;
-  inline isl::map get(int index) const;
-  inline int n() const;
+  inline isl::map get_at(int index) const;
   inline isl::map_list reverse() const;
+  inline int size() const;
   typedef isl_map_list* isl_ptr_t;
 };
 
@@ -2335,9 +2335,9 @@ public:
   inline isl::pw_aff_list concat(isl::pw_aff_list list2) const;
   inline isl::pw_aff_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::pw_aff)> &fn) const;
-  inline isl::pw_aff get(int index) const;
-  inline int n() const;
+  inline isl::pw_aff get_at(int index) const;
   inline isl::pw_aff_list reverse() const;
+  inline int size() const;
   typedef isl_pw_aff_list* isl_ptr_t;
 };
 
@@ -2943,9 +2943,9 @@ public:
   inline isl::set_list concat(isl::set_list list2) const;
   inline isl::set_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::set)> &fn) const;
-  inline isl::set get(int index) const;
-  inline int n() const;
+  inline isl::set get_at(int index) const;
   inline isl::set_list reverse() const;
+  inline int size() const;
   typedef isl_set_list* isl_ptr_t;
 };
 
@@ -3311,9 +3311,9 @@ public:
   inline isl::union_pw_aff_list concat(isl::union_pw_aff_list list2) const;
   inline isl::union_pw_aff_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::union_pw_aff)> &fn) const;
-  inline isl::union_pw_aff get(int index) const;
-  inline int n() const;
+  inline isl::union_pw_aff get_at(int index) const;
   inline isl::union_pw_aff_list reverse() const;
+  inline int size() const;
   typedef isl_union_pw_aff_list* isl_ptr_t;
 };
 
@@ -3470,9 +3470,9 @@ public:
   inline isl::union_set_list concat(isl::union_set_list list2) const;
   inline isl::union_set_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::union_set)> &fn) const;
-  inline isl::union_set get(int index) const;
-  inline int n() const;
+  inline isl::union_set get_at(int index) const;
   inline isl::union_set_list reverse() const;
+  inline int size() const;
   typedef isl_union_set_list* isl_ptr_t;
 };
 
@@ -3584,9 +3584,9 @@ public:
   inline isl::val_list concat(isl::val_list list2) const;
   inline isl::val_list drop(unsigned int first, unsigned int n) const;
   inline void foreach(const std::function<void(isl::val)> &fn) const;
-  inline isl::val get(int index) const;
-  inline int n() const;
+  inline isl::val get_at(int index) const;
   inline isl::val_list reverse() const;
+  inline int size() const;
   typedef isl_val_list* isl_ptr_t;
 };
 
@@ -4258,26 +4258,16 @@ void aff_list::foreach(const std::function<void(isl::aff)> &fn) const
   return void(res);
 }
 
-isl::aff aff_list::get(int index) const
+isl::aff aff_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_aff_list_get(get(), index);
+  auto res = isl_aff_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int aff_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_aff_list_n(get());
-  return res;
 }
 
 isl::aff_list aff_list::reverse() const
@@ -4290,6 +4280,16 @@ isl::aff_list aff_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int aff_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_aff_list_size(get());
+  return res;
 }
 
 // implementations for isl::ast_build
@@ -5518,26 +5518,16 @@ void ast_node_list::foreach(const std::function<void(isl::ast_node)> &fn) const
   return void(res);
 }
 
-isl::ast_node ast_node_list::get(int index) const
+isl::ast_node ast_node_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_ast_node_list_get(get(), index);
+  auto res = isl_ast_node_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int ast_node_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_ast_node_list_n(get());
-  return res;
 }
 
 isl::ast_node_list ast_node_list::reverse() const
@@ -5550,6 +5540,16 @@ isl::ast_node_list ast_node_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int ast_node_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_ast_node_list_size(get());
+  return res;
 }
 
 // implementations for isl::ast_node_mark
@@ -7577,13 +7577,13 @@ void basic_map_list::foreach(const std::function<void(isl::basic_map)> &fn) cons
   return void(res);
 }
 
-isl::basic_map basic_map_list::get(int index) const
+isl::basic_map basic_map_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_map_list_get(get(), index);
+  auto res = isl_basic_map_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -7601,16 +7601,6 @@ isl::basic_map basic_map_list::intersect() const
   return manage(res);
 }
 
-int basic_map_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_map_list_n(get());
-  return res;
-}
-
 isl::basic_map_list basic_map_list::reverse() const
 {
   if (!ptr)
@@ -7621,6 +7611,16 @@ isl::basic_map_list basic_map_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int basic_map_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_basic_map_list_size(get());
+  return res;
 }
 
 // implementations for isl::basic_set
@@ -8317,26 +8317,16 @@ void basic_set_list::foreach(const std::function<void(isl::basic_set)> &fn) cons
   return void(res);
 }
 
-isl::basic_set basic_set_list::get(int index) const
+isl::basic_set basic_set_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_list_get(get(), index);
+  auto res = isl_basic_set_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int basic_set_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_list_n(get());
-  return res;
 }
 
 isl::basic_set_list basic_set_list::reverse() const
@@ -8349,6 +8339,16 @@ isl::basic_set_list basic_set_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int basic_set_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_basic_set_list_size(get());
+  return res;
 }
 
 // implementations for isl::constraint
@@ -8765,26 +8765,16 @@ void constraint_list::foreach(const std::function<void(isl::constraint)> &fn) co
   return void(res);
 }
 
-isl::constraint constraint_list::get(int index) const
+isl::constraint constraint_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_get(get(), index);
+  auto res = isl_constraint_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int constraint_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_n(get());
-  return res;
 }
 
 isl::constraint_list constraint_list::reverse() const
@@ -8797,6 +8787,16 @@ isl::constraint_list constraint_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int constraint_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_constraint_list_size(get());
+  return res;
 }
 
 // implementations for isl::fixed_box
@@ -9174,26 +9174,16 @@ void id_list::foreach(const std::function<void(isl::id)> &fn) const
   return void(res);
 }
 
-isl::id id_list::get(int index) const
+isl::id id_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_id_list_get(get(), index);
+  auto res = isl_id_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int id_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_id_list_n(get());
-  return res;
 }
 
 isl::id_list id_list::reverse() const
@@ -9206,6 +9196,16 @@ isl::id_list id_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int id_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_id_list_size(get());
+  return res;
 }
 
 // implementations for isl::local_space
@@ -10621,26 +10621,16 @@ void map_list::foreach(const std::function<void(isl::map)> &fn) const
   return void(res);
 }
 
-isl::map map_list::get(int index) const
+isl::map map_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_list_get(get(), index);
+  auto res = isl_map_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int map_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_list_n(get());
-  return res;
 }
 
 isl::map_list map_list::reverse() const
@@ -10653,6 +10643,16 @@ isl::map_list map_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int map_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_list_size(get());
+  return res;
 }
 
 // implementations for isl::multi_aff
@@ -14196,26 +14196,16 @@ void pw_aff_list::foreach(const std::function<void(isl::pw_aff)> &fn) const
   return void(res);
 }
 
-isl::pw_aff pw_aff_list::get(int index) const
+isl::pw_aff pw_aff_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_pw_aff_list_get(get(), index);
+  auto res = isl_pw_aff_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int pw_aff_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_pw_aff_list_n(get());
-  return res;
 }
 
 isl::pw_aff_list pw_aff_list::reverse() const
@@ -14228,6 +14218,16 @@ isl::pw_aff_list pw_aff_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int pw_aff_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_aff_list_size(get());
+  return res;
 }
 
 // implementations for isl::pw_multi_aff
@@ -17756,26 +17756,16 @@ void set_list::foreach(const std::function<void(isl::set)> &fn) const
   return void(res);
 }
 
-isl::set set_list::get(int index) const
+isl::set set_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_set_list_get(get(), index);
+  auto res = isl_set_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int set_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_set_list_n(get());
-  return res;
 }
 
 isl::set_list set_list::reverse() const
@@ -17788,6 +17778,16 @@ isl::set_list set_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int set_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_set_list_size(get());
+  return res;
 }
 
 // implementations for isl::space
@@ -20265,26 +20265,16 @@ void union_pw_aff_list::foreach(const std::function<void(isl::union_pw_aff)> &fn
   return void(res);
 }
 
-isl::union_pw_aff union_pw_aff_list::get(int index) const
+isl::union_pw_aff union_pw_aff_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_pw_aff_list_get(get(), index);
+  auto res = isl_union_pw_aff_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int union_pw_aff_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_pw_aff_list_n(get());
-  return res;
 }
 
 isl::union_pw_aff_list union_pw_aff_list::reverse() const
@@ -20297,6 +20287,16 @@ isl::union_pw_aff_list union_pw_aff_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int union_pw_aff_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_union_pw_aff_list_size(get());
+  return res;
 }
 
 // implementations for isl::union_pw_multi_aff
@@ -21412,26 +21412,16 @@ void union_set_list::foreach(const std::function<void(isl::union_set)> &fn) cons
   return void(res);
 }
 
-isl::union_set union_set_list::get(int index) const
+isl::union_set union_set_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_set_list_get(get(), index);
+  auto res = isl_union_set_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int union_set_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_set_list_n(get());
-  return res;
 }
 
 isl::union_set_list union_set_list::reverse() const
@@ -21444,6 +21434,16 @@ isl::union_set_list union_set_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int union_set_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_union_set_list_size(get());
+  return res;
 }
 
 // implementations for isl::val
@@ -22202,26 +22202,16 @@ void val_list::foreach(const std::function<void(isl::val)> &fn) const
   return void(res);
 }
 
-isl::val val_list::get(int index) const
+isl::val val_list::get_at(int index) const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_val_list_get(get(), index);
+  auto res = isl_val_list_get_at(get(), index);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int val_list::n() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_val_list_n(get());
-  return res;
 }
 
 isl::val_list val_list::reverse() const
@@ -22234,6 +22224,16 @@ isl::val_list val_list::reverse() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
+}
+
+int val_list::size() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_val_list_size(get());
+  return res;
 }
 } // namespace isl
 

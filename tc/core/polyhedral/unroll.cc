@@ -16,8 +16,8 @@
 
 #include "tc/core/polyhedral/unroll.h"
 
-#include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 
 namespace tc {
 namespace polyhedral {
@@ -93,11 +93,14 @@ isl::val boundInstancesAndMarkUnroll(
   auto partial = band->mupa_;
   auto n = band->nMember();
 
+  auto list = partial.get_union_pw_aff_list();
+  auto space = partial.get_space().domain();
   for (int i = n - 1; i >= 0; --i) {
     auto member = partial.get_union_pw_aff(i);
     auto outerMap = prefix;
     if (i > 0) {
-      auto outer = partial.drop_dims(isl::dim_type::set, i, n - i);
+      list = list.drop(i, 1);
+      auto outer = isl::multi_union_pw_aff(addRange(space, list.size()), list);
       outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
     }
     bound = bound.mul(relativeRange(outerMap, member));

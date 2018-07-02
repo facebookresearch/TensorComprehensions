@@ -67,9 +67,8 @@ conda install -y -c nicolasvasilache caffe2
 WITH_CAFFE2=ON CUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda CLANG_PREFIX=$(${CONDA_PREFIX}/bin/llvm-config --prefix) BUILD_TYPE=Release ./build.sh
 
 python setup.py install
-./test_python/run_test.sh
 
-for f in $(find ./python/examples -name "*.py"); do
+for f in $(find ./python/ -name "*.py" | grep -v caffe2); do
     python $f -v
 done
 

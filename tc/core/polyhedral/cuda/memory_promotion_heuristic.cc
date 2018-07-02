@@ -23,6 +23,7 @@
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/polyhedral/unroll.h"
 
 #include <algorithm>
@@ -206,15 +207,16 @@ bool hasReuseWithin(
  * dimensions unchanged.
  */
 isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
-  if (dim < 0 || dim >= setSpace.dim(isl::dim_type::set)) {
+  auto mapSpace = setSpace.map_from_set();
+  auto identityMA = isl::multi_aff::identity(mapSpace);
+
+  size_t size = identityMA.size();
+  if (dim < 0 || dim >= size) {
     std::stringstream ss;
-    ss << dim << "  is out of [0, " << setSpace.dim(isl::dim_type::set)
-       << ") range";
+    ss << dim << "  is out of [0, " << size << ") range";
     throw promotion::OutOfRangeException(ss.str());
   }
 
-  auto mapSpace = setSpace.map_from_set();
-  auto identityMA = isl::multi_aff::identity(mapSpace);
   auto aff = identityMA.get_aff(dim);
   identityMA = identityMA.set_aff(dim, aff + 1);
   return isl::map(identityMA);
@@ -266,6 +268,7 @@ bool promotionImprovesCoalescing(
     isl::union_map schedule) {
   auto originalAccesses = group.originalAccesses();
 
+  auto tensorDim = group.approximation.dim();
   auto markers = collectBranchMarkers(root, node);
   for (auto marker : markers) {
     auto mapping = findThreadMappingAncestor(root, marker);
@@ -280,8 +283,7 @@ bool promotionImprovesCoalescing(
     for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
       auto scheduleSpace = access.get_space().domain();
       auto tensorSpace = access.get_space().range();
-      auto elementToNext = makeNextElementMap(
-          tensorSpace, tensorSpace.dim(isl::dim_type::set) - 1);
+      auto elementToNext = makeNextElementMap(tensorSpace, tensorDim - 1);
       auto scheduleToNextX = makeNextElementMap(scheduleSpace, depth - 1);
       auto accessedByAdjacentX =
           scheduleToNextX.apply_domain(access).apply_range(access);
@@ -381,7 +383,7 @@ bool accessSubscriptsAreUnrolledLoops(
       }
     }
 
-    auto space = isl::space(leaf->ctx_, 0, unrolledDims.n())
+    auto space = isl::space(leaf->ctx_, 0, unrolledDims.size())
                      .align_params(subdomain.get_space());
     auto unrolledDimsMupa = isl::multi_union_pw_aff(space, unrolledDims);
 

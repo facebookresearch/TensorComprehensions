@@ -637,19 +637,18 @@ isl::ast_node collectIteratorMaps(
   auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
   TC_CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
   auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-  auto iterators = scop.halide.iterators.at(stmtId);
+  auto tuple = scop.halide.domains.at(stmtId).tuple;
   auto& stmtIteratorMap = iteratorMaps[stmtId];
-  for (size_t i = 0; i < iterators.size(); ++i) {
+  for (int i = 0; i < tuple.size(); ++i) {
     auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
-    stmtIteratorMap.emplace(iterators[i], expr);
+    stmtIteratorMap.emplace(tuple.get_id(i).get_name(), expr);
   }
   auto& subscripts = stmtSubscripts[stmtId];
   auto provide =
       scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
   for (auto e : provide->args) {
     const auto& map = iteratorMap;
-    auto space = map.get_space().params();
-    auto aff = scop.makeIslAffFromStmtExpr(stmtId, space, e);
+    auto aff = scop.makeIslAffFromStmtExpr(stmtId, e);
     auto pulled = isl::pw_aff(aff).pullback(map);
     TC_CHECK_EQ(pulled.n_piece(), 1);
     subscripts.push_back(build.expr_from(pulled));
