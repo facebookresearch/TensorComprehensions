@@ -70,46 +70,6 @@ MappingOptionsView& MappingOptionsView::tile(
 //
 
 namespace callbacks {
-// The ILP in basic set has the following dimensions:
-// - sum of positive and negative parts of the dependence distance bound
-// - constant term of the dependence distance bound
-// - sum of parameter coefficients
-// - sum of positive and negative parts of schedule coefficients
-// - for each statement (in the order of id_list)
-//   - pairs of values representing schedule coefficients, in the order
-//     opposite to their order in the respective domain
-//   - parameter coefficients
-//   - constant term of the schedule
-// Schedule coefficients are represented as a pair of non-negative
-// dimensions (c_1 = c_1^+ - c_1^-), where the negative part comes first.
-// XXX: FRAGILE! the order depends on the internal operation of the isl
-// scheduler, which may change.  This description is based on git-708721f.
-
-__isl_give isl_basic_set* AddPositiveCoefficientConstraints(
-    __isl_take isl_basic_set* lp,
-    int n_param,
-    int,
-    __isl_keep isl_id_list* stmt_ids,
-    int* node_n_params,
-    int* node_n_dims,
-    void*) {
-  int offset = 4 + 2 * n_param;
-  int n_node = isl_id_list_n_id(stmt_ids);
-  auto ilp = isl::manage(lp);
-  auto space = ilp.get_local_space();
-  auto c = isl::constraint::alloc_equality(space);
-  for (int i = 0; i < n_node; ++i) {
-    for (int j = 0; j < 2 * node_n_dims[i]; j += 2) {
-      c = c.set_coefficient_si(isl::dim_type::set, offset + j, -1);
-    }
-    offset += 2 * node_n_dims[i] + node_n_params[i] + 1;
-  }
-  c = c.set_constant_si(0);
-  ilp = ilp.add_constraint(c);
-
-  return ilp.release();
-}
-
 // Fusion decisions.
 // These callbacks are called from the cluster merging process inside isl
 // scheduler.  Current version of this process is two-stage.  First, it

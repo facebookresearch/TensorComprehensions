@@ -328,12 +328,6 @@ isl::schedule_constraints makeScheduleConstraints(
   // depending on the scheduler options.
   isl_schedule_constraints* sc = constraints.release();
   {
-    if (schedulerOptions.proto.positive_orthant()) {
-      sc = isl_schedule_constraints_set_custom_constraint_callback(
-          sc, callbacks::AddPositiveCoefficientConstraints, nullptr);
-    }
-  }
-  {
     auto fusionStrategy = schedulerOptions.proto.fusion_strategy();
     if (fusionStrategy == FusionStrategy::Max) {
       sc = isl_schedule_constraints_set_merge_callback(
@@ -385,6 +379,7 @@ std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
   auto wasSerializingSccs = isl_options_get_schedule_serialize_sccs(ctx.get());
   auto wasUnit =
       isl_options_get_schedule_unit_max_var_coefficient_sum(ctx.get());
+  auto wasNonNeg = isl_options_get_schedule_nonneg_var_coefficient(ctx.get());
   isl_options_set_schedule_whole_component(ctx.get(), 0);
   if (schedulerOptions.proto.fusion_strategy() == FusionStrategy::Min) {
     isl_options_set_schedule_serialize_sccs(ctx.get(), 1);
@@ -392,10 +387,14 @@ std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
   if (!schedulerOptions.proto.allow_skewing()) {
     isl_options_set_schedule_unit_max_var_coefficient_sum(ctx.get(), 1);
   }
+  if (schedulerOptions.proto.positive_orthant()) {
+    isl_options_set_schedule_nonneg_var_coefficient(ctx.get(), 1);
+  }
   tc::ScopeGuard islOptionsResetter([&]() {
     isl_options_set_schedule_whole_component(ctx.get(), usedWholeComponent);
     isl_options_set_schedule_serialize_sccs(ctx.get(), wasSerializingSccs);
     isl_options_set_schedule_unit_max_var_coefficient_sum(ctx.get(), wasUnit);
+    isl_options_set_schedule_nonneg_var_coefficient(ctx.get(), wasNonNeg);
   });
 
   return detail::fromIslSchedule(constraints.compute_schedule());
