@@ -287,6 +287,15 @@ struct TcExecutor {
       return profinfo.kernelRuntime.toMicroSeconds();
     }
   }
+
+  size_t profile_stats(const py::tuple& inputs, const py::tuple& outputs, const int nb_iters) {
+    size_t mean = 0;
+    for(int i = 0; i < nb_iters; i++) {
+      mean += profile(inputs, outputs);
+    }
+    return mean / nb_iters;
+  }
+
   std::string tc;
   std::string entryPoint;
   std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
@@ -484,7 +493,13 @@ PYBIND11_MODULE(tclib, m) {
           "profile",
           &TcExecutor::profile,
           py::arg("inputs"),
-          py::arg("outputs") = py::tuple());
+          py::arg("outputs") = py::tuple())
+      .def(
+          "profile_stats",
+          &TcExecutor::profileStats,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple(),
+          py::arg("nb_iters") = 50);
   
   m.def(
       "compile",
