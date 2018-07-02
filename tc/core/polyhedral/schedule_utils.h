@@ -20,6 +20,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 
 #include <functional>
 #include <unordered_map>
