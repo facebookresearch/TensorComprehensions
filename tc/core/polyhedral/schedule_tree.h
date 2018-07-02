@@ -126,6 +126,8 @@ namespace detail {
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
 
+void flattenSequenceOrSet(ScheduleTree* tree);
+
 struct ScheduleTree {
   friend std::ostream& tc::polyhedral::detail::operator<<(
       std::ostream&,
@@ -385,26 +387,6 @@ struct ScheduleTree {
     return fromList<ScheduleTreeElemSequence>(std::forward<Args>(args)...);
   }
 
-  // Flatten nested nodes of the same type.
-  void flattenSequenceOrSet() {
-    // This should be enforced by the type system...
-    TC_CHECK(
-        type_ == detail::ScheduleTreeType::Sequence ||
-        type_ == detail::ScheduleTreeType::Set);
-
-    // Iterate over the changing list of children. If a child has the same list
-    // type as a parent, replace it with grandchildren and traverse them too.
-    for (size_t i = 0; i < numChildren(); ++i) {
-      if (child({i})->type_ != type_) {
-        continue;
-      }
-      auto grandChildren = child({i})->detachChildren();
-      detachChild(i);
-      insertChildren(i, std::move(grandChildren));
-      --i;
-    }
-  }
-
   // disallow empty lists in syntax
   template <typename T, typename Arg, typename... Args>
   static ScheduleTreeUPtr fromList(Arg&& arg, Args&&... args) {
@@ -422,7 +404,7 @@ struct ScheduleTree {
     auto res = ScheduleTreeUPtr(new T(ctx));
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
-    res->flattenSequenceOrSet();
+    flattenSequenceOrSet(res.get());
     return res;
   }
 
@@ -501,6 +483,26 @@ struct ScheduleTree {
  public:
   detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
 };
+
+// Flatten nested nodes of the same type.
+inline void flattenSequenceOrSet(ScheduleTree* tree) {
+  // This should be enforced by the type system...
+  TC_CHECK(
+      tree->type_ == ScheduleTreeType::Sequence ||
+      tree->type_ == ScheduleTreeType::Set);
+
+  // Iterate over the changing list of children. If a child has the same list
+  // type as a parent, replace it with grandchildren and traverse them too.
+  for (size_t i = 0; i < tree->numChildren(); ++i) {
+    if (tree->child({i})->type_ != tree->type_) {
+      continue;
+    }
+    auto grandChildren = tree->child({i})->detachChildren();
+    tree->detachChild(i);
+    tree->insertChildren(i, std::move(grandChildren));
+    --i;
+  }
+}
 
 } // namespace detail
 } // namespace polyhedral
