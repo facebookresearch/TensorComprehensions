@@ -476,6 +476,11 @@ PYBIND11_MODULE(tclib, m) {
             tc, entryPoint, getATenTensors(inputs), options);
         return TcExecutor{tc, entryPoint, std::move(execUPtr)};
       });
+  m.def(
+      "profile",
+      &TcExecutor::profile,
+      py::arg("inputs"),
+      py::arg("outputs") = py::tuple())
 
   // A TunerConfig object can be passed to configure a tuning run
   py::class_<TunerConfig>(m, "TunerConfig", R"DOC(
