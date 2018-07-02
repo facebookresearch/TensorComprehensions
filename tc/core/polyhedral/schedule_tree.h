@@ -276,8 +276,26 @@ struct ScheduleTree {
   static inline ScheduleTreeUPtr makeMapping(
       const std::vector<MappingIdType>& mappedIds,
       isl::union_pw_aff_list mappedAffs,
-      std::vector<ScheduleTreeUPtr>&& children = {});
+      std::vector<ScheduleTreeUPtr>&& children = {}) {
+    static_assert(
+        std::is_base_of<mapping::MappingId, MappingIdType>::value,
+        "can only map to ids that are subclasses of MappingId");
+    std::vector<mapping::MappingId> ids;
+    ids.reserve(mappedIds.size());
+    for (const auto& id : mappedIds) {
+      ids.push_back(id);
+    }
+    return makeMappingUnsafe(ids, mappedAffs, std::move(children));
+  }
 
+ private:
+  // Internal type-unsafe function to construct mappings.
+  static ScheduleTreeUPtr makeMappingUnsafe(
+      const std::vector<mapping::MappingId>& mappedIds,
+      isl::union_pw_aff_list mappedAffs,
+      std::vector<ScheduleTreeUPtr>&& children);
+
+ public:
   static ScheduleTreeUPtr makeExtension(
       isl::union_map extension,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -477,5 +495,3 @@ struct ScheduleTree {
 } // namespace detail
 } // namespace polyhedral
 } // namespace tc
-
-#include "tc/core/polyhedral/schedule_tree-inl.h"

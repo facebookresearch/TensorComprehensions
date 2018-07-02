@@ -279,6 +279,29 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
   return res;
 }
 
+std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
+    const std::vector<mapping::MappingId>& mappedIds,
+    isl::union_pw_aff_list mappedAffs,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.size()))
+      << "expected as many mapped ids as affs";
+  ScheduleTreeElemMapping::Mapping mapping;
+  for (size_t i = 0, n = mappedAffs.size(); i < n; ++i) {
+    mapping.emplace(mappedIds.at(i), mappedAffs.get_at(i));
+  }
+  TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
+  TC_CHECK_EQ(mappedIds.size(), mapping.size())
+      << "some id is used more than once in the mapping";
+  auto ctx = mappedIds[0].get_ctx();
+  ScheduleTreeUPtr res(new ScheduleTree(
+      ctx,
+      std::move(children),
+      ScheduleTreeType::Mapping,
+      std::unique_ptr<ScheduleTreeElemMapping>(
+          new ScheduleTreeElemMapping(mapping))));
+  return res;
+}
+
 std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
     isl::union_map extension,
     std::vector<ScheduleTreeUPtr>&& children) {
