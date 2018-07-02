@@ -1,5 +1,4 @@
 import numpy as np
-import ipdb
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -25,9 +24,9 @@ steps_done = 0
 buff = deque()
 MAXI_BUFF_SZ = 50
 
-viz = Visdom(server="http://100.97.69.78")
-win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
-win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+#viz = Visdom(server="http://100.97.69.78")
+#win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+#win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
 def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
@@ -47,9 +46,10 @@ class Predictor(nn.Module):
         self.W = nn.Linear(nb_inputs, nb_inputs)
 
     def forward(self, x):
-        x = F.softmax(self.W(x)) * x
+        #ipdb.set_trace()
+        x = F.softmax(self.W(x), dim=-1) * x
         tmp1 = F.relu(self.affine1(x))
-        out_action = F.softmax(self.affine2(tmp1))
+        out_action = F.softmax(self.affine2(tmp1), dim=-1)
         out_value = self.affine3(tmp1)
         return out_action, out_value
 
@@ -91,7 +91,7 @@ I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device
 #init_input_sz = torch.from_numpy(init_input_sz).float()
 
 init_input = (I, W1)
-ipdb.set_trace()
+#ipdb.set_trace()
 init_input_sz = np.array([N,C,H,W,O, kH, kW])
 init_input_sz = torch.from_numpy(init_input_sz).float()
 
@@ -163,7 +163,7 @@ for i in range(NB_EPOCHS):
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
-    if i % INTER_DISP == 0:
+    if False and i % INTER_DISP == 0:
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)

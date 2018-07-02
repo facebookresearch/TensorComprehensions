@@ -9,11 +9,8 @@ import torch.nn.functional as F
 import tensor_comprehensions as tc
 
 set_options = [
-[ 1, 1, 1, 13, 25, 0, 27, 18, 1, 0, 0, 0, 0],
-[ 2, 1, 0, 26, 27, 0, 0, 32, 0, 0, 0, 0, 1],
-[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1],
-[ 2, 0, 0, 20, 27, 0, 28, 1, 1, 0, 1, 0, 0],
-[ 1, 2, 1, 2, 15, 1, 16, 25, 0, 0, 0, 0, 1] #batch 16 etc
+[1, 0, 0, 1, 8, 0, 7, 8, 1, 1, 0, 0, 1],
+[1, 1, 0, 0, 8, 1, 2, 7, 0, 1, 1, 0, 1]
 ]
 
 code = """
@@ -33,7 +30,7 @@ def group_normalization(
 }
 """
 
-N, G, D, H, W = 5, 5, 5, 5, 5
+N, G, D, H, W = 10,10,10,10,10
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 
 init_input = (I, gamma, beta)
