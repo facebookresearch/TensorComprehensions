@@ -274,17 +274,17 @@ struct TcExecutor {
     }
   }
 
-  int profile(const py::tuple& inputs, const py::tuple& outputs) {
+  size_t profile(const py::tuple& inputs, const py::tuple& outputs) {
     if (outputs.size() > 0) {
       auto atOutputs = getATenTensors(outputs);
       auto atInputs = getATenTensors(inputs);
       tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
-      return (int)profinfo.kernelRuntime.toMicroSeconds();
+      return profinfo.kernelRuntime.toMicroSeconds();
     } else {
       auto atInputs = getATenTensors(inputs);
       auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
       tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
-      return (int)profinfo.kernelRuntime.toMicroSeconds();
+      return profinfo.kernelRuntime.toMicroSeconds();
     }
   }
   std::string tc;
@@ -480,6 +480,12 @@ PYBIND11_MODULE(tclib, m) {
           &TcExecutor::uncheckedRun,
           py::arg("inputs"),
           py::arg("outputs") = py::tuple());
+      .def(
+          "profile",
+          &TcExecutor::profile,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple());
+  
   m.def(
       "compile",
       [](const std::string& tc,
@@ -490,11 +496,6 @@ PYBIND11_MODULE(tclib, m) {
             tc, entryPoint, getATenTensors(inputs), options);
         return TcExecutor{tc, entryPoint, std::move(execUPtr)};
       });
-  m.def(
-      "profile",
-      &TcExecutor::profile,
-      py::arg("inputs"),
-      py::arg("outputs") = py::tuple())
 
   // A TunerConfig object can be passed to configure a tuning run
   py::class_<TunerConfig>(m, "TunerConfig", R"DOC(
