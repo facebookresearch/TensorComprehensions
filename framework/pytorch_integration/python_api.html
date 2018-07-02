@@ -196,6 +196,7 @@
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="writing_layers.html#built-in-functions">Built-in Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="writing_layers.html#more-examples">More examples</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="autograd_with_tc.html">Autograd with TC</a></li>
@@ -256,22 +257,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../../contacts.html#mailing-list">Mailing list</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../contacts.html#contributions">Contributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../contacts.html#slack-channel">Slack channel</a></li>
-</ul>
-</li>
-</ul>
-<p class="caption"><span class="caption-text">Tutorials Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tensor Comprehensions Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html">Using TC to get fast CUDA code for TensorDot</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#about-tensordot">About TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-1-write-tc-for-tensordot">Step 1: Write TC for TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-2-register-operation-with-tc">Step 2: Register operation with TC</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-3-create-input-tensors-and-run-tc">Step 3: Create input tensors and run TC</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#step-4-autotune-and-get-better-performing-kernel">Step 4: Autotune and get better performing kernel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#early-stopping">Early stopping</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../../tutorials/tutorial_tensordot_with_tc.html#summary">Summary</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
@@ -354,12 +339,12 @@ Later, JIT compilation occurs on-demand the first time one such method is called
 with PyTorch Tensors of new sizes. The returned <code class="xref py py-class docutils literal notranslate"><span class="pre">TC</span></code> helper class is
 backed by a compilation cache which memoizes the results of compilation and
 avoids spurious recompilations. In order to determine the
-<code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code>, used for JIT compiling a particular TC def on
+<a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>, used for JIT compiling a particular TC def on
 inputs of particular sizes, the <code class="code docutils literal notranslate"><span class="pre">mapping_options_factory</span></code>
 function is called. We provide the factory builder functions
-<code class="xref py py-func docutils literal notranslate"><span class="pre">make_naive_options_factory()</span></code>,
-<code class="xref py py-func docutils literal notranslate"><span class="pre">make_load_from_cache_options_factory()</span></code> and
-<code class="xref py py-func docutils literal notranslate"><span class="pre">make_autotuned_options_factory()</span></code></p>
+<a class="reference internal" href="#tensor_comprehensions.make_naive_options_factory" title="tensor_comprehensions.make_naive_options_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_naive_options_factory()</span></code></a>,
+<a class="reference internal" href="#tensor_comprehensions.make_load_from_cache_options_factory" title="tensor_comprehensions.make_load_from_cache_options_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_load_from_cache_options_factory()</span></code></a> and
+<a class="reference internal" href="#tensor_comprehensions.make_autotuned_options_factory" title="tensor_comprehensions.make_autotuned_options_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">make_autotuned_options_factory()</span></code></a></p>
 <p>Further user-defined factory functions can be easily written to extend
 the behavior.</p>
 <div class="admonition warning">
@@ -376,7 +361,7 @@ generally, the low-level API should be used for benchmarking purposes.</p>
 <li><strong>tc</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – a string containing one of more TC defs.</li>
 <li><strong>mapping_options_factory</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Callable" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Iterable" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]], <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>]) – a function that takes a string with multiple
 TC defs, an entry_point and input PyTorch Tensors and produces a
-<code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code>.</li>
+<a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</li>
 </ul>
 </td>
 </tr>
@@ -536,6 +521,76 @@ purposes.</p>
 </div>
 </dd></dl>
 
+<p>The <a class="reference internal" href="#tensor_comprehensions.define" title="tensor_comprehensions.define"><code class="xref py py-func docutils literal notranslate"><span class="pre">define()</span></code></a> function provides an implicit compilation caching
+functionality which alleviates the need to implement a caching mechanism at
+the user-facing level. The question still remains which <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>
+to use to compile. Since this is still an open problem, we provide support
+for user-defined functions to specify this behavior. We require a user
+of the <a class="reference internal" href="#tensor_comprehensions.define" title="tensor_comprehensions.define"><code class="xref py py-func docutils literal notranslate"><span class="pre">define()</span></code></a> function to provide a <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a> generator
+function whose sole purpose is to determine the options with which to compile
+a particular TC def for particular input sizes.</p>
+<p>To facilitate usage we provide the following generators:</p>
+<dl class="function">
+<dt id="tensor_comprehensions.make_naive_options_factory">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">make_naive_options_factory</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#make_naive_options_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.make_naive_options_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a factory that always generates naive <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</p>
+<p>For easily getting started with TC and debugging purposes only.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">a function that takes a string with multiple
+TC defs, an entry_point and input PyTorch Tensors and produces a
+<a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.make_load_from_cache_options_factory">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">make_load_from_cache_options_factory</code><span class="sig-paren">(</span><em>cache_filename</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#make_load_from_cache_options_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.make_load_from_cache_options_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a factory that loads <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a> from a cache file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>cache_filename</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>) – the filename</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">a function that takes a string with multiple
+TC defs, an entry_point and input PyTorch Tensors and produces a
+<a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="tensor_comprehensions.make_autotuned_options_factory">
+<code class="descclassname">tensor_comprehensions.</code><code class="descname">make_autotuned_options_factory</code><span class="sig-paren">(</span><em>starting_options=None</em>, <em>tuner_config=&lt;tensor_comprehensions.tclib.TunerConfig object&gt;</em>, <em>cache_filename=None</em>, <em>load_from_cache=False</em>, <em>store_to_cache=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/tensor_comprehensions.html#make_autotuned_options_factory"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#tensor_comprehensions.make_autotuned_options_factory" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a factory that runs autotuning to determine the best <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</p>
+<p>The returned factory just calls the <a class="reference internal" href="#tensor_comprehensions.autotune" title="tensor_comprehensions.autotune"><code class="xref py py-func docutils literal notranslate"><span class="pre">autotune()</span></code></a> function, see
+its documentation for more information.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">a function that takes a string with multiple
+TC defs, an entry_point and input PyTorch Tensors and produces a
+<a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<p>Custom behavior to select <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a> may be implemented
+in addition to the provided defaults. The signature of custom generators must
+match:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">some_generator</span><span class="p">(</span><span class="n">tc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">entry_point</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span>
+    <span class="o">-&gt;</span> <span class="n">MappingOptions</span><span class="p">:</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
 </div>
 <div class="section" id="low-level-api">
 <h2>Low-level API<a class="headerlink" href="#low-level-api" title="Permalink to this headline">¶</a></h2>
@@ -649,9 +704,9 @@ file for all TC defs and reinforce it over time.</p>
 <li><strong>inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – PyTorch Tensors that TC should tune for. The inputs must be
 passed in the order they are also passed in the definition of
 the TC function.</li>
-<li><strong>starting_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – <code class="code docutils literal notranslate"><span class="pre">MappingOptions</span></code> from which tuning should start.</li>
-<li><strong>tuner_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#tensor_comprehensions.tclib.TunerConfig" title="tensor_comprehensions.tclib.TunerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TunerConfig</span></code></a>]) – <code class="code docutils literal notranslate"><span class="pre">TunerConfig</span></code> to control the behavior of the autotuner.</li>
-<li><strong>load_from_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Get the starting MappingOptions by loading from
+<li><strong>starting_options</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a>, <code class="docutils literal notranslate"><span class="pre">None</span></code>]) – <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a> from which tuning should start.</li>
+<li><strong>tuner_config</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference internal" href="#tensor_comprehensions.tclib.TunerConfig" title="tensor_comprehensions.tclib.TunerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TunerConfig</span></code></a>]) – <a class="reference internal" href="#tensor_comprehensions.tclib.TunerConfig" title="tensor_comprehensions.tclib.TunerConfig"><code class="xref py py-class docutils literal notranslate"><span class="pre">TunerConfig</span></code></a> to control the behavior of the autotuner.</li>
+<li><strong>load_from_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Optional" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a>]) – Get the starting <a class="reference internal" href="#tensor_comprehensions.tclib.MappingOptions" title="tensor_comprehensions.tclib.MappingOptions"><code class="xref py py-class docutils literal notranslate"><span class="pre">MappingOptions</span></code></a> by loading from
 <code class="code docutils literal notranslate"><span class="pre">cache_filename</span></code>. If loading fails to recover an entry
 from the cache file for the given input sizes an assertion error
 will trigger.</li>
@@ -701,7 +756,7 @@ the backing cache file.</li>
 </table>
 </dd></dl>
 
-<p>Additionally the <code class="code docutils literal notranslate"><span class="pre">assert_almost_equal</span></code> helper function is useful in
+<p>Additionally the <a class="reference internal" href="#tensor_comprehensions.assert_almost_equal" title="tensor_comprehensions.assert_almost_equal"><code class="xref py py-func docutils literal notranslate"><span class="pre">assert_almost_equal()</span></code></a> helper function is useful in
 performing numerical checks.</p>
 <dl class="function">
 <dt id="tensor_comprehensions.assert_almost_equal">

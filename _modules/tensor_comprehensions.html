@@ -194,6 +194,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#fixed-tc-varying-input-sizes">Fixed TC, varying input sizes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#pseudo-templating">Pseudo-templating</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#built-in-functions">Built-in Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../framework/pytorch_integration/writing_layers.html#more-examples">More examples</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../framework/pytorch_integration/autograd_with_tc.html">Autograd with TC</a></li>
@@ -254,22 +255,6 @@
 <li class="toctree-l2"><a class="reference internal" href="../contacts.html#mailing-list">Mailing list</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../contacts.html#contributions">Contributions</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../contacts.html#slack-channel">Slack channel</a></li>
-</ul>
-</li>
-</ul>
-<p class="caption"><span class="caption-text">Tutorials Reference</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tensor Comprehensions Tutorials</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html">Using TC to get fast CUDA code for TensorDot</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#about-tensordot">About TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#step-1-write-tc-for-tensordot">Step 1: Write TC for TensorDot</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#step-2-register-operation-with-tc">Step 2: Register operation with TC</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#step-3-create-input-tensors-and-run-tc">Step 3: Create input tensors and run TC</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#step-4-autotune-and-get-better-performing-kernel">Step 4: Autotune and get better performing kernel</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#early-stopping">Early stopping</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../tutorials/tutorial_tensordot_with_tc.html#summary">Summary</a></li>
-</ul>
-</li>
 </ul>
 </li>
 </ul>
@@ -503,9 +488,9 @@
 <span class="sd">        :param inputs: PyTorch Tensors that TC should tune for. The inputs must be</span>
 <span class="sd">            passed in the order they are also passed in the definition of</span>
 <span class="sd">            the TC function.</span>
-<span class="sd">        :param starting_options: :code:`MappingOptions` from which tuning should start.</span>
-<span class="sd">        :param tuner_config: :code:`TunerConfig` to control the behavior of the autotuner.</span>
-<span class="sd">        :param load_from_cache: Get the starting MappingOptions by loading from</span>
+<span class="sd">        :param starting_options: :class:`~tclib.MappingOptions` from which tuning should start.</span>
+<span class="sd">        :param tuner_config: :class:`~tclib.TunerConfig` to control the behavior of the autotuner.</span>
+<span class="sd">        :param load_from_cache: Get the starting :class:`~tclib.MappingOptions` by loading from</span>
 <span class="sd">            :code:`cache_filename`. If loading fails to recover an entry</span>
 <span class="sd">            from the cache file for the given input sizes an assertion error</span>
 <span class="sd">            will trigger.</span>
@@ -591,31 +576,31 @@
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="nb">compile</span><span class="p">(</span><span class="n">tc</span><span class="p">,</span> <span class="n">entry_point</span><span class="p">,</span> <span class="n">best</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">)</span></div>
 
-<span class="k">def</span> <span class="nf">make_naive_options_factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">(</span>
+<div class="viewcode-block" id="make_naive_options_factory"><a class="viewcode-back" href="../framework/pytorch_integration/python_api.html#tensor_comprehensions.make_naive_options_factory">[docs]</a><span class="k">def</span> <span class="nf">make_naive_options_factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">(</span>
         <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span> <span class="n">MappingOptions</span><span class="p">]):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that always generates naive :class:`MappingOptions`.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that always generates naive :class:`~tclib.MappingOptions`.</span>
 
 <span class="sd">        For easily getting started with TC and debugging purposes only.</span>
 
 <span class="sd">        :rtype: a function that takes a string with multiple</span>
 <span class="sd">            TC defs, an entry_point and input PyTorch Tensors and produces a</span>
-<span class="sd">            :class:`MappingOptions`.</span>
+<span class="sd">            :class:`~tclib.MappingOptions`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">tc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">entry_point</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="o">*</span><span class="n">inputs</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MappingOptions</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">MappingOptions</span><span class="p">(</span><span class="s1">&#39;naive&#39;</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">generate</span>
+    <span class="k">return</span> <span class="n">generate</span></div>
 
-<span class="k">def</span> <span class="nf">make_load_from_cache_options_factory</span><span class="p">(</span><span class="n">cache_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span>
+<div class="viewcode-block" id="make_load_from_cache_options_factory"><a class="viewcode-back" href="../framework/pytorch_integration/python_api.html#tensor_comprehensions.make_load_from_cache_options_factory">[docs]</a><span class="k">def</span> <span class="nf">make_load_from_cache_options_factory</span><span class="p">(</span><span class="n">cache_filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span>
         <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span> <span class="n">MappingOptions</span><span class="p">]):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that loads :class:`MappingOptions` from a cache file.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that loads :class:`~tclib.MappingOptions` from a cache file.</span>
 
 <span class="sd">        :param cache_filename: the filename</span>
 <span class="sd">        :rtype: a function that takes a string with multiple</span>
 <span class="sd">            TC defs, an entry_point and input PyTorch Tensors and produces a</span>
-<span class="sd">            :class:`MappingOptions`.</span>
+<span class="sd">            :class:`~tclib.MappingOptions`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">tc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">entry_point</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -626,23 +611,23 @@
             <span class="k">return</span> <span class="n">loaded</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">return</span> <span class="n">generate</span>
+    <span class="k">return</span> <span class="n">generate</span></div>
 
-<span class="k">def</span> <span class="nf">make_autotuned_options_factory</span><span class="p">(</span>
+<div class="viewcode-block" id="make_autotuned_options_factory"><a class="viewcode-back" href="../framework/pytorch_integration/python_api.html#tensor_comprehensions.make_autotuned_options_factory">[docs]</a><span class="k">def</span> <span class="nf">make_autotuned_options_factory</span><span class="p">(</span>
         <span class="n">starting_options</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MappingOptions</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">tuner_config</span><span class="p">:</span> <span class="n">TunerConfig</span> <span class="o">=</span> <span class="n">TunerConfig</span><span class="p">(),</span>
         <span class="n">cache_filename</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">load_from_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">store_to_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span>
             <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]],</span> <span class="n">MappingOptions</span><span class="p">]):</span>
-    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that runs autotuning to determine the best :class:`MappingOptions`.</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;Return a factory that runs autotuning to determine the best :class:`~tclib.MappingOptions`.</span>
 
 <span class="sd">        The returned factory just calls the :func:`autotune` function, see</span>
-<span class="sd">        it documentation for more information.</span>
+<span class="sd">        its documentation for more information.</span>
 
 <span class="sd">        :rtype: a function that takes a string with multiple</span>
 <span class="sd">            TC defs, an entry_point and input PyTorch Tensors and produces a</span>
-<span class="sd">            :class:`MappingOptions`.</span>
+<span class="sd">            :class:`~tclib.MappingOptions`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">generate</span><span class="p">(</span><span class="n">tc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                  <span class="n">entry_point</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -657,7 +642,7 @@
             <span class="n">load_from_cache</span><span class="o">=</span><span class="n">load_from_cache</span><span class="p">,</span>
             <span class="n">store_to_cache</span><span class="o">=</span><span class="n">store_to_cache</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">generate</span>
+    <span class="k">return</span> <span class="n">generate</span></div>
 
 <span class="k">class</span> <span class="nc">TC</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
@@ -745,7 +730,7 @@
 <span class="sd">    with PyTorch Tensors of new sizes. The returned :class:`TC` helper class is</span>
 <span class="sd">    backed by a compilation cache which memoizes the results of compilation and</span>
 <span class="sd">    avoids spurious recompilations. In order to determine the</span>
-<span class="sd">    :class:`MappingOptions`, used for JIT compiling a particular TC def on</span>
+<span class="sd">    :class:`~tclib.MappingOptions`, used for JIT compiling a particular TC def on</span>
 <span class="sd">    inputs of particular sizes, the :code:`mapping_options_factory`</span>
 <span class="sd">    function is called. We provide the factory builder functions</span>
 <span class="sd">    :func:`make_naive_options_factory`,</span>
@@ -764,7 +749,7 @@
 <span class="sd">    :param tc: a string containing one of more TC defs.</span>
 <span class="sd">    :param mapping_options_factory: a function that takes a string with multiple</span>
 <span class="sd">        TC defs, an entry_point and input PyTorch Tensors and produces a</span>
-<span class="sd">        :class:`MappingOptions`.</span>
+<span class="sd">        :class:`~tclib.MappingOptions`.</span>
 <span class="sd">    :rtype: a Callable helper object with methods corresponding to the TC def</span>
 <span class="sd">        names and backed by a compilation cache.</span>
 
