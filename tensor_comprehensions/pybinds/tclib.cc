@@ -30,6 +30,7 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/options_cache.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -445,6 +446,11 @@ PYBIND11_MODULE(tclib, m) {
       res.push_back(kvp.first);
     }
     return res;
+  });
+
+  // Get GPU maximum shared memory
+  m.def("max_shared_memory", []() {
+    return CudaGPUInfo::GPUInfo().SharedMemorySize();
   });
 
   // Low-level stateful API compile returns an executor on which run and
