@@ -288,7 +288,7 @@ struct TcExecutor {
     }
   }
 
-  size_t profile_stats(const py::tuple& inputs, const py::tuple& outputs, const int nb_iters) {
+  size_t profileStats(const py::tuple& inputs, const py::tuple& outputs, const int nb_iters) {
     size_t mean = 0;
     for(int i = 0; i < nb_iters; i++) {
       mean += profile(inputs, outputs);
