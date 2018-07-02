@@ -290,17 +290,6 @@ struct TcExecutor {
     }
   }
 
-  size_t profileStats(
-      const py::tuple& inputs,
-      const py::tuple& outputs,
-      const int nb_iters) {
-    size_t mean = 0;
-    for (int i = 0; i < nb_iters; i++) {
-      mean += profile(inputs, outputs);
-    }
-    return mean / nb_iters;
-  }
-
   std::string tc;
   std::string entryPoint;
   std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
@@ -476,8 +465,8 @@ PYBIND11_MODULE(tclib, m) {
     return res;
   });
 
-  // Get GPU maximum shared memory
-  m.def("max_shared_memory", []() {
+  // Get GPU shared memory size
+  m.def("shared_memory_size", []() {
     return CudaGPUInfo::GPUInfo().SharedMemorySize();
   });
 
@@ -495,16 +484,10 @@ PYBIND11_MODULE(tclib, m) {
           py::arg("inputs"),
           py::arg("outputs") = py::tuple())
       .def(
-          "profile",
+          "profile_kernel",
           &TcExecutor::profile,
           py::arg("inputs"),
-          py::arg("outputs") = py::tuple())
-      .def(
-          "profile_stats",
-          &TcExecutor::profileStats,
-          py::arg("inputs"),
-          py::arg("outputs") = py::tuple(),
-          py::arg("nb_iters") = 50);
+          py::arg("outputs") = py::tuple());
 
   m.def(
       "compile",
