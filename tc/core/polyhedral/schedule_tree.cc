@@ -166,6 +166,10 @@ ScheduleTree::ScheduleTree(const ScheduleTree& st)
   }
 }
 
+ScheduleTreeUPtr ScheduleTree::makeScheduleTree(const ScheduleTree& tree) {
+  return ScheduleTreeUPtr(new ScheduleTree(tree));
+}
+
 ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {
   const auto& st = *this;
   return const_cast<ScheduleTree*>(st.child(positions));

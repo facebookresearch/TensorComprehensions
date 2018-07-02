@@ -413,9 +413,8 @@ struct ScheduleTree {
     return res;
   }
 
-  static ScheduleTreeUPtr makeScheduleTree(const ScheduleTree& tree) {
-    return ScheduleTreeUPtr(new ScheduleTree(tree));
-  }
+  // Make a (deep) copy of "tree".
+  static ScheduleTreeUPtr makeScheduleTree(const ScheduleTree& tree);
 
   // Collect the nodes of "tree" in some arbitrary order.
   template <typename T>
