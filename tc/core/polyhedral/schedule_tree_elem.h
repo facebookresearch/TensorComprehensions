@@ -159,9 +159,8 @@ struct ScheduleTreeElemMapping : public ScheduleTree {
 struct ScheduleTreeElemSequence : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
-  explicit ScheduleTreeElemSequence()
-      : ScheduleTree(isl::with_exceptions::globalIslCtx(), {}, NodeType) {
-  } // FIXME: accept a ctx instead of using the global ctx
+  explicit ScheduleTreeElemSequence(isl::ctx ctx)
+      : ScheduleTree(ctx, {}, NodeType) {}
   ScheduleTreeElemSequence(const ScheduleTreeElemSequence& eb)
       : ScheduleTree(eb) {}
   virtual ~ScheduleTreeElemSequence() override {}

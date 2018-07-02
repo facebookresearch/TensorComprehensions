@@ -249,6 +249,7 @@ std::unique_ptr<ScheduleTreeElemBand> fromIslScheduleNodeBand(
 }
 
 std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
+  auto ctx = node.get_ctx();
   if (auto band = node.as<isl::schedule_node_band>()) {
     return fromIslScheduleNodeBand(band);
   } else if (auto context = node.as<isl::schedule_node_context>()) {
@@ -281,7 +282,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     return nullptr;
   } else if (node.isa<isl::schedule_node_sequence>()) {
     return std::unique_ptr<ScheduleTreeElemSequence>(
-        new ScheduleTreeElemSequence());
+        new ScheduleTreeElemSequence(ctx));
   } else if (node.isa<isl::schedule_node_set>()) {
     return std::unique_ptr<ScheduleTreeElemSet>(new ScheduleTreeElemSet());
   }

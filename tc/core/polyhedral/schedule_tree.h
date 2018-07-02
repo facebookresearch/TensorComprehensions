@@ -420,9 +420,8 @@ struct ScheduleTree {
             ScheduleTreeUPtr>::value,
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
-    auto ctx = arg->ctx_; // FIXME: pass this to the constructor of T
-                          // when possible
-    auto res = ScheduleTreeUPtr(new T);
+    auto ctx = arg->ctx_;
+    auto res = ScheduleTreeUPtr(new T(ctx));
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
 
