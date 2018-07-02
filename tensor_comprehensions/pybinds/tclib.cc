@@ -30,6 +30,7 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/options_cache.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -272,6 +273,29 @@ struct TcExecutor {
       return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
+
+  size_t profile(const py::tuple& inputs, const py::tuple& outputs) {
+    if (outputs.size() > 0) {
+      auto atOutputs = getATenTensors(outputs);
+      auto atInputs = getATenTensors(inputs);
+      tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
+      return profinfo.kernelRuntime.toMicroSeconds();
+    } else {
+      auto atInputs = getATenTensors(inputs);
+      auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+      tc::ProfilingInfo profinfo = tc::aten::profile(*executor, atInputs, atOutputs);
+      return profinfo.kernelRuntime.toMicroSeconds();
+    }
+  }
+
+  size_t profileStats(const py::tuple& inputs, const py::tuple& outputs, const int nb_iters) {
+    size_t mean = 0;
+    for(int i = 0; i < nb_iters; i++) {
+      mean += profile(inputs, outputs);
+    }
+    return mean / nb_iters;
+  }
+
   std::string tc;
   std::string entryPoint;
   std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
@@ -447,6 +471,11 @@ PYBIND11_MODULE(tclib, m) {
     return res;
   });
 
+  // Get GPU maximum shared memory
+  m.def("max_shared_memory", []() {
+    return CudaGPUInfo::GPUInfo().SharedMemorySize();
+  });
+
   // Low-level stateful API compile returns an executor on which run and
   // unchecked_run can be called.
   py::class_<TcExecutor>(m, "TcExecutor")
@@ -459,7 +488,19 @@ PYBIND11_MODULE(tclib, m) {
           "unchecked_run",
           &TcExecutor::uncheckedRun,
           py::arg("inputs"),
-          py::arg("outputs") = py::tuple());
+          py::arg("outputs") = py::tuple())
+      .def(
+          "profile",
+          &TcExecutor::profile,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple())
+      .def(
+          "profile_stats",
+          &TcExecutor::profileStats,
+          py::arg("inputs"),
+          py::arg("outputs") = py::tuple(),
+          py::arg("nb_iters") = 50);
+  
   m.def(
       "compile",
       [](const std::string& tc,
