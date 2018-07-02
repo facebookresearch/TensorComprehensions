@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 
 namespace tc {
 namespace polyhedral {
