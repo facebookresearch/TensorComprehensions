@@ -34,7 +34,7 @@ def evalTime(opt, iters=50, warmup=30, naive=False):
     #print(cat_val)
     opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
     if naive:
-        opt = tc.CudaMappingOptions("naive")
+        opt = tc.MappingOptions("naive")
     else:
         opt = optionsFromVector(opt)
     #warmup = 5
@@ -59,7 +59,7 @@ def evalTime(opt, iters=50, warmup=30, naive=False):
 
 def optionsFromVector(vect):
     strat_str = ["Max", "Preserve3Coincident", "Min"]
-    options = tc.CudaMappingOptions("naive")
+    options = tc.MappingOptions("naive")
     options.outerScheduleFusionStrategy(strat_str[vect[0]])
     options.intraTileScheduleFusionStrategy(strat_str[vect[1]])
     options.fixParametersBeforeScheduling(vect[2])

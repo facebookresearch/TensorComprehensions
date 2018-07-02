@@ -102,7 +102,7 @@ net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
-tc_prog = tc.define(code, name="convolution")
+tc_prog = tc.define(code, tc.make_naive_options_factory) #name="convolution")
 my_utils.set_tcprog(tc_prog)
 
 def finish_episode(actions_probs, values, final_rewards):
