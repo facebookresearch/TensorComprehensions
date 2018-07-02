@@ -304,8 +304,8 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeThreadSpecificMarker(
     isl::ctx ctx,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res =
-      std::unique_ptr<ScheduleTree>(new ScheduleTreeElemThreadSpecificMarker());
+  auto res = std::unique_ptr<ScheduleTree>(
+      new ScheduleTreeElemThreadSpecificMarker(ctx));
   res->type_ = detail::ScheduleTreeType::ThreadSpecificMarker;
   res->appendChildren(std::move(children));
   return res;

@@ -256,9 +256,8 @@ struct ScheduleTreeElemBand : public ScheduleTree {
 struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
-  explicit ScheduleTreeElemThreadSpecificMarker()
-      : ScheduleTree(isl::with_exceptions::globalIslCtx(), {}, NodeType) {
-  } // FIXME: accept a ctx instead of using the global ctx
+  explicit ScheduleTreeElemThreadSpecificMarker(isl::ctx ctx)
+      : ScheduleTree(ctx, {}, NodeType) {}
   virtual ~ScheduleTreeElemThreadSpecificMarker() override {}
   bool operator==(const ScheduleTreeElemThreadSpecificMarker& other) const {
     return true;
