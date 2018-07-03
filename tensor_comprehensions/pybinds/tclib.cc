@@ -275,19 +275,13 @@ struct TcExecutor {
   }
 
   size_t profile(const py::tuple& inputs, const py::tuple& outputs) {
-    if (outputs.size() > 0) {
-      auto atOutputs = getATenTensors(outputs);
-      auto atInputs = getATenTensors(inputs);
-      tc::ProfilingInfo profinfo =
-          tc::aten::profile(*executor, atInputs, atOutputs);
-      return profinfo.kernelRuntime.toMicroSeconds();
-    } else {
-      auto atInputs = getATenTensors(inputs);
-      auto atOutputs = tc::aten::prepareOutputs(tc, entryPoint, atInputs);
-      tc::ProfilingInfo profinfo =
-          tc::aten::profile(*executor, atInputs, atOutputs);
-      return profinfo.kernelRuntime.toMicroSeconds();
-    }
+    auto atInputs = getATenTensors(inputs);
+    auto atOutputs = (outputs.size() > 0)
+        ? getATenTensors(outputs)
+        : tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+    tc::ProfilingInfo profinfo =
+        tc::aten::profile(*executor, atInputs, atOutputs);
+    return profinfo.kernelRuntime.toMicroSeconds();
   }
 
   std::string tc;

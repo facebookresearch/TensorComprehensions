@@ -151,9 +151,15 @@ class MappedScop {
   void mapToBlocksAndScaleBand(
       detail::ScheduleTree* band,
       std::vector<size_t> tileSizes);
-  // Look for innermost reduction band members.
+  // Look for innermost reduction bands.
   // Store them in reductionBandUpdates_.
   // Return true if any were found.
+  // A band is considered to be a reduction band if it only involves
+  // instances of a single reduction update statement (modulo other
+  // statements that can be moved out of the way) and if the outer
+  // coincident members in the band, together with the prefix schedule,
+  // determine individual reductions.  In particular, each instance
+  // of this combined outer schedule only writes to a single tensor element.
   bool detectReductions(detail::ScheduleTree* band);
   // Does separateReduction need to be called on this node?
   bool needReductionSeparation(const detail::ScheduleTree* st);

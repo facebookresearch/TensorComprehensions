@@ -44,6 +44,7 @@ void promoteGreedilyAtDepth(
 
 void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope);
 
-void promoteToRegistersBelowThreads(MappedScop& scop, std::size_t nRegisters);
+void promoteToRegistersAtDepth(MappedScop& scop, std::size_t depth);
+
 } // namespace polyhedral
 } // namespace tc

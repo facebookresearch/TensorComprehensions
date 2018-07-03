@@ -289,6 +289,11 @@ CudaMappingOptions& CudaMappingOptions::useReadOnlyCache(bool b) {
   return *this;
 }
 
+CudaMappingOptions& CudaMappingOptions::privateDepth(uint32_t depth) {
+  ownedProto_.set_private_depth(depth);
+  return *this;
+}
+
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);

@@ -23,6 +23,7 @@
 #include "tc/core/check.h"
 #include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
@@ -769,8 +770,8 @@ std::unordered_set<isl::id, isl::IslIdIslHash> gatherReadOnlySet(
 
   const auto& scop = mscop.scop();
 
-  auto read = scop.reads.universe().range();
-  auto written = scop.writes.universe().range();
+  auto read = scop.body.reads.universe().range();
+  auto written = scop.body.writes.universe().range();
   auto readOnly = read.subtract(written);
   for (auto s : readOnly.get_set_list()) {
     readOnlySet.emplace(s.get_tuple_id());

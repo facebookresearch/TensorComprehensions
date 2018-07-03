@@ -248,6 +248,10 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
   // behavior with respect to changes in the schedule space.
   void drop(size_t pos, size_t n);
 
+  // Extract the range of "n" members starting at "first"
+  // (in an anonymous space).
+  isl::multi_union_pw_aff memberRange(size_t first, size_t n) const;
+
  public:
   bool permutable_{false};
   isl::multi_union_pw_aff mupa_;

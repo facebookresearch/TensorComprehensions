@@ -26,6 +26,7 @@
 #include "tc/core/constants.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
@@ -66,8 +67,7 @@ struct Scop {
     auto res = std::unique_ptr<Scop>(new Scop());
     res->parameterValues = scop.parameterValues;
     res->halide = scop.halide;
-    res->reads = scop.reads;
-    res->writes = scop.writes;
+    res->body = scop.body;
     res->dependences = scop.dependences;
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
@@ -122,8 +122,7 @@ struct Scop {
   void specializeToContext() {
     auto globalParameterContext = context();
     domainRef() = domain().intersect_params(globalParameterContext);
-    reads = reads.intersect_params(globalParameterContext);
-    writes = writes.intersect_params(globalParameterContext);
+    body.specialize(globalParameterContext);
   }
 
   // Returns a set that specializes the named scop's subset of
@@ -462,6 +461,10 @@ struct Scop {
   //
   void insertSyncsAroundCopies(detail::ScheduleTree* tree);
 
+  // Given a sequence node, insert synchronizations before its first child node
+  // and after its last child node.
+  void insertSyncsAroundSeqChildren(detail::ScheduleTree* tree);
+
  private:
   // Compute a schedule satisfying the given schedule constraints and
   // taking into account the scheduler options.
@@ -486,7 +489,6 @@ struct Scop {
     std::vector<std::string> idx, reductionIdx;
     std::vector<Halide::ImageParam> inputs;
     std::vector<Halide::OutputImageParam> outputs;
-    std::vector<halide2isl::Reduction> reductions;
     std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
         statements;
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
@@ -507,8 +509,7 @@ struct Scop {
   // The parameter values of a specialized Scop.
   std::unordered_map<std::string, int> parameterValues;
 
-  isl::union_map reads;
-  isl::union_map writes;
+  Body body;
 
   // RAW, WAR, and WAW dependences
   isl::union_map dependences;
