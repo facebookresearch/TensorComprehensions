@@ -166,9 +166,9 @@ def autotune(tc: str,
         :param inputs: PyTorch Tensors that TC should tune for. The inputs must be
             passed in the order they are also passed in the definition of
             the TC function.
-        :param starting_options: :code:`MappingOptions` from which tuning should start.
-        :param tuner_config: :code:`TunerConfig` to control the behavior of the autotuner.
-        :param load_from_cache: Get the starting MappingOptions by loading from
+        :param starting_options: :class:`~tclib.MappingOptions` from which tuning should start.
+        :param tuner_config: :class:`~tclib.TunerConfig` to control the behavior of the autotuner.
+        :param load_from_cache: Get the starting :class:`~tclib.MappingOptions` by loading from
             :code:`cache_filename`. If loading fails to recover an entry
             from the cache file for the given input sizes an assertion error
             will trigger.
@@ -256,13 +256,13 @@ def autotune_and_compile(
 
 def make_naive_options_factory() -> (
         Callable[[str, str, Iterable[torch.Tensor]], MappingOptions]):
-    r"""Return a factory that always generates naive :class:`MappingOptions`.
+    r"""Return a factory that always generates naive :class:`~tclib.MappingOptions`.
 
         For easily getting started with TC and debugging purposes only.
 
         :rtype: a function that takes a string with multiple
             TC defs, an entry_point and input PyTorch Tensors and produces a
-            :class:`MappingOptions`.
+            :class:`~tclib.MappingOptions`.
     """
     def generate(tc: str,
                  entry_point: str,
@@ -273,12 +273,12 @@ def make_naive_options_factory() -> (
 
 def make_load_from_cache_options_factory(cache_filename: str) -> (
         Callable[[str, str, Iterable[torch.Tensor]], MappingOptions]):
-    r"""Return a factory that loads :class:`MappingOptions` from a cache file.
+    r"""Return a factory that loads :class:`~tclib.MappingOptions` from a cache file.
 
         :param cache_filename: the filename
         :rtype: a function that takes a string with multiple
             TC defs, an entry_point and input PyTorch Tensors and produces a
-            :class:`MappingOptions`.
+            :class:`~tclib.MappingOptions`.
     """
     def generate(tc: str,
                  entry_point: str,
@@ -298,14 +298,14 @@ def make_autotuned_options_factory(
         load_from_cache: Optional[bool] = False,
         store_to_cache: Optional[bool] = False) -> (
             Callable[[str, str, Iterable[torch.Tensor]], MappingOptions]):
-    r"""Return a factory that runs autotuning to determine the best :class:`MappingOptions`.
+    r"""Return a factory that runs autotuning to determine the best :class:`~tclib.MappingOptions`.
 
         The returned factory just calls the :func:`autotune` function, see
-        it documentation for more information.
+        its documentation for more information.
 
         :rtype: a function that takes a string with multiple
             TC defs, an entry_point and input PyTorch Tensors and produces a
-            :class:`MappingOptions`.
+            :class:`~tclib.MappingOptions`.
     """
     def generate(tc: str,
                  entry_point: str,
@@ -408,7 +408,7 @@ def define(tc: str,
     with PyTorch Tensors of new sizes. The returned :class:`TC` helper class is
     backed by a compilation cache which memoizes the results of compilation and
     avoids spurious recompilations. In order to determine the
-    :class:`MappingOptions`, used for JIT compiling a particular TC def on
+    :class:`~tclib.MappingOptions`, used for JIT compiling a particular TC def on
     inputs of particular sizes, the :code:`mapping_options_factory`
     function is called. We provide the factory builder functions
     :func:`make_naive_options_factory`,
@@ -427,7 +427,7 @@ def define(tc: str,
     :param tc: a string containing one of more TC defs.
     :param mapping_options_factory: a function that takes a string with multiple
         TC defs, an entry_point and input PyTorch Tensors and produces a
-        :class:`MappingOptions`.
+        :class:`~tclib.MappingOptions`.
     :rtype: a Callable helper object with methods corresponding to the TC def
         names and backed by a compilation cache.
 
