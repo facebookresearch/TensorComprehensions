@@ -152,8 +152,6 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
 ////////////////////////////////////////////////////////////////////////////////
 //                        ScheduleTree
 ////////////////////////////////////////////////////////////////////////////////
-ScheduleTree::ScheduleTree(isl::ctx ctx) : ctx_(ctx) {}
-
 ScheduleTree::~ScheduleTree() {}
 
 ScheduleTree::ScheduleTree(const ScheduleTree& st)
