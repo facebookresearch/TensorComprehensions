@@ -8,14 +8,15 @@ import tensor_comprehensions as tc
 import numpy as np
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 7
-N, G, D, H, W = 10, 10, 10, 10, 10
+N, G, D, H, W = 5, 5, 5, 1, 1
 
 def print_opt(options):
     print(options.tolist())
 
-def set_tcprog(tc_prog_arg):
-    global tc_prog
-    tc_prog = tc_prog_arg
+def set_tc(tc_code_arg, tc_name_arg):
+    global tc_code, tc_name
+    tc_code = tc_code_arg
+    tc_name = tc_name_arg
 
 def set_inp(inp_arg):
     global inp
@@ -29,7 +30,7 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_sz = cat_sz_arg
 
 def evalTime(opt, iters=50, warmup=30, naive=False):
-    global tc_prog, inp, cat_val
+    global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
     opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
@@ -37,24 +38,16 @@ def evalTime(opt, iters=50, warmup=30, naive=False):
         opt = tc.MappingOptions("naive")
     else:
         opt = optionsFromVector(opt)
-    #warmup = 5
-    #iters  = 20
+    tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
     for i in range(warmup):
-        tc_prog(*inp, options=opt)
-        torch.cuda.synchronize()
+        tc_prog.executor.profile(inp)
 
     liste_t_tc = []
     now = time.clock()
     for i in range(iters):
-        before = time.clock()
-        tc_prog(*inp, options=opt)
-        #tcwavenet(Data)
-        torch.cuda.synchronize()
-        after = time.clock()
-        liste_t_tc.append(after - before)
-        torch.cuda.synchronize()
-    total_time = (time.clock() - now)
-    mean_time = total_time / iters
+        iter_time = tc_prog.executor.profile(inp)
+        liste_t_tc.append(iter_time)
+    mean_time = np.mean(liste_t_tc)
     return mean_time
 
 def optionsFromVector(vect):

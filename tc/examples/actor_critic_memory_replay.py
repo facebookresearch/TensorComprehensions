@@ -24,15 +24,17 @@ steps_done = 0
 buff = deque()
 MAXI_BUFF_SZ = 50
 
-#viz = Visdom(server="http://100.97.69.78")
-#win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
-#win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+viz = Visdom(server="http://100.97.69.78")
+win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 code = """
 def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
             O(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
             }
 """
+
+name = "convolution"
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
@@ -102,8 +104,9 @@ net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
 
-tc_prog = tc.define(code, tc.make_naive_options_factory) #name="convolution")
-my_utils.set_tcprog(tc_prog)
+tc_code = code
+tc_name = name
+my_utils.set_tc(tc_code, tc_name)
 
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
@@ -148,7 +151,7 @@ for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
     reward = -my_utils.evalTime(out_actions.numpy().astype(int))
-    reward=100*reward
+    #reward=100*reward
     add_to_buffer(out_probs, out_values, reward)
     actions_probs, values, rewards = select_batch()
     vloss, ploss = finish_episode(actions_probs, values, rewards)
@@ -163,7 +166,7 @@ for i in range(NB_EPOCHS):
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
-    if False and i % INTER_DISP == 0:
+    if i % INTER_DISP == 0:
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)
