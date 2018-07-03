@@ -273,6 +273,17 @@ struct TcExecutor {
       return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
+
+  size_t profile(const py::tuple& inputs, const py::tuple& outputs) {
+    auto atInputs = getATenTensors(inputs);
+    auto atOutputs = (outputs.size() > 0)
+        ? getATenTensors(outputs)
+        : tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+    tc::ProfilingInfo profinfo =
+        tc::aten::profile(*executor, atInputs, atOutputs);
+    return profinfo.kernelRuntime.toMicroSeconds();
+  }
+
   std::string tc;
   std::string entryPoint;
   std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
@@ -465,7 +476,13 @@ PYBIND11_MODULE(tclib, m) {
           "unchecked_run",
           &TcExecutor::uncheckedRun,
           py::arg("inputs"),
+          py::arg("outputs") = py::tuple())
+      .def(
+          "profile_kernel",
+          &TcExecutor::profile,
+          py::arg("inputs"),
           py::arg("outputs") = py::tuple());
+
   m.def(
       "compile",
       [](const std::string& tc,
