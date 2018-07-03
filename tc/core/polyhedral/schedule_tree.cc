@@ -227,7 +227,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
     isl::multi_union_pw_aff mupa,
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res = ScheduleTreeElemBand::fromMultiUnionPwAff(mupa);
-  res->type_ = detail::ScheduleTreeType::Band;
   res->appendChildren(std::move(children));
   return res;
 }
@@ -245,7 +244,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
     isl::union_set domain,
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeElemDomain(domain));
-  res->type_ = detail::ScheduleTreeType::Domain;
   res->appendChildren(std::move(children));
   return res;
 }
@@ -255,7 +253,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res =
       std::unique_ptr<ScheduleTree>(new ScheduleTreeElemContext(context));
-  res->type_ = detail::ScheduleTreeType::Context;
   res->appendChildren(std::move(children));
   return res;
 }
@@ -264,7 +261,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
     isl::union_set filter,
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeElemFilter(filter));
-  res->type_ = detail::ScheduleTreeType::Filter;
   res->appendChildren(std::move(children));
   return res;
 }
@@ -294,7 +290,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res =
       std::unique_ptr<ScheduleTree>(new ScheduleTreeElemExtension(extension));
-  res->type_ = detail::ScheduleTreeType::Extension;
   res->appendChildren(std::move(children));
   return res;
 }
@@ -304,7 +299,6 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeThreadSpecificMarker(
     std::vector<ScheduleTreeUPtr>&& children) {
   auto res = std::unique_ptr<ScheduleTree>(
       new ScheduleTreeElemThreadSpecificMarker(ctx));
-  res->type_ = detail::ScheduleTreeType::ThreadSpecificMarker;
   res->appendChildren(std::move(children));
   return res;
 }
