@@ -523,7 +523,7 @@ void promoteToSharedGreedy(
     auto partialSched = partialSchedule(root, bandNode);
 
     auto groupMap = TensorReferenceGroup::accessedWithin(
-        partialSched.intersect_domain(activePoints), scop.reads, scop.writes);
+        partialSched.intersect_domain(activePoints), scop.body);
     // Pure affine schedule without (mapping) filters.
     auto partialSchedMupa = partialScheduleMupa(root, bandNode);
 
@@ -650,7 +650,7 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
       collectMappingsTo<mapping::ThreadId>(scop).intersect(blockMapping);
   auto schedule = partialSchedule(scop.scheduleRoot(), scope);
   auto groupMap = TensorReferenceGroup::accessedWithin(
-      schedule.intersect_domain(mapping), scop.reads, scop.writes);
+      schedule.intersect_domain(mapping), scop.body);
 
   auto threadSchedule = mscop.threadMappingSchedule(mscop.schedule());
   auto blockSchedule = mscop.blockMappingSchedule(mscop.schedule());

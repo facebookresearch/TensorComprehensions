@@ -226,6 +226,11 @@ bool separatedOut(
 } // namespace
 
 bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
+  // Do not bother with reductions if block is of size 1 in the x direction.
+  if (numThreads.view.size() == 0 || numThreads.view[0] == 1) {
+    return false;
+  }
+
   bool found = false;
   for (auto c : tree->children()) {
     found |= detectReductions(c);
@@ -263,11 +268,11 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   updates.foreach_set([&updateIds](isl::set set) {
     updateIds.emplace_back(set.get_tuple_id());
   });
-  // The reduction member needs to appear right underneath
-  // the coincident members.
-  auto reductionDim = nCoincident;
-  auto member = band->mupa_.get_union_pw_aff(reductionDim);
-  if (!isReductionMember(member, updates, scop())) {
+  // The outer (coincident) members, together with the prefix schedule,
+  // need to determine a single reduction.
+  auto prefix = prefixScheduleMupa(schedule(), tree);
+  prefix = prefix.range_product(band->memberRange(0, nCoincident));
+  if (!isSingleReductionWithin(updates, prefix, scop())) {
     return false;
   }
   // Order the other statements (if any) before the update statements
@@ -294,19 +299,13 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   auto reductionBand = st->elemAs<detail::ScheduleTreeElemBand>();
   TC_CHECK(reductionBand);
 
-  // Drop band members following the reduction dimension and preceding those
-  // mapped to threads.
-  auto reductionSchedule = reductionBand->mupa_;
   auto nMember = reductionBand->nMember();
   auto reductionDim = reductionBand->nOuterCoincident();
-  auto nMappedThreads = std::min(numThreads.view.size(), reductionDim + 1);
-  TC_CHECK_GE(nMember, reductionDim);
-  reductionSchedule = reductionSchedule.drop_dims(
-      isl::dim_type::set, reductionDim + 1, nMember - (reductionDim + 1));
-  reductionSchedule = reductionSchedule.drop_dims(
-      isl::dim_type::set, 0, reductionDim - nMappedThreads + 1);
+  auto nMappedThreads = numThreads.view.size();
+  TC_CHECK_GE(nMember, reductionDim + 1);
 
-  return reductionSchedule;
+  auto first = reductionDim + 1 - nMappedThreads;
+  return reductionBand->memberRange(first, nMappedThreads);
 }
 
 detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {

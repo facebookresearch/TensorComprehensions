@@ -20,6 +20,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -333,6 +334,90 @@ std::pair<isl::union_map, isl::union_map> extractAccesses(
   return {finder.reads, finder.writes};
 }
 
+bool isReductionUpdate(const Provide* op) {
+  if (const Call* call = op->values[0].as<Call>()) {
+    return call->is_intrinsic(tc2halide::kReductionUpdate);
+  } else {
+    return false;
+  }
+}
+
+/* Construct a multi-dimensional affine function mapping
+ * the given iteration domain
+ * to the outer loop iterators that do not appear in "skip".
+ * "id" is used as the identifier of the target space.
+ * For each of these outer loop iterators, an affine function
+ * is first constructed in terms of the parameter space
+ * active at the point where the iteration domain was created and
+ * then converted into an expression on that iteration domain
+ * by reinterpreting the parameters as input dimensions.
+ */
+static isl::multi_aff mapToOther(
+    const IterationDomain& iterationDomain,
+    std::unordered_set<std::string> skip,
+    isl::id id) {
+  auto ctx = iterationDomain.tuple.get_ctx();
+  auto list = isl::aff_list(ctx, 0);
+  for (auto id : iterationDomain.tuple.get_id_list()) {
+    if (skip.count(id.get_name()) == 1) {
+      continue;
+    }
+    auto aff = isl::aff::param_on_domain_space(iterationDomain.paramSpace, id);
+    aff = aff.unbind_params_insert_domain(iterationDomain.tuple);
+    list = list.add(aff);
+  }
+  auto domainSpace = iterationDomain.tuple.get_space();
+  auto space = domainSpace.params().named_set_from_params_id(id, list.size());
+  space = domainSpace.product(space).unwrap();
+  return isl::multi_aff(space, list);
+}
+
+/*
+ * If "op" performs a reduction, then return a mapping from
+ * the statement instances to the individual reductions.
+ * Otherwise, return an empty isl::union_map.
+ *
+ * "op" is considered to be a reduction if it has been marked
+ * as performing a reduction and if more than one statement instance
+ * is involved in the individual reductions.
+ *
+ * The space of the reduction has a name of the form R_<op->name>_<index>.
+ * Each reduction is indexed by the outer loop variables
+ * that are not marked as reduction variables.
+ * Since the loop variables that iterate over output tensor elements
+ * are never marked as reduction variables, this means in particular
+ * that all statement instances that belong to the same reduction
+ * write to the same tensor element.
+ */
+isl::union_map extractReduction(
+    const IterationDomain& iterationDomain,
+    const Provide* op,
+    size_t index) {
+  class FindReductionVars : public IRVisitor {
+    void visit(const Variable* op) {
+      if (op->reduction_domain.defined()) {
+        reductionVars.insert(op->name);
+      }
+    }
+
+   public:
+    // The variables that are known to be reduction variables.
+    std::unordered_set<std::string> reductionVars;
+  } finder;
+
+  if (!isReductionUpdate(op)) {
+    return isl::union_map::empty(iterationDomain.tuple.get_space().params());
+  }
+  op->accept(&finder);
+  if (finder.reductionVars.size() == 0) {
+    return isl::union_map::empty(iterationDomain.tuple.get_space().params());
+  }
+  auto ctx = iterationDomain.tuple.get_ctx();
+  isl::id id(ctx, kReductionLabel + op->name + "_" + std::to_string(index));
+  auto reduction = mapToOther(iterationDomain, finder.reductionVars, id);
+  return isl::union_map(isl::map(reduction));
+}
+
 /*
  * Take a parametric expression "f" and convert it into an expression
  * on the iteration domains in "domain" by reinterpreting the parameters
@@ -360,7 +445,7 @@ onDomains(isl::aff f, isl::union_set domain, const IterationDomainMap& map) {
  * from outermost to innermost.
  * Return the schedule corresponding to the subtree at "s".
  *
- * "reads" and "writes" collect the accesses found along the way.
+ * "body" collects the accesses and reductions found along the way.
  * "accesses" collects the mapping from Call (for the reads) and Provide nodes
  * (for the writes) to the corresponding tag in the access relations.
  * "statements" collects the mapping from instance set tuple identifiers
@@ -372,8 +457,7 @@ isl::schedule makeScheduleTreeHelper(
     const Stmt& s,
     isl::set set,
     isl::id_list outer,
-    isl::union_map* reads,
-    isl::union_map* writes,
+    Body* body,
     AccessMap* accesses,
     StatementMap* statements,
     IterationDomainMap* domains) {
@@ -406,8 +490,8 @@ isl::schedule makeScheduleTreeHelper(
 
     // Recursively descend.
     auto outerNext = outer.add(isl::id(set.get_ctx(), op->name));
-    auto body = makeScheduleTreeHelper(
-        op->body, set, outerNext, reads, writes, accesses, statements, domains);
+    auto bodySchedule = makeScheduleTreeHelper(
+        op->body, set, outerNext, body, accesses, statements, domains);
 
     // Create an affine function that defines an ordering for all
     // the statements in the body of this loop over the values of
@@ -415,10 +499,10 @@ isl::schedule makeScheduleTreeHelper(
     // to the current loop iterator and then convert it to
     // a function on the statements in the domain of the body schedule.
     auto aff = isl::aff::param_on_domain_space(space, id);
-    auto domain = body.get_domain();
+    auto domain = bodySchedule.get_domain();
     auto mupa = isl::multi_union_pw_aff(onDomains(aff, domain, *domains));
 
-    schedule = body.insert_partial_schedule(mupa);
+    schedule = bodySchedule.insert_partial_schedule(mupa);
   } else if (auto op = s.as<Halide::Internal::Block>()) {
     std::vector<Stmt> stmts;
     stmts.push_back(op->first);
@@ -429,7 +513,7 @@ isl::schedule makeScheduleTreeHelper(
     std::vector<isl::schedule> schedules;
     for (Stmt stmt : stmts) {
       schedules.push_back(makeScheduleTreeHelper(
-          stmt, set, outer, reads, writes, accesses, statements, domains));
+          stmt, set, outer, body, accesses, statements, domains));
     }
     schedule = schedules[0].sequence(schedules[1]);
 
@@ -452,9 +536,13 @@ isl::schedule makeScheduleTreeHelper(
     isl::union_map newReads, newWrites;
     std::tie(newReads, newWrites) =
         extractAccesses(iterationDomain, op, accesses);
+    // A tensor may be involved in multiple reductions.
+    // Use the statement index to differentiate between them.
+    auto newReduction = extractReduction(iterationDomain, op, stmtIndex);
 
-    *reads = reads->unite(newReads);
-    *writes = writes->unite(newWrites);
+    body->reads = body->reads.unite(newReads);
+    body->writes = body->writes.unite(newWrites);
+    body->reductions = body->reductions.unite(newReduction);
 
   } else {
     LOG(FATAL) << "Unhandled Halide stmt: " << s;
@@ -465,7 +553,7 @@ isl::schedule makeScheduleTreeHelper(
 ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
   ScheduleTreeAndAccesses result;
 
-  result.writes = result.reads = isl::union_map::empty(paramSpace);
+  Body body(paramSpace);
 
   // Walk the IR building a schedule tree
   isl::id_list outer(paramSpace.get_ctx(), 0);
@@ -473,78 +561,15 @@ ScheduleTreeAndAccesses makeScheduleTree(isl::space paramSpace, const Stmt& s) {
       s,
       isl::set::universe(paramSpace),
       outer,
-      &result.reads,
-      &result.writes,
+      &body,
       &result.accesses,
       &result.statements,
       &result.domains);
 
+  result.body = body;
   result.tree = fromIslSchedule(schedule);
 
   return result;
-}
-
-std::vector<Reduction> findReductions(const Stmt& s) {
-  class FindReductions : public IRVisitor {
-    using IRVisitor::visit;
-
-    bool isReductionUpdate(const Provide* op) {
-      if (const Call* call = op->values[0].as<Call>()) {
-        return call->is_intrinsic(tc2halide::kReductionUpdate);
-      } else {
-        return false;
-      }
-    }
-
-    // Keep track of any reduction variable name for use in visit(Provide*)
-    void visit(const Variable* op) {
-      if (op->reduction_domain.defined()) {
-        reductionVars.insert(op->name);
-      }
-    }
-
-    // Keep track of the names of the outer For nodes.
-    void visit(const For* op) {
-      vars.push_back(op->name);
-      IRVisitor::visit(op);
-      vars.pop_back();
-    }
-
-    // Check if the node is an update node with at least one reduction
-    // dimension, keeping track of the information about the reduction.
-    // In particular, collect the positions of the reduction
-    // dimensions in the update statement domain.
-    // Visit the children first to ensure that all relevant
-    // reduction variables have been found first.
-    void visit(const Provide* op) {
-      IRVisitor::visit(op);
-      if (isReductionUpdate(op)) {
-        std::vector<size_t> dims;
-        auto n = vars.size();
-        for (size_t i = 0; i < n; ++i) {
-          if (reductionVars.count(vars[i]) != 0) {
-            dims.emplace_back(i);
-          }
-        }
-        if (dims.size() > 0) {
-          Reduction p;
-          p.update = op;
-          p.dims = dims;
-          reductions.emplace_back(p);
-        }
-      }
-    }
-
-   public:
-    // The variables that are known to be reduction variables.
-    std::unordered_set<std::string> reductionVars;
-    // The names of the outer For nodes, outermost to innermost.
-    std::vector<std::string> vars;
-    std::vector<Reduction> reductions;
-  } finder;
-  s.accept(&finder);
-
-  return finder.reductions;
 }
 
 } // namespace halide2isl

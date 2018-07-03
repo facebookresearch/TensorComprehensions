@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017-present, Facebook, Inc.
+ * Copyright (c) 2018, Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
+
+#include "tc/core/polyhedral/body.h"
+
+#include <iostream>
+
+#include "tc/external/isl.h"
 
 namespace tc {
 namespace polyhedral {
 
-//
-// General constants to avoid hardcoding
-//
-constexpr auto kStatementLabel = "S_";
-constexpr auto kReductionLabel = "R_";
+std::ostream& operator<<(std::ostream& os, const Body& body) {
+  os << "reads: " << body.reads << "\n";
+  os << "writes: " << body.writes << "\n";
+  os << "reductions: " << body.reductions << "\n";
 
-constexpr auto kAstNodeIdPrefix = "__node_";
-
-constexpr auto kReadIdName = "read";
-constexpr auto kWriteIdName = "write";
-constexpr auto kSyncIdPrefix = "_sync_";
-constexpr auto kWarpSyncIdPrefix = "_warpSync_";
+  return os;
+}
 
 } // namespace polyhedral
 } // namespace tc

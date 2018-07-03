@@ -22,6 +22,7 @@
 
 #include <Halide.h>
 
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
 #include "tc/external/isl.h"
@@ -82,10 +83,8 @@ struct ScheduleTreeAndAccesses {
   /// for each leaf node is captured below.
   tc::polyhedral::ScheduleTreeUPtr tree;
 
-  /// Union maps describing the reads and writes done. Uses the ids in
-  /// the schedule tree to denote the containing Stmt, and tags each
-  /// access with a unique reference id of the form __tc_ref_N.
-  isl::union_map reads, writes;
+  /// Information extracted from the bodies of the statements.
+  tc::polyhedral::Body body;
 
   /// The correspondence between from Call and Provide nodes and the
   /// reference ids in the reads and writes maps.
@@ -105,18 +104,6 @@ struct ScheduleTreeAndAccesses {
 ScheduleTreeAndAccesses makeScheduleTree(
     isl::space paramSpace,
     const Halide::Internal::Stmt& s);
-
-/// Enumerate all reductions in a statement, by looking for the
-/// ReductionUpdate markers inserted during lowering
-/// (see tc2halide.h).
-/// Each reduction object stores a reference to
-/// the update statement, and a list of reduction dimensions
-/// in the domain of the update statement.
-struct Reduction {
-  Halide::Internal::Stmt update;
-  std::vector<size_t> dims;
-};
-std::vector<Reduction> findReductions(const Halide::Internal::Stmt& s);
 
 } // namespace halide2isl
 } // namespace tc

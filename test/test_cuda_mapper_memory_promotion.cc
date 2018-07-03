@@ -64,8 +64,7 @@ class TestMapper : public ::testing::Test {
       const polyhedral::detail::ScheduleTree* tree,
       const Scop& scop) {
     auto schedule = partialSchedule(scop.scheduleRoot(), tree);
-    return TensorReferenceGroup::accessedWithin(
-        schedule, scop.reads, scop.writes);
+    return TensorReferenceGroup::accessedWithin(schedule, scop.body);
   }
 };
 

@@ -21,6 +21,7 @@ add_library(
   halide2isl.cc
   halide_utils.cc
 
+  polyhedral/body.cc
   polyhedral/codegen.cc
   polyhedral/memory_promotion.cc
   polyhedral/reduction_matcher.cc

@@ -175,6 +175,18 @@ void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
   TC_CHECK_EQ(nBegin - n, nMember());
 }
 
+isl::multi_union_pw_aff ScheduleTreeElemBand::memberRange(
+    size_t first,
+    size_t n) const {
+  auto list = mupa_.get_union_pw_aff_list();
+  auto space = addRange(mupa_.get_space().domain(), n);
+  auto end = first + n;
+  TC_CHECK_LE(end, nMember());
+  list = list.drop(end, nMember() - end);
+  list = list.drop(0, first);
+  return isl::multi_union_pw_aff(space, list);
+}
+
 bool ScheduleTreeElemBand::operator==(const ScheduleTreeElemBand& other) const {
   if (permutable_ != other.permutable_) {
     return false;
