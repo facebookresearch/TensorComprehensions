@@ -102,6 +102,10 @@ detail::ScheduleTree* bandScale(
     detail::ScheduleTree* tree,
     const std::vector<size_t>& scales);
 
+// Insert an empty band node below "root" or below the only child of "root" if
+// the child is a context node.
+detail::ScheduleTree* insertTopLevelEmptyBand(detail::ScheduleTree* root);
+
 // Update the top-level context node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
 // If there is no such node, insert one with universe context first.

@@ -190,6 +190,7 @@ class TuningConfiguration {
   BoolParameter unrollCopyShared;
   BoolParameter useReadOnlyCache;
   BoolParameter matchLibraryCalls;
+  RangeParameter privateDepth;
 
  private:
   std::vector<std::function<bool(const TuningConfiguration&)>> validators_;
@@ -227,6 +228,7 @@ class TuningParameterFixer {
   llvm::Optional<bool> unrollCopyShared;
   llvm::Optional<bool> useReadOnlyCache;
   llvm::Optional<bool> matchLibraryCalls;
+  llvm::Optional<uint32_t> privateDepth;
 
   friend class TuningConfiguration;
 };

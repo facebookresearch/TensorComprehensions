@@ -461,6 +461,10 @@ struct Scop {
   //
   void insertSyncsAroundCopies(detail::ScheduleTree* tree);
 
+  // Given a sequence node, insert synchronizations before its first child node
+  // and after its last child node.
+  void insertSyncsAroundSeqChildren(detail::ScheduleTree* tree);
+
  private:
   // Compute a schedule satisfying the given schedule constraints and
   // taking into account the scheduler options.
