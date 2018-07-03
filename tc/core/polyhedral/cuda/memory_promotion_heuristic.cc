@@ -64,7 +64,7 @@ void mapCopiesToThreads(MappedScop& mscop, bool unroll) {
     }
 
     auto bandNode = node->child({0});
-    auto band = bandNode->elemAs<ScheduleTreeElemBand>();
+    auto band = bandNode->as<ScheduleTreeElemBand>();
     if (!band) {
       throw promotion::PromotionLogicError("no copy band");
     }
@@ -143,7 +143,7 @@ std::vector<T> collectBranchMarkers(T root, T node) {
 isl::union_map fullSchedule(const detail::ScheduleTree* root) {
   using namespace tc::polyhedral::detail;
 
-  if (!root->elemAs<ScheduleTreeElemDomain>()) {
+  if (!root->as<ScheduleTreeElemDomain>()) {
     throw promotion::PromotionLogicError("expected root to be a domain node");
   }
 
@@ -157,18 +157,18 @@ isl::union_map fullSchedule(const detail::ScheduleTree* root) {
   // are innermost, the partial schedule can no longer be affected by deeper
   // nodes and hence is full.
   auto schedule = isl::union_map::empty(
-      root->elemAs<ScheduleTreeElemDomain>()->domain_.get_space());
+      root->as<ScheduleTreeElemDomain>()->domain_.get_space());
   for (auto node : leaves) {
-    auto domain = root->elemAs<ScheduleTreeElemDomain>()->domain_;
+    auto domain = root->as<ScheduleTreeElemDomain>()->domain_;
     auto prefixMupa = prefixScheduleMupa(root, node);
-    if (auto band = node->elemAs<ScheduleTreeElemBand>()) {
+    if (auto band = node->as<ScheduleTreeElemBand>()) {
       prefixMupa = prefixMupa.flat_range_product(band->mupa_);
     }
 
     auto pathToRoot = node->ancestors(root);
     pathToRoot.push_back(node);
     for (auto n : pathToRoot) {
-      if (auto filterNode = n->elemAs<ScheduleTreeElemFilter>()) {
+      if (auto filterNode = n->as<ScheduleTreeElemFilter>()) {
         domain = domain.intersect(filterNode->filter_);
       }
     }
@@ -308,7 +308,7 @@ isl::union_set collectMappingsTo(const Scop& scop) {
   mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
   auto mapping = isl::union_set::empty(domain.get_space());
   for (auto mf : mappingFilters) {
-    auto filterNode = mf->elemAs<detail::ScheduleTreeElemMapping>();
+    auto filterNode = mf->as<detail::ScheduleTreeElemMapping>();
     auto filter = filterNode->filter_.intersect(activeDomainPoints(root, mf));
     mapping = mapping.unite(filterNode->filter_);
   }
@@ -356,7 +356,7 @@ bool accessSubscriptsAreUnrolledLoops(
   auto leaves = functional::Filter(
       [](const ScheduleTree* tree) { return tree->numChildren() == 0; }, nodes);
 
-  auto domainNode = root->elemAs<detail::ScheduleTreeElemDomain>();
+  auto domainNode = root->as<detail::ScheduleTreeElemDomain>();
   TC_CHECK(domainNode);
   auto domain = domainNode->domain_;
 
@@ -368,7 +368,7 @@ bool accessSubscriptsAreUnrolledLoops(
 
     auto unrolledDims = isl::union_pw_aff_list(leaf->ctx_, 1);
     for (auto node : ancestors) {
-      auto band = node->elemAs<detail::ScheduleTreeElemBand>();
+      auto band = node->as<detail::ScheduleTreeElemBand>();
       if (!band) {
         continue;
       }
@@ -455,7 +455,7 @@ std::vector<detail::ScheduleTree*> bandsContainingScheduleDepth(
       ScheduleTree::collectDFSPreorder(root, detail::ScheduleTreeType::Band);
   std::function<bool(ScheduleTree * st)> containsDepth = [&](ScheduleTree* st) {
     auto depthBefore = st->scheduleDepth(root);
-    auto band = st->elemAs<ScheduleTreeElemBand>();
+    auto band = st->as<ScheduleTreeElemBand>();
     auto depthAfter = depthBefore + band->nMember();
     return depthBefore < depth && depthAfter >= depth;
   };
@@ -474,7 +474,7 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 
   std::function<ScheduleTree*(ScheduleTree*)> splitAtDepth =
       [&](ScheduleTree* st) {
-        auto nMember = st->elemAs<ScheduleTreeElemBand>()->nMember();
+        auto nMember = st->as<ScheduleTreeElemBand>()->nMember();
         auto scheduleDepth = st->scheduleDepth(root);
         auto depthAfter = scheduleDepth + nMember;
         return depthAfter == depth ? st
@@ -641,16 +641,15 @@ void promoteGreedilyAtDepth(
 void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   // Cannot promote below a sequence or a set node.  Promotion may insert an
   // extension node, but sequence/set must be followed by filters.
-  if (scope->elemAs<detail::ScheduleTreeElemSequence>() ||
-      scope->elemAs<detail::ScheduleTreeElemSet>()) {
+  if (scope->as<detail::ScheduleTreeElemSequence>() ||
+      scope->as<detail::ScheduleTreeElemSet>()) {
     throw promotion::IncorrectScope("cannot promote under a sequence/set node");
   }
   // Cannot promote between a thread-mapped band and a thread-specific marker
   // node because the latter is used to identify thread-mapped bands as
   // immediate ancestors.
   if (scope->numChildren() == 1 &&
-      scope->child({0})
-          ->elemAs<detail::ScheduleTreeElemThreadSpecificMarker>()) {
+      scope->child({0})->as<detail::ScheduleTreeElemThreadSpecificMarker>()) {
     throw promotion::IncorrectScope(
         "cannot promote above a thread-specific marker node");
   }
@@ -757,7 +756,7 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   auto bands = bandsContainingScheduleDepth(root, depth);
   bands = functional::Filter(
       [root, depth](ScheduleTree* tree) {
-        auto band = tree->elemAs<ScheduleTreeElemBand>();
+        auto band = tree->as<ScheduleTreeElemBand>();
         return !isThreadMappedBand(tree) ||
             tree->scheduleDepth(root) + band->nMember() == depth;
       },

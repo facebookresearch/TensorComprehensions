@@ -214,7 +214,7 @@ vector<size_t> ScheduleTree::positionRelativeTo(
 size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
   size_t depth = 0;
   for (auto const& anc : ancestors(relativeRoot)) {
-    auto bandElem = anc->elemAs<ScheduleTreeElemBand>();
+    auto bandElem = anc->as<ScheduleTreeElemBand>();
     if (!bandElem) {
       continue;
     }
@@ -232,7 +232,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
 }
 
 ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
-  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  auto domain = root->as<ScheduleTreeElemDomain>();
   TC_CHECK(domain);
   auto space = domain->domain_.get_space().set_from_params();
   auto mv = isl::multi_val::zero(space);
@@ -386,7 +386,7 @@ bool ScheduleTree::operator==(const ScheduleTree& other) const {
   if (!elemEquals(this, &other, type_)) {
     return false;
   }
-  TC_CHECK(!other.elemAs<ScheduleTreeElemSet>())
+  TC_CHECK(!other.as<ScheduleTreeElemSet>())
       << "NYI: ScheduleTreeType::Set comparison";
   for (size_t i = 0; i < children_.size(); ++i) {
     if (*children_[i] != *other.children_[i]) {

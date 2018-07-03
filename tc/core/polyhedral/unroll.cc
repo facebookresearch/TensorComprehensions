@@ -166,7 +166,7 @@ isl::val boundInstancesAndMarkUnroll(
     isl::val unrollFactor) {
   auto bound = boundChildrenInstancesAndMarkUnroll(st, prefix, unrollFactor);
 
-  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+  if (auto band = st->as<detail::ScheduleTreeElemBand>()) {
     bound = boundInstancesAndMarkUnroll(band, prefix, unrollFactor, bound);
   }
 

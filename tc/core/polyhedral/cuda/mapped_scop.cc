@@ -140,7 +140,7 @@ detail::ScheduleTree* MappedScop::map(
 detail::ScheduleTree* MappedScop::mapBlocksForward(
     detail::ScheduleTree* band,
     size_t nToMap) {
-  auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
+  auto bandNode = band->as<detail::ScheduleTreeElemBand>();
   TC_CHECK(bandNode) << "expected a band, got " << *band;
 
   auto list = bandNode->mupa_.get_union_pw_aff_list();
@@ -155,7 +155,7 @@ void MappedScop::mapToBlocksAndScaleBand(
     std::vector<size_t> tileSizes) {
   using namespace tc::polyhedral::detail;
 
-  auto bandNode = band->elemAs<ScheduleTreeElemBand>();
+  auto bandNode = band->as<ScheduleTreeElemBand>();
   TC_CHECK(bandNode->permutable_) << "cannot map non-permutable band to blocks";
 
   auto nBlocksToMap = bandNode->nOuterCoincident();
@@ -235,7 +235,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   for (auto c : tree->children()) {
     found |= detectReductions(c);
   }
-  auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
+  auto band = tree->as<detail::ScheduleTreeElemBand>();
   // Nested reductions are not currently supported.
   if (!band || found) {
     return found;
@@ -296,7 +296,7 @@ bool MappedScop::needReductionSeparation(const detail::ScheduleTree* st) {
 isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
     const detail::ScheduleTree* st) {
   TC_CHECK(reductionBandUpdates_.count(st) == 1);
-  auto reductionBand = st->elemAs<detail::ScheduleTreeElemBand>();
+  auto reductionBand = st->as<detail::ScheduleTreeElemBand>();
   TC_CHECK(reductionBand);
 
   auto nMember = reductionBand->nMember();
@@ -359,7 +359,7 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
 
 detail::ScheduleTree* MappedScop::mapThreadsBackward(
     detail::ScheduleTree* band) {
-  auto bandNode = band->elemAs<detail::ScheduleTreeElemBand>();
+  auto bandNode = band->as<detail::ScheduleTreeElemBand>();
   TC_CHECK(bandNode);
   auto nMember = bandNode->nMember();
   auto nToMap = std::min(nMember, numThreads.view.size());
@@ -376,7 +376,7 @@ detail::ScheduleTree* MappedScop::mapThreadsBackward(
 size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
   using namespace tc::polyhedral::detail;
 
-  auto bandNode = band->elemAs<ScheduleTreeElemBand>();
+  auto bandNode = band->as<ScheduleTreeElemBand>();
   // Cannot map non-permutable bands.
   if (!bandNode->permutable_) {
     return 0;
@@ -417,7 +417,7 @@ size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
       reductionBandUpdates_.erase(band);
     }
     band = child;
-    bandNode = band->elemAs<ScheduleTreeElemBand>();
+    bandNode = band->as<ScheduleTreeElemBand>();
   }
 
   if (nMappedThreads < bandNode->nMember()) {
@@ -450,11 +450,11 @@ bool hasOuterSequentialMember(
   auto ancestors = st->ancestors(root);
   std::reverse(ancestors.begin(), ancestors.end());
   for (auto a : ancestors) {
-    auto band = a->elemAs<detail::ScheduleTreeElemBand>();
+    auto band = a->as<detail::ScheduleTreeElemBand>();
     if (band && band->nMember() > band->nOuterCoincident()) {
       return true;
     }
-    if (a->elemAs<detail::ScheduleTreeElemSequence>()) {
+    if (a->as<detail::ScheduleTreeElemSequence>()) {
       return false;
     }
   }
@@ -542,7 +542,7 @@ Scop::SyncLevel MappedScop::findBestSync(
 
   TC_CHECK_LE(1u, scop_->scheduleRoot()->children().size());
   auto contextSt = scop_->scheduleRoot()->children()[0];
-  auto contextElem = contextSt->elemAs<detail::ScheduleTreeElemContext>();
+  auto contextElem = contextSt->as<detail::ScheduleTreeElemContext>();
   TC_CHECK(nullptr != contextElem);
   dependences = dependences.intersect_params(contextElem->context_);
 
@@ -705,7 +705,7 @@ std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
 }
 
 void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
-  TC_CHECK(seq->elemAs<detail::ScheduleTreeElemSequence>());
+  TC_CHECK(seq->as<detail::ScheduleTreeElemSequence>());
 
   auto children = seq->children();
   auto nChildren = children.size();
@@ -779,7 +779,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
   }
   auto n = nChildren > 0 ? *std::max_element(nInner.begin(), nInner.end()) : 0;
   if (nChildren > 1) {
-    auto needSync = st->elemAs<detail::ScheduleTreeElemSequence>() && n > 0;
+    auto needSync = st->as<detail::ScheduleTreeElemSequence>() && n > 0;
     if (n > 0) {
       for (size_t i = 0; i < nChildren; ++i) {
         fixThreadsBelow(*this, children[i], nInner[i]);
@@ -790,7 +790,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
     }
   }
 
-  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+  if (auto band = st->as<detail::ScheduleTreeElemBand>()) {
     if (n == 0) {
       // If children were not mapped to threads, the current band can be mapped.
       // First, map the coincidence and reduction dimension to threads.
@@ -1040,7 +1040,7 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       sharedMemorySize -= reductionMemoryRequirement;
     }
 
-    auto band = outerBand->elemAs<ScheduleTreeElemBand>();
+    auto band = outerBand->as<ScheduleTreeElemBand>();
     LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
         << "Aborting memory promotion because outer band has 0 members (NYI)";
     if (band->nMember() > 0 && sharedMemorySize > 0) {

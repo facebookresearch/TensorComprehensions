@@ -494,8 +494,8 @@ ScheduleTree* insertCopiesUnder(
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
 
   if (unrollAllCopies) {
-    unrollAllMembers(readBandNode->elemAs<detail::ScheduleTreeElemBand>());
-    unrollAllMembers(writeBandNode->elemAs<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(readBandNode->as<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(writeBandNode->as<detail::ScheduleTreeElemBand>());
   }
 
   auto extension =

@@ -446,12 +446,12 @@ struct ScheduleTree {
   // Returns nullptr if this is not the proper type.
   // Inline impl for now, does not justify an extra -inl.h file
   template <typename T>
-  T* elemAs() {
+  T* as() {
     const ScheduleTree* t = this;
-    return const_cast<T*>(t->elemAs<const T>());
+    return const_cast<T*>(t->as<const T>());
   }
   template <typename T>
-  const T* elemAs() const {
+  const T* as() const {
     static_assert(
         std::is_base_of<ScheduleTree, T>::value,
         "Must call with a class derived from ScheduleTree");

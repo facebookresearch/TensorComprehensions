@@ -48,11 +48,11 @@ isl::schedule_node insertBranch(
     const std::vector<size_t>& pos) {
   auto filters = isl::union_set_list(node.get_ctx(), st->numChildren());
   for (size_t i = 0; i < pos.size(); ++i) {
-    auto filter = st->child({pos[i]})->elemAs<ScheduleTreeElemFilter>();
+    auto filter = st->child({pos[i]})->as<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     filters = filters.add(filter->filter_);
   }
-  if (st->elemAs<ScheduleTreeElemSet>()) {
+  if (st->as<ScheduleTreeElemSet>()) {
     node = node.insert_set(filters);
   } else {
     node = node.insert_sequence(filters);
@@ -83,9 +83,9 @@ std::vector<size_t> findCorePositions(
     const ScheduleTree* st,
     isl::union_set domain) {
   std::vector<size_t> positions;
-  TC_CHECK(st->elemAs<ScheduleTreeElemSequence>());
+  TC_CHECK(st->as<ScheduleTreeElemSequence>());
   for (size_t i = 0; i < st->numChildren(); ++i) {
-    auto filter = st->child({i})->elemAs<ScheduleTreeElemFilter>();
+    auto filter = st->child({i})->as<ScheduleTreeElemFilter>();
     TC_CHECK(filter);
     if (!filter->filter_.intersect(domain).is_empty()) {
       positions.emplace_back(i);
@@ -103,7 +103,7 @@ std::vector<size_t> findCorePositions(
 isl::schedule_node graftFromFilterSubtree(
     const ScheduleTree* st,
     isl::union_map extension) {
-  auto filter = st->elemAs<ScheduleTreeElemFilter>();
+  auto filter = st->as<ScheduleTreeElemFilter>();
   TC_CHECK(filter);
   auto filterExtension = extension.intersect_range(filter->filter_);
   auto extensionNode = isl::schedule_node::from_extension(filterExtension);
@@ -131,7 +131,7 @@ isl::schedule_node insertExtension(
   TC_CHECK(!corePos.empty());
   node = insertBranch(node, child, corePos);
 
-  auto extension = st->elemAs<ScheduleTreeElemExtension>()->extension_;
+  auto extension = st->as<ScheduleTreeElemExtension>()->extension_;
   for (size_t i = 0; i < corePos.size() - 1; ++i) {
     auto depth0 = node.get_tree_depth();
     node = node.child(i).child(0);
@@ -162,7 +162,7 @@ isl::schedule_node insertExtension(
  * some extra functionality in isl.
  */
 isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
-  if (auto band = st->elemAs<ScheduleTreeElemBand>()) {
+  if (auto band = st->as<ScheduleTreeElemBand>()) {
     node = node.insert_partial_schedule(band->mupa_);
     auto bandNode = node.as<isl::schedule_node_band>();
     bandNode = bandNode.set_permutable(band->permutable_);
@@ -176,19 +176,18 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
       }
     }
     node = bandNode;
-  } else if (auto context = st->elemAs<ScheduleTreeElemContext>()) {
+  } else if (auto context = st->as<ScheduleTreeElemContext>()) {
     node = node.insert_context(context->context_);
-  } else if (auto filter = st->elemAs<ScheduleTreeElemFilter>()) {
+  } else if (auto filter = st->as<ScheduleTreeElemFilter>()) {
     node = node.insert_filter(filter->filter_);
-  } else if (auto filter = st->elemAs<ScheduleTreeElemMapping>()) {
+  } else if (auto filter = st->as<ScheduleTreeElemMapping>()) {
     node = node.insert_filter(filter->filter_);
   } else if (
-      st->elemAs<ScheduleTreeElemSet>() ||
-      st->elemAs<ScheduleTreeElemSequence>()) {
+      st->as<ScheduleTreeElemSet>() || st->as<ScheduleTreeElemSequence>()) {
     return insertBranch(node, st);
-  } else if (st->elemAs<ScheduleTreeElemExtension>()) {
+  } else if (st->as<ScheduleTreeElemExtension>()) {
     return insertExtension(node, st);
-  } else if (st->elemAs<ScheduleTreeElemThreadSpecificMarker>()) {
+  } else if (st->as<ScheduleTreeElemThreadSpecificMarker>()) {
     return insertChild(node, st);
   } else {
     LOG(FATAL) << "NYI: insert type: " << *st;
@@ -228,7 +227,7 @@ isl::schedule_node extendChild(
  * then recursively add nodes corresponding to the descendants of "root".
  */
 isl::schedule toIslSchedule(const ScheduleTree* root) {
-  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  auto domain = root->as<ScheduleTreeElemDomain>();
   TC_CHECK(domain) << "Root node should be domain node" << *root;
   auto node = isl::schedule_node::from_domain(domain->domain_);
   node = extendChild(node, root);
