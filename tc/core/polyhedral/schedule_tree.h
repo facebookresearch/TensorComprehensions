@@ -477,7 +477,7 @@ struct ScheduleTree {
   std::vector<ScheduleTreeUPtr> children_{};
 
  public:
-  detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
+  const detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
 };
 
 // Flatten nested nodes of the same type.
