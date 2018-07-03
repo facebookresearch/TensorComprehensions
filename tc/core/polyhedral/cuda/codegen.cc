@@ -785,8 +785,8 @@ string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
   // Expecting a schedule with domain root and context first child.
-  TC_CHECK(mscop.schedule()->as<detail::ScheduleTreeElemDomain>());
-  TC_CHECK(mscop.schedule()->child({0})->as<detail::ScheduleTreeElemContext>());
+  TC_CHECK(mscop.schedule()->as<detail::ScheduleTreeDomain>());
+  TC_CHECK(mscop.schedule()->child({0})->as<detail::ScheduleTreeContext>());
   const auto& scop = mscop.scop();
 
   // Make a map of the specialized scalar parameter values

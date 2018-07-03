@@ -453,7 +453,7 @@ isl::multi_aff dropDummyTensorDimensions(
   return isl::multi_aff(space, list);
 }
 
-inline void unrollAllMembers(detail::ScheduleTreeElemBand* band) {
+inline void unrollAllMembers(detail::ScheduleTreeBand* band) {
   band->unroll_ = std::vector<bool>(band->nMember(), true);
 }
 
@@ -494,8 +494,8 @@ ScheduleTree* insertCopiesUnder(
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
 
   if (unrollAllCopies) {
-    unrollAllMembers(readBandNode->as<detail::ScheduleTreeElemBand>());
-    unrollAllMembers(writeBandNode->as<detail::ScheduleTreeElemBand>());
+    unrollAllMembers(readBandNode->as<detail::ScheduleTreeBand>());
+    unrollAllMembers(writeBandNode->as<detail::ScheduleTreeBand>());
   }
 
   auto extension =

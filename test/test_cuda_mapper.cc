@@ -139,7 +139,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
       applyTileOptions(ctx, tileOptions);
       auto islNode = toIslSchedule(schedule2.get()).get_root().child(0);
       auto mv = isl::makeMultiVal(
-          schedule2->child({0})->as<ScheduleTreeElemBand>()->mupa_.get_space(),
+          schedule2->child({0})->as<ScheduleTreeBand>()->mupa_.get_space(),
           tileSizes);
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
       auto scheduleISL = fromIslSchedule(islNode.get_schedule().reset_user());
@@ -751,9 +751,9 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiledBand =
       ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling.view));
 
-  ASSERT_TRUE(maxMinOuterBand->as<ScheduleTreeElemBand>());
-  ASSERT_TRUE(maxMaxOuterBand->as<ScheduleTreeElemBand>());
-  ASSERT_TRUE(tiledBand->as<ScheduleTreeElemBand>());
+  ASSERT_TRUE(maxMinOuterBand->as<ScheduleTreeBand>());
+  ASSERT_TRUE(maxMaxOuterBand->as<ScheduleTreeBand>());
+  ASSERT_TRUE(tiledBand->as<ScheduleTreeBand>());
 
   auto maxMinStructure = // expected structure when rescheduling with MinFuse
       band( // tile band

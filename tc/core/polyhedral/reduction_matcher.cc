@@ -26,8 +26,8 @@ namespace tc {
 namespace polyhedral {
 
 using detail::ScheduleTree;
-using detail::ScheduleTreeElemBand;
-using detail::ScheduleTreeElemFilter;
+using detail::ScheduleTreeBand;
+using detail::ScheduleTreeFilter;
 
 namespace {
 

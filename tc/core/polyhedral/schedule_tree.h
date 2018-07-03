@@ -36,9 +36,9 @@ namespace detail {
 // ScheduleTree, convertible to and from isl::schedule.
 //
 struct ScheduleTree;
-struct ScheduleTreeElemSet;
-struct ScheduleTreeElemSequence;
-struct ScheduleTreeElemMapping;
+struct ScheduleTreeSet;
+struct ScheduleTreeSequence;
+struct ScheduleTreeMapping;
 
 enum class ScheduleTreeType {
   None,
@@ -379,20 +379,20 @@ struct ScheduleTree {
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSet(Args&&... args) {
-    return fromList<ScheduleTreeElemSet>(std::forward<Args>(args)...);
+    return fromList<ScheduleTreeSet>(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSequence(Args&&... args) {
-    return fromList<ScheduleTreeElemSequence>(std::forward<Args>(args)...);
+    return fromList<ScheduleTreeSequence>(std::forward<Args>(args)...);
   }
 
   // disallow empty lists in syntax
   template <typename T, typename Arg, typename... Args>
   static ScheduleTreeUPtr fromList(Arg&& arg, Args&&... args) {
     static_assert(
-        std::is_same<ScheduleTreeElemSet, T>::value ||
-            std::is_same<ScheduleTreeElemSequence, T>::value,
+        std::is_same<ScheduleTreeSet, T>::value ||
+            std::is_same<ScheduleTreeSequence, T>::value,
         "Can only construct Set or Sequence elements");
     static_assert(
         std::is_same<
@@ -484,8 +484,8 @@ struct ScheduleTree {
 template <typename T>
 inline void flattenSequenceOrSet(T* tree) {
   static_assert(
-      std::is_same<ScheduleTreeElemSet, T>::value ||
-          std::is_same<ScheduleTreeElemSequence, T>::value,
+      std::is_same<ScheduleTreeSet, T>::value ||
+          std::is_same<ScheduleTreeSequence, T>::value,
       "Only Sequence or Set node can be flattened");
 
   // Iterate over the changing list of children. If a child has the same list

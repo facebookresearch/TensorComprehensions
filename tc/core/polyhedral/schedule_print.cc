@@ -137,7 +137,7 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
   return os;
 }
 
-std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
+std::ostream& ScheduleTreeBand::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "band(n(" << coincident_.size() << ") permutable(";
   os << permutable_ << ") coincident(";
@@ -161,13 +161,13 @@ std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemContext::write(std::ostream& os) const {
+std::ostream& ScheduleTreeContext::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "context(" << context_ << ")";
   return os;
 }
 
-std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
+std::ostream& ScheduleTreeDomain::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "domain(";
   for (const auto& u : domain_.get_set_list()) {
@@ -178,7 +178,7 @@ std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
+std::ostream& ScheduleTreeExtension::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "extension(";
   for (const auto& e : extension_.get_map_list()) {
@@ -189,7 +189,7 @@ std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
+std::ostream& ScheduleTreeFilter::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "filter(";
   for (const auto& u : filter_.get_set_list()) {
@@ -200,7 +200,7 @@ std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemMapping::write(std::ostream& os) const {
+std::ostream& ScheduleTreeMapping::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "mapping_filter(ids(";
   for (auto& kvp : mapping) {
@@ -215,20 +215,19 @@ std::ostream& ScheduleTreeElemMapping::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemSequence::write(std::ostream& os) const {
+std::ostream& ScheduleTreeSequence::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "sequence()";
   return os;
 }
 
-std::ostream& ScheduleTreeElemSet::write(std::ostream& os) const {
+std::ostream& ScheduleTreeSet::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "set()";
   return os;
 }
 
-std::ostream& ScheduleTreeElemThreadSpecificMarker::write(
-    std::ostream& os) const {
+std::ostream& ScheduleTreeThreadSpecificMarker::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "thread_specific()";
   return os;

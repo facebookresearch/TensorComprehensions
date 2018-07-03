@@ -75,13 +75,13 @@ namespace {
  */
 ScheduleTree* joinBandsHelper(ScheduleTree* st, bool& moveChildren) {
   moveChildren = false;
-  TC_CHECK(st->as<ScheduleTreeElemBand>());
+  TC_CHECK(st->as<ScheduleTreeBand>());
   if (st->numChildren() != 1) {
     return st;
   }
 
-  auto eb = st->as<ScheduleTreeElemBand>();
-  auto ebChild = st->child({0})->as<ScheduleTreeElemBand>();
+  auto eb = st->as<ScheduleTreeBand>();
+  auto ebChild = st->child({0})->as<ScheduleTreeBand>();
   if (!ebChild) {
     return st;
   }
@@ -110,7 +110,7 @@ ScheduleTree* joinBands(ScheduleTree* st, bool permutable) {
     TC_CHECK_EQ(1u, children.size()) << "expected a sequence of bands";
     st->appendChildren(children[0]->detachChildren());
   }
-  st->as<ScheduleTreeElemBand>()->permutable_ = permutable;
+  st->as<ScheduleTreeBand>()->permutable_ = permutable;
   return st;
 }
 
@@ -125,7 +125,7 @@ ScheduleTree* joinBandsIterative(ScheduleTree* st, bool permutable) {
       st->appendChildren(children[0]->detachChildren());
     }
   }
-  st->as<ScheduleTreeElemBand>()->permutable_ = permutable;
+  st->as<ScheduleTreeBand>()->permutable_ = permutable;
   return st;
 }
 
@@ -153,8 +153,8 @@ void applyTileOptions(isl::ctx& ctx, TileOptions tileOptions) {
 
 ScheduleTree*
 bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
-  TC_CHECK(tree->as<ScheduleTreeElemBand>()) << "Not a band:\n" << *tree;
-  auto band = tree->as<ScheduleTreeElemBand>();
+  TC_CHECK(tree->as<ScheduleTreeBand>()) << "Not a band:\n" << *tree;
+  auto band = tree->as<ScheduleTreeBand>();
   size_t n = band->nMember();
   TC_CHECK_LT(0u, n) << "no bands to split";
   TC_CHECK_LE(0u, pos) << "position out of bounds";
@@ -164,7 +164,7 @@ bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
   auto children = tree->detachChildren();
   auto newChild = ScheduleTree::makeScheduleTree(*tree);
   newChild->appendChildren(std::move(children));
-  auto newChildBand = newChild->as<ScheduleTreeElemBand>();
+  auto newChildBand = newChild->as<ScheduleTreeBand>();
   newChildBand->drop(0, pos);
 
   tree->appendChild(std::move(newChild));
@@ -174,7 +174,7 @@ bandSplit(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
 
 ScheduleTree*
 bandSplitOut(ScheduleTree* relativeRoot, ScheduleTree* tree, size_t pos) {
-  auto band = tree->as<ScheduleTreeElemBand>();
+  auto band = tree->as<ScheduleTreeBand>();
   TC_CHECK(band);
   auto size = band->nMember();
   if (pos != size - 1) {
@@ -202,7 +202,7 @@ ScheduleTree* bandTile(
     ScheduleTree* st,
     const vector<size_t>& tileSizes,
     TileOptions tileOptions) {
-  auto eb = st->as<ScheduleTreeElemBand>();
+  auto eb = st->as<ScheduleTreeBand>();
   TC_CHECK(eb) << "Not a band: " << *st;
 
   auto& band = *eb;
@@ -237,7 +237,7 @@ ScheduleTree* bandTile(
     band.mupa_ = band.mupa_.set_union_pw_aff(i, upa);
   }
 
-  auto ebChild = childUPtr->as<ScheduleTreeElemBand>();
+  auto ebChild = childUPtr->as<ScheduleTreeBand>();
   TC_CHECK(ebChild) << "Not a band: " << *childUPtr;
   auto& childBand = *ebChild;
   if (tileOptions & TileOptions::ShiftPointLoops) {
@@ -255,7 +255,7 @@ ScheduleTree* bandTile(
 }
 
 ScheduleTree* bandScale(ScheduleTree* tree, const vector<size_t>& scales) {
-  auto eb = tree->as<ScheduleTreeElemBand>();
+  auto eb = tree->as<ScheduleTreeBand>();
   TC_CHECK(eb) << "Not a band: " << *tree;
   auto& band = *eb;
 
@@ -278,7 +278,7 @@ ScheduleTree* bandScale(ScheduleTree* tree, const vector<size_t>& scales) {
 ScheduleTree* insertTopLevelEmptyBand(ScheduleTree* root) {
   auto node = root;
   if (node->numChildren() > 0 &&
-      node->child({0})->as<detail::ScheduleTreeElemContext>()) {
+      node->child({0})->as<detail::ScheduleTreeContext>()) {
     node = node->child({0});
   }
   return insertNodeBelow(node, ScheduleTree::makeEmptyBand(root));
@@ -289,8 +289,8 @@ void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
     root->appendChild(ScheduleTree::makeContext(
         isl::set::universe(context.get_space()), root->detachChildren()));
   }
-  auto contextElem = const_cast<detail::ScheduleTreeElemContext*>(
-      root->child({0})->as<detail::ScheduleTreeElemContext>());
+  auto contextElem = const_cast<detail::ScheduleTreeContext*>(
+      root->child({0})->as<detail::ScheduleTreeContext>());
   TC_CHECK(contextElem) << "Expected domain(context(any()))";
   contextElem->context_ = contextElem->context_ & context;
 }
@@ -352,7 +352,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
     const ScheduleTree* root,
     ScheduleTree* relativeRoot,
     ScheduleTree* st) {
-  auto domain = root->as<ScheduleTreeElemDomain>();
+  auto domain = root->as<ScheduleTreeDomain>();
   TC_CHECK(domain);
   auto space = domain->domain_.get_space();
   auto extension = isl::union_map::empty(space);
@@ -395,13 +395,13 @@ void insertExtensionAt(
     isl::union_map extension,
     ScheduleTreeUPtr&& filterNode) {
   auto extensionTree = seqNode->ancestor(relativeRoot, 1);
-  auto extensionNode = extensionTree->as<detail::ScheduleTreeElemExtension>();
+  auto extensionNode = extensionTree->as<detail::ScheduleTreeExtension>();
   if (!extensionNode) {
     extensionTree = insertEmptyExtensionAbove(root, relativeRoot, seqNode);
-    extensionNode = extensionTree->as<detail::ScheduleTreeElemExtension>();
+    extensionNode = extensionTree->as<detail::ScheduleTreeExtension>();
   }
   TC_CHECK(extensionNode);
-  TC_CHECK(seqNode->as<detail::ScheduleTreeElemSequence>());
+  TC_CHECK(seqNode->as<detail::ScheduleTreeSequence>());
   extensionNode->extension_ = extensionNode->extension_.unite(extension);
   seqNode->insertChild(pos, std::move(filterNode));
 }
@@ -416,16 +416,16 @@ void insertExtensionBefore(
   size_t pos;
   auto parent = tree->ancestor(relativeRoot, 1);
   ScheduleTree* seqTree;
-  if (tree->as<detail::ScheduleTreeElemExtension>()) {
+  if (tree->as<detail::ScheduleTreeExtension>()) {
     tree = tree->child({0});
     parent = tree;
   }
-  if (tree->as<detail::ScheduleTreeElemSequence>()) {
+  if (tree->as<detail::ScheduleTreeSequence>()) {
     seqTree = tree;
     pos = 0;
   } else if (
-      parent->as<detail::ScheduleTreeElemFilter>() &&
-      parent->ancestor(root, 1)->as<detail::ScheduleTreeElemSequence>()) {
+      parent->as<detail::ScheduleTreeFilter>() &&
+      parent->ancestor(root, 1)->as<detail::ScheduleTreeSequence>()) {
     seqTree = parent->ancestor(relativeRoot, 1);
     pos = parent->positionInParent(seqTree);
   } else {
@@ -445,16 +445,16 @@ void insertExtensionAfter(
   size_t pos;
   auto parent = tree->ancestor(relativeRoot, 1);
   ScheduleTree* seqTree;
-  if (tree->as<detail::ScheduleTreeElemExtension>()) {
+  if (tree->as<detail::ScheduleTreeExtension>()) {
     tree = tree->child({0});
     parent = tree;
   }
-  if (tree->as<detail::ScheduleTreeElemSequence>()) {
+  if (tree->as<detail::ScheduleTreeSequence>()) {
     seqTree = tree;
     pos = tree->numChildren();
   } else if (
-      parent->as<detail::ScheduleTreeElemFilter>() &&
-      parent->ancestor(root, 1)->as<detail::ScheduleTreeElemSequence>()) {
+      parent->as<detail::ScheduleTreeFilter>() &&
+      parent->ancestor(root, 1)->as<detail::ScheduleTreeSequence>()) {
     seqTree = parent->ancestor(relativeRoot, 1);
     pos = parent->positionInParent(seqTree) + 1;
   } else {
@@ -503,11 +503,11 @@ namespace {
  * Elements of a sequence that end up with an empty filter are removed.
  */
 void gist(ScheduleTree* tree, isl::union_set context) {
-  if (auto bandElem = tree->as<ScheduleTreeElemBand>()) {
+  if (auto bandElem = tree->as<ScheduleTreeBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
-  } else if (auto filterElem = tree->as<ScheduleTreeElemMapping>()) {
+  } else if (auto filterElem = tree->as<ScheduleTreeMapping>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
-  } else if (auto filterElem = tree->as<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = tree->as<ScheduleTreeFilter>()) {
     filterElem->filter_ = filterElem->filter_.gist(context);
     if (filterElem->filter_.is_empty()) {
       tree->detachChildren();
@@ -516,10 +516,10 @@ void gist(ScheduleTree* tree, isl::union_set context) {
   for (auto child : tree->children()) {
     gist(child, context);
   }
-  if (tree->as<ScheduleTreeElemSequence>()) {
+  if (tree->as<ScheduleTreeSequence>()) {
     for (auto i = tree->numChildren(); i > 0; --i) {
       auto child = tree->child({i - 1});
-      if (auto filterElem = child->as<ScheduleTreeElemFilter>()) {
+      if (auto filterElem = child->as<ScheduleTreeFilter>()) {
         if (filterElem->filter_.is_empty()) {
           tree->detachChild(i - 1);
         }

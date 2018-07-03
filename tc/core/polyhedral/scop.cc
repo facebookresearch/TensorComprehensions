@@ -78,14 +78,14 @@ ScopUPtr Scop::makeScop(isl::ctx ctx, const lang::TreeRef& treeRef) {
 }
 
 isl::union_set& Scop::domainRef() {
-  auto dom = scheduleRoot()->as<ScheduleTreeElemDomain>();
+  auto dom = scheduleRoot()->as<ScheduleTreeDomain>();
   TC_CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
   // TODO: activate this when the invariant has a chance of working (i.e. we
   // don't use a Context node for specifying parameter values that iterate in
   // spacetime).
   // TODO: find a proper place for the invariant.
   // auto noCont =
-  //   scheduleRoot()->child({0})->as<ScheduleTreeElemContext>();
+  //   scheduleRoot()->child({0})->as<ScheduleTreeContext>();
   // TC_CHECK(!noCont) << "root is not a domain in: " << *scheduleRoot();
   return dom->domain_;
 }
@@ -140,7 +140,7 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
        ScheduleTree::collect(root, detail::ScheduleTreeType::Sequence)) {
     isl::union_set alreadyVisitedStmts;
     for (auto child : node->children()) {
-      auto filterNode = child->as<ScheduleTreeElemFilter>();
+      auto filterNode = child->as<ScheduleTreeFilter>();
       TC_CHECK(filterNode) << "expected children of sequence to be filters";
       auto filter = filterNode->filter_.universe();
       if (!alreadyVisitedStmts.get()) {
@@ -207,21 +207,20 @@ void Scop::promoteGroup(
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
   // Return immediately if nothing was inserted
-  auto extensionNode =
-      tree->child({0})->as<detail::ScheduleTreeElemExtension>();
+  auto extensionNode = tree->child({0})->as<detail::ScheduleTreeExtension>();
   if (!extensionNode) {
     return;
   }
 
   // Insert syncs before and after copies (FIXME: this is excessive)
   auto seqNode = tree->child({0, 0});
-  TC_CHECK(seqNode->as<detail::ScheduleTreeElemSequence>())
+  TC_CHECK(seqNode->as<detail::ScheduleTreeSequence>())
       << "unexpected tree structure";
 
   int foundMainComputations = 0;
   std::string lastTupleName = "";
   for (size_t i = 0; i < seqNode->numChildren(); ++i) {
-    auto filterNode = seqNode->child({i})->as<detail::ScheduleTreeElemFilter>();
+    auto filterNode = seqNode->child({i})->as<detail::ScheduleTreeFilter>();
     TC_CHECK(filterNode) << "expected filters below sequence";
     auto filters = isl::UnionAsVector<isl::union_set>(filterNode->filter_);
     bool isCopyFilter = filters.size() == 1 && filters[0].has_tuple_name() &&
@@ -246,7 +245,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
 }
 
 void Scop::insertSyncsAroundSeqChildren(detail::ScheduleTree* seqNode) {
-  TC_CHECK(seqNode->as<detail::ScheduleTreeElemSequence>())
+  TC_CHECK(seqNode->as<detail::ScheduleTreeSequence>())
       << "expected sequence node, got\n"
       << *seqNode;
   insertSync(seqNode, 0);
@@ -320,7 +319,7 @@ isl::schedule_constraints makeScheduleConstraints(
   auto root = scop.scheduleRoot();
   if (root->numChildren() > 0) {
     if (auto contextNode =
-            root->child({0})->as<detail::ScheduleTreeElemContext>()) {
+            root->child({0})->as<detail::ScheduleTreeContext>()) {
       constraints = constraints.set_context(contextNode->context_);
     }
   }
@@ -422,7 +421,7 @@ namespace {
  * Mark the band node at "tree" permutable.
  */
 detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
-  auto band = tree->as<detail::ScheduleTreeElemBand>();
+  auto band = tree->as<detail::ScheduleTreeBand>();
   TC_CHECK(band);
   band->permutable_ = true;
   return tree;
@@ -441,7 +440,7 @@ detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
 detail::ScheduleTree* Scop::obtainOuterBand() {
   auto root = scheduleRoot();
   auto tree = root;
-  while (!tree->as<ScheduleTreeElemBand>()) {
+  while (!tree->as<ScheduleTreeBand>()) {
     auto n = tree->numChildren();
     if (n == 1) {
       tree = tree->child({0});
@@ -461,7 +460,7 @@ detail::ScheduleTree* Scop::obtainOuterBand() {
 detail::ScheduleTree* Scop::tileOuterBand(const TilingView& tileSizes) {
   using namespace tc::polyhedral::detail;
   auto band = obtainOuterBand();
-  auto bandNode = band->as<ScheduleTreeElemBand>();
+  auto bandNode = band->as<ScheduleTreeBand>();
   std::vector<size_t> sizes = tileSizes.extractVector();
   if (bandNode->nMember() < sizes.size()) {
     sizes.resize(bandNode->nMember());
