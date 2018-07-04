@@ -439,6 +439,14 @@ void promoteToSharedBelow(
     detail::ScheduleTree* node,
     size_t& remainingMemory) {
   auto root = scop.scheduleRoot();
+
+  // Children of a sequence/set band must be filters, but promotion would
+  // insert an extension node.
+  if (node->as<detail::ScheduleTreeSequence>() ||
+      node->as<detail::ScheduleTreeSet>()) {
+    throw promotion::IncorrectScope("cannot promote below a sequence/set node");
+  }
+
   auto partialSched = partialSchedule(root, node);
   auto mapping = collectMappingsTo<mapping::BlockId>(scop);
 
