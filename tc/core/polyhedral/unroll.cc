@@ -82,7 +82,7 @@ isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
  * inner band members and the bound on the descendants.
  */
 isl::val boundInstancesAndMarkUnroll(
-    detail::ScheduleTreeElemBand* band,
+    detail::ScheduleTreeBand* band,
     isl::union_map prefix,
     isl::val unrollFactor,
     isl::val bound) {
@@ -166,7 +166,7 @@ isl::val boundInstancesAndMarkUnroll(
     isl::val unrollFactor) {
   auto bound = boundChildrenInstancesAndMarkUnroll(st, prefix, unrollFactor);
 
-  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+  if (auto band = st->as<detail::ScheduleTreeBand>()) {
     bound = boundInstancesAndMarkUnroll(band, prefix, unrollFactor, bound);
   }
 

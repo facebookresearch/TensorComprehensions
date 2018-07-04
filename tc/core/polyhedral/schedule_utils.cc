@@ -31,14 +31,14 @@ using std::vector;
 isl::union_map extendSchedule(
     const ScheduleTree* node,
     isl::union_map schedule) {
-  if (auto bandElem = node->elemAs<ScheduleTreeElemBand>()) {
+  if (auto bandElem = node->as<ScheduleTreeBand>()) {
     if (bandElem->nMember() > 0) {
       schedule =
           schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
     }
-  } else if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
+  } else if (auto filterElem = node->as<ScheduleTreeFilter>()) {
     schedule = schedule.intersect_domain(filterElem->filter_);
-  } else if (auto extensionElem = node->elemAs<ScheduleTreeElemExtension>()) {
+  } else if (auto extensionElem = node->as<ScheduleTreeExtension>()) {
     // FIXME: we may need to restrict the range of reversed extension map to
     // schedule values that correspond to active domain elements at this
     // point.
@@ -59,11 +59,11 @@ isl::union_map partialScheduleImpl(
     nodes.push_back(node);
   }
   TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
-  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  auto domain = root->as<ScheduleTreeDomain>();
   TC_CHECK(domain);
   auto schedule = isl::union_map::from_domain(domain->domain_);
   for (auto anc : nodes) {
-    if (anc->elemAs<ScheduleTreeElemDomain>()) {
+    if (anc->as<ScheduleTreeDomain>()) {
       TC_CHECK(anc == root);
     } else {
       schedule = extendSchedule(anc, schedule);
@@ -90,7 +90,7 @@ namespace {
  * If "node" is any filter, then intersect "domain" with that filter.
  */
 isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
-  if (auto filterElem = node->elemAs<ScheduleTreeElemFilter>()) {
+  if (auto filterElem = node->as<ScheduleTreeFilter>()) {
     return domain.intersect(filterElem->filter_);
   }
   return domain;
@@ -100,7 +100,7 @@ isl::union_set applyFilter(isl::union_set domain, const ScheduleTree* node) {
  * If "node" is a mapping, then intersect "domain" with its filter.
  */
 isl::union_set applyMapping(isl::union_set domain, const ScheduleTree* node) {
-  if (auto filterElem = node->elemAs<ScheduleTreeElemMapping>()) {
+  if (auto filterElem = node->as<ScheduleTreeMapping>()) {
     return domain.intersect(filterElem->filter_);
   }
   return domain;
@@ -116,14 +116,14 @@ isl::union_set collectDomain(
     const ScheduleTree* root,
     const vector<const ScheduleTree*>& nodes,
     isl::union_set (*filter)(isl::union_set domain, const ScheduleTree* node)) {
-  auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
+  auto domainElem = root->as<ScheduleTreeDomain>();
   TC_CHECK(domainElem) << "root must be a Domain node" << *root;
 
   auto domain = domainElem->domain_;
 
   for (auto anc : nodes) {
     domain = filter(domain, anc);
-    if (auto extensionElem = anc->elemAs<ScheduleTreeElemExtension>()) {
+    if (auto extensionElem = anc->as<ScheduleTreeExtension>()) {
       auto parentSchedule = prefixSchedule(root, anc);
       auto extension = extensionElem->extension_;
       TC_CHECK(parentSchedule) << "missing root domain node";
@@ -200,7 +200,7 @@ template <typename T>
 vector<const ScheduleTree*> filterType(const vector<const ScheduleTree*>& vec) {
   vector<const ScheduleTree*> result;
   for (auto e : vec) {
-    if (e->elemAs<T>()) {
+    if (e->as<T>()) {
       result.push_back(e);
     }
   }
@@ -236,15 +236,15 @@ isl::multi_union_pw_aff infixScheduleMupa(
     const ScheduleTree* root,
     const ScheduleTree* relativeRoot,
     const ScheduleTree* tree) {
-  auto domainElem = root->elemAs<ScheduleTreeElemDomain>();
+  auto domainElem = root->as<ScheduleTreeDomain>();
   TC_CHECK(domainElem);
   auto domain = domainElem->domain_.universe();
   auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
   auto prefix = isl::multi_union_pw_aff(domain, zero);
   prefix = foldl(
-      filterType<ScheduleTreeElemBand>(tree->ancestors(relativeRoot)),
+      filterType<ScheduleTreeBand>(tree->ancestors(relativeRoot)),
       [](const ScheduleTree* st, isl::multi_union_pw_aff pref) {
-        auto mupa = st->elemAs<ScheduleTreeElemBand>()->mupa_;
+        auto mupa = st->as<ScheduleTreeBand>()->mupa_;
         return pref.flat_range_product(mupa);
       },
       prefix);
@@ -261,7 +261,7 @@ isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
   auto prefix = prefixScheduleMupa(root, tree);
-  auto band = tree->elemAs<ScheduleTreeElemBand>();
+  auto band = tree->as<ScheduleTreeBand>();
   return band ? prefix.flat_range_product(band->mupa_) : prefix;
 }
 
@@ -285,7 +285,7 @@ isl::multi_union_pw_aff extractDomainToIds(
   auto domainToIds = isl::multi_union_pw_aff(empty, zero);
 
   for (auto mapping : tree->collect(tree, ScheduleTreeType::Mapping)) {
-    auto mappingNode = mapping->elemAs<ScheduleTreeElemMapping>();
+    auto mappingNode = mapping->as<ScheduleTreeMapping>();
     auto list = isl::union_pw_aff_list(tree->ctx_, ids.size());
     for (auto id : ids) {
       if (mappingNode->mapping.count(id) == 0) {

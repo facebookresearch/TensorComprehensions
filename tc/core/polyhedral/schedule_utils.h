@@ -20,6 +20,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 
 #include <functional>
 #include <unordered_map>
@@ -127,7 +128,7 @@ template <typename MappingType>
 bool isMappingTo(const detail::ScheduleTree* tree) {
   using namespace detail;
 
-  if (auto filterNode = tree->elemAs<ScheduleTreeElemMapping>()) {
+  if (auto filterNode = tree->as<ScheduleTreeMapping>()) {
     for (auto& kvp : filterNode->mapping) {
       if (kvp.first.is<MappingType>()) {
         return true;

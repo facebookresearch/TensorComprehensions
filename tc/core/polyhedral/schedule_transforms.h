@@ -25,6 +25,7 @@
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/external/isl.h"
 
 namespace tc {
