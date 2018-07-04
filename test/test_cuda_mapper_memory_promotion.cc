@@ -439,12 +439,10 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
 
 TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
   EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192),
-      promotion::PromotionBelowThreadsException);
+      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192), promotion::IncorrectScope);
 
   EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192),
-      promotion::PromotionBelowThreadsException);
+      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192), promotion::IncorrectScope);
 }
 
 class MatMulBias : public TestMapper {

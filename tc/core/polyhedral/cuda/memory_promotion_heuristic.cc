@@ -440,6 +440,17 @@ void promoteToSharedBelow(
     size_t& remainingMemory) {
   auto root = scop.scheduleRoot();
 
+  // Promotion to shared below threads does not make sense because the computed
+  // groups would be specific to threads thus not benefiting from coalescing or
+  // inter-thread communication through shared memory (use registers instead).
+  auto ancestors = node->ancestors(root);
+  ancestors.push_back(node);
+  for (auto ancestor : ancestors) {
+    if (isMappingTo<mapping::ThreadId>(ancestor)) {
+      throw promotion::IncorrectScope(
+          "shared memory promotion below thread mapping");
+    }
+  }
   // Children of a sequence/set band must be filters, but promotion would
   // insert an extension node.
   if (node->as<detail::ScheduleTreeSequence>() ||
