@@ -39,7 +39,6 @@ target_include_directories(tc_core PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
   tc_core
 
-  gflags
   glog
 
   ${HALIDE_LIBRARIES}
@@ -50,6 +49,7 @@ target_link_libraries(
   tc_version
   tc_proto
 )
+set_target_properties(tc_lang PROPERTIES LINK_INTERFACE_LIBRARIES gflags)
 if (WITH_BINDINGS)
   add_dependencies(tc_core generate_isl_cpp_h)
 endif()
