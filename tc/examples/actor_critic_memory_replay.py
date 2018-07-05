@@ -150,8 +150,9 @@ best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
-    reward = -my_utils.evalTime(out_actions.numpy().astype(int))
+    reward = my_utils.evalTime(out_actions.numpy().astype(int))
     #reward=100*reward
+    reward = -np.log(reward)
     add_to_buffer(out_probs, out_values, reward)
     actions_probs, values, rewards = select_batch()
     vloss, ploss = finish_episode(actions_probs, values, rewards)
