@@ -114,7 +114,7 @@ def computeCat(inp_arg):
     cat_val = []
 
     divs = getAllDivs(inp)
-    divs2 = getAllDivs([tc.tclib.shared_memory_size()])
+    divs2 = getAllDivs([np.array([tc.tclib.shared_memory_size()])])
 
     cat_val.append([0,1,2])
     cat_val.append([0,1,2])
