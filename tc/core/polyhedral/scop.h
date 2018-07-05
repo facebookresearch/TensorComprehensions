@@ -520,7 +520,7 @@ struct Scop {
   // The support is originally an isl::union_set corresponding to the union of
   // the iteration domains of the statements in the Scop.
   // The support must be the unique root node of the ScheduleTree and be of
-  // type: ScheduleTreeElemDomain.
+  // type: ScheduleTreeDomain.
   std::unique_ptr<detail::ScheduleTree> scheduleTreeUPtr;
 
  public:

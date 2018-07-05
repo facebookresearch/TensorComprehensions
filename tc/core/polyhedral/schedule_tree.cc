@@ -123,22 +123,47 @@ vector<ScheduleTree*> ancestorsInSubTree(
   return res;
 }
 
+static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
+#define ELEM_MAKE_CASE(CLASS)                                                \
+  else if (st.type_ == CLASS::NodeType) {                                    \
+    return std::unique_ptr<CLASS>(new CLASS(static_cast<const CLASS&>(st))); \
+  }
+
+  if (st.type_ == detail::ScheduleTreeType::None) {
+    LOG(FATAL) << "Hit Error node!";
+  }
+  ELEM_MAKE_CASE(ScheduleTreeBand)
+  ELEM_MAKE_CASE(ScheduleTreeContext)
+  ELEM_MAKE_CASE(ScheduleTreeDomain)
+  ELEM_MAKE_CASE(ScheduleTreeExtension)
+  ELEM_MAKE_CASE(ScheduleTreeFilter)
+  ELEM_MAKE_CASE(ScheduleTreeMapping)
+  ELEM_MAKE_CASE(ScheduleTreeSequence)
+  ELEM_MAKE_CASE(ScheduleTreeSet)
+  ELEM_MAKE_CASE(ScheduleTreeThreadSpecificMarker)
+
+#undef ELEM_MAKE_CASE
+
+  LOG(FATAL) << "NYI: ScheduleTree from type: " << static_cast<int>(st.type_);
+  return nullptr;
+}
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
 //                        ScheduleTree
 ////////////////////////////////////////////////////////////////////////////////
-ScheduleTree::ScheduleTree(isl::ctx ctx) : ctx_(ctx) {}
+ScheduleTree::~ScheduleTree() {}
 
 ScheduleTree::ScheduleTree(const ScheduleTree& st)
-    : ctx_(st.ctx_),
-      children_(),
-      type_(st.type_),
-      elem_(ScheduleTreeElemBase::make(st)) {
+    : ctx_(st.ctx_), children_(), type_(st.type_) {
   children_.reserve(st.children_.size());
   for (const auto& child : st.children()) {
     children_.push_back(ScheduleTree::makeScheduleTree(*child));
   }
+}
+
+ScheduleTreeUPtr ScheduleTree::makeScheduleTree(const ScheduleTree& tree) {
+  return makeElem(tree);
 }
 
 ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {
@@ -189,7 +214,7 @@ vector<size_t> ScheduleTree::positionRelativeTo(
 size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
   size_t depth = 0;
   for (auto const& anc : ancestors(relativeRoot)) {
-    auto bandElem = anc->elemAs<ScheduleTreeElemBand>();
+    auto bandElem = anc->as<ScheduleTreeBand>();
     if (!bandElem) {
       continue;
     }
@@ -201,16 +226,13 @@ size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
 std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
     isl::multi_union_pw_aff mupa,
     std::vector<ScheduleTreeUPtr>&& children) {
-  isl::ctx ctx = mupa.get_ctx();
-  std::unique_ptr<ScheduleTree> res(new ScheduleTree(ctx));
-  res->elem_ = ScheduleTreeElemBand::fromMultiUnionPwAff(mupa);
-  res->type_ = detail::ScheduleTreeType::Band;
+  auto res = ScheduleTreeBand::fromMultiUnionPwAff(mupa);
   res->appendChildren(std::move(children));
   return res;
 }
 
 ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
-  auto domain = root->elemAs<ScheduleTreeElemDomain>();
+  auto domain = root->as<ScheduleTreeDomain>();
   TC_CHECK(domain);
   auto space = domain->domain_.get_space().set_from_params();
   auto mv = isl::multi_val::zero(space);
@@ -221,11 +243,7 @@ ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
 std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
     isl::union_set domain,
     std::vector<ScheduleTreeUPtr>&& children) {
-  isl::ctx ctx(domain.get_ctx());
-  std::unique_ptr<ScheduleTree> res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemDomain>(
-      new ScheduleTreeElemDomain(domain));
-  res->type_ = detail::ScheduleTreeType::Domain;
+  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeDomain(domain));
   res->appendChildren(std::move(children));
   return res;
 }
@@ -233,11 +251,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
     isl::set context,
     std::vector<ScheduleTreeUPtr>&& children) {
-  isl::ctx ctx(context.get_ctx());
-  std::unique_ptr<ScheduleTree> res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemContext>(
-      new ScheduleTreeElemContext(context));
-  res->type_ = detail::ScheduleTreeType::Context;
+  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeContext(context));
   res->appendChildren(std::move(children));
   return res;
 }
@@ -245,11 +259,27 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
     isl::union_set filter,
     std::vector<ScheduleTreeUPtr>&& children) {
-  isl::ctx ctx(filter.get_ctx());
-  std::unique_ptr<ScheduleTree> res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemFilter>(
-      new ScheduleTreeElemFilter(filter));
-  res->type_ = detail::ScheduleTreeType::Filter;
+  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeFilter(filter));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
+    const std::vector<mapping::MappingId>& mappedIds,
+    isl::union_pw_aff_list mappedAffs,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.size()))
+      << "expected as many mapped ids as affs";
+  ScheduleTreeMapping::Mapping mapping;
+  for (size_t i = 0, n = mappedAffs.size(); i < n; ++i) {
+    mapping.emplace(mappedIds.at(i), mappedAffs.get_at(i));
+  }
+  TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
+  TC_CHECK_EQ(mappedIds.size(), mapping.size())
+      << "some id is used more than once in the mapping";
+  auto ctx = mappedIds[0].get_ctx();
+  auto res =
+      std::unique_ptr<ScheduleTree>(new ScheduleTreeMapping(ctx, mapping));
   res->appendChildren(std::move(children));
   return res;
 }
@@ -257,11 +287,8 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
     isl::union_map extension,
     std::vector<ScheduleTreeUPtr>&& children) {
-  isl::ctx ctx(extension.get_ctx());
-  ScheduleTreeUPtr res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemExtension>(
-      new ScheduleTreeElemExtension(extension));
-  res->type_ = detail::ScheduleTreeType::Extension;
+  auto res =
+      std::unique_ptr<ScheduleTree>(new ScheduleTreeExtension(extension));
   res->appendChildren(std::move(children));
   return res;
 }
@@ -269,10 +296,8 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeThreadSpecificMarker(
     isl::ctx ctx,
     std::vector<ScheduleTreeUPtr>&& children) {
-  ScheduleTreeUPtr res(new ScheduleTree(ctx));
-  res->elem_ = std::unique_ptr<ScheduleTreeElemThreadSpecificMarker>(
-      new ScheduleTreeElemThreadSpecificMarker());
-  res->type_ = detail::ScheduleTreeType::ThreadSpecificMarker;
+  auto res =
+      std::unique_ptr<ScheduleTree>(new ScheduleTreeThreadSpecificMarker(ctx));
   res->appendChildren(std::move(children));
   return res;
 }
@@ -357,10 +382,10 @@ bool ScheduleTree::operator==(const ScheduleTree& other) const {
   if (children_.size() != other.children_.size()) {
     return false;
   }
-  if (!elemEquals(elem_.get(), other.elem_.get(), type_)) {
+  if (!elemEquals(this, &other, type_)) {
     return false;
   }
-  TC_CHECK(!other.elemAs<ScheduleTreeElemSet>())
+  TC_CHECK(!other.as<ScheduleTreeSet>())
       << "NYI: ScheduleTreeType::Set comparison";
   for (size_t i = 0; i < children_.size(); ++i) {
     if (*children_[i] != *other.children_[i]) {

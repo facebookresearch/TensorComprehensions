@@ -24,125 +24,94 @@
 
 #include "tc/core/check.h"
 #include "tc/core/polyhedral/mapping_types.h"
+#include "tc/core/polyhedral/schedule_tree.h"
 
 namespace tc {
 namespace polyhedral {
 namespace detail {
 
-enum class ScheduleTreeType {
-  None,
-  Band,
-  Context,
-  Domain,
-  Extension,
-  Filter,
-  Sequence,
-  Set,
-  Mapping,
-  ThreadSpecificMarker,
-  Any,
-};
-
-struct ScheduleTree;
-
-struct ScheduleTreeElemBase {
-  static constexpr detail::ScheduleTreeType NodeType =
-      detail::ScheduleTreeType::None;
-  static std::unique_ptr<ScheduleTreeElemBase> make(isl::schedule_node node);
-  static std::unique_ptr<ScheduleTreeElemBase> make(const ScheduleTree& st);
-  virtual ~ScheduleTreeElemBase() {}
-  virtual std::ostream& write(std::ostream& os) const = 0;
-  virtual detail::ScheduleTreeType type() const = 0;
-};
-
-struct ScheduleTreeElemContext : public ScheduleTreeElemBase {
+struct ScheduleTreeContext : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Context;
   isl::set context_;
-  ScheduleTreeElemContext() = delete;
-  ScheduleTreeElemContext(const ScheduleTreeElemContext& eb)
-      : context_(eb.context_) {}
-  explicit ScheduleTreeElemContext(isl::set s) : context_(s) {}
-  virtual ~ScheduleTreeElemContext() override {}
-  bool operator==(const ScheduleTreeElemContext& other) const;
-  bool operator!=(const ScheduleTreeElemContext& other) const {
+  ScheduleTreeContext() = delete;
+  ScheduleTreeContext(const ScheduleTreeContext& eb)
+      : ScheduleTree(eb), context_(eb.context_) {}
+  explicit ScheduleTreeContext(isl::set s)
+      : ScheduleTree(s.get_ctx(), {}, NodeType), context_(s) {}
+  virtual ~ScheduleTreeContext() override {}
+  bool operator==(const ScheduleTreeContext& other) const;
+  bool operator!=(const ScheduleTreeContext& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemDomain : public ScheduleTreeElemBase {
+struct ScheduleTreeDomain : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Domain;
   isl::union_set domain_;
-  ScheduleTreeElemDomain() = delete;
-  ScheduleTreeElemDomain(const ScheduleTreeElemDomain& eb)
-      : domain_(eb.domain_) {}
-  explicit ScheduleTreeElemDomain(isl::union_set us) : domain_(us) {}
-  virtual ~ScheduleTreeElemDomain() override {}
-  bool operator==(const ScheduleTreeElemDomain& other) const;
-  bool operator!=(const ScheduleTreeElemDomain& other) const {
+  ScheduleTreeDomain() = delete;
+  ScheduleTreeDomain(const ScheduleTreeDomain& eb)
+      : ScheduleTree(eb), domain_(eb.domain_) {}
+  explicit ScheduleTreeDomain(isl::union_set us)
+      : ScheduleTree(us.get_ctx(), {}, NodeType), domain_(us) {}
+  virtual ~ScheduleTreeDomain() override {}
+  bool operator==(const ScheduleTreeDomain& other) const;
+  bool operator!=(const ScheduleTreeDomain& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemExtension : public ScheduleTreeElemBase {
+struct ScheduleTreeExtension : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Extension;
   isl::union_map extension_;
-  ScheduleTreeElemExtension() = delete;
-  ScheduleTreeElemExtension(const ScheduleTreeElemExtension& eb)
-      : extension_(eb.extension_) {}
-  explicit ScheduleTreeElemExtension(isl::union_map m) : extension_(m) {}
-  virtual ~ScheduleTreeElemExtension() override {}
-  bool operator==(const ScheduleTreeElemExtension& other) const;
-  bool operator!=(const ScheduleTreeElemExtension& other) const {
+  ScheduleTreeExtension() = delete;
+  ScheduleTreeExtension(const ScheduleTreeExtension& eb)
+      : ScheduleTree(eb), extension_(eb.extension_) {}
+  explicit ScheduleTreeExtension(isl::union_map m)
+      : ScheduleTree(m.get_ctx(), {}, NodeType), extension_(m) {}
+  virtual ~ScheduleTreeExtension() override {}
+  bool operator==(const ScheduleTreeExtension& other) const;
+  bool operator!=(const ScheduleTreeExtension& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemFilter : public ScheduleTreeElemBase {
+struct ScheduleTreeFilter : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Filter;
   isl::union_set filter_;
-  ScheduleTreeElemFilter() = delete;
-  ScheduleTreeElemFilter(const ScheduleTreeElemFilter& eb)
-      : filter_(eb.filter_) {}
-  explicit ScheduleTreeElemFilter(isl::union_set s) : filter_(s) {}
-  virtual ~ScheduleTreeElemFilter() override {}
-  bool operator==(const ScheduleTreeElemFilter& other) const;
-  bool operator!=(const ScheduleTreeElemFilter& other) const {
+  ScheduleTreeFilter() = delete;
+  ScheduleTreeFilter(const ScheduleTreeFilter& eb)
+      : ScheduleTree(eb), filter_(eb.filter_) {}
+  explicit ScheduleTreeFilter(isl::union_set s)
+      : ScheduleTree(s.get_ctx(), {}, NodeType), filter_(s) {}
+  virtual ~ScheduleTreeFilter() override {}
+  bool operator==(const ScheduleTreeFilter& other) const;
+  bool operator!=(const ScheduleTreeFilter& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemMapping : public ScheduleTreeElemBase {
+struct ScheduleTreeMapping : public ScheduleTree {
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
       typename mapping::MappingId::Hash>;
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Mapping;
-  ScheduleTreeElemMapping() = delete;
-  ScheduleTreeElemMapping(const ScheduleTreeElemMapping& eb)
-      : mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeElemMapping(const Mapping& mapping)
-      : mapping(mapping), filter_(isl::union_set()) {
+  ScheduleTreeMapping() = delete;
+  ScheduleTreeMapping(const ScheduleTreeMapping& eb)
+      : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
+  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping)
+      : ScheduleTree(ctx, {}, NodeType),
+        mapping(mapping),
+        filter_(isl::union_set()) {
     TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
     auto domain = mapping.cbegin()->second.domain();
@@ -159,15 +128,12 @@ struct ScheduleTreeElemMapping : public ScheduleTreeElemBase {
       filter_ = filter_.intersect(upa.zero_union_set());
     }
   }
-  virtual ~ScheduleTreeElemMapping() override {}
-  bool operator==(const ScheduleTreeElemMapping& other) const;
-  bool operator!=(const ScheduleTreeElemMapping& other) const {
+  virtual ~ScheduleTreeMapping() override {}
+  bool operator==(const ScheduleTreeMapping& other) const;
+  bool operator!=(const ScheduleTreeMapping& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
@@ -175,66 +141,59 @@ struct ScheduleTreeElemMapping : public ScheduleTreeElemBase {
   isl::union_set filter_;
 };
 
-struct ScheduleTreeElemSequence : public ScheduleTreeElemBase {
+struct ScheduleTreeSequence : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
-  explicit ScheduleTreeElemSequence() {}
-  ScheduleTreeElemSequence(const ScheduleTreeElemSequence& eb) {}
-  virtual ~ScheduleTreeElemSequence() override {}
-  bool operator==(const ScheduleTreeElemSequence& other) const;
-  bool operator!=(const ScheduleTreeElemSequence& other) const {
+  explicit ScheduleTreeSequence(isl::ctx ctx)
+      : ScheduleTree(ctx, {}, NodeType) {}
+  ScheduleTreeSequence(const ScheduleTreeSequence& eb) : ScheduleTree(eb) {}
+  virtual ~ScheduleTreeSequence() override {}
+  bool operator==(const ScheduleTreeSequence& other) const;
+  bool operator!=(const ScheduleTreeSequence& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemSet : public ScheduleTreeElemBase {
+struct ScheduleTreeSet : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
-  explicit ScheduleTreeElemSet() {}
-  ScheduleTreeElemSet(const ScheduleTreeElemSet& eb) {}
-  virtual ~ScheduleTreeElemSet() override {}
-  bool operator==(const ScheduleTreeElemSet& other) const;
-  bool operator!=(const ScheduleTreeElemSet& other) const {
+  explicit ScheduleTreeSet(isl::ctx ctx) : ScheduleTree(ctx, {}, NodeType) {}
+  ScheduleTreeSet(const ScheduleTreeSet& eb) : ScheduleTree(eb) {}
+  virtual ~ScheduleTreeSet() override {}
+  bool operator==(const ScheduleTreeSet& other) const;
+  bool operator!=(const ScheduleTreeSet& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
-struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
+struct ScheduleTreeBand : public ScheduleTree {
  private:
-  ScheduleTreeElemBand() = default;
+  explicit ScheduleTreeBand(isl::ctx ctx) : ScheduleTree(ctx, {}, NodeType) {}
 
  public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Band;
 
-  ScheduleTreeElemBand(const ScheduleTreeElemBand& eb)
-      : permutable_(eb.permutable_),
+  ScheduleTreeBand(const ScheduleTreeBand& eb)
+      : ScheduleTree(eb),
+        permutable_(eb.permutable_),
         mupa_(eb.mupa_),
         coincident_(eb.coincident_),
         unroll_(eb.unroll_) {}
-  virtual ~ScheduleTreeElemBand() override {}
-  bool operator==(const ScheduleTreeElemBand& other) const;
-  bool operator!=(const ScheduleTreeElemBand& other) const {
+  virtual ~ScheduleTreeBand() override {}
+  bool operator==(const ScheduleTreeBand& other) const;
+  bool operator!=(const ScheduleTreeBand& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 
   // First replace "mupa" by its greatest integer part to ensure that the
   // schedule is always integral.
   // The band is not marked permutable, the dimensions are not marked
   // coincident and are not marked for unrolling.
-  static std::unique_ptr<ScheduleTreeElemBand> fromMultiUnionPwAff(
+  static std::unique_ptr<ScheduleTreeBand> fromMultiUnionPwAff(
       isl::multi_union_pw_aff mupa);
 
   // Return the number of scheduling dimensions in the band
@@ -267,26 +226,24 @@ struct ScheduleTreeElemBand : public ScheduleTreeElemBase {
  * that is specific to a thread.  That is, the marker appears right
  * underneath the innermost band member mapped to threads.
  */
-struct ScheduleTreeElemThreadSpecificMarker : public ScheduleTreeElemBase {
+struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
-  explicit ScheduleTreeElemThreadSpecificMarker() {}
-  virtual ~ScheduleTreeElemThreadSpecificMarker() override {}
-  bool operator==(const ScheduleTreeElemThreadSpecificMarker& other) const {
+  explicit ScheduleTreeThreadSpecificMarker(isl::ctx ctx)
+      : ScheduleTree(ctx, {}, NodeType) {}
+  virtual ~ScheduleTreeThreadSpecificMarker() override {}
+  bool operator==(const ScheduleTreeThreadSpecificMarker& other) const {
     return true;
   }
-  bool operator!=(const ScheduleTreeElemThreadSpecificMarker& other) const {
+  bool operator!=(const ScheduleTreeThreadSpecificMarker& other) const {
     return !(*this == other);
   }
   virtual std::ostream& write(std::ostream& os) const override;
-  virtual detail::ScheduleTreeType type() const override {
-    return NodeType;
-  }
 };
 
 bool elemEquals(
-    const ScheduleTreeElemBase* e1,
-    const ScheduleTreeElemBase* e2,
+    const ScheduleTree* e1,
+    const ScheduleTree* e2,
     detail::ScheduleTreeType type);
 
 std::ostream& operator<<(std::ostream& os, isl::ast_loop_type lt);
@@ -294,7 +251,7 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt);
 std::ostream& operator<<(
     std::ostream& os,
     const std::vector<std::unique_ptr<ScheduleTree>>& vst);
-std::ostream& operator<<(std::ostream& os, const ScheduleTreeElemBase& eb);
+std::ostream& operator<<(std::ostream& os, const ScheduleTree& eb);
 
 } // namespace detail
 } // namespace polyhedral

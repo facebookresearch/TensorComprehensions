@@ -74,8 +74,7 @@ inline ScheduleTreeMatcher filter(
     Args... children) {
   ScheduleTreeMatcher m(detail::ScheduleTreeType::Filter, children...);
   m.propertyMatcher_ = [propertyMatcher](const detail::ScheduleTree* tree) {
-    return propertyMatcher(
-        tree->elemAs<detail::ScheduleTreeElemFilter>()->filter_);
+    return propertyMatcher(tree->as<detail::ScheduleTreeFilter>()->filter_);
   };
   return m;
 }
@@ -113,8 +112,7 @@ inline ScheduleTreeMatcher mapping_filter(
     Args... children) {
   ScheduleTreeMatcher m(detail::ScheduleTreeType::Mapping, children...);
   m.propertyMatcher_ = [propertyMatcher](const detail::ScheduleTree* tree) {
-    return propertyMatcher(
-        tree->elemAs<detail::ScheduleTreeElemMapping>()->filter_);
+    return propertyMatcher(tree->as<detail::ScheduleTreeMapping>()->filter_);
   };
   return m;
 }
@@ -155,7 +153,7 @@ inline ScheduleTreeMatcher band(
     Args... children) {
   ScheduleTreeMatcher m(detail::ScheduleTreeType::Band, children...);
   m.propertyMatcher_ = [propertyMatcher](const detail::ScheduleTree* tree) {
-    auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
+    auto band = tree->as<detail::ScheduleTreeBand>();
     return propertyMatcher(
         band->mupa_, band->permutable_, band->coincident_, band->unroll_);
   };
@@ -183,7 +181,7 @@ inline ScheduleTreeMatcher extension(
   ScheduleTreeMatcher m(detail::ScheduleTreeType::Extension, children...);
   m.propertyMatcher_ = [propertyMatcher](const detail::ScheduleTree* tree) {
     return propertyMatcher(
-        tree->elemAs<detail::ScheduleTreeElemExtension>()->extension_);
+        tree->as<detail::ScheduleTreeExtension>()->extension_);
   };
   return m;
 }
