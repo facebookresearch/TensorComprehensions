@@ -58,7 +58,7 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
 
     for i in range(warmup):
         tc_prog.executor.profile_kernel(inp)
-    
+
     first_t = tc_prog.executor.profile_kernel(inp)
 
     if(prune != -1 and first_t > prune*curr_best):
@@ -85,7 +85,7 @@ def optionsFromVector(vect):
     options.useSharedMemory(vect[8])
     options.usePrivateMemory(vect[9])
     options.unrollCopyShared(vect[10])
-    options.maxSharedMemory(vect[11]) 
+    #options.maxSharedMemory(vect[11])
     options.useReadOnlyCache(vect[12])
     return options
 
@@ -114,7 +114,7 @@ def computeCat(inp_arg):
     cat_val = []
 
     divs = getAllDivs(inp)
-    divs2 = getAllDivs([np.array([tc.tclib.shared_memory_size()])])
+    #divs2 = getAllDivs([np.array([tc.tclib.shared_memory_size()])])
 
     cat_val.append([0,1,2])
     cat_val.append([0,1,2])
@@ -127,7 +127,7 @@ def computeCat(inp_arg):
     cat_val.append([0,1])
     cat_val.append([0,1])
     cat_val.append([0,1])
-    cat_val.append(divs2 + [0])
+    cat_val.append([0]) #cat_val.append(divs2 + [0])
     cat_val.append([0,1])
 
     for i in range(13):

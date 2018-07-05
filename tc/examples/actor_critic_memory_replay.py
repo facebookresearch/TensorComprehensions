@@ -16,7 +16,7 @@ import my_utils
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
-BATCH_SZ = 8
+BATCH_SZ = 16
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -35,12 +35,14 @@ win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
+layer_sz = 32
+
 class Predictor(nn.Module):
     def __init__(self, nb_inputs, nb_actions):
         super(Predictor, self).__init__()
-        self.affine1 = nn.Linear(nb_inputs, 32)
-        self.affine2 = nn.Linear(32, nb_actions)
-        self.affine3 = nn.Linear(32, 1)
+        self.affine1 = nn.Linear(nb_inputs, layer_sz)
+        self.affine2 = nn.Linear(layer_sz, nb_actions)
+        self.affine3 = nn.Linear(layer_sz, 1)
 
         self.W = nn.Linear(nb_inputs, nb_inputs)
 
@@ -126,7 +128,7 @@ best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
-    reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=-1, curr_best=np.exp(-best))
+    reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=3, curr_best=np.exp(-best))
     #reward=100*reward
     reward = -np.log(reward)
     add_to_buffer(out_probs, out_values, reward)
