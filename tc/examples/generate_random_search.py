@@ -45,18 +45,21 @@ INTER_DISP = 20
 running_reward = -0.5
 tab_rewards=[]
 tab_best=[]
-best=-0.5
+best=-12
 v_losses=[]
 p_losses=[]
 for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
         out = getRandom()
-        reward = my_utils.evalTime(out.astype(int))
+        reward = my_utils.evalTime(out.astype(int), prune=2, curr_best=np.exp(-best))
         #reward=100*reward#+0.45
         reward = -np.log(reward)
         rewards.append(reward)
-    best = max(best, np.max(rewards))
+    if(best < np.max(rewards) or i==0):
+        best = np.max(rewards) #max(best, np.max(rewards))
+    if(i==0):
+        running_reward = reward
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
     tab_rewards.append(-running_reward)
     tab_best.append(-best)

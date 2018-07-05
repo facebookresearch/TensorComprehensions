@@ -15,10 +15,15 @@ from collections import deque
 
 import my_utils
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
+tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example()
 
 #config = tc.autotuner_settings
 #config["pop_size"]=50
 #config["generations"]=1
-opts = tc.CudaMappingOptions("naive")
-tc.autotune(tc_code, tc_name, inp, starting_options=opts)
+opts = tc.MappingOptions("naive")
+
+print(inp, tc_code, tc_name, init_input_sz)
+
+print(opts)
+
+tc.autotune(tc_code, tc_name, *inp, starting_options=opts)

@@ -16,7 +16,7 @@ import my_utils
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
-BATCH_SZ = 16
+BATCH_SZ = 8
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -46,7 +46,7 @@ class Predictor(nn.Module):
 
     def forward(self, x):
         #ipdb.set_trace()
-        x = F.softmax(self.W(x), dim=-1) * x
+        #x = F.softmax(self.W(x), dim=-1) * x
         tmp1 = F.relu(self.affine1(x))
         out_action = F.softmax(self.affine2(tmp1), dim=-1)
         out_value = self.affine3(tmp1)
@@ -119,14 +119,14 @@ INTER_DISP = 20
 running_reward = -0.5
 tab_rewards=[]
 tab_best=[]
-best=-2
+best=-12
 v_losses=[]
 p_losses=[]
 best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
-    reward = my_utils.evalTime(out_actions.numpy().astype(int))
+    reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=-1, curr_best=np.exp(-best))
     #reward=100*reward
     reward = -np.log(reward)
     add_to_buffer(out_probs, out_values, reward)

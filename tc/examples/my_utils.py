@@ -45,7 +45,7 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_val = cat_val_arg
     cat_sz = cat_sz_arg
 
-def evalTime(opt, iters=50, warmup=30, naive=False):
+def evalTime(opt, iters=50, warmup=30, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
@@ -55,13 +55,18 @@ def evalTime(opt, iters=50, warmup=30, naive=False):
     else:
         opt = optionsFromVector(opt)
     tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
+
+    first_t = tc_prog.executor.profile_kernel(inp)
+
+    if(prune != -1 and first_t > prune*curr_best):
+        return first_t
     for i in range(warmup):
-        tc_prog.executor.profile(inp)
+        tc_prog.executor.profile_kernel(inp)
 
     liste_t_tc = []
     now = time.clock()
     for i in range(iters):
-        iter_time = tc_prog.executor.profile(inp)
+        iter_time = tc_prog.executor.profile_kernel(inp)
         liste_t_tc.append(iter_time)
     mean_time = np.mean(liste_t_tc)
     return mean_time
