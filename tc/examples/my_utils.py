@@ -10,6 +10,22 @@ import numpy as np
 NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 7
 N, G, D, H, W = 5, 5, 5, 1, 1
 
+def get_convolution_example():
+    tc_name = "convolution"
+    tc_code = """
+        def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
+            O(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
+        }
+    """
+
+    N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
+    I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
+    init_input = (I, W1)
+    init_input_sz = np.array([N,C,H,W,O, kH, kW])
+    init_input_sz = torch.from_numpy(init_input_sz).float()
+
+    return (tc_code, tc_name, init_input, init_input_sz)
+
 def print_opt(options):
     print(options.tolist())
 

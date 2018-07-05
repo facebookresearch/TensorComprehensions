@@ -26,22 +26,10 @@ steps_done = 0
 viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
-code = """
-def group_normalization(
-    float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
-    -> (O, mean, var)
-{
-    mean(n, g) +=! I(n, g, r_d, r_h, r_w)
-     var(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
+(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
 
-    O(n, g, d, h, w) = gamma(g, d)
-      * ( I(n, g, d, h, w) - mean(n, g) * 4 )
-      * rsqrt( var(n, g) * 4
-            - mean(n, g) * mean(n, g) * 4 * 4
-            + 1e-5)
-      + beta(g, d)
-}
-"""
+my_utils.computeCat(inp)
+my_utils.set_tc(tc_code, tc_name)
 
 def getRandom():
     opt_v = np.zeros(NB_HYPERPARAMS).astype(int)
@@ -49,19 +37,7 @@ def getRandom():
         opt_v[i] = np.random.randint(my_utils.cat_sz[i])
     return opt_v
 
-N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
-I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
-
-init_input = (I, gamma, beta)
-init_input_sz = np.array([N,G,D,H,W])
-
-inp = init_input
-my_utils.computeCat(inp)
-
 eps = np.finfo(np.float32).eps.item()
-
-tc_prog = tc.define(code, name="group_normalization")
-my_utils.set_tcprog(tc_prog)
 
 
 INTER_DISP = 20
@@ -76,8 +52,9 @@ for i in range(NB_EPOCHS):
     rewards = []
     for j in range(BATCH_SZ):
         out = getRandom()
-        reward = -my_utils.evalTime(out.astype(int))
-        reward=100*reward#+0.45
+        reward = my_utils.evalTime(out.astype(int))
+        #reward=100*reward#+0.45
+        reward = -np.log(reward)
         rewards.append(reward)
     best = max(best, np.max(rewards))
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01

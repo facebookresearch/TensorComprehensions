@@ -24,17 +24,14 @@ steps_done = 0
 buff = deque()
 MAXI_BUFF_SZ = 50
 
+(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
+
+my_utils.computeCat(inp)
+my_utils.set_tc(tc_code, tc_name)
+
 viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
-
-code = """
-def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
-            O(n, m, h, w) +=! I(n, r_c, h + r_kh, w + r_kw) * W1(m, r_c, r_kh, r_kw)
-            }
-"""
-
-name = "convolution"
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
@@ -83,30 +80,9 @@ class FullNetwork(nn.Module):
             x = torch.cat([x, torch.FloatTensor([sym])])
         return x[INIT_INPUT_SZ:], actions_prob, values
 
-#N, G, D, H, W = my_utils.N, my_utils.G, my_utils.D, my_utils.H, my_utils.W
-N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
-#I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
-I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
-
-#init_input = (I, gamma, beta)
-#init_input_sz = np.array([N,G,D,H,W])
-#init_input_sz = torch.from_numpy(init_input_sz).float()
-
-init_input = (I, W1)
-#ipdb.set_trace()
-init_input_sz = np.array([N,C,H,W,O, kH, kW])
-init_input_sz = torch.from_numpy(init_input_sz).float()
-
-inp = init_input
-my_utils.computeCat(inp)
-
 net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters())
 eps = np.finfo(np.float32).eps.item()
-
-tc_code = code
-tc_name = name
-my_utils.set_tc(tc_code, tc_name)
 
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
