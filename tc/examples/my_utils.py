@@ -45,7 +45,7 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_val = cat_val_arg
     cat_sz = cat_sz_arg
 
-def evalTime(opt, iters=50, warmup=30, naive=False, prune=-1, curr_best=-1):
+def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
@@ -56,15 +56,15 @@ def evalTime(opt, iters=50, warmup=30, naive=False, prune=-1, curr_best=-1):
         opt = optionsFromVector(opt)
     tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
 
+    for i in range(warmup):
+        tc_prog.executor.profile_kernel(inp)
+    
     first_t = tc_prog.executor.profile_kernel(inp)
 
     if(prune != -1 and first_t > prune*curr_best):
         return first_t
-    for i in range(warmup):
-        tc_prog.executor.profile_kernel(inp)
 
     liste_t_tc = []
-    now = time.clock()
     for i in range(iters):
         iter_time = tc_prog.executor.profile_kernel(inp)
         liste_t_tc.append(iter_time)
@@ -85,7 +85,7 @@ def optionsFromVector(vect):
     options.useSharedMemory(vect[8])
     options.usePrivateMemory(vect[9])
     options.unrollCopyShared(vect[10])
-    #options.maxSharedMemory(vect[11]) #todo 40000 / 0 et divs
+    options.maxSharedMemory(vect[11]) 
     options.useReadOnlyCache(vect[12])
     return options
 
@@ -114,6 +114,7 @@ def computeCat(inp_arg):
     cat_val = []
 
     divs = getAllDivs(inp)
+    divs2 = getAllDivs([tc.tclib.shared_memory_size()])
 
     cat_val.append([0,1,2])
     cat_val.append([0,1,2])
@@ -126,7 +127,7 @@ def computeCat(inp_arg):
     cat_val.append([0,1])
     cat_val.append([0,1])
     cat_val.append([0,1])
-    cat_val.append([0])
+    cat_val.append(divs2 + [0])
     cat_val.append([0,1])
 
     for i in range(13):
