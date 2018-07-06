@@ -48,6 +48,32 @@ namespace polyhedral {
 
 namespace {
 
+/*
+ * Check if the minimum of any affine function in "list" is strictly
+ * positive on "domain" and, if so, print a warning.
+ * The functions in "list" are used for mapping to block/thread identifiers.
+ * If the minimum is strictly positive, then this means some
+ * identifiers do nothing in the corresponding subtree.
+ * Note that tightenLaunchBounds (if extended to consider
+ * the minimal value of the mapping) may not help much because
+ * those identifiers may get used in other parts of the tree.
+ * Furthermore, at that point it is too late to change the mapping.
+ *
+ * Also double check that the minimum is non-negative.
+ * This should always be the case since the affine functions in "list"
+ * are all the result of a modulo operation.
+ * A value of NaN means that the domain is empty.
+ */
+static void checkMinimum(isl::union_set domain, isl::union_pw_aff_list list) {
+  for (auto upa : list) {
+    upa = upa.intersect_domain(domain);
+    auto min = upa.min_val();
+    TC_CHECK(min.is_nonneg()) << "mapping to negative block/thread" << min;
+    LOG_IF(WARNING, min.is_pos())
+        << "Opportunity for shifting mapping -> min:" << min;
+  }
+}
+
 template <typename ExceptionType>
 inline void throwIfHasPattern(
     ScheduleTreeMatcher matcher,
@@ -111,7 +137,8 @@ detail::ScheduleTree* MappedScop::map(
   TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
 
   auto root = scop_->scheduleRoot();
-  auto domain = activeDomainPoints(root, tree).universe();
+  auto domain = activeDomainPoints(root, tree);
+  auto universe = domain.universe();
 
   std::vector<MappingTypeId> idList;
   auto affList = isl::union_pw_aff_list(list.get_ctx(), 0);
@@ -127,9 +154,11 @@ detail::ScheduleTree* MappedScop::map(
   for (size_t i = nToMap; i < extent.size(); ++i) {
     auto id = MappingTypeId::makeId(i);
     affList = affList.add(
-        isl::union_pw_aff(domain, isl::val::zero(domain.get_ctx())));
+        isl::union_pw_aff(universe, isl::val::zero(domain.get_ctx())));
     idList.emplace_back(id);
   }
+
+  checkMinimum(domain, affList);
 
   auto mapping = detail::ScheduleTree::makeMapping(idList, affList);
   tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
@@ -877,7 +906,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;
-  std::tie(grid, block) = tightenLaunchBounds(*scop, grid, block);
+  std::tie(grid, block) = tightenLaunchBounds(mappedScop, grid, block);
   auto res = MappedScop::makeMappedScop(
       std::move(scop),
       grid,
