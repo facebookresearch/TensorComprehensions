@@ -103,9 +103,9 @@ luts_t = torch.from_numpy(luts).cuda()
 
 T = tc.define(lang, tc.make_naive_options_factory())
 S = T.reduce_codes(luts_t, codes_t)
-V = T.min_2d(S.view((D, N / D)))
+V = T.min_2d(S.view((D, N // D)))
 v = T.min_1d(V)
-MinIdx = T.argmin_2d(S.view((D, N / D)), v)
+MinIdx = T.argmin_2d(S.view((D, N // D)), v)
 min_idx = T.argmin_1d(S, MinIdx)
 print("minval: {} minidx: {}".format(v, min_idx))
 
@@ -159,8 +159,8 @@ def argmin_1d(float(K, N) S, int32(K, D) MinIdx2) -> (MinIdx) {
 
 T = tc.define(lang, tc.make_naive_options_factory())
 S = T.reduce_codes(luts_t, codes_t)
-V2 = T.min_2d(S.view((K, D, N / D)))
+V2 = T.min_2d(S.view((K, D, N // D)))
 V = T.min_1d(V2)
-MinIdx2 = T.argmin_2d(S.view((K, D, N / D)), V)
+MinIdx2 = T.argmin_2d(S.view((K, D, N // D)), V)
 MinIdx = T.argmin_1d(S, MinIdx2)
 print("minval: {} minidx: {}".format(V, MinIdx))

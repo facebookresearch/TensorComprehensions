@@ -19,6 +19,7 @@ import argparse
 import numpy as np
 import os
 import tensor_comprehensions as tc
+import torch
 
 from caffe2.python import core, dyndep, workspace, utils
 
@@ -85,18 +86,22 @@ def main():
 
 @utils.debug
 def tune(args):
-    fc = tc.define(FC_LANG, name="func_fc")
-    options = fc.autotune(
-        (args.batch_size, args.input_dim),
-        (args.output_dim, args.input_dim),
-        (args.output_dim,),
-        cache = args.tuner_cache_file,
-        threads = args.tuner_threads,
-        generations = args.tuner_gen_generations,
-        pop_size = args.tuner_gen_pop_size,
-    )
-    print(options.toString())
-    return options
+    tuner_config = (
+        tc.TunerConfig()
+        .generations(args.tuner_gen_generations)
+        .devices(args.tuner_devices)
+        .threads(args.tuner_threads)
+        .pop_size(args.tuner_gen_pop_size))
+    return tc.autotune(
+        FC_LANG,
+        'func_fc',
+        torch.randn(args.batch_size, args.input_dim, device='cuda'),
+        torch.randn(args.output_dim, args.input_dim, device='cuda'),
+        torch.randn(args.output_dim, device='cuda'),
+        starting_options = tc.MappingOptions('naive'),
+        tuner_config = tuner_config,
+        cache_filename = args.tuner_cache_file,
+        store_to_cache = True)
 
 
 @utils.debug
