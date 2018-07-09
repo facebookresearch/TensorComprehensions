@@ -658,9 +658,9 @@ PYBIND11_MODULE(tclib, m) {
           "getDict",
           [](tc::CudaMappingOptions& instance) {
             py::dict rv;
-            rv["outerScheduleFusionStrategy"] = instance.generic.outerScheduleOptions.proto.fusion_strategy();
+            rv["outerScheduleFusionStrategy"] = FusionStrategy_Name(instance.generic.outerScheduleOptions.proto.fusion_strategy());
             if(instance.generic.proto.has_intra_tile_schedule_options())
-              rv["intraTileScheduleFusionStrategy"] = instance.generic.intraTileScheduleOptions.proto.fusion_strategy();
+              rv["intraTileScheduleFusionStrategy"] = FusionStrategy_Name(instance.generic.intraTileScheduleOptions.proto.fusion_strategy());
             rv["fixParametersBeforeScheduling"] = instance.generic.proto.fix_parameters_before_scheduling();
             if(instance.generic.proto.has_tiling())
               rv["tile"] = instance.generic.tiling.extractVector();
