@@ -137,7 +137,7 @@ for i in range(NB_EPOCHS):
     out_actions, out_probs, out_values = net(init_input_sz)
     reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=-1, curr_best=np.exp(-best))
     #reward=100*reward
-    reward = -((reward)/1000)
+    reward = -((reward)/100)
     add_to_buffer(out_probs, out_values, reward)
     actions_probs, values, rewards = select_batch()
     for j in range(1):

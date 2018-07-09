@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import tensor_comprehensions as tc
 import numpy as np
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = 13, 7
+NB_HYPERPARAMS, INIT_INPUT_SZ = 19, 7
 N, G, D, H, W = 5, 5, 5, 1, 1
 
 def get_convolution_example():
@@ -56,6 +56,9 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
         opt = optionsFromVector(opt)
     tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
 
+    first_ft = tc_prog.executor.profile_kernel(inp)
+    if(prune != -1 and first_ft > 100*curr_best):
+        return first_ft
     for i in range(warmup):
         tc_prog.executor.profile_kernel(inp)
 
@@ -77,16 +80,16 @@ def optionsFromVector(vect):
     options.outerScheduleFusionStrategy(strat_str[vect[0]])
     options.intraTileScheduleFusionStrategy(strat_str[vect[1]])
     options.fixParametersBeforeScheduling(vect[2])
-    options.tile([vect[3]]) #why list in doc?
-    options.unroll(2**vect[4]) #128 is too big? trying 30
-    options.matchLibraryCalls(vect[5])
-    options.mapToBlocks([vect[6]])
-    options.mapToThreads([vect[7]]) #grid?
-    options.useSharedMemory(vect[8])
-    options.usePrivateMemory(vect[9])
-    options.unrollCopyShared(vect[10])
-    #options.maxSharedMemory(vect[11])
-    options.useReadOnlyCache(vect[12])
+    options.tile(list(vect[4:(4+vect[3])])) #why list in doc?
+    options.unroll(2**vect[10]) #128 is too big? trying 30
+    options.matchLibraryCalls(vect[11])
+    options.mapToBlocks([vect[12]])
+    options.mapToThreads([vect[13]]) #grid?
+    options.useSharedMemory(vect[14])
+    options.usePrivateMemory(vect[15])
+    options.unrollCopyShared(vect[16])
+    #options.maxSharedMemory(vect[17])
+    options.useReadOnlyCache(vect[18])
     return options
 
 def computeDivs(sz):
@@ -119,16 +122,18 @@ def computeCat(inp_arg):
     cat_val.append([0,1,2])
     cat_val.append([0,1,2])
     cat_val.append([0,1])
-    cat_val.append(divs + [0])
-    cat_val.append([i for i in range(10)])
+    cat_val.append([i+1 for i in range(6)])
+    for i in range(6): #tiling
+        cat_val.append(divs + [0])
+    cat_val.append([i for i in range(8)])
     cat_val.append([0,1])
-    cat_val.append(divs)
-    cat_val.append(divs)
+    cat_val.append(divs) #todo mettre liste taille 3
+    cat_val.append(divs) #todo liste taille 3
     cat_val.append([0,1])
     cat_val.append([0,1])
     cat_val.append([0,1])
-    cat_val.append([0]) #cat_val.append(divs2 + [0])
+    cat_val.append([0]) #cat_val.append(divs2)
     cat_val.append([0,1])
 
-    for i in range(13):
+    for i in range(NB_HYPERPARAMS):
         cat_sz[i] = len(cat_val[i])
