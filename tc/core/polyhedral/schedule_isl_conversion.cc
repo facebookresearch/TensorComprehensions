@@ -276,7 +276,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
   } else if (node.isa<isl::schedule_node_sequence>()) {
     return ScheduleTreeSequence::make(ctx);
   } else if (node.isa<isl::schedule_node_set>()) {
-    return std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(ctx));
+    return ScheduleTreeSet::make(ctx);
   }
   LOG(FATAL) << "NYI: ScheduleTree from type: "
              << isl_schedule_node_get_type(node.get());
