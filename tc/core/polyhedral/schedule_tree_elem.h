@@ -297,11 +297,15 @@ struct ScheduleTreeBand : public ScheduleTree {
  * underneath the innermost band member mapped to threads.
  */
 struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
 
+ private:
   explicit ScheduleTreeThreadSpecificMarker(isl::ctx ctx)
       : ScheduleTree(ctx, {}, NodeType) {}
+
+ public:
   virtual ~ScheduleTreeThreadSpecificMarker() override {}
 
   bool operator==(const ScheduleTreeThreadSpecificMarker& other) const {
@@ -310,6 +314,10 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
   bool operator!=(const ScheduleTreeThreadSpecificMarker& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
 };
