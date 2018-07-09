@@ -37,6 +37,15 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
+std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
+    isl::set context,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(context));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::fromMultiUnionPwAff(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());

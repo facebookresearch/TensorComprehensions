@@ -251,7 +251,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     return fromIslScheduleNodeBand(band);
   } else if (auto context = node.as<isl::schedule_node_context>()) {
     auto c = context.get_context();
-    return std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(c));
+    return ScheduleTreeContext::make(c);
   } else if (auto domain = node.as<isl::schedule_node_domain>()) {
     auto c = domain.get_domain();
     return std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(c));

@@ -251,9 +251,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
     isl::set context,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeContext(context));
-  res->appendChildren(std::move(children));
-  return res;
+  return ScheduleTreeContext::make(context, std::move(children));
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(

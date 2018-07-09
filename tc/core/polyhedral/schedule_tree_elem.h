@@ -31,15 +31,23 @@ namespace polyhedral {
 namespace detail {
 
 struct ScheduleTreeContext : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Context;
 
+ private:
   ScheduleTreeContext() = delete;
-  ScheduleTreeContext(const ScheduleTreeContext& eb)
-      : ScheduleTree(eb), context_(eb.context_) {}
   explicit ScheduleTreeContext(isl::set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), context_(s) {}
+
+ public:
+  ScheduleTreeContext(const ScheduleTreeContext& eb)
+      : ScheduleTree(eb), context_(eb.context_) {}
   virtual ~ScheduleTreeContext() override {}
+
+  static std::unique_ptr<ScheduleTreeContext> make(
+      isl::set context,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   bool operator==(const ScheduleTreeContext& other) const;
   bool operator!=(const ScheduleTreeContext& other) const {
