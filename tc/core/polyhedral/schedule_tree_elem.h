@@ -121,20 +121,28 @@ struct ScheduleTreeExtension : public ScheduleTree {
 };
 
 struct ScheduleTreeFilter : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Filter;
 
+ private:
   ScheduleTreeFilter() = delete;
-  ScheduleTreeFilter(const ScheduleTreeFilter& eb)
-      : ScheduleTree(eb), filter_(eb.filter_) {}
   explicit ScheduleTreeFilter(isl::union_set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), filter_(s) {}
+
+ public:
+  ScheduleTreeFilter(const ScheduleTreeFilter& eb)
+      : ScheduleTree(eb), filter_(eb.filter_) {}
   virtual ~ScheduleTreeFilter() override {}
 
   bool operator==(const ScheduleTreeFilter& other) const;
   bool operator!=(const ScheduleTreeFilter& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeFilter> make(
+      isl::union_set filter,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
 

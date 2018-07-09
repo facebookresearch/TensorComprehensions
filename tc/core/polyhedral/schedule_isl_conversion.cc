@@ -263,7 +263,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     return ScheduleTreeExtension::make(e);
   } else if (auto filter = node.as<isl::schedule_node_filter>()) {
     auto f = filter.get_filter();
-    return std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(f));
+    return ScheduleTreeFilter::make(f);
   } else if (auto guard = node.as<isl::schedule_node_guard>()) {
     LOG(FATAL) << "guard nodes not supported";
     return nullptr;

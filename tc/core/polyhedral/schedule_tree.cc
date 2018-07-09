@@ -255,9 +255,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
     isl::union_set filter,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeFilter(filter));
-  res->appendChildren(std::move(children));
-  return res;
+  return ScheduleTreeFilter::make(filter, std::move(children));
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
