@@ -274,7 +274,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     LOG(FATAL) << "ScheduleTree::make called on explicit leaf";
     return nullptr;
   } else if (node.isa<isl::schedule_node_sequence>()) {
-    return std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(ctx));
+    return ScheduleTreeSequence::make(ctx);
   } else if (node.isa<isl::schedule_node_set>()) {
     return std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(ctx));
   }

@@ -106,6 +106,15 @@ ScheduleTreeMapping::ScheduleTreeMapping(
   }
 }
 
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::fromMultiUnionPwAff(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());

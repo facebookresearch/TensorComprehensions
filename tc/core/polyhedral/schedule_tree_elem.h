@@ -189,11 +189,15 @@ struct ScheduleTreeMapping : public ScheduleTree {
 };
 
 struct ScheduleTreeSequence : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
 
+ private:
   explicit ScheduleTreeSequence(isl::ctx ctx)
       : ScheduleTree(ctx, {}, NodeType) {}
+
+ public:
   ScheduleTreeSequence(const ScheduleTreeSequence& eb) : ScheduleTree(eb) {}
   virtual ~ScheduleTreeSequence() override {}
 
@@ -201,6 +205,10 @@ struct ScheduleTreeSequence : public ScheduleTree {
   bool operator!=(const ScheduleTreeSequence& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeSequence> make(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
 };

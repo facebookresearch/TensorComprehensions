@@ -401,11 +401,11 @@ struct ScheduleTree {
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
     auto ctx = arg->ctx_;
-    auto res = new T(ctx);
-    flattenSequenceOrSet(res);
+    auto res = T::make(ctx);
+    flattenSequenceOrSet(res.get());
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
-    return ScheduleTreeUPtr(res);
+    return res;
   }
 
   // Make a (deep) copy of "tree".
