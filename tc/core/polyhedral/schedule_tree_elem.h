@@ -162,26 +162,7 @@ struct ScheduleTreeMapping : public ScheduleTree {
   ScheduleTreeMapping() = delete;
   ScheduleTreeMapping(const ScheduleTreeMapping& eb)
       : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping)
-      : ScheduleTree(ctx, {}, NodeType),
-        mapping(mapping),
-        filter_(isl::union_set()) {
-    TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
-
-    auto domain = mapping.cbegin()->second.domain();
-    for (auto& kvp : mapping) {
-      TC_CHECK(domain.is_equal(kvp.second.domain()));
-    }
-    filter_ = domain.universe();
-    for (auto& kvp : mapping) {
-      auto upa = kvp.second;
-      auto id = kvp.first;
-      // Create mapping filter by equating the
-      // parameter mappedIds[i] to the "i"-th affine function.
-      upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
-      filter_ = filter_.intersect(upa.zero_union_set());
-    }
-  }
+  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping);
   virtual ~ScheduleTreeMapping() override {}
 
   bool operator==(const ScheduleTreeMapping& other) const;
