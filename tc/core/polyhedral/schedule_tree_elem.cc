@@ -46,6 +46,15 @@ std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    isl::union_set domain,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(domain));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::fromMultiUnionPwAff(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());

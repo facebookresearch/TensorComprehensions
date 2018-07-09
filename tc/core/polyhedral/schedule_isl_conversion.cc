@@ -254,7 +254,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     return ScheduleTreeContext::make(c);
   } else if (auto domain = node.as<isl::schedule_node_domain>()) {
     auto c = domain.get_domain();
-    return std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(c));
+    return ScheduleTreeDomain::make(c);
   } else if (auto expansion = node.as<isl::schedule_node_expansion>()) {
     LOG(FATAL) << "expansion nodes not supported";
     return nullptr;

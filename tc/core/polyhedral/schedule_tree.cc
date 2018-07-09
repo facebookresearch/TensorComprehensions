@@ -243,9 +243,7 @@ ScheduleTreeUPtr ScheduleTree::makeEmptyBand(const ScheduleTree* root) {
 std::unique_ptr<ScheduleTree> ScheduleTree::makeDomain(
     isl::union_set domain,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res = std::unique_ptr<ScheduleTree>(new ScheduleTreeDomain(domain));
-  res->appendChildren(std::move(children));
-  return res;
+  return ScheduleTreeDomain::make(domain, std::move(children));
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeContext(
