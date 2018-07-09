@@ -226,13 +226,11 @@ message(STATUS "Found ATen.so file: ${ATEN_LIBRARIES}")
 ################################################################################
 # isl
 ################################################################################
-set(ISL_INT "gmp" CACHE STRING "Which package to use to represent multi-precision integers (gmp|imath)")
 # use locally generated C++ bindings
 include_directories(AFTER ${PROJECT_SOURCE_DIR}/isl_interface/include)
 include_directories(AFTER ${PROJECT_SOURCE_DIR}/third-party/islpp/include)
 include_directories(AFTER ${CMAKE_CURRENT_BINARY_DIR}/third-party/islpp/include)
-add_subdirectory(third-party/islpp)
-set(ISL_LIBRARIES isl-static)
+add_subdirectory(external/isl)
 
 ################################################################################
 # Halide
