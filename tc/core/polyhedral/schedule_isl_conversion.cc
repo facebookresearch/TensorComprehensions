@@ -237,7 +237,7 @@ namespace {
 
 std::unique_ptr<ScheduleTreeBand> fromIslScheduleNodeBand(
     isl::schedule_node_band b) {
-  auto res = ScheduleTreeBand::fromMultiUnionPwAff(b.get_partial_schedule());
+  auto res = ScheduleTreeBand::make(b.get_partial_schedule());
   res->permutable_ = b.get_permutable();
   for (size_t i = 0; i < b.n_member(); ++i) {
     res->coincident_[i] = b.member_get_coincident(i);

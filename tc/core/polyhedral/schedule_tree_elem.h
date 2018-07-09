@@ -264,8 +264,7 @@ struct ScheduleTreeBand : public ScheduleTree {
   // schedule is always integral.
   // The band is not marked permutable, the dimensions are not marked
   // coincident and are not marked for unrolling.
-  static std::unique_ptr<ScheduleTreeBand> fromMultiUnionPwAff(
-      isl::multi_union_pw_aff mupa);
+  static std::unique_ptr<ScheduleTreeBand> make(isl::multi_union_pw_aff mupa);
 
   // Return the number of scheduling dimensions in the band
   size_t nMember() const;

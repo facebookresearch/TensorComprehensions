@@ -123,7 +123,7 @@ std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
   return res;
 }
 
-std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::fromMultiUnionPwAff(
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
     isl::multi_union_pw_aff mupa) {
   isl::ctx ctx(mupa.get_ctx());
   std::unique_ptr<ScheduleTreeBand> band(new ScheduleTreeBand(ctx));

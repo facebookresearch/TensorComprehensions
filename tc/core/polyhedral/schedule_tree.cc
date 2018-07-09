@@ -226,7 +226,7 @@ size_t ScheduleTree::scheduleDepth(const ScheduleTree* relativeRoot) const {
 std::unique_ptr<ScheduleTree> ScheduleTree::makeBand(
     isl::multi_union_pw_aff mupa,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res = ScheduleTreeBand::fromMultiUnionPwAff(mupa);
+  auto res = ScheduleTreeBand::make(mupa);
   res->appendChildren(std::move(children));
   return res;
 }
