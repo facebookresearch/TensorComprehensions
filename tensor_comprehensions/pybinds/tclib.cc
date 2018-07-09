@@ -658,19 +658,19 @@ PYBIND11_MODULE(tclib, m) {
           "getDict",
           [](tc::CudaMappingOptions& instance) {
             py::dict rv;
-            rv["outerScheduleFusionStrategy"] = instance.generic.view.outerScheduleOptions.proto.fusion_strategy();
-            if(instance.generic.view.proto.has_intra_tile_schedule_options())
-              rv["intraTileScheduleFusionStrategy"] = instance.generic.view.intraTileScheduleOptions.proto.fusion_strategy();
-            rv["fixParametersBeforeScheduling"] = instance.generic.view.proto.fix_parameters_before_scheduling();
-            if(instance.generic.view.proto.has_tiling())
-              rv["tile"] = instance.generic.view.tiling.extractVector();
-            if (instance.generic.view.proto.has_unroll())
-              rv["unroll"] = instance.generic.view.proto.unroll();
-            rv["tileImperfectlyNested"] = instance.generic.view.proto.tile_imperfectly_nested();
-            rv["matchLibraryCalls"] = instance.generic.view.proto.match_library_calls();
+            rv["outerScheduleFusionStrategy"] = instance.generic.outerScheduleOptions.proto.fusion_strategy();
+            if(instance.generic.proto.has_intra_tile_schedule_options())
+              rv["intraTileScheduleFusionStrategy"] = instance.generic.intraTileScheduleOptions.proto.fusion_strategy();
+            rv["fixParametersBeforeScheduling"] = instance.generic.proto.fix_parameters_before_scheduling();
+            if(instance.generic.proto.has_tiling())
+              rv["tile"] = instance.generic.tiling.extractVector();
+            if (instance.generic.proto.has_unroll())
+              rv["unroll"] = instance.generic.proto.unroll();
+            rv["tileImperfectlyNested"] = instance.generic.proto.tile_imperfectly_nested();
+            rv["matchLibraryCalls"] = instance.generic.proto.match_library_calls();
             rv["mapToThreads"] = instance.block.extractVector();
             rv["mapToBlocks"] = instance.grid.extractVector();
-            rv["useSharedMemory"] = instance.proto().useSharedMemory();
+            rv["useSharedMemory"] = instance.proto().use_shared_memory();
             rv["usePrivateMemory"] = instance.proto().use_private_memory();
             rv["unrollCopyShared"] = instance.proto().unroll_copy_shared();
             rv["useReadOnlyCache"] = instance.proto().use_readonly_cache();
