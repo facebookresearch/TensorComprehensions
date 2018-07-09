@@ -237,12 +237,14 @@ namespace {
 
 std::unique_ptr<ScheduleTreeBand> fromIslScheduleNodeBand(
     isl::schedule_node_band b) {
-  auto res = ScheduleTreeBand::make(b.get_partial_schedule());
-  res->permutable_ = b.get_permutable();
-  for (size_t i = 0; i < b.n_member(); ++i) {
-    res->coincident_[i] = b.member_get_coincident(i);
+  auto n = b.n_member();
+  std::vector<bool> coincident(n, false);
+  std::vector<bool> unroll(n, false);
+  for (size_t i = 0; i < n; ++i) {
+    coincident[i] = b.member_get_coincident(i);
   }
-  return res;
+  return ScheduleTreeBand::make(
+      b.get_partial_schedule(), b.get_permutable(), coincident, unroll);
 }
 
 std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {

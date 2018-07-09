@@ -260,11 +260,15 @@ struct ScheduleTreeBand : public ScheduleTree {
 
   virtual std::ostream& write(std::ostream& os) const override;
 
-  // First replace "mupa" by its greatest integer part to ensure that the
+  // Make a schedule node band from partial schedule.
+  // Replace "mupa" by its greatest integer part to ensure that the
   // schedule is always integral.
-  // The band is not marked permutable, the dimensions are not marked
-  // coincident and are not marked for unrolling.
-  static std::unique_ptr<ScheduleTreeBand> make(isl::multi_union_pw_aff mupa);
+  static std::unique_ptr<ScheduleTreeBand> make(
+      isl::multi_union_pw_aff mupa,
+      bool permutable,
+      std::vector<bool> coincident,
+      std::vector<bool> unroll,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   // Return the number of scheduling dimensions in the band
   size_t nMember() const;

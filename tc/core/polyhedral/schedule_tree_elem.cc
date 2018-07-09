@@ -124,13 +124,20 @@ std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
 }
 
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
-    isl::multi_union_pw_aff mupa) {
+    isl::multi_union_pw_aff mupa,
+    bool permutable,
+    std::vector<bool> coincident,
+    std::vector<bool> unroll,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), coincident.size());
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), unroll.size());
   isl::ctx ctx(mupa.get_ctx());
   std::unique_ptr<ScheduleTreeBand> band(new ScheduleTreeBand(ctx));
+  band->permutable_ = permutable;
   band->mupa_ = mupa.floor();
-  size_t n = band->mupa_.size();
-  band->coincident_ = vector<bool>(n, false);
-  band->unroll_ = vector<bool>(n, false);
+  band->coincident_ = coincident;
+  band->unroll_ = unroll;
+  band->appendChildren(std::move(children));
   return band;
 }
 
