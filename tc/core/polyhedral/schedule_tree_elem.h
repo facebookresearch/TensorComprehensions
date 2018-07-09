@@ -91,15 +91,23 @@ struct ScheduleTreeDomain : public ScheduleTree {
 };
 
 struct ScheduleTreeExtension : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Extension;
 
+ private:
   ScheduleTreeExtension() = delete;
-  ScheduleTreeExtension(const ScheduleTreeExtension& eb)
-      : ScheduleTree(eb), extension_(eb.extension_) {}
   explicit ScheduleTreeExtension(isl::union_map m)
       : ScheduleTree(m.get_ctx(), {}, NodeType), extension_(m) {}
+
+ public:
+  ScheduleTreeExtension(const ScheduleTreeExtension& eb)
+      : ScheduleTree(eb), extension_(eb.extension_) {}
   virtual ~ScheduleTreeExtension() override {}
+
+  static std::unique_ptr<ScheduleTreeExtension> make(
+      isl::union_map extension,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   bool operator==(const ScheduleTreeExtension& other) const;
   bool operator!=(const ScheduleTreeExtension& other) const {

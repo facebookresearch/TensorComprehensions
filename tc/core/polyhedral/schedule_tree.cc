@@ -283,10 +283,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
 std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(
     isl::union_map extension,
     std::vector<ScheduleTreeUPtr>&& children) {
-  auto res =
-      std::unique_ptr<ScheduleTree>(new ScheduleTreeExtension(extension));
-  res->appendChildren(std::move(children));
-  return res;
+  return ScheduleTreeExtension::make(extension, std::move(children));
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeThreadSpecificMarker(

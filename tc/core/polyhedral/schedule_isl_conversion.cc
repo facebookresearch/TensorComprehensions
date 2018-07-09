@@ -260,7 +260,7 @@ std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
     return nullptr;
   } else if (auto extension = node.as<isl::schedule_node_extension>()) {
     auto e = extension.get_extension();
-    return std::unique_ptr<ScheduleTreeExtension>(new ScheduleTreeExtension(e));
+    return ScheduleTreeExtension::make(e);
   } else if (auto filter = node.as<isl::schedule_node_filter>()) {
     auto f = filter.get_filter();
     return std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(f));
