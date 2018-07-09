@@ -151,6 +151,7 @@ struct ScheduleTreeFilter : public ScheduleTree {
 };
 
 struct ScheduleTreeMapping : public ScheduleTree {
+ public:
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
@@ -159,16 +160,24 @@ struct ScheduleTreeMapping : public ScheduleTree {
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Mapping;
 
+ private:
   ScheduleTreeMapping() = delete;
+  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping);
+
+ public:
   ScheduleTreeMapping(const ScheduleTreeMapping& eb)
       : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping);
   virtual ~ScheduleTreeMapping() override {}
 
   bool operator==(const ScheduleTreeMapping& other) const;
   bool operator!=(const ScheduleTreeMapping& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeMapping> make(
+      isl::ctx ctx,
+      const Mapping& mapping,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
 

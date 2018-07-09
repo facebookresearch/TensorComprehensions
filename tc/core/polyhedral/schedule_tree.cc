@@ -272,10 +272,7 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
   TC_CHECK_EQ(mappedIds.size(), mapping.size())
       << "some id is used more than once in the mapping";
   auto ctx = mappedIds[0].get_ctx();
-  auto res =
-      std::unique_ptr<ScheduleTree>(new ScheduleTreeMapping(ctx, mapping));
-  res->appendChildren(std::move(children));
-  return res;
+  return ScheduleTreeMapping::make(ctx, mapping, std::move(children));
 }
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeExtension(

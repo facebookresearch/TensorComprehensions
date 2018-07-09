@@ -73,6 +73,16 @@ std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    isl::ctx ctx,
+    const ScheduleTreeMapping::Mapping& mapping,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeMapping>(
+      new ScheduleTreeMapping(ctx, mapping));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 ScheduleTreeMapping::ScheduleTreeMapping(
     isl::ctx ctx,
     const ScheduleTreeMapping::Mapping& mapping)
