@@ -113,9 +113,9 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
 };
 
 TEST_F(Sum4D, CodeOuterBand) {
-  auto declarations = {"__shared__ float32 _A_0[16][16][16][16];",
-                       "__shared__ float32 _B_0[16][16][16][16];",
-                       "__shared__ float32 _C_0[16][16][16][16];"};
+  auto declarations = {"__shared__ float _A_0[16][16][16][16];",
+                       "__shared__ float _B_0[16][16][16][16];",
+                       "__shared__ float _C_0[16][16][16][16];"};
 
   auto copyA =
       "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7];";
@@ -161,9 +161,9 @@ TEST_F(Sum4D, CodeOuterBand) {
  * promoteEverythingAt does not call mapCopiesToThreads.
  */
 TEST_F(Sum4D, CodeAboveThreadMapping) {
-  auto declarations = {"__shared__ float32 _A_0[16][16][16][16];",
-                       "__shared__ float32 _B_0[16][16][16][16];",
-                       "__shared__ float32 _C_0[16][16][16][16];"};
+  auto declarations = {"__shared__ float _A_0[16][16][16][16];",
+                       "__shared__ float _B_0[16][16][16][16];",
+                       "__shared__ float _C_0[16][16][16][16];"};
   auto copyA =
       "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7]";
   auto copyB =
@@ -204,9 +204,9 @@ TEST_F(Sum4D, CodeAboveThreadMapping) {
 }
 
 TEST_F(Sum4D, CodeInnerBand) {
-  auto declarations = {"__shared__ float32 _C_0[1][1][1][1];",
-                       "__shared__ float32 _A_0[1][1][1][1];",
-                       "__shared__ float32 _B_0[1][1][1][1];"};
+  auto declarations = {"__shared__ float _C_0[1][1][1][1];",
+                       "__shared__ float _A_0[1][1][1][1];",
+                       "__shared__ float _B_0[1][1][1][1];"};
   auto copyA =
       "_A_0[0][0][0][0] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto copyB =
@@ -473,9 +473,9 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
   }
 
   void expectNoABCPromotion(const std::string& code) {
-    auto aDeclPos = code.find("  float32 _A_0");
-    auto bDeclPos = code.find("  float32 _B_0");
-    auto cDeclPos = code.find("  float32 _C_0");
+    auto aDeclPos = code.find("  float _A_0");
+    auto bDeclPos = code.find("  float _B_0");
+    auto cDeclPos = code.find("  float _C_0");
     EXPECT_TRUE(aDeclPos == std::string::npos)
         << "tensor A promoted to register but has elements accessed "
         << "by multiple threads";
@@ -487,7 +487,7 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
   }
 
   void expectFourOElementsPromoted(const std::string& code) {
-    auto oDeclPos = code.find("float32 _O_0[4][1];");
+    auto oDeclPos = code.find("float _O_0[4][1];");
     EXPECT_TRUE(oDeclPos != std::string::npos)
         << "expected O to be promoted to registers";
 
@@ -541,7 +541,7 @@ TEST_F(MatMulBias, RegisterPromotion) {
                             .usePrivateMemory(true);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
-  auto declPos = code.find("float32 _O_0");
+  auto declPos = code.find("float _O_0");
   auto copyToPos =
       code.find("_O_0[0][0] = O[32 * b0 + c3][t0 + 32 * b1]", declPos + 1);
   auto copyFromPos =
@@ -570,7 +570,7 @@ TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
 
-  auto declPos = code.find("float32 _O_0[1][1]");
+  auto declPos = code.find("float _O_0[1][1]");
   EXPECT_TRUE(declPos == std::string::npos)
       << "not expected promotion to register because promoted to shared";
 
@@ -606,7 +606,7 @@ TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
   auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
   promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot());
   auto code = emitCode(mscop);
-  auto oDeclPos = code.find("float32 _O_0;");
+  auto oDeclPos = code.find("float _O_0;");
 
   EXPECT_TRUE(oDeclPos == std::string::npos)
       << "not expected O to be promoted to registers";

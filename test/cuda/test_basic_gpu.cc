@@ -99,13 +99,15 @@ void loadUnload(const std::string& ptx) {
 
 TEST(BasicGpuTest, Nvrtc) {
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaFree(0));
-  auto PTX = jitCompile(R"CUDA(
+  auto PTX = jitCompile(
+      R"CUDA(
 extern "C" {
 __global__ void foo(int N)
 {
   assert(N == 1);
 }
-})CUDA", {"-G"});
+})CUDA",
+      {"-G"});
 
   std::string ptx(PTX.data());
   loadUnload(ptx);
@@ -153,15 +155,12 @@ namespace {
 // Mark the function argument as __restrict__ depending on the flag.
 std::string makeFuncWithOptionalRestrict(bool useRestrict) {
   std::stringstream ss;
-  ss << R"CUDA(typedef float float32;
-extern "C" {
-)CUDA";
   ss
-      << (useRestrict ? "__global__ void func(float32* __restrict__ pO2) {"
-                      : "__global__ void func(float32* pO2) {");
+      << (useRestrict ? "__global__ void func(float* __restrict__ pO2) {"
+                      : "__global__ void func(float* pO2) {");
   ss << R"CUDA(int b0 = blockIdx.x;
   int t0 = threadIdx.x;
-  float32 (*O2)[2] = reinterpret_cast<float32 (*)[2]>(pO2);
+  float (*O2)[2] = reinterpret_cast<float (*)[2]>(pO2);
   O2[b0][t0] = 0.000000f;  // S1
   __syncthreads();
   if (t0 == 0) {
@@ -171,7 +170,6 @@ extern "C" {
   }
   __syncthreads();
   O2[b0][t0] = fmax(O2[b0][t0], 0);  // S3
-}
 })CUDA";
   return ss.str();
 }
