@@ -554,8 +554,8 @@ isl::multi_aff makeMultiAffAccess(
       << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
-  auto tensorSpace = domainSpace.params().named_set_from_params_id(
-      tensorId, subscripts.size());
+  auto tensorSpace =
+      domainSpace.params().add_named_tuple_id_ui(tensorId, subscripts.size());
   auto space = domainSpace.map_from_domain_and_range(tensorSpace);
 
   auto ma = isl::multi_aff::zero(space);

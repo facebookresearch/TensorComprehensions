@@ -366,7 +366,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
 isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
   auto prefix = prefixScheduleMupa(root, tree);
   auto scheduleSpace = prefix.get_space();
-  auto space = scheduleSpace.params().named_set_from_params_id(id, 0);
+  auto space = scheduleSpace.params().add_named_tuple_id_ui(id, 0);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
   return isl::map::universe(extensionSpace);
 }
@@ -551,7 +551,7 @@ bool canOrder(
   }
   // Create an ordering schedule function first -> 0; second -> 1.
   auto ctx = dependences.get_ctx();
-  auto space = isl::space(ctx, 0).unnamed_set_from_params(1);
+  auto space = isl::space(ctx, 0).add_unnamed_tuple_ui(1);
   auto zero = isl::multi_val::zero(space);
   auto one = zero.set_val(0, isl::val::one(ctx));
   auto order = isl::multi_union_pw_aff(first, zero);

@@ -2963,7 +2963,9 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
+  inline isl::space add_named_tuple_id_ui(isl::id tuple_id, unsigned int dim) const;
   inline isl::space add_param(isl::id id) const;
+  inline isl::space add_unnamed_tuple_ui(unsigned int dim) const;
   inline isl::space align_params(isl::space dim2) const;
   inline bool can_curry() const;
   inline bool can_uncurry() const;
@@ -2983,7 +2985,6 @@ public:
   inline bool is_wrapping() const;
   inline isl::space map_from_domain_and_range(isl::space range) const;
   inline isl::space map_from_set() const;
-  inline isl::space named_set_from_params_id(isl::id tuple_id, unsigned int dim) const;
   inline isl::space params() const;
   inline isl::space product(isl::space right) const;
   inline isl::space range() const;
@@ -2991,7 +2992,6 @@ public:
   inline isl::space range_product(isl::space right) const;
   inline isl::space set_from_params() const;
   inline isl::space uncurry() const;
-  inline isl::space unnamed_set_from_params(unsigned int dim) const;
   inline isl::space unwrap() const;
   inline isl::space wrap() const;
   typedef isl_space* isl_ptr_t;
@@ -17694,6 +17694,18 @@ isl::ctx space::get_ctx() const {
   return isl::ctx(isl_space_get_ctx(ptr));
 }
 
+isl::space space::add_named_tuple_id_ui(isl::id tuple_id, unsigned int dim) const
+{
+  if (!ptr || tuple_id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_add_named_tuple_id_ui(copy(), tuple_id.release(), dim);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space space::add_param(isl::id id) const
 {
   if (!ptr || id.is_null())
@@ -17701,6 +17713,18 @@ isl::space space::add_param(isl::id id) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_add_param_id(copy(), id.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::space space::add_unnamed_tuple_ui(unsigned int dim) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_add_unnamed_tuple_ui(copy(), dim);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -17934,18 +17958,6 @@ isl::space space::map_from_set() const
   return manage(res);
 }
 
-isl::space space::named_set_from_params_id(isl::id tuple_id, unsigned int dim) const
-{
-  if (!ptr || tuple_id.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_space_named_set_from_params_id(copy(), tuple_id.release(), dim);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::space space::params() const
 {
   if (!ptr)
@@ -18025,18 +18037,6 @@ isl::space space::uncurry() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_uncurry(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::space space::unnamed_set_from_params(unsigned int dim) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_space_unnamed_set_from_params(copy(), dim);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);

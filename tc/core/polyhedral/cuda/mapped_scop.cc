@@ -514,8 +514,8 @@ isl::multi_aff constructThreadToWarp(
     const Block& block) {
   auto space = isl::space(ctx, 0);
   auto id = isl::id(ctx, kBlock);
-  auto blockSpace = space.named_set_from_params_id(id, block.view.size());
-  auto warpSpace = space.named_set_from_params_id(isl::id(ctx, kWarp), 1);
+  auto blockSpace = space.add_named_tuple_id_ui(id, block.view.size());
+  auto warpSpace = space.add_named_tuple_id_ui(isl::id(ctx, kWarp), 1);
   auto aff = isl::aff::zero_on_domain(blockSpace);
 
   auto nThread = block.view.size();

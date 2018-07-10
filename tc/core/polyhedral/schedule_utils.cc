@@ -280,7 +280,7 @@ isl::multi_union_pw_aff extractDomainToIds(
 
   auto space = isl::space(tree->ctx_, 0);
   auto empty = isl::union_set::empty(space);
-  space = space.named_set_from_params_id(tupleId, ids.size());
+  space = space.add_named_tuple_id_ui(tupleId, ids.size());
   auto zero = isl::multi_val::zero(space);
   auto domainToIds = isl::multi_union_pw_aff(empty, zero);
 

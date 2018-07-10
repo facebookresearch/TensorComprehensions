@@ -76,7 +76,7 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   auto list = mupa_.get_union_pw_aff_list();
   auto space = mupa_.get_space().domain();
   list = list.drop(pos, n);
-  space = addRange(space, list.size());
+  space = space.add_unnamed_tuple_ui(list.size());
   mupa_ = isl::multi_union_pw_aff(space, list);
 
   std::copy(
@@ -92,7 +92,7 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
 isl::multi_union_pw_aff ScheduleTreeBand::memberRange(size_t first, size_t n)
     const {
   auto list = mupa_.get_union_pw_aff_list();
-  auto space = addRange(mupa_.get_space().domain(), n);
+  auto space = mupa_.get_space().domain().add_unnamed_tuple_ui(n);
   auto end = first + n;
   TC_CHECK_LE(end, nMember());
   list = list.drop(end, nMember() - end);
