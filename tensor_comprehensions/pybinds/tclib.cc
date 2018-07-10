@@ -438,6 +438,7 @@ PYBIND11_MODULE(tclib, m) {
     tc::FLAGS_debug_tuner = debug_tuner;
   });
   m.def("dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
+  m.def("dump_ptx", [](bool dump_ptx) { tc::FLAGS_dump_ptx = dump_ptx; });
 
   // Access the names of the defs in a TC string
   m.def("parse_defs", [](const std::string& tc) {
