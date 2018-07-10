@@ -22,23 +22,6 @@ set_options = [
         #[ 0, 0, 0, 3, 26, 1, 14, 26, 0, 1, 0, 0, 1]
         ]
 
-code = """
-def group_normalization(
-    float(N, G, D, H, W) I, float(G, D) gamma, float(G, D) beta)
-    -> (O, mean, var)
-{
-    mean(n, g) +=! I(n, g, r_d, r_h, r_w)
-     var(n, g) +=! I(n, g, r_d, r_h, r_w) * I(n, g, r_d, r_h, r_w)
-
-    O(n, g, d, h, w) = gamma(g, d)
-      * ( I(n, g, d, h, w) - mean(n, g) * 4 )
-      * rsqrt( var(n, g) * 4
-            - mean(n, g) * mean(n, g) * 4 * 4
-            + 1e-5)
-      + beta(g, d)
-}
-"""
-
 N, G, D, H, W = 10, 10, 10, 10, 10
 I, gamma, beta = torch.randn(N, G, D, H, W).cuda(), torch.randn(G, D).cuda(), torch.randn(G, D).cuda()
 

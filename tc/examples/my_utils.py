@@ -45,6 +45,11 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
     cat_val = cat_val_arg
     cat_sz = cat_sz_arg
 
+def catVec_to_optVec(catVec):
+    global cat_val
+    opt = [cat_val[i][catVec[i]] for i in range(NB_HYPERPARAMS)]
+    return opt
+
 def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
@@ -113,7 +118,7 @@ def optionsFromVector(vect):
     options.unrollCopyShared(vect[22])
     #options.maxSharedMemory(vect[23])
     options.useReadOnlyCache(vect[24])
-    options.privateDepth(vect[25])
+    #options.privateDepth(vect[25])
     return options
 
 def computeDivs(sz):
@@ -129,6 +134,8 @@ def getAllDivs(inp, maxp2=8):
         p2.append(pp)
         pp*=2
     l = []
+    #for sz in inp[0].shape[:1]:
+    #    l+=computeDivs(sz)
     for elem in inp:
         for sz in elem.shape:
             l += computeDivs(sz)

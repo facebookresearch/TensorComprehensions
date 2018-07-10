@@ -88,6 +88,8 @@ net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
 eps = np.finfo(np.float32).eps.item()
 
+print(my_utils.getAllDivs(inp))
+
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
@@ -135,6 +137,7 @@ best_options = np.zeros(13).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
+    my_utils.print_opt(out_actions.numpy().astype(int))
     reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=-1, curr_best=np.exp(-best))
     #reward=100*reward
     reward = -((reward)/1000)
