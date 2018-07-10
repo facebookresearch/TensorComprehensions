@@ -124,7 +124,9 @@ def optionsFromVector(vect):
 def computeDivs(sz):
     l = []
     for i in range(sz): #or 10?
-        l.append((sz+i)//(i+1))
+        if(2**i > sz):
+            break
+        l.append((sz+2**i-1)//(2**i))
     return l
 
 def getAllDivs(inp, maxp2=8):
