@@ -48,13 +48,15 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
 def catVec_to_optVec(catVec):
     global cat_val
     opt = [cat_val[i][catVec[i]] for i in range(NB_HYPERPARAMS)]
+    opt[18] = min(opt[18], 1024//opt[17])
+    opt[19] = min(opt[19], 1024//(opt[17] * opt[18]))
     return opt
 
 def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
-    opt = [cat_val[i][opt[i]] for i in range(NB_HYPERPARAMS)]
+    opt = catVec_to_optVect(opt)
     if naive:
         opt = tc.MappingOptions("naive")
     else:
