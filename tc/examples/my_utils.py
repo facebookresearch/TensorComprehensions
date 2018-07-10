@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import tensor_comprehensions as tc
 import numpy as np
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = 19, 7
+NB_HYPERPARAMS, INIT_INPUT_SZ = 26, 7
 N, G, D, H, W = 5, 5, 5, 1, 1
 
 def get_convolution_example():
@@ -74,22 +74,46 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     mean_time = np.mean(liste_t_tc)
     return mean_time
 
+def getRawVectorFromTcOpt(tc_opt):
+    tr_dic = {"Max":0, "Preserve3Coincident":1, "Min":2}
+    opt_vect = np.zeros(NB_HYPERPARAMS).astype(int)
+    opt_vect[0] = tr_dic[tc_opt["outerScheduleFusionStrategy"]]
+    opt_vect[1] = tr_dic[tc_opt["intraTileScheduleFusionStrategy"]]
+    opt_vect[2] = tc_opt["fixParametersBeforeScheduling"]
+    opt_vect[3] = len(tc_opt["tile"])
+    opt_vect[4:4+opt_vect[3]] = tc_opt["tile"]
+    opt_vect[10] = tc_opt["unroll"]
+    #opt_vect[11] = tc_opt["tileImperfectlyNested"]
+    opt_vect[11] = tc_opt["matchLibraryCalls"]
+    opt_vect[12] = len(tc_opt["mapToBlocks"])
+    opt_vect[13:13+opt_vect[12]] = tc_opt["mapToBlocks"]
+    opt_vect[16] = len(tc_opt["mapToThreads"])
+    opt_vect[17:17+opt_vect[16]] = tc_opt["mapToThreads"]
+    opt_vect[20] = tc_opt["useSharedMemory"]
+    opt_vect[21] = tc_opt["usePrivateMemory"]
+    opt_vect[22] = tc_opt["unrollCopyShared"]
+    #opt_vect[23] = tc_opt["maxSharedMemory"]
+    opt_vect[24] = tc_opt["useReadOnlyCache"]
+    opt_vect[25] = tc_opt["privateDepth"]
+    return opt_vect
+
 def optionsFromVector(vect):
     strat_str = ["Max", "Preserve3Coincident", "Min"]
     options = tc.MappingOptions("naive")
     options.outerScheduleFusionStrategy(strat_str[vect[0]])
     options.intraTileScheduleFusionStrategy(strat_str[vect[1]])
     options.fixParametersBeforeScheduling(vect[2])
-    options.tile(list(vect[4:(4+vect[3])])) #why list in doc?
-    options.unroll(2**vect[10]) #128 is too big? trying 30
+    options.tile(list(vect[4:(4+vect[3])]))
+    options.unroll(vect[10])
     options.matchLibraryCalls(vect[11])
-    options.mapToBlocks([vect[12]])
-    options.mapToThreads([vect[13]]) #grid?
-    options.useSharedMemory(vect[14])
-    options.usePrivateMemory(vect[15])
-    options.unrollCopyShared(vect[16])
-    #options.maxSharedMemory(vect[17])
-    options.useReadOnlyCache(vect[18])
+    options.mapToBlocks(list(vect[13:13+vect[12]]))
+    options.mapToThreads(list(vect[17:17+vect[16]])) #grid?
+    options.useSharedMemory(vect[20])
+    options.usePrivateMemory(vect[21])
+    options.unrollCopyShared(vect[22])
+    #options.maxSharedMemory(vect[23])
+    options.useReadOnlyCache(vect[24])
+    options.privateDepth(vect[25])
     return options
 
 def computeDivs(sz):
@@ -125,15 +149,20 @@ def computeCat(inp_arg):
     cat_val.append([i+1 for i in range(6)])
     for i in range(6): #tiling
         cat_val.append(divs + [0])
-    cat_val.append([i for i in range(8)])
+    cat_val.append([2**i for i in range(8)])
     cat_val.append([0,1])
-    cat_val.append(divs) #todo mettre liste taille 3
-    cat_val.append(divs) #todo liste taille 3
+    cat_val.append([i+1 for i in range(3)])
+    for i in range(3):
+        cat_val.append(divs) #blocks #maximum 2^31-1 for the first value and 65535 for the second and third
+    cat_val.append([i+1 for i in range(3)])
+    for i in range(3):
+        cat_val.append(divs) #threads #maximum 1024 for the first and second value, 32 for the third, product below 1024
     cat_val.append([0,1])
     cat_val.append([0,1])
     cat_val.append([0,1])
     cat_val.append([0]) #cat_val.append(divs2)
     cat_val.append([0,1])
+    cat_val.append([i for i in range(6)]) #6 ou 7 ??
 
     for i in range(NB_HYPERPARAMS):
         cat_sz[i] = len(cat_val[i])
