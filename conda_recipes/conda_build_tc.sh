@@ -28,27 +28,31 @@ time conda build -c $ANACONDA_USER --python 3.6 caffe2
 echo "Caffe2 packaged Successfully"
 
 ###############################################################################
-# LLVM_TAPIR settings
-LLVM_TAPIR_BUILD_VERSION="1.0.0"
-LLVM_TAPIR_BUILD_NUMBER=1
-LLVM_TAPIR_GIT_HASH="1482504e234a65bffc8c54de8de9fc877822345d"
+# LLVM_TRUNK settings
+LLVM_TRUNK_BUILD_VERSION="1.0.0"
+LLVM_TRUNK_BUILD_NUMBER=1
+LLVM_TRUNK_SOURCE_DIR=$(mktemp -d /tmp/d.XXXXXX)
+trap 'rm -rf "${LLVM_TRUNK_SOURCE_DIR}"' EXIT
 
-echo "Building llvm-tapir50"
-echo "LLVM_TAPIR_BUILD_VERSION: $LLVM_TAPIR_BUILD_VERSION LLVM_TAPIR_BUILD_NUMBER: ${LLVM_TAPIR_BUILD_NUMBER}"
+svn co http://llvm.org/svn/llvm-project/llvm/trunk ${LLVM_TRUNK_SOURCE_DIR}
+svn co http://llvm.org/svn/llvm-project/cfe/trunk ${LLVM_TRUNK_SOURCE_DIR}/tools/clang
 
-export LLVM_TAPIR_BUILD_VERSION=$LLVM_TAPIR_BUILD_VERSION
-export LLVM_TAPIR_BUILD_NUMBER=$LLVM_TAPIR_BUILD_NUMBER
-export LLVM_TAPIR_GIT_HASH=$LLVM_TAPIR_GIT_HASH
+echo "Building llvm-trunk"
+echo "LLVM_TRUNK_BUILD_VERSION: $LLVM_TRUNK_BUILD_VERSION LLVM_TRUNK_BUILD_NUMBER: ${LLVM_TRUNK_BUILD_NUMBER}"
 
-time conda build -c $ANACONDA_USER --python 3.6 llvm-tapir50
+export LLVM_TRUNK_BUILD_VERSION=$LLVM_TRUNK_BUILD_VERSION
+export LLVM_TRUNK_BUILD_NUMBER=$LLVM_TRUNK_BUILD_NUMBER
+export LLVM_TRUNK_SOURCE_DIR=$LLVM_TRUNK_SOURCE_DIR
 
-echo "llvm-tapir50 packaged Successfully"
+time conda build -c $ANACONDA_USER --python 3.6 llvm-trunk
+
+echo "llvm-trunk packaged Successfully"
 
 ##############################################################################
 # Halide settings
 HALIDE_BUILD_VERSION="1.0.0"
-HALIDE_BUILD_NUMBER=0
-HALIDE_GIT_HASH="35be67b3a3e4c4461f79949109ff35c54cf307de"
+HALIDE_BUILD_NUMBER=1
+HALIDE_GIT_HASH="0b29cacf636852933892bbaa61dd2050c8dcaff2"
 
 echo "Packaging HALIDE ==> HALIDE_BUILD_VERSION: ${HALIDE_BUILD_VERSION} HALIDE_BUILD_NUMBER: ${HALIDE_BUILD_NUMBER}"
 
@@ -75,4 +79,3 @@ echo "HALIDE packaged Successfully"
 #time conda build -c $ANACONDA_USER --python 3.6 tensor_comprehensions
 #
 #echo "Tensor Comprehensions packaged Successfully"
-#

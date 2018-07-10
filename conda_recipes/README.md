@@ -17,7 +17,7 @@ nvidia-docker run --rm -i -t tc-cuda9.0-cudnn7.1-ubuntu16.04-devel
 
 We are ready to build conda package for TC.
 To simplify the build process we ship TC dependencies as conda packages.
-We need to build packages for `llvm-tapir50`, `Halide`, `Caffe2` (optional) and finally `Tensor Comprehensions`.
+We need to build packages for `llvm-trunk`, `Halide`, `Caffe2` (optional) and finally `Tensor Comprehensions`.
 
 For building each package, we need to specify a `build version`, `build number` and
 `git hash`. This information is used to build each package.

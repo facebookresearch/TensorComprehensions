@@ -72,6 +72,7 @@ std::string find_library_path(std::string library) {
 namespace tc {
 
 #if LLVM_VERSION_MAJOR <= 6
+
 Jit::Jit()
     : TM_(EngineBuilder().selectTarget()),
       DL_(TM_->createDataLayout()),
@@ -103,11 +104,13 @@ void Jit::addModule(std::shared_ptr<Module> M) {
   auto res = compileLayer_.addModule(M, std::move(Resolver));
   TC_CHECK(res) << "Failed to jit compile.";
 }
+
 #else
+
 Jit::Jit()
-    : SSP(),
-      ES(SSP),
+    : ES(),
       Resolver(llvm::orc::createLegacyLookupResolver(
+          ES,
           [this](const std::string& Name) -> JITSymbol {
             if (auto Sym = compileLayer_.findSymbol(Name, false))
               return Sym;
@@ -136,10 +139,6 @@ Jit::Jit()
   }
 }
 
-// Note that this copy may cause tapir tests to fail
-// However, this code will never use tapir code
-// and once the LLVM API churn stops, will be modified
-// to be properly compatable.
 void Jit::addModule(std::shared_ptr<Module> M) {
   M->setTargetTriple(TM_->getTargetTriple().str());
   auto K = ES.allocateVModule();

@@ -63,19 +63,6 @@ target_link_libraries(
 
   tc_core_cpu tc_lang tc_aten pthread)
 
-if (WITH_TAPIR)
-  add_executable(test_mapper_tapir test_mapper_tapir.cc)
-  add_test(test_mapper_tapir test_mapper_tapir)
-  target_link_libraries(
-    test_mapper_tapir
-
-    ${GTEST_LIBRARIES}
-    ${ATEN_LIBRARIES}
-    -lLLVM
-
-    tc_core_cpu tc_lang tc_aten pthread)
-endif()
-
 ################################################################################
 # Lang tests
 ################################################################################
