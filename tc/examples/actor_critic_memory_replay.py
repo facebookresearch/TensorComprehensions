@@ -133,7 +133,7 @@ tab_best=[]
 best=-12
 v_losses=[]
 p_losses=[]
-best_options = np.zeros(13).astype(int)
+best_options = np.zeros(NB_HYPERPARAMS).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
