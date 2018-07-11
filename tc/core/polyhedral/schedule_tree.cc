@@ -137,7 +137,7 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
   if (st.type_ == detail::ScheduleTreeType::None) {
     LOG(FATAL) << "Hit Error node!";
   }
-  ELEM_MAKE_CASE(ScheduleTreeBand)
+  ELEM_MAKE_CASE_CSTR(ScheduleTreeBand)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeContext)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeDomain)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeExtension)

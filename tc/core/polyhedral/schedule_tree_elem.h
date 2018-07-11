@@ -261,17 +261,17 @@ struct ScheduleTreeSet : public ScheduleTree {
 struct ScheduleTreeBand : public ScheduleTree {
  private:
   explicit ScheduleTreeBand(isl::ctx ctx) : ScheduleTree(ctx, {}, NodeType) {}
-
- public:
-  static constexpr detail::ScheduleTreeType NodeType =
-      detail::ScheduleTreeType::Band;
-
   ScheduleTreeBand(const ScheduleTreeBand& eb)
       : ScheduleTree(eb),
         permutable_(eb.permutable_),
         mupa_(eb.mupa_),
         coincident_(eb.coincident_),
         unroll_(eb.unroll_) {}
+
+ public:
+  static constexpr detail::ScheduleTreeType NodeType =
+      detail::ScheduleTreeType::Band;
+
   virtual ~ScheduleTreeBand() override {}
 
   bool operator==(const ScheduleTreeBand& other) const;
@@ -289,6 +289,9 @@ struct ScheduleTreeBand : public ScheduleTree {
       bool permutable,
       std::vector<bool> coincident,
       std::vector<bool> unroll,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeBand> make(
+      const ScheduleTreeBand* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   // Return the number of scheduling dimensions in the band

@@ -201,6 +201,14 @@ std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
   return band;
 }
 
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
+    const ScheduleTreeBand* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeBand>(new ScheduleTreeBand(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 // Return the number of scheduling dimensions in the band
 size_t ScheduleTreeBand::nMember() const {
   size_t res = mupa_.size();
