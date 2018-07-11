@@ -138,10 +138,10 @@ struct ScheduleTreeFilter : public ScheduleTree {
   ScheduleTreeFilter() = delete;
   explicit ScheduleTreeFilter(isl::union_set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), filter_(s) {}
-
- public:
   ScheduleTreeFilter(const ScheduleTreeFilter& eb)
       : ScheduleTree(eb), filter_(eb.filter_) {}
+
+ public:
   virtual ~ScheduleTreeFilter() override {}
 
   bool operator==(const ScheduleTreeFilter& other) const;
@@ -151,6 +151,9 @@ struct ScheduleTreeFilter : public ScheduleTree {
 
   static std::unique_ptr<ScheduleTreeFilter> make(
       isl::union_set filter,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeFilter> make(
+      const ScheduleTreeFilter* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
