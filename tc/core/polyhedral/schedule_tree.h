@@ -465,6 +465,10 @@ struct ScheduleTree {
   // Note that this function does _not_ output the child trees.
   virtual std::ostream& write(std::ostream& os) const = 0;
 
+  // Clone the current node.
+  // Note that this function does _not_ clone the child trees.
+  virtual ScheduleTreeUPtr clone() const = 0;
+
   //
   // Data members
   //

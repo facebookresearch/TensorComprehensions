@@ -58,6 +58,9 @@ struct ScheduleTreeContext : public ScheduleTree {
   }
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
  public:
   isl::set context_;
@@ -91,6 +94,9 @@ struct ScheduleTreeDomain : public ScheduleTree {
   }
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
  public:
   isl::union_set domain_;
@@ -124,6 +130,9 @@ struct ScheduleTreeExtension : public ScheduleTree {
   }
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
  public:
   isl::union_map extension_;
@@ -157,6 +166,9 @@ struct ScheduleTreeFilter : public ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
  public:
   isl::union_set filter_;
@@ -195,6 +207,9 @@ struct ScheduleTreeMapping : public ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
  public:
   // Mapping from identifiers to affine functions on domain elements.
@@ -229,6 +244,9 @@ struct ScheduleTreeSequence : public ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 struct ScheduleTreeSet : public ScheduleTree {
@@ -256,6 +274,9 @@ struct ScheduleTreeSet : public ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 struct ScheduleTreeBand : public ScheduleTree {
@@ -280,6 +301,9 @@ struct ScheduleTreeBand : public ScheduleTree {
   }
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 
   // Make a schedule node band from partial schedule.
   // Replace "mupa" by its greatest integer part to ensure that the
@@ -353,6 +377,9 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 bool elemEquals(

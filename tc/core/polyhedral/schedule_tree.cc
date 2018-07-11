@@ -122,31 +122,6 @@ vector<ScheduleTree*> ancestorsInSubTree(
   }
   return res;
 }
-
-static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
-#define ELEM_MAKE_CASE_CSTR(CLASS)                      \
-  else if (st.type_ == CLASS::NodeType) {               \
-    return CLASS::make(static_cast<const CLASS*>(&st)); \
-  }
-
-  if (st.type_ == detail::ScheduleTreeType::None) {
-    LOG(FATAL) << "Hit Error node!";
-  }
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeBand)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeContext)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeDomain)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeExtension)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeFilter)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeMapping)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeSequence)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeSet)
-  ELEM_MAKE_CASE_CSTR(ScheduleTreeThreadSpecificMarker)
-
-#undef ELEM_MAKE_CASE_CSTR
-
-  LOG(FATAL) << "NYI: ScheduleTree from type: " << static_cast<int>(st.type_);
-  return nullptr;
-}
 } // namespace
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -163,7 +138,7 @@ ScheduleTree::ScheduleTree(const ScheduleTree& st)
 }
 
 ScheduleTreeUPtr ScheduleTree::makeScheduleTree(const ScheduleTree& tree) {
-  return makeElem(tree);
+  return tree.clone();
 }
 
 ScheduleTree* ScheduleTree::child(const vector<size_t>& positions) {
