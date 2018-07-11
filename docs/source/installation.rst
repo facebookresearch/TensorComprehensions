@@ -66,7 +66,7 @@ Create a new environment in which TC will be built and install core dependencies
        conda create -y --name tc_build python=3.6
        conda activate tc_build
        conda install -y pyyaml mkl-include pytest
-       conda install -y -c nicolasvasilache llvm-tapir50 halide
+       conda install -y -c nicolasvasilache llvm-trunk halide
 
 Then install the PyTorch version that corresponds to your system binaries
 (e.g. cuda 9.0):
