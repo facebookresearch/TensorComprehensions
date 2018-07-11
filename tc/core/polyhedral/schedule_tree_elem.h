@@ -175,10 +175,10 @@ struct ScheduleTreeMapping : public ScheduleTree {
  private:
   ScheduleTreeMapping() = delete;
   ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping);
-
- public:
   ScheduleTreeMapping(const ScheduleTreeMapping& eb)
       : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
+
+ public:
   virtual ~ScheduleTreeMapping() override {}
 
   bool operator==(const ScheduleTreeMapping& other) const;
@@ -189,6 +189,9 @@ struct ScheduleTreeMapping : public ScheduleTree {
   static std::unique_ptr<ScheduleTreeMapping> make(
       isl::ctx ctx,
       const Mapping& mapping,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeMapping> make(
+      const ScheduleTreeMapping* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;

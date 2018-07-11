@@ -117,6 +117,15 @@ std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    const ScheduleTreeMapping* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeMapping>(new ScheduleTreeMapping(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 ScheduleTreeMapping::ScheduleTreeMapping(
     isl::ctx ctx,
     const ScheduleTreeMapping::Mapping& mapping)
