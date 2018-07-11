@@ -10,7 +10,7 @@ import numpy as np
 NB_HYPERPARAMS, INIT_INPUT_SZ = 26, 7
 
 def getrand(l):
-    return np.random.choice(l)
+    return np.random.choice(l).item()
 
 def get_convolution_example():
     global INIT_INPUT_SZ
