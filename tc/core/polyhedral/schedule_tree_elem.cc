@@ -158,6 +158,15 @@ std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    const ScheduleTreeSequence* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
     isl::ctx ctx,
     std::vector<ScheduleTreeUPtr>&& children) {
