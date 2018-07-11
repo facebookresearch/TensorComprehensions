@@ -271,6 +271,16 @@ ScheduleTreeThreadSpecificMarker::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeThreadSpecificMarker>
+ScheduleTreeThreadSpecificMarker::make(
+    const ScheduleTreeThreadSpecificMarker* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeThreadSpecificMarker>(
+      new ScheduleTreeThreadSpecificMarker(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
   if (permutable_ != other.permutable_) {
     return false;

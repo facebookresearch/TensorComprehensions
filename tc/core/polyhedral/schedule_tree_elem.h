@@ -332,6 +332,8 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
  private:
   explicit ScheduleTreeThreadSpecificMarker(isl::ctx ctx)
       : ScheduleTree(ctx, {}, NodeType) {}
+  ScheduleTreeThreadSpecificMarker(const ScheduleTreeThreadSpecificMarker& tree)
+      : ScheduleTree(tree) {}
 
  public:
   virtual ~ScheduleTreeThreadSpecificMarker() override {}
@@ -345,6 +347,9 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
 
   static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
       isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
+      const ScheduleTreeThreadSpecificMarker* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   virtual std::ostream& write(std::ostream& os) const override;

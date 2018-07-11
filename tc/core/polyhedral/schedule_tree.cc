@@ -124,11 +124,6 @@ vector<ScheduleTree*> ancestorsInSubTree(
 }
 
 static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
-#define ELEM_MAKE_CASE(CLASS)                                                \
-  else if (st.type_ == CLASS::NodeType) {                                    \
-    return std::unique_ptr<CLASS>(new CLASS(static_cast<const CLASS&>(st))); \
-  }
-
 #define ELEM_MAKE_CASE_CSTR(CLASS)                      \
   else if (st.type_ == CLASS::NodeType) {               \
     return CLASS::make(static_cast<const CLASS*>(&st)); \
@@ -145,10 +140,9 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
   ELEM_MAKE_CASE_CSTR(ScheduleTreeMapping)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeSequence)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeSet)
-  ELEM_MAKE_CASE(ScheduleTreeThreadSpecificMarker)
+  ELEM_MAKE_CASE_CSTR(ScheduleTreeThreadSpecificMarker)
 
 #undef ELEM_MAKE_CASE_CSTR
-#undef ELEM_MAKE_CASE
 
   LOG(FATAL) << "NYI: ScheduleTree from type: " << static_cast<int>(st.type_);
   return nullptr;
