@@ -56,14 +56,18 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
-    opt = catVec_to_optVect(opt)
+    infty = 30000
+    opt = catVec_to_optVec(opt)
     if naive:
         opt = tc.MappingOptions("naive")
     else:
         opt = optionsFromVector(opt)
     tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
 
-    first_ft = tc_prog.executor.profile_kernel(inp)
+    try:
+        first_ft = tc_prog.executor.profile_kernel(inp)
+    except:
+        return infty
     if(prune != -1 and first_ft > 100*curr_best):
         return first_ft
     for i in range(warmup):
@@ -120,7 +124,7 @@ def optionsFromVector(vect):
     options.unrollCopyShared(vect[22])
     #options.maxSharedMemory(vect[23])
     options.useReadOnlyCache(vect[24])
-    #options.privateDepth(vect[25])
+    options.privateDepth(vect[25])
     return options
 
 def computeDivs(sz):
