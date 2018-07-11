@@ -38,6 +38,16 @@ DEFINE_bool(
 DEFINE_bool(dump_cuda, false, "Print the generated source");
 DEFINE_bool(dump_ptx, false, "Dump the generated PTX");
 
+// PTX generation
+DEFINE_string(
+    cuda_compiler,
+    "nvrtc",
+    "which compiler to use to emit ptx: nvrtc, llvm, nvcc (default [nvrtc])");
+DEFINE_string(
+    llvm_flags,
+    "-std=c++11 -O3 -ffast-math",
+    "compiler flags to set when llvm is used");
+
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
 DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");

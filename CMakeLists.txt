@@ -258,6 +258,8 @@ include(cmake/GetGitRevisionDescription.cmake)
 ################################################################################
 # Variables for tc_config.h.in
 set(TC_DIR ${TC_DIR})
+execute_process(COMMAND ${CLANG_PREFIX}/bin/llvm-config --bindir  OUTPUT_VARIABLE LLVM_BIN_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(TC_LLVM_BIN_DIR ${LLVM_BIN_DIR})
 if (WITH_CUDA)
    # CUDA-specific variables for tc_config.h.in
    set(TC_WITH_CUDA 1)

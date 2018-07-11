@@ -43,8 +43,9 @@ constexpr auto defines = R"C(
 
 constexpr auto warpSyncFunctions = R"C(
 // Before CUDA 9, syncwarp is a noop since warps are always synchronized.
-#if __CUDACC_VER_MAJOR__ < 9
-__device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
+#if (!defined(__clang__) && __CUDACC_VER_MAJOR__ < 9) || \
+    ( defined(__clang__) && CUDA_VERSION < 9000)
+inline __device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
 #endif
 )C";
 
