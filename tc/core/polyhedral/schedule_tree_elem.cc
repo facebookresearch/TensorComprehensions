@@ -175,6 +175,14 @@ std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
+    const ScheduleTreeSet* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
     isl::multi_union_pw_aff mupa,
     bool permutable,
