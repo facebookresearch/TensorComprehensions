@@ -129,11 +129,16 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
     return std::unique_ptr<CLASS>(new CLASS(static_cast<const CLASS&>(st))); \
   }
 
+#define ELEM_MAKE_CASE_CSTR(CLASS)                      \
+  else if (st.type_ == CLASS::NodeType) {               \
+    return CLASS::make(static_cast<const CLASS*>(&st)); \
+  }
+
   if (st.type_ == detail::ScheduleTreeType::None) {
     LOG(FATAL) << "Hit Error node!";
   }
   ELEM_MAKE_CASE(ScheduleTreeBand)
-  ELEM_MAKE_CASE(ScheduleTreeContext)
+  ELEM_MAKE_CASE_CSTR(ScheduleTreeContext)
   ELEM_MAKE_CASE(ScheduleTreeDomain)
   ELEM_MAKE_CASE(ScheduleTreeExtension)
   ELEM_MAKE_CASE(ScheduleTreeFilter)
@@ -142,6 +147,7 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
   ELEM_MAKE_CASE(ScheduleTreeSet)
   ELEM_MAKE_CASE(ScheduleTreeThreadSpecificMarker)
 
+#undef ELEM_MAKE_CASE_CSTR
 #undef ELEM_MAKE_CASE
 
   LOG(FATAL) << "NYI: ScheduleTree from type: " << static_cast<int>(st.type_);

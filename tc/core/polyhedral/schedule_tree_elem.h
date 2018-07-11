@@ -39,14 +39,17 @@ struct ScheduleTreeContext : public ScheduleTree {
   ScheduleTreeContext() = delete;
   explicit ScheduleTreeContext(isl::set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), context_(s) {}
-
- public:
   ScheduleTreeContext(const ScheduleTreeContext& eb)
       : ScheduleTree(eb), context_(eb.context_) {}
+
+ public:
   virtual ~ScheduleTreeContext() override {}
 
   static std::unique_ptr<ScheduleTreeContext> make(
       isl::set context,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeContext> make(
+      const ScheduleTreeContext* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   bool operator==(const ScheduleTreeContext& other) const;
