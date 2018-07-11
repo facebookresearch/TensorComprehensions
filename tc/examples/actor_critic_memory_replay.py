@@ -125,6 +125,9 @@ def select_batch():
     batch=np.array(batch)
     return batch[:,0], batch[:,1], batch[:,2]
 
+def get_best_buff():
+    return np.max(np.array(buff)[:,2])
+
 INTER_DISP = 20
 
 running_reward = -0.5
@@ -143,6 +146,7 @@ for i in range(NB_EPOCHS):
     #reward = -((reward)/1000)
     reward = -np.log(reward)
     add_to_buffer(out_probs, out_values, reward)
+    best_in_buffer = get_best_buff()
     actions_probs, values, rewards = select_batch()
     for j in range(1):
         vloss, ploss = finish_episode(actions_probs, values, rewards)
@@ -162,6 +166,7 @@ for i in range(NB_EPOCHS):
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)
     print(-best)
+    print("Best in buff: " + str(-best_in_buffer))
 
 print("Finally, best options are:")
 my_utils.print_opt(best_options)

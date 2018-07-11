@@ -12,7 +12,7 @@ NB_HYPERPARAMS, INIT_INPUT_SZ = 26, 7
 def getrand(l):
     return np.random.choice(l).item()
 
-def get_convolution_example():
+def get_convolution_example(already_set=False, inp_sz_list=[]):
     global INIT_INPUT_SZ
     INIT_INPUT_SZ = 7
     tc_name = "convolution"
@@ -22,17 +22,21 @@ def get_convolution_example():
         }
     """
 
-    N, C, H, W, O, kH, kW = \
-        getrand([8, 16, 32, 64]), \
-        getrand([2, 4, 8, 16]), \
-        getrand([28, 56, 112]), \
-        getrand([28, 56, 112]), \
-        getrand([8, 16, 32]), \
-        getrand([1, 2, 4]), \
-        getrand([1, 2, 4])
+    if(already_set):
+        N, C, H, W, O, kH, kW = tuple(inp_sz_list)
+    else:
+        N, C, H, W, O, kH, kW = \
+            getrand([8, 16, 32, 64]), \
+            getrand([2, 4, 8, 16]), \
+            getrand([28, 56, 112]), \
+            getrand([28, 56, 112]), \
+            getrand([8, 16, 32]), \
+            getrand([1, 2, 4]), \
+            getrand([1, 2, 4])
     I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
     init_input = (I, W1)
     init_input_sz = np.array([N,C,H,W,O, kH, kW])
+    print(init_input_sz)
     init_input_sz = torch.from_numpy(init_input_sz).float()
 
     return (tc_code, tc_name, init_input, init_input_sz)

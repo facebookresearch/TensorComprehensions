@@ -15,7 +15,7 @@ from collections import deque
 
 import my_utils
 
-tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example()
+tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example(already_set=True, inp_sz_list=[32, 1, 2, 64, 4, 128, 256, 7, 8, 14, 16, 28])
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
 #config = tc.autotuner_settings
