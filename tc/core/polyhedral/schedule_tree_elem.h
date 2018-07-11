@@ -105,14 +105,17 @@ struct ScheduleTreeExtension : public ScheduleTree {
   ScheduleTreeExtension() = delete;
   explicit ScheduleTreeExtension(isl::union_map m)
       : ScheduleTree(m.get_ctx(), {}, NodeType), extension_(m) {}
-
- public:
   ScheduleTreeExtension(const ScheduleTreeExtension& eb)
       : ScheduleTree(eb), extension_(eb.extension_) {}
+
+ public:
   virtual ~ScheduleTreeExtension() override {}
 
   static std::unique_ptr<ScheduleTreeExtension> make(
       isl::union_map extension,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeExtension> make(
+      const ScheduleTreeExtension* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   bool operator==(const ScheduleTreeExtension& other) const;

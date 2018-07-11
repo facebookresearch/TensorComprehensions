@@ -140,7 +140,7 @@ static std::unique_ptr<ScheduleTree> makeElem(const ScheduleTree& st) {
   ELEM_MAKE_CASE(ScheduleTreeBand)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeContext)
   ELEM_MAKE_CASE_CSTR(ScheduleTreeDomain)
-  ELEM_MAKE_CASE(ScheduleTreeExtension)
+  ELEM_MAKE_CASE_CSTR(ScheduleTreeExtension)
   ELEM_MAKE_CASE(ScheduleTreeFilter)
   ELEM_MAKE_CASE(ScheduleTreeMapping)
   ELEM_MAKE_CASE(ScheduleTreeSequence)

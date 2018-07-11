@@ -81,6 +81,15 @@ std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
+    const ScheduleTreeExtension* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeExtension>(new ScheduleTreeExtension(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
     isl::union_set filter,
     std::vector<ScheduleTreeUPtr>&& children) {
