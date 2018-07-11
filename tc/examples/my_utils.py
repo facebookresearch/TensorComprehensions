@@ -8,9 +8,13 @@ import tensor_comprehensions as tc
 import numpy as np
 
 NB_HYPERPARAMS, INIT_INPUT_SZ = 26, 7
-N, G, D, H, W = 5, 5, 5, 1, 1
+
+def getrand(l):
+    return np.random.choice(l)
 
 def get_convolution_example():
+    global INIT_INPUT_SZ
+    INIT_INPUT_SZ = 7
     tc_name = "convolution"
     tc_code = """
         def convolution(float(N,C,H,W) I, float(M,C,KH,KW) W1) -> (O) {
@@ -18,7 +22,14 @@ def get_convolution_example():
         }
     """
 
-    N, C, H, W, O, kH, kW = 32, 4, 56, 56, 16, 1, 1
+    N, C, H, W, O, kH, kW = \
+        getrand([8, 16, 32, 64]), \
+        getrand([2, 4, 8, 16]), \
+        getrand([28, 56, 112]), \
+        getrand([28, 56, 112]), \
+        getrand([8, 16, 32]), \
+        getrand([1, 2, 4]), \
+        getrand([1, 2, 4])
     I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
     init_input = (I, W1)
     init_input_sz = np.array([N,C,H,W,O, kH, kW])
@@ -56,7 +67,7 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
     #print(opt)
     #print(cat_val)
-    opt = catVec_to_optVect(opt)
+    opt = catVec_to_optVec(opt)
     if naive:
         opt = tc.MappingOptions("naive")
     else:
