@@ -64,6 +64,14 @@ std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
   return res;
 }
 
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    const ScheduleTreeDomain* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
 std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
     isl::union_map extension,
     std::vector<ScheduleTreeUPtr>&& children) {
