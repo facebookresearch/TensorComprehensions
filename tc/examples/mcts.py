@@ -9,13 +9,13 @@ class Node:
         self.nbVisits=0
         self.nbChildrenSeen = 0
         self.pos=0
-        self.hasSeen = {} #todo
+        #self.hasSeen = {} #todo
         self.children=[]
         self.parent = father
         self.stateVector = [0] * my_utils.NB_HYPERPARAMS
         if(father != None):
             self.pos = father.pos+1
-            self.hasSeen = {} #todo
+            #self.hasSeen = {} #todo
             self.stateVector = father.stateVector[:]
             self.stateVector[self.pos-1] = new_act
     
@@ -54,6 +54,8 @@ class MCTS:
             return node.children[act]
         new_child = Node(father=node, new_act=act)
         node.children.append(new_child)
+        #node.hasSeen[act]=1
+        node.nbChildrenSeen += 1
         return node.children[-1]
     
     def getLeaf(self, node):
@@ -65,8 +67,6 @@ class MCTS:
                 node, _ = self.getBestChild(node)
             else:
                 act=node.nbChildrenSeen
-                node.hasSeen[act]=1
-                node.nbChildrenSeen += 1
                 self.take_action(node, act)
                 return node.children[-1]
         return node
