@@ -51,7 +51,8 @@ std::vector<char> jitCompile(
   std::string arch = arch_param.str();
 
   // Compile the program.
-  std::string cudaHome = std::string("-I ") + std::string(CUDA_HOME);
+  std::string cudaHome =
+      std::string("-I ") + std::string(TC_STRINGIFY(TC_CUDA_INCLUDE_DIR));
   std::vector<const char*> nvrtcts = {arch.c_str(),
                                       "--use_fast_math",
                                       "-std=c++11",
@@ -116,7 +117,7 @@ __global__ void foo(int N)
 }
 
 TEST(BasicGpuTest, CubReduce) {
-  std::string path(CUB_HOME);
+  std::string path(TC_STRINGIFY(TC_CUB_INCLUDE_DIR));
   std::string include = std::string("-I ") + path;
   auto PTX = jitCompile(
       R"CUDA(

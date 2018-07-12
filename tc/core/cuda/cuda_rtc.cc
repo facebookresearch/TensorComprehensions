@@ -91,8 +91,10 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
 
   // Compile the program.
   const char* nvrtc_debug_opts[] = {"-G", "-lineinfo"};
-  std::string cudaHome = std::string("-I ") + std::string(CUDA_HOME);
-  std::string cubHome = std::string("-I ") + std::string(CUB_HOME);
+  std::string cudaHome =
+      std::string("-I ") + std::string(TC_STRINGIFY(TC_CUDA_INCLUDE_DIR));
+  std::string cubHome =
+      std::string("-I ") + std::string(TC_STRINGIFY(TC_CUB_INCLUDE_DIR));
   std::vector<const char*> nvrtcts = {arch.c_str(),
                                       "--use_fast_math",
                                       "-std=c++11",

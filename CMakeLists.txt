@@ -139,9 +139,6 @@ if(WITH_CUDA)
   find_package(CUDA REQUIRED)
   include_directories(BEFORE ${CUDA_TOOLKIT_ROOT_DIR}/include)
 
-  # modified CUB
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DWITH_CUDA -DCUDA_HOME=\"\\\"${CUDA_INCLUDE_DIRS}\\\"\" -DCUB_HOME=\"\\\"${CUB_INSTALL_DIR}\\\"\" ")
-
   # Inherited from Torch, see
   # https://github.com/torch/cutorch/blob/master/lib/THC/cmake/select_compute_arch.cmake
   INCLUDE(cmake/select_compute_arch.cmake)
@@ -259,6 +256,18 @@ include(cmake/GetGitRevisionDescription.cmake)
 ################################################################################
 # Finally, build
 ################################################################################
+# Variables for tc_config.h.in
+set(TC_DIR ${TC_DIR})
+if (WITH_CUDA)
+   # CUDA-specific variables for tc_config.h.in
+   set(TC_WITH_CUDA 1)
+   set(TC_CUB_INCLUDE_DIR ${CUB_INSTALL_DIR})
+   set(TC_CUDA_TOOLKIT_ROOT_DIR ${CUDA_TOOLKIT_ROOT_DIR})
+   set(TC_CUDA_INCLUDE_DIR ${CUDA_INCLUDE_DIRS})
+else()
+   set(TC_WITH_CUDA 0)
+endif()
+configure_file("tc/tc_config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/tc/tc_config.h")
 
 ################################################################################
 # Compile flags
@@ -281,13 +290,12 @@ elseif(${CMAKE_BUILD_TYPE} MATCHES "Release")
 endif()
 message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTC_DIR=\"\\\"${TC_DIR}\\\"\" ")
-
 include_directories(BEFORE ${PROJECT_SOURCE_DIR})
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
 add_subdirectory(tc)
 
 # At the moment pybind is only supported in CUDA mode and compilation fails
-# for non-CUDA mode (CUDA_HOME and CUB_HOME undefined error).
+# for non-CUDA mode (CUDA_INCLUDE_DIR and CUB_INCLUDE_DIR undefined error).
 # Once the core CPU mapper is stabilized we can worry about pybind, deactivate
 # conditionally for now
 if (WITH_CUDA)

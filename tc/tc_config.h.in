@@ -15,25 +15,13 @@
  */
 #pragma once
 
-#include "tc/tc_config.h"
+#define TC_STRINGIFY_INNER(s) #s
+#define TC_STRINGIFY(s) TC_STRINGIFY_INNER(s)
 
-// Conditionally include CUDA-specific headers.  This file should compile even
-// without them.
-#if TC_WITH_CUDA
-#include "tc/core/cuda/cuda.h"
-#endif
-
-namespace tc {
-
-/// Get the shared memory size of the GPU device active in the current thread.
-/// The call is forwarded to the appropriate GPU driver (CUDA in particular).
-/// If a thread has no associated GPU device, return 0.
-inline size_t querySharedMemorySize() {
-#if TC_WITH_CUDA && !defined(NO_CUDA_SDK)
-  return CudaGPUInfo::GPUInfo().SharedMemorySize();
-#else
-  return 0;
-#endif
-}
-
-} // namespace tc
+// clang-format off
+#define TC_DIR @TC_DIR@
+#define TC_WITH_CUDA @TC_WITH_CUDA@
+#define TC_CUDA_TOOLKIT_ROOT_DIR @TC_CUDA_TOOLKIT_ROOT_DIR@
+#define TC_CUDA_INCLUDE_DIR @TC_CUDA_INCLUDE_DIR@
+#define TC_CUB_INCLUDE_DIR @TC_CUB_INCLUDE_DIR@
+// clang-format on
