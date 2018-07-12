@@ -32,7 +32,7 @@ class MCTS:
     def __init__(self):
         self.C = 1. #to tune
 
-        (tc_code, tc_name, inp, _) = my_utils.get_convolution_example()
+        (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 
         my_utils.computeCat(inp)
         my_utils.set_tc(tc_code, tc_name)
@@ -42,6 +42,7 @@ class MCTS:
 
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
+        node.nbVisits+=1
         for _ in range(20):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
@@ -91,7 +92,7 @@ class MCTS:
         for i in range(my_utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
-        print(optsVector)
+        #print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
         return reward
 
