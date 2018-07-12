@@ -246,7 +246,6 @@ bool elemEquals(
     const ScheduleTree* e2,
     detail::ScheduleTreeType type);
 
-std::ostream& operator<<(std::ostream& os, isl::ast_loop_type lt);
 std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt);
 std::ostream& operator<<(
     std::ostream& os,
