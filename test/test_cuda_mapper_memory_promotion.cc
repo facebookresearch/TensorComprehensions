@@ -273,7 +273,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
     EXPECT_EQ(groups.size(), 3u);
 
-    isl::space tileSpace = isl::space(ctx, 0).unnamed_set_from_params(2);
+    isl::space tileSpace = isl::space(ctx, 0).add_unnamed_tuple_ui(2);
     auto tileZero = isl::set::from(isl::multi_aff::zero(tileSpace));
 
     // Must have groups for these tensors, in arbitrary order.

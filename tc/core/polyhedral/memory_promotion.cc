@@ -411,7 +411,7 @@ isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
   auto space = scop.domain().get_space().params();
   auto nDim = halideParameter.dimensions();
-  space = space.named_set_from_params_id(tensorId, nDim);
+  space = space.add_named_tuple_id_ui(tensorId, nDim);
 
   auto tensorElements = isl::set::universe(space);
   auto identity = isl::multi_aff::identity(space.range().map_from_set());
@@ -449,7 +449,7 @@ isl::multi_aff dropDummyTensorDimensions(
     }
   }
 
-  space = addRange(space, list.size());
+  space = space.add_unnamed_tuple_ui(list.size());
   return isl::multi_aff(space, list);
 }
 
