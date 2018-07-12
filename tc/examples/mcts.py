@@ -53,7 +53,9 @@ class MCTS:
         return Node(father=node, new_act=act)
     
     def getLeaf(self, node):
-        while(node.nbChildrenSeen != 0):
+        first=True
+        while(first or node.nbVisits != 0):
+            first=False
             pos = node.pos
             if(node.nbChildrenSeen == self.nbActions[pos]):
                 node, _ = self.getBestChild(node)
@@ -82,9 +84,9 @@ class MCTS:
     def randomSampleScoreFrom(self, node):
         pos = node.pos
         optsVector = node.stateVector
-        for i in range(my_utils.NB_HYPERPARAMS - (pos + 1)):
+        for i in range(my_utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[pos])
-            optsVector[i+(pos+1)] = a
+            optsVector[i+(pos)] = a
         reward = -np.log(my_utils.evalTime(optsVector))
         return reward
 
