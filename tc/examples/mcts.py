@@ -50,7 +50,11 @@ class MCTS:
         return action
 
     def take_action(self, node, act):
-        return Node(father=node, new_act=act)
+        if(node.nbChildrenSeen > act):
+            return node.children[act]
+        new_child = Node(father=node, new_act=act)
+        node.children.append(new_child)
+        return node.children[-1]
     
     def getLeaf(self, node):
         first=True
@@ -63,7 +67,7 @@ class MCTS:
                 act=node.nbChildrenSeen
                 node.hasSeen[act]=1
                 node.nbChildrenSeen += 1
-                node.children.append(self.take_action(node, act))
+                self.take_action(node, act)
                 return node.children[-1]
         return node
     
