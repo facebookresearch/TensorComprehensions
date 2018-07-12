@@ -58,16 +58,10 @@ function(tc_protobuf_generate_cpp_py output_dir srcs_var hdrs_var python_var)
   set(${python_var} ${${python_var}} PARENT_SCOPE)
 endfunction()
 
-tc_protobuf_generate_cpp_py(${PROJECT_SOURCE_DIR}/tc/proto PROTO_SRCS PROTO_HDRS PROTO_PY mapping_options.proto compcache.proto)
+tc_protobuf_generate_cpp_py(${CMAKE_CURRENT_BINARY_DIR} PROTO_SRCS PROTO_HDRS PROTO_PY mapping_options.proto compcache.proto)
 
 add_library(tc_proto SHARED ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(tc_proto ${PROTOBUF_LIBRARIES})
 target_include_directories(tc_proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR} ${PROTOBUF_HDRS})
 
 install(TARGETS tc_proto DESTINATION lib)
-# "Install" to source_dir/tensor_comprehensions for easy inclusion in python
-# package with setuptools. Without this, setuptools is hell.
-install(PROGRAMS ${PROTO_PY}
-  DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)
-install(PROGRAMS mapping_options.proto compcache.proto
-  DESTINATION ${PROJECT_SOURCE_DIR}/tensor_comprehensions)
