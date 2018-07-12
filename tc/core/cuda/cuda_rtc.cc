@@ -138,6 +138,41 @@ static std::string llvmCompile(
       std::istreambuf_iterator<char>());
 }
 
+static std::string nvccCompile(
+    const std::string& name,
+    const std::string& source) {
+  int device, major, minor;
+  std::tie(device, major, minor) = getCudaArchitecture();
+
+  std::string pat("/tmp/cudaXXXXXX");
+  std::vector<char> ifn(pat.begin(), pat.end());
+  TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
+  std::string inputFileName(ifn.begin(), ifn.end());
+  // cstdio's std::remove to delete files
+  tc::ScopeGuard sgi([&]() { std::remove(inputFileName.c_str()); });
+  {
+    std::ofstream ostream(inputFileName, std::ios::binary);
+    ostream << source;
+  }
+
+  std::string arch = "sm_" + std::to_string(major) + std::to_string(minor);
+  std::string outputPtxFile = inputFileName + ".ptx";
+  // cstdio's std::remove to delete files
+  tc::ScopeGuard sgo([&]() { std::remove(outputPtxFile.c_str()); });
+
+  std::string cmdPtx = std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) +
+      "/bin/nvcc -x cu " + inputFileName + " --gpu-architecture=" + arch + " " +
+      "--ptx " + "-I" + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR) + " " + "-I" +
+      TC_STRINGIFY(TC_CUB_INCLUDE_DIR) + " " + tc::FLAGS_nvcc_flags + " -o " +
+      outputPtxFile;
+  TC_CHECK_EQ(std::system(cmdPtx.c_str()), 0) << cmdPtx;
+
+  std::ifstream stream(outputPtxFile);
+  return std::string(
+      (std::istreambuf_iterator<char>(stream)),
+      std::istreambuf_iterator<char>());
+}
+
 static std::string nvrtcCompile(
     const std::string& name,
     const std::string& source) {
@@ -209,8 +244,7 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
   } else if (FLAGS_cuda_compiler == "llvm") {
     res->ptx = llvmCompile(name, source);
   } else if (FLAGS_cuda_compiler == "nvcc") {
-    CHECK(false) << "NYI";
-    // res->ptx = llvmCompile(name, source);
+    res->ptx = nvccCompile(name, source);
   } else {
     CHECK(false) << "Unknown CUDA compiler: " << FLAGS_cuda_compiler;
   }

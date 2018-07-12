@@ -452,6 +452,11 @@ PYBIND11_MODULE(tclib, m) {
       [](const std::string& llvm_flags) { tc::FLAGS_llvm_flags = llvm_flags; },
       gflags::DescribeOneFlag(gflags::GetCommandLineFlagInfoOrDie("llvm_flags"))
           .c_str());
+  m.def(
+      "nvcc_flags",
+      [](const std::string& nvcc_flags) { tc::FLAGS_nvcc_flags = nvcc_flags; },
+      gflags::DescribeOneFlag(gflags::GetCommandLineFlagInfoOrDie("nvcc_flags"))
+          .c_str());
 
   // Access the names of the defs in a TC string
   m.def("parse_defs", [](const std::string& tc) {

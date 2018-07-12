@@ -34,6 +34,7 @@ DECLARE_bool(dump_ptx);
 // ptx generation
 DECLARE_string(cuda_compiler);
 DECLARE_string(llvm_flags);
+DECLARE_string(nvcc_flags);
 
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);

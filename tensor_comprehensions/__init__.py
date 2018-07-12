@@ -31,6 +31,7 @@ from tensor_comprehensions.tclib import dump_cuda
 from tensor_comprehensions.tclib import dump_ptx
 from tensor_comprehensions.tclib import cuda_compiler
 from tensor_comprehensions.tclib import llvm_flags
+from tensor_comprehensions.tclib import nvcc_flags
 
 from tensor_comprehensions.tclib import CompilationCache
 from tensor_comprehensions.tclib import MappingOptions
@@ -610,6 +611,7 @@ __all__ = [
     'dump_ptx',
     'cuda_compiler',
     'llvm_flags',
+    'nvcc_flags',
     # Functions exposed by the tclib
     'compile',
     'autotune',
