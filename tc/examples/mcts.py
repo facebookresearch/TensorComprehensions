@@ -42,7 +42,7 @@ class MCTS:
 
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
-        for _ in range(1000):
+        for _ in range(20):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
             self.backup(leaf, val)
@@ -97,7 +97,7 @@ class MCTS:
 
     def evaluate(self, leaf):
         score = 0
-        for _ in range(10):
+        for _ in range(1):
             score += self.randomSampleScoreFrom(leaf)
         return score / 10
 
