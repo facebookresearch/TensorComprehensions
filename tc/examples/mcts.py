@@ -87,6 +87,7 @@ class MCTS:
         for i in range(my_utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[pos])
             optsVector[i+(pos)] = a
+        print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
         return reward
 
