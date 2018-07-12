@@ -2,6 +2,7 @@ import tensor_comprehensions as tc
 import torch
 import my_utils
 import numpy as np
+from tqdm import tqdm
 
 class Node:
     def __init__(self, father=None, new_act=0):
@@ -61,7 +62,7 @@ class MCTS:
     
     def getLeaf(self, node):
         first=True
-        while(first or node.nbVisits != 0):
+        while(node.pos < my_utils.NB_HYPERPARAMS and (first or node.nbVisits != 0)):
             first=False
             pos = node.pos
             if(node.nbChildrenSeen == self.nbActions[pos]):
@@ -113,7 +114,7 @@ mcts = MCTS()
 
 opts = []
 curr_node = mcts.tree
-for i in range(my_utils.NB_HYPERPARAMS):
+for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
     opts.append(mcts.main_search(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
 print(my_utils.evalTime(opts))
