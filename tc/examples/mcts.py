@@ -16,7 +16,7 @@ class Node:
         if(father != None):
             self.pos = father.pos+1
             self.hasSeen = {} #todo
-            self.stateVector = father.stateVector
+            self.stateVector = father.stateVector[:]
             self.stateVector[self.pos-1] = new_act
     
     def getRoot(self):
