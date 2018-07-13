@@ -356,10 +356,12 @@ size_t largestDim(const std::vector<const DLConstTensor*>& inputs) {
   return (*maxElement)->ndim;
 }
 
-// Creates well-chosen parameter sizes to match the input shapes.
-void setupTuningParameters(
+// Creates well-chosen generic parameter sizes to match the input shapes.
+template <typename MappingOptionsType>
+inline std::pair<TuningConfiguration, std::vector<size_t>>
+setupGenericTuningParametersAndGetRange(
     const std::vector<const DLConstTensor*>& inputs,
-    TuningConfiguration& configuration) {
+    const std::vector<MappingOptionsType>& baseMappings) {
   TC_CHECK_GE(inputs.size(), 1u);
   auto range = inputDivisorsAndPowers2(inputs);
   // 0 is a valid tiling annotation and signals no tiling of that dimension
@@ -367,15 +369,48 @@ void setupTuningParameters(
   auto nTilesDim = largestDim(inputs) + 1;
   auto tileRange = range;
   tileRange.push_back(0);
+
+  TuningConfiguration configuration;
   configuration.tilingParams.setRange(nTilesDim, tileRange);
-  configuration.blockParams.setRange(range, "b");
-  configuration.gridParams.setRange(range, "g");
   configuration.unrollFactor =
       RangeParameter(powers2(FLAGS_tuner_max_unroll_size), "unroll");
+
+  return {configuration, range};
+}
+
+// Creates well-chosen parameter sizes to match the input shapes.
+inline TuningConfiguration setupTuningParameters(
+    const std::vector<const DLConstTensor*>& inputs,
+    const std::vector<CudaMappingOptions>& baseMappings) {
+  std::vector<size_t> range;
+  TuningConfiguration configuration;
+  std::tie(configuration, range) =
+      setupGenericTuningParametersAndGetRange(inputs, baseMappings);
+  auto blockRange = range;
+  auto gridRange = range;
+
+  for (const auto& baseMapping : baseMappings) {
+    blockRange =
+        mergeVectors(std::move(blockRange), baseMapping.block.extractVector());
+    gridRange =
+        mergeVectors(std::move(gridRange), baseMapping.grid.extractVector());
+  }
+
+  configuration.blockParams.setRange(blockRange, "b");
+  configuration.gridParams.setRange(gridRange, "g");
   configuration.privateDepth =
       RangeParameter({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "pdepth");
   configuration.sharedDepth =
       RangeParameter({0, 1, 2, 3, 4, 5, 6, 7}, "sdepth");
+
+  return configuration;
+}
+
+// Creates well-chosen parameter sizes to match the input shapes.
+inline TuningConfiguration setupTuningParameters(
+    const std::vector<const DLConstTensor*>& inputs,
+    const std::vector<CpuMappingOptions>& baseMappings) {
+  return setupGenericTuningParametersAndGetRange(inputs, baseMappings).first;
 }
 } // namespace
 
@@ -397,9 +432,9 @@ Autotuner<Backend, SearchStrategy>::tune(
       << "Error looking up " << tcEntryPoint;
 
   // Initialize a model configuration
-  TuningConfiguration modelConfiguration;
   TC_CHECK_GE(inputs.size(), 1u);
-  setupTuningParameters(inputs.begin()->second, modelConfiguration);
+  auto modelConfiguration =
+      setupTuningParameters(inputs.begin()->second, baseMappings);
   modelConfiguration.fixParameters(fixedParams);
 
   // Create initial configs based on options + model configuration
