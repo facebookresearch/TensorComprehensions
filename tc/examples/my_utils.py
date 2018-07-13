@@ -63,8 +63,9 @@ def set_vars(tc_prog_arg, inp_arg, cat_val_arg, cat_sz_arg):
 def catVec_to_optVec(catVec):
     global cat_val
     opt = [cat_val[i][catVec[i]] for i in range(NB_HYPERPARAMS)]
-    opt[18] = min(opt[18], 1024//opt[17])
-    opt[19] = min(opt[19], 1024//(opt[17] * opt[18]))
+    #if(opt[18] * opt[17] > 1024)
+    #opt[18] = min(opt[18], 1024//opt[17])
+    #opt[19] = min(opt[19], 1024//(opt[17] * opt[18]))
     return opt
 
 def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
@@ -163,7 +164,8 @@ def getAllDivs(inp, maxp2=8):
     for elem in inp:
         for sz in elem.shape:
             l += computeDivs(sz)
-    return list(set(l+p2))
+    my_list = list(set(l+p2))
+    return np.sort(my_list).tolist()
 
 def computeCat(inp_arg):
     global cat_sz, cat_val, inp
@@ -174,26 +176,26 @@ def computeCat(inp_arg):
     divs = getAllDivs(inp)
     #divs2 = getAllDivs([np.array([tc.tclib.shared_memory_size()])])
 
-    cat_val.append([0,1,2])
-    cat_val.append([0,1,2])
-    cat_val.append([0,1])
-    cat_val.append([i+1 for i in range(6)])
-    for i in range(6): #tiling
-        cat_val.append(divs + [0])
-    cat_val.append([2**i for i in range(8)])
-    cat_val.append([0,1])
-    cat_val.append([i+1 for i in range(3)])
-    for i in range(3):
+    cat_val.append([0,1,2])                    #0
+    cat_val.append([0,1,2])                    #1
+    cat_val.append([0,1])                      #2
+    cat_val.append([i+1 for i in range(6)])    #3
+    for i in range(6): #tiling                 #4-9
+        cat_val.append(divs + [0])             #4-9
+    cat_val.append([2**i for i in range(8)])   #10
+    cat_val.append([0,1])                      #11
+    cat_val.append([i+1 for i in range(3)])    #12
+    for i in range(3):                         #13-15
         cat_val.append(divs) #blocks #maximum 2^31-1 for the first value and 65535 for the second and third
-    cat_val.append([i+1 for i in range(3)])
-    for i in range(3):
+    cat_val.append([i+1 for i in range(3)])    #16
+    for i in range(3):                         #17-19
         cat_val.append(divs) #threads #maximum 1024 for the first and second value, 32 for the third, product below 1024
-    cat_val.append([0,1])
-    cat_val.append([0,1])
-    cat_val.append([0,1])
-    cat_val.append([0]) #cat_val.append(divs2)
-    cat_val.append([0,1])
-    cat_val.append([i for i in range(6)]) #6 ou 7 ??
+    cat_val.append([0,1])                      #20
+    cat_val.append([0,1])                      #21
+    cat_val.append([0,1])                      #22
+    cat_val.append([0]) #cat_val.append(divs2) #23
+    cat_val.append([0,1])                      #24
+    cat_val.append([i for i in range(6)]) #6 ou 7 ?? #25
 
     for i in range(NB_HYPERPARAMS):
         cat_sz[i] = len(cat_val[i])
