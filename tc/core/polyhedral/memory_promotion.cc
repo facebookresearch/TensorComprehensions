@@ -87,8 +87,8 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
     isl::map scopedAccess,
     AccessType type) {
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
-  auto refId = scopedAccess.get_space().domain().unwrap().get_tuple_id(
-      isl::dim_type::out);
+  auto refId =
+      scopedAccess.get_space().domain().unwrap().get_map_range_tuple_id();
   scopedAccess = scopedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
   ref->scopedAccess = scopedAccess;
