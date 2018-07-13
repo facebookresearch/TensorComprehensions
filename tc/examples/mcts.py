@@ -43,7 +43,7 @@ class MCTS:
 
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
-        node.nbVisits+=1
+        #node.nbVisits+=1
         ttNbIters = 20
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
