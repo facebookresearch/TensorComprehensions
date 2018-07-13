@@ -438,7 +438,7 @@ void emitRegisterAccess(
 void emitGlobalAccess(
     isl::multi_pw_aff access,
     const CodegenStatementContext& context) {
-  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
+  LdgWrapper ldgWrapper(context, access.get_range_tuple_id());
   emitAccess(access, context);
 }
 } // namespace
