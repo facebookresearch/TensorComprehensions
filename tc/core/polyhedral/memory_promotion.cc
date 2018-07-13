@@ -483,12 +483,12 @@ ScheduleTree* insertCopiesUnder(
   // Only iterate over significant tensor dimensions.
   auto decl = scop.promotedDecl(groupId);
   identityCopySchedule = dropDummyTensorDimensions(identityCopySchedule, decl);
-  identityCopySchedule =
-      identityCopySchedule.pullback(isl::multi_aff::range_map(promotionSpace));
-  auto readSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, readId));
-  auto writeSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, writeId));
+  auto readSpace = promotionSpace.wrap().set_set_tuple_id(readId);
+  auto writeSpace = promotionSpace.wrap().set_set_tuple_id(writeId);
+  auto readSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(readSpace)));
+  auto writeSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(writeSpace)));
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
