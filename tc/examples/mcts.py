@@ -49,6 +49,7 @@ class MCTS:
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
             self.backup(leaf, val)
+            print(node.value / node.nbVisits)
         _, action = self.getBestChild(node)
         return action
 
@@ -111,6 +112,8 @@ class MCTS:
             node.nbVisits += 1
             node.value += val
             node = node.getParent()
+        node.nbVisits += 1
+        node.value += val
 
 mcts = MCTS()
 
