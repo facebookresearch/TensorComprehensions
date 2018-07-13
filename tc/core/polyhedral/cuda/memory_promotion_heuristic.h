@@ -33,10 +33,7 @@ class ScheduleTree;
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
 // Map copies between global and shared memory to threads and unroll those
 // copies if "unrollCopies" is set, using the options in "mscop".
-// "threadIdxXScheduleDepthState" contains the schedule depth at which the
-// computation was mapped to thread x and is used to check whether the global
-// memory is accessed in a coalesced way.
-void promoteGreedilyAtDepth(
+void promoteToSharedAtDepth(
     MappedScop& scop,
     std::size_t depth,
     std::size_t sharedMemorySize,

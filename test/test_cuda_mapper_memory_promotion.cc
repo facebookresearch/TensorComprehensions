@@ -392,7 +392,7 @@ def fun(float(N, M) A) -> (B, C) {
       size_t maxSharedMemory) {
     auto mscop = prepareScop(
         tc, {{"N", problemSize1}, {"M", problemSize2}}, {tileSize1, tileSize2});
-    promoteGreedilyAtDepth(*mscop, depth, maxSharedMemory, false);
+    promoteToSharedAtDepth(*mscop, depth, maxSharedMemory, false);
     return mscop;
   }
 };
@@ -437,14 +437,14 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
       << "expected one reference group to be promoted";
 }
 
-TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192),
-      promotion::PromotionBelowThreadsException);
+TEST_F(MapperMemoryPromotionRAW, noSharedPromotionBelowThreads) {
+  auto mscop1 = makeWithSharedGreedy(42, 40, 64, 64, 3, 8192);
+  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192),
-      promotion::PromotionBelowThreadsException);
+  auto mscop2 = makeWithSharedGreedy(42, 40, 64, 64, 4, 8192);
+  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 }
 
 class MatMulBias : public TestMapper {

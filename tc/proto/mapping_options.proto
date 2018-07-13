@@ -72,6 +72,8 @@ message CudaMappingOptionsProto {
   required bool use_readonly_cache = 8;
   // Depth of promotion to private memory, ignored if use_private_memory is false.
   optional uint32 private_depth = 9;
+  // Depth of promotion to shared memory, ignored if use_shared_memory is false.
+  optional uint32 shared_depth = 10;
 }
 
 message CpuMappingOptionsProto {

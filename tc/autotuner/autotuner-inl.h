@@ -374,6 +374,8 @@ void setupTuningParameters(
       RangeParameter(powers2(FLAGS_tuner_max_unroll_size), "unroll");
   configuration.privateDepth =
       RangeParameter({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "pdepth");
+  configuration.sharedDepth =
+      RangeParameter({0, 1, 2, 3, 4, 5, 6, 7}, "sdepth");
 }
 } // namespace
 

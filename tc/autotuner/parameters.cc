@@ -240,6 +240,7 @@ void TuningConfiguration::applyToParameters(
   useReadOnlyCache.apply(f);
   matchLibraryCalls.apply(f);
   privateDepth.apply(f);
+  sharedDepth.apply(f);
 }
 
 bool TuningConfiguration::isValid() const {
@@ -275,6 +276,7 @@ std::vector<ParameterView> TuningConfiguration::collectParameters() {
   params.emplace_back(useReadOnlyCache);
   params.emplace_back(matchLibraryCalls);
   params.emplace_back(privateDepth);
+  params.emplace_back(sharedDepth);
 
   return params;
 }
@@ -306,6 +308,7 @@ void TuningConfiguration::fromCudaMappingOptions(
   unrollCopyShared.selectValue(options.proto().unroll_copy_shared());
   useReadOnlyCache.selectValue(options.proto().use_readonly_cache());
   privateDepth.selectFromValue(options.proto().private_depth());
+  sharedDepth.selectFromValue(options.proto().shared_depth());
 }
 
 void TuningConfiguration::fromCpuMappingOptions(
@@ -335,6 +338,7 @@ void TuningConfiguration::applyToCudaMappingOptions(
   options.unrollCopyShared(unrollCopyShared.value());
   options.useReadOnlyCache(useReadOnlyCache.value());
   options.privateDepth(privateDepth.value());
+  options.sharedDepth(sharedDepth.value());
 }
 
 void TuningConfiguration::applyToCpuMappingOptions(
