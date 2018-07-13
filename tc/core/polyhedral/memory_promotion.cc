@@ -306,7 +306,7 @@ void addSingletonReferenceGroups(
       continue;
     }
 
-    auto tensorId = a.get_tuple_id(isl::dim_type::out);
+    auto tensorId = a.get_range_tuple_id();
     if (unapproximatable.count(tensorId) != 0) {
       continue;
     }
