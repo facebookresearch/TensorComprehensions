@@ -508,8 +508,7 @@ ScheduleTree* insertCopiesUnder(
   auto promotedFootprint = group.promotedFootprint().set_tuple_id(groupId);
   auto scheduleUniverse =
       isl::set::universe(promotionSpace.domain().unwrap().domain());
-  auto arrayId =
-      promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
+  auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
   auto approximatedRead =
       group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
