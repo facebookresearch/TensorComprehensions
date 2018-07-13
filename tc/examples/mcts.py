@@ -44,7 +44,7 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         node.nbVisits+=1
-        for _ in range(20):
+        for _ in range(max(5, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
             self.backup(leaf, val)
