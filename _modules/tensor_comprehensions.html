@@ -350,6 +350,10 @@
 <span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">debug_tc_mapper</span>
 <span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">debug_tuner</span>
 <span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">dump_cuda</span>
+<span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">dump_ptx</span>
+<span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">cuda_compiler</span>
+<span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">llvm_flags</span>
+<span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">nvcc_flags</span>
 
 <span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">CompilationCache</span>
 <span class="kn">from</span> <span class="nn">tensor_comprehensions.tclib</span> <span class="k">import</span> <span class="n">MappingOptions</span>
@@ -926,6 +930,10 @@
     <span class="s1">&#39;debug_tc_mapper&#39;</span><span class="p">,</span>
     <span class="s1">&#39;debug_tuner&#39;</span><span class="p">,</span>
     <span class="s1">&#39;dump_cuda&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;dump_ptx&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;cuda_compiler&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;llvm_flags&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;nvcc_flags&#39;</span><span class="p">,</span>
     <span class="c1"># Functions exposed by the tclib</span>
     <span class="s1">&#39;compile&#39;</span><span class="p">,</span>
     <span class="s1">&#39;autotune&#39;</span><span class="p">,</span>
