@@ -474,8 +474,7 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  auto promotion =
-      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
+  auto promotion = isl::map(group.promotion()).set_range_tuple_id(groupId);
   auto promotionSpace = promotion.get_space();
 
   auto identityCopySchedule =
@@ -512,13 +511,13 @@ ScheduleTree* insertCopiesUnder(
   auto approximatedRead =
       group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
-  auto readExtension = extension.intersect_range(approximatedRead)
-                           .set_tuple_id(isl::dim_type::out, readId);
+  auto readExtension =
+      extension.intersect_range(approximatedRead).set_range_tuple_id(readId);
   auto writtenElements =
       group.scopedWrites().intersect_range(tensorElements).wrap();
   writtenElements = writtenElements.product(promotedFootprint);
-  auto writeExtension = extension.intersect_range(writtenElements)
-                            .set_tuple_id(isl::dim_type::out, writeId);
+  auto writeExtension =
+      extension.intersect_range(writtenElements).set_range_tuple_id(writeId);
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),
