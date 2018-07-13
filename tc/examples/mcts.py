@@ -1,4 +1,4 @@
-import tensor_comprehensions as tc 
+import tensor_comprehensions as tc
 import torch
 import my_utils
 import numpy as np
@@ -19,7 +19,7 @@ class Node:
             #self.hasSeen = {} #todo
             self.stateVector = father.stateVector[:]
             self.stateVector[self.pos-1] = new_act
-    
+
     def getRoot(self):
         return self
 
@@ -31,7 +31,7 @@ class Node:
 
 class MCTS:
     def __init__(self):
-        self.C = 1. #to tune
+        self.C = 0.1 #to tune
 
         (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 
@@ -44,12 +44,12 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 20
+        ttNbIters = 10*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
             self.backup(leaf, val)
-            print(node.value / node.nbVisits)
+            #print(node.value / node.nbVisits)
         _, action = self.getBestChild(node)
         return action
 
@@ -61,7 +61,7 @@ class MCTS:
         #node.hasSeen[act]=1
         node.nbChildrenSeen += 1
         return node.children[-1]
-    
+
     def getLeaf(self, node):
         first=True
         while(node.pos < my_utils.NB_HYPERPARAMS and (first or node.nbVisits != 0)):
@@ -74,7 +74,7 @@ class MCTS:
                 self.take_action(node, act)
                 return node.children[-1]
         return node
-    
+
     def getBestChild(self, node):
         bestIndic = 0.
         bestAction = 0
@@ -88,20 +88,21 @@ class MCTS:
                 bestAction = act
                 first=False
         return node.children[bestAction], bestAction
-    
+
     def randomSampleScoreFrom(self, node):
         pos = node.pos
         optsVector = node.stateVector
         for i in range(my_utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
-        #print(optsVector)
+        print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
+        print(-reward)
         return reward
 
     def evaluate(self, leaf):
         score = 0
-        nb_iters=1
+        nb_iters=5
         for _ in range(nb_iters):
             score += self.randomSampleScoreFrom(leaf)
         return score / nb_iters
@@ -122,6 +123,7 @@ curr_node = mcts.tree
 for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
     opts.append(mcts.main_search(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
+    print(opts)
 opts = np.array(opts).astype(int)
-print(my_utils.evalTime(opts))
+print(my_utils.evalTime(opts.tolist()))
 my_utils.print_opt(opts)

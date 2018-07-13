@@ -26,7 +26,7 @@ steps_done = 0
 viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
+(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)

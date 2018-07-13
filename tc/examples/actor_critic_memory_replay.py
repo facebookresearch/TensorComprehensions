@@ -24,7 +24,7 @@ steps_done = 0
 buff = deque()
 MAXI_BUFF_SZ = 50
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
+(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)

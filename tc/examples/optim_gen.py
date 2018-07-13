@@ -15,7 +15,7 @@ from collections import deque
 
 import my_utils
 
-tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example(already_set=True, inp_sz_list=[32, 1, 2, 64, 4, 128, 256, 7, 8, 14, 16, 28])
+tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
 #config = tc.autotuner_settings
@@ -30,4 +30,4 @@ opts = tc.MappingOptions("naive")
 
 #print(opts)
 
-tc.autotune(tc_code, tc_name, *inp, starting_options=opts, cache_filename="savedopt.txt", store_to_cache=True)
+tc.autotune(tc_code, tc_name, *inp, starting_options=opts, cache_filename="savedopt_ns.txt", store_to_cache=True)
