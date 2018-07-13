@@ -99,9 +99,10 @@ class MCTS:
 
     def evaluate(self, leaf):
         score = 0
-        for _ in range(1):
+        nb_iters=1
+        for _ in range(nb_iters):
             score += self.randomSampleScoreFrom(leaf)
-        return score / 10
+        return score / nb_iters
 
     def backup(self, leaf, val):
         node = leaf
@@ -117,5 +118,6 @@ curr_node = mcts.tree
 for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
     opts.append(mcts.main_search(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
+opts = np.array(opts).astype(int)
 print(my_utils.evalTime(opts))
 my_utils.print_opt(opts)
