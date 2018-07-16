@@ -38,6 +38,8 @@ struct TC2Isl : public ::testing::Test {
         isl::with_exceptions::globalIslCtx(), halide);
     auto scheduleHalide = scop->scheduleRoot();
 
+    LOG_IF(ERROR, FLAGS_debug_tc_mapper) << *scheduleHalide;
+
     polyhedral::detail::validateSchedule(scheduleHalide);
   }
 };
@@ -196,6 +198,57 @@ def foo(float(N) A) -> (B) {
 }
 )TC";
   EXPECT_THROW(Check(tc), ::lang::ErrorReport);
+}
+
+TEST_F(TC2Isl, For1) {
+  string tc = R"TC(
+    def fun(float(M, N) X) -> (R1) {
+        for t in 0:123 {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+        }
+    }
+)TC";
+  Check(tc);
+}
+
+TEST_F(TC2Isl, For2) {
+  string tc = R"TC(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        for t in 0:T {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+            R2(t, m, n) = R1(t, m, n)
+        }
+    }
+)TC";
+  Check(tc);
+}
+
+TEST_F(TC2Isl, For3) {
+  string tc = R"TC(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        R1(t, m, n) = (t == 0) ? X(m, n) : 0.0 where t in 0:T
+        R2(t, m, n) = 0.0 where t in 0:T, m in 0:M, n in 0:N
+        for t in 1:T {
+            R1(t, m, n) += R1(t-1, m, n)
+            R2(t, m, n) += R1(t, m, n)
+        }
+    }
+)TC";
+  Check(tc);
+}
+
+TEST_F(TC2Isl, For4InvalidHalide) {
+  string tc = R"TC(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        R1(t, m, n) = (t == 0) ? X(m, n) : 0.0 where t in 0:T
+        R2(t, m, n) = 0.0 where t in 0:T, m in 0:M, n in 0:N
+        for t in 1:T {
+            R1(t, m, n) += R1(t-1, m, n) + R2(t-1, m, n)
+            R2(t, m, n) += R1(t, m, n)
+        }
+    }
+)TC";
+  EXPECT_THROW(Check(tc), std::exception);
 }
 
 TEST_F(TC2Isl, Types) {
