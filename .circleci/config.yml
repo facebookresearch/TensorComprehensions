@@ -13,7 +13,7 @@ jobs:
           command: |
             . /opt/conda/anaconda/bin/activate
             source activate tc_build
-            conda install -y -c nicolasvasilache llvm-trunk halide
+            conda install -y -c nicolasvasilache llvm-trunk halide_experimental
 
       - run:
           name: check_formatting

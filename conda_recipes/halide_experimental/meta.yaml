@@ -1,0 +1,34 @@
+package:
+  name: halide_experimental
+  version: "{{ environ.get('HALIDE_EXPERIMENTAL_BUILD_VERSION') }}"
+
+source:
+  git_url: https://github.com/nicolasvasilache/Halide.git
+  git_rev: "{{ environ.get('HALIDE_EXPERIMENTAL_GIT_HASH') }}"
+
+requirements:
+  build:
+    - llvm-trunk==1.0.0
+    - cmake
+  run:
+    - llvm-trunk==1.0.0
+    - cmake
+
+build:
+  number: {{ environ.get('HALIDE_EXPERIMENTAL_BUILD_NUMBER') }}
+  skip: True   # [win]
+
+test:
+  commands:
+    - test -f $PREFIX/lib/libHalide.so
+    - test -f $PREFIX/lib/libHalide.a
+    - test -d $PREFIX/include/Halide
+
+about:
+  home: http://halide-lang.org
+  license: MIT
+  summary: A language for image processing and computational photography
+
+extra:
+  recipe-maintainers:
+    - nicolasvasilache
