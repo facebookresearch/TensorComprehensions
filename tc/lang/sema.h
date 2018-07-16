@@ -493,55 +493,82 @@ struct Sema {
 
   // Semantic checking for the statements/comprehensions in a TC Def.
   TreeRef checkStmt(TreeRef stmt_) {
-    auto stmt = Comprehension(stmt_);
+    if (stmt_->kind() == TK_COMPREHENSION) {
+      return checkComprehension(Comprehension(stmt_));
+    }
+    return checkFor(For(stmt_));
+  }
 
+  TreeRef checkFor(For f) {
+    if (lookup(f.index(), false)) {
+      throw ErrorReport(f) << "For loop index already defined";
+    }
+    TreeList stmts;
+    for (auto s : f.statements()) {
+      if (s->kind() != TK_COMPREHENSION) {
+        throw ErrorReport(s) << "Nested \"for\" loops NYI";
+      }
+      stmts.push_back(checkComprehension(Comprehension(s)));
+    }
+    // Check the range constraint after all statements
+    // This way we don't need extra state to track indices coming from loops
+    // that may have already been defined.
+    checkRangeConstraint(f.rangeConstraint());
+    return For::create(
+        f.range(),
+        f.index(),
+        f.rangeConstraint(),
+        List::create(f.range(), std::move(stmts)));
+  }
+
+  TreeRef checkComprehension(Comprehension comp) {
     // register index variables (non-reductions)
-    for (const auto& index : stmt.indices()) {
+    for (const auto& index : comp.indices()) {
       std::string idx = index.name();
       auto typ = indexType(index);
       insert(index_env, index, typ, true);
     }
 
     // check that the input is not used for output - inputs are immutable
-    std::string name = stmt.ident().name();
+    std::string name = comp.ident().name();
     if (inputParameters.count(name) > 0) {
-      throw ErrorReport(stmt_) << "TC inputs are immutable";
+      throw ErrorReport(comp) << "TC inputs are immutable";
     }
 
     // make dimension variables for each dimension of the output tensor
     TreeList output_indices;
-    int n = stmt.indices().size();
+    int n = comp.indices().size();
     for (int i = 0; i < n; ++i) {
       auto new_var =
-          Ident::create(stmt.range(), name + "." + std::to_string(i));
+          Ident::create(comp.range(), name + "." + std::to_string(i));
       output_indices.push_back(new_var);
     }
 
     // where clauses are checked _before_ the rhs because they
     // introduce let bindings that are in scope for the rhs
-    auto where_clauses_ = stmt.whereClauses().map(
+    auto where_clauses_ = comp.whereClauses().map(
         [&](TreeRef rc) { return checkWhereClause(rc); });
 
-    TreeRef rhs_ = checkExp(stmt.rhs(), true);
+    TreeRef rhs_ = checkExp(comp.rhs(), true);
     TreeRef scalar_type = typeOfExpr(rhs_);
 
     // if this statement will be returned and it is annotated in the return list
     // with a type (e.g. float(A,B)) then force the tensor to be that type
     // and check that the number of dimensions are consistent
-    auto output_annotation = annotated_output_types.find(stmt.ident().name());
+    auto output_annotation = annotated_output_types.find(comp.ident().name());
     if (output_annotation != annotated_output_types.end()) {
       auto tt = TensorType(output_annotation->second);
       auto matched_type = match_types(scalar_type, tt.scalarTypeTree());
       if (tt.scalarTypeTree()->kind() != matched_type->kind()) {
-        throw ErrorReport(stmt)
+        throw ErrorReport(comp)
             << " attempting to assign type "
             << kindToString(scalar_type->kind()) << " to narrower type "
             << kindToString(tt.scalarTypeTree()->kind())
             << " without an explicit cast";
       }
-      if (tt.dims().size() != stmt.indices().size()) {
-        throw ErrorReport(stmt)
-            << " tensor defined with " << stmt.indices().size()
+      if (tt.dims().size() != comp.indices().size()) {
+        throw ErrorReport(comp)
+            << " tensor defined with " << comp.indices().size()
             << " dimensions but declared as an output with " << tt.dims().size()
             << " dimensions.";
       }
@@ -550,11 +577,11 @@ struct Sema {
     // After checking rhs and before creating lhs, we check if it is a reduction
     // without initialization (i.e., reduction operator without "!" suffix, and
     // lhs not defined previously).
-    if (isUninitializedReductionOperation(stmt.assignment()) &&
-        nullptr == lookup(stmt.ident(), false)) {
-      ErrorReport err(stmt);
-      std::string tk = kindToToken(stmt.assignment()->kind());
-      err << "Reduction without initialization. If " << stmt.ident().name()
+    if (isUninitializedReductionOperation(comp.assignment()) &&
+        nullptr == lookup(comp.ident(), false)) {
+      ErrorReport err(comp);
+      std::string tk = kindToToken(comp.assignment()->kind());
+      err << "Reduction without initialization. If " << comp.ident().name()
           << " is not pre-initialized before calling the TC function,"
           << " consider using the !-suffixed reduction operator " << tk
           << "! instead of " << tk;
@@ -562,21 +589,21 @@ struct Sema {
     }
 
     auto type = TensorType::create(
-        stmt.range(),
+        comp.range(),
         scalar_type,
-        List::create(stmt.range(), std::move(output_indices)));
-    insert(env, stmt.ident(), type, false);
+        List::create(comp.range(), std::move(output_indices)));
+    insert(env, comp.ident(), type, false);
 
     // if we redefined an input, it is no longer valid for range expressions
-    live_input_names.erase(stmt.ident().name());
+    live_input_names.erase(comp.ident().name());
 
-    auto equivalent_statement_ = stmt.equivalent().map([&](Equivalent eq) {
+    auto equivalent_statement_ = comp.equivalent().map([&](Equivalent eq) {
       auto indices_ = eq.accesses().map(
           [&](TreeRef index) { return checkExp(index, true); });
       return Equivalent::create(eq.range(), eq.name(), indices_);
     });
 
-    TreeRef assignment = stmt.assignment();
+    TreeRef assignment = comp.assignment();
     // For semantic consistency we allow overwriting reductions like +=!
     // to be used in the language when there are no actual reduction dimensions.
     // Later compile stages assume that there is at least one reduction
@@ -586,26 +613,26 @@ struct Sema {
       assignment = Compound::create('=', assignment->range(), {});
     }
 
-    if (reduction_variables.size() > 0 && stmt.assignment()->kind() == '=') {
-      throw ErrorReport(stmt) << "this statement includes reduction variable '"
+    if (reduction_variables.size() > 0 && comp.assignment()->kind() == '=') {
+      throw ErrorReport(comp) << "this statement includes reduction variable '"
                               << Ident(reduction_variables.back()).name()
                               << "' but does not specify a reduction.";
     }
     TreeRef reduction_variable_list =
-        List::create(stmt.ident().range(), std::move(reduction_variables));
+        List::create(comp.ident().range(), std::move(reduction_variables));
     TreeRef result = Comprehension::create(
-        stmt.range(),
-        stmt.ident(),
-        stmt.indices(),
-        stmt.assignment(),
+        comp.range(),
+        comp.ident(),
+        comp.indices(),
+        comp.assignment(),
         rhs_,
         where_clauses_,
         equivalent_statement_,
         reduction_variable_list);
 
-    if (nonTemporaries.count(stmt.ident().name()) == 0) {
-      throw ErrorReport(stmt)
-          << stmt.ident().name()
+    if (nonTemporaries.count(comp.ident().name()) == 0) {
+      throw ErrorReport(comp)
+          << comp.ident().name()
           << " is not listed as an input or output to this function. Temporaries tensors are not yet implemented";
     }
 

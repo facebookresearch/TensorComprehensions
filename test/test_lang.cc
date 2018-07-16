@@ -398,6 +398,40 @@ int main(int argc, char** argv) {
   )";
   ASSERT(lang::canonicalTc(option_one) == lang::canonicalTc(option_two));
 
+  assertSemaEqual(
+      "for1.expected",
+      R"(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        for t in 0:T {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+            R2(t, m, n) = R1(t, m, n)
+        }
+    }
+  )");
+
+  assertSemaEqual(
+      "for2.expected",
+      R"(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        R1(t, m, n) = (t == 0) ? X(m, n) : 0.0 where t in 0:T
+        R2(t, m, n) = 0.0 where t in 0:T, m in 0:M, n in 0:N
+        for t in 0:T {
+            R1(t, m, n) += (t == 0) ? X(m, n) : R1(t-1, m, n)
+            R2(t, m, n) += R1(t, m, n)
+        }
+    }
+  )");
+
+  assertSemaEqual(
+      "for3.expected",
+      R"(
+    def fun(float(M, N) X, float(T) Meta) -> (R1) {
+        for t in 0:123 {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+        }
+    }
+  )");
+
   testTcFormat();
 
   // assertSemaEqual(

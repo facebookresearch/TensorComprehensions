@@ -765,7 +765,11 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   }
   for (auto c : def.statements()) {
     translateComprehension(
-        c, components.params, throwWarnings, &funcs, &bounds);
+        lang::Comprehension(c),
+        components.params,
+        throwWarnings,
+        &funcs,
+        &bounds);
   }
   vector<Function> outputs;
   for (auto p : def.returns()) {

@@ -40,6 +40,7 @@ namespace lang {
   _(TK_BOOL_VALUE, "bool_value", "")             \
   _(TK_MIN, "min", "min")                        \
   _(TK_MAX, "max", "max")                        \
+  _(TK_FOR, "for", "for")                        \
   _(TK_WHERE, "where", "where")                  \
   _(TK_DEF, "def", "def")                        \
   _(TK_ARROW, "arrow", "->")                     \

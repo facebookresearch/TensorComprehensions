@@ -21,6 +21,7 @@ namespace lang {
 namespace {
 
 void showExpr(std::ostream& s, const TreeRef& expr);
+void showStmt(std::ostream& s, const TreeRef& stmt);
 
 template <typename T>
 void show(std::ostream& s, T x) {
@@ -59,6 +60,16 @@ std::ostream& operator<<(std::ostream& s, const Param& p) {
   return s << p.ident();
 }
 
+std::ostream& operator<<(std::ostream& s, const For& f) {
+  s << "for " << f.index() << " in " << f.range().start() << ":"
+    << f.range().end() << " {";
+  for (const TreeRef& stmt : f.statements()) {
+    showStmt(s, stmt);
+  }
+  s << "}";
+  return s;
+}
+
 std::ostream& operator<<(std::ostream& s, const Comprehension& comp) {
   s << comp.ident() << "(" << comp.indices() << ") "
     << kindToToken(comp.assignment()->kind()) << " ";
@@ -69,6 +80,21 @@ std::ostream& operator<<(std::ostream& s, const Comprehension& comp) {
     throw std::runtime_error(
         "Printing of equivalent comprehensions is not supported yet");
   return s;
+}
+
+void showStmt(std::ostream& s, const TreeRef& stmt) {
+  switch (stmt->kind()) {
+    case TK_FOR:
+      s << "  " << For(stmt) << "\n";
+      break;
+    case TK_COMPREHENSION:
+      s << "  " << Comprehension(stmt) << "\n";
+      break;
+    default:
+      std::stringstream ss;
+      ss << "Incorrect statement kind: " << stmt->kind();
+      throw std::runtime_error(ss.str());
+  }
 }
 
 void showExpr(std::ostream& s, const TreeRef& expr) {
@@ -174,8 +200,8 @@ void tcFormat(std::ostream& s, TreeRef _def) {
   Def def{_def};
   s << "def " << def.name() << "(" << def.params() << ")"
     << " -> (" << def.returns() << ") {\n";
-  for (const Comprehension& c : def.statements()) {
-    s << "  " << c << "\n";
+  for (const TreeRef& stmt : def.statements()) {
+    showStmt(s, stmt);
   }
   s << "}";
 }

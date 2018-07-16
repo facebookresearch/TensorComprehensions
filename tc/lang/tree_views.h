@@ -36,8 +36,11 @@ namespace lang {
 //
 // Def   = Def(Ident name, List<Param> params, List<Param> returns, List<Stmt> body) TK_DEF
 //
-// -- NB: reduction_variables are only filled during semantic analysis
-// Stmt  = Comprehension(Ident lhs_ident, List<Ident> lhs_indices,      TK_COMPREHENSION
+// Stmt  = For(Ident iter,                                              TK_FOR
+//             RangeConstraint range_constraints,
+//             List<Stmt> statements)
+//       -- NB: reduction_variables are only filled during semantic analysis
+//       | Comprehension(Ident lhs_ident, List<Ident> lhs_indices,      TK_COMPREHENSION
 //                       AssignKind assignment, Expr rhs,
 //                       List<WhereClause> range_constraints,
 //                       Option<Equivalent> eqiuvalent_stmt,
@@ -354,6 +357,29 @@ struct RangeConstraint : public TreeView {
   }
 };
 
+struct For : public TreeView {
+  explicit For(const TreeRef& tree) : TreeView(tree) {
+    tree_->expect(TK_FOR, 3);
+  }
+  static TreeRef create(
+      const SourceRange& range,
+      TreeRef index,
+      TreeRef range_constraints,
+      TreeRef stmt_list) {
+    return Compound::create(
+        TK_FOR, range, {index, range_constraints, stmt_list});
+  }
+  Ident index() const {
+    return Ident(subtree(0));
+  }
+  RangeConstraint rangeConstraint() const {
+    return RangeConstraint(subtree(1));
+  }
+  ListView<TreeRef> statements() const {
+    return ListView<TreeRef>(subtree(2));
+  }
+};
+
 struct Comprehension : public TreeView {
   explicit Comprehension(const TreeRef& tree) : TreeView(tree) {
     tree_->expect(TK_COMPREHENSION, 7);
@@ -424,8 +450,8 @@ struct Def : public TreeView {
   ListView<Param> returns() const {
     return ListView<Param>(subtree(2));
   }
-  ListView<Comprehension> statements() const {
-    return ListView<Comprehension>(subtree(3));
+  ListView<TreeRef> statements() const {
+    return ListView<TreeRef>(subtree(3));
   }
   static TreeRef create(
       const SourceRange& range,
