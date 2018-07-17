@@ -10,6 +10,7 @@ viz = Visdom(server="http://100.97.69.78")
 class Node:
     def __init__(self, father=None, new_act=0):
         self.value = 0
+        self.values = []
         self.nbVisits=0
         self.nbChildrenSeen = 0
         self.pos=0
@@ -93,7 +94,8 @@ class MCTS:
         pos = node.pos
         for act in range(self.nbActions[pos]):
             child = node.children[act]
-            indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            indic = np.median(child.values) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
@@ -141,10 +143,12 @@ class MCTS:
         node = leaf
         while(node.notRoot()):
             node.nbVisits += 1
+            node.values.append(val)
             node.value += val
             node = node.getParent()
         node.nbVisits += 1
         node.value += val
+        node.values.append(val)
 
 mcts = MCTS()
 
