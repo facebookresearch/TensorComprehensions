@@ -138,8 +138,8 @@ class MCTS:
         return score / nb_iters
 
     def backup(self, leaf, val):
-        if(val > 10.): #infty
-            return
+        #if(val > 10.): #infty
+        #    return
         node = leaf
         while(node.notRoot()):
             node.nbVisits += 1
