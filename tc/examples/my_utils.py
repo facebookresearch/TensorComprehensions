@@ -79,9 +79,8 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
         opt = tc.MappingOptions("naive")
     else:
         opt = optionsFromVector(opt)
-    tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
-
     try:
+        tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
         first_ft = tc_prog.executor.profile_kernel(inp)
     except:
         return infty

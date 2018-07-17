@@ -3,6 +3,9 @@ import torch
 import my_utils
 import numpy as np
 from tqdm import tqdm
+from visdom import Visdom
+
+viz = Visdom(server="http://100.97.69.78")
 
 class Node:
     def __init__(self, father=None, new_act=0):
@@ -40,6 +43,14 @@ class MCTS:
 
         self.nbActions = my_utils.cat_sz
         self.tree = Node()
+
+        self.best_rewards = []
+        self.rws = []
+
+        self.curIter=0
+        self.curr_best=0
+        self.running_reward=0
+        self.win0 = viz.line(X=np.arange(5), Y=np.random.rand(5))
 
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
@@ -89,6 +100,23 @@ class MCTS:
                 first=False
         return node.children[bestAction], bestAction
 
+    def saveReward(self, reward):
+        INTER_DISP = 20
+        #print(-reward)
+        if(self.curIter == 0):
+            self.running_reward = reward
+            self.curr_best = reward
+        self.curIter += 1
+        self.running_reward = self.running_reward * 0.99 + reward * 0.01
+        self.curr_best = max(self.curr_best, reward)
+        #self.rewards.append(-reward)
+        self.best_rewards.append(-self.curr_best)
+        self.rws.append(-self.running_reward)
+        if self.curIter % INTER_DISP == 0:
+            viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), \
+            Y=np.column_stack((np.array(self.rws), np.array(self.best_rewards))), \
+            win=self.win0, opts=dict(legend=["Geometric run", "Best time"]))
+
     def randomSampleScoreFrom(self, node):
         pos = node.pos
         optsVector = node.stateVector
@@ -97,7 +125,7 @@ class MCTS:
             optsVector[i+(pos)] = a
         print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
-        print(-reward)
+        self.saveReward(reward)
         return reward
 
     def evaluate(self, leaf):
