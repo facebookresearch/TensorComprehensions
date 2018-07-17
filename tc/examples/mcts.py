@@ -62,7 +62,7 @@ class MCTS:
             val = self.evaluate(leaf)
             self.backup(leaf, val)
             #print(node.value / node.nbVisits)
-        _, action = self.getBestChild2(node)
+        _, action = self.getBestChild(node)
         return action
 
     def take_action(self, node, act):
