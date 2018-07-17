@@ -31,7 +31,7 @@ class Node:
 
 class MCTS:
     def __init__(self):
-        self.C = 0.1 #to tune
+        self.C = 1 #to tune
 
         (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
 
@@ -44,7 +44,7 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 10*self.nbActions[node.pos]
+        ttNbIters = 20#2*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
@@ -102,7 +102,7 @@ class MCTS:
 
     def evaluate(self, leaf):
         score = 0
-        nb_iters=5
+        nb_iters=2
         for _ in range(nb_iters):
             score += self.randomSampleScoreFrom(leaf)
         return score / nb_iters
