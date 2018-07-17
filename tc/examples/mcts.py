@@ -62,7 +62,7 @@ class MCTS:
             val = self.evaluate(leaf)
             self.backup(leaf, val)
             #print(node.value / node.nbVisits)
-        _, action = self.getBestChild(node)
+        _, action = self.getBestChild2(node)
         return action
 
     def take_action(self, node, act):
@@ -86,6 +86,21 @@ class MCTS:
                 self.take_action(node, act)
                 return node.children[-1]
         return node
+    
+    def getBestChild2(self, node):
+        bestIndic = 0.
+        bestAction = 0
+        first=True
+        pos = node.pos
+        for act in range(self.nbActions[pos]):
+            child = node.children[act]
+            indic = np.median(child.values)
+            #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            if(first or indic > bestIndic):
+                bestIndic = indic
+                bestAction = act
+                first=False
+        return node.children[bestAction], bestAction
 
     def getBestChild(self, node):
         bestIndic = 0.
