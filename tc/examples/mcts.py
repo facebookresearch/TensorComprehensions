@@ -94,7 +94,7 @@ class MCTS:
         pos = node.pos
         for act in range(self.nbActions[pos]):
             child = node.children[act]
-            indic = np.median(child.values)
+            indic = np.percentile(child.values, 20)
             #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             if(first or indic > bestIndic):
                 bestIndic = indic
@@ -109,7 +109,7 @@ class MCTS:
         pos = node.pos
         for act in range(self.nbActions[pos]):
             child = node.children[act]
-            indic = np.median(child.values) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            indic = np.percentile(child.values, 20) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             if(first or indic > bestIndic):
                 bestIndic = indic
