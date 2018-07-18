@@ -56,7 +56,7 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 20#2*self.nbActions[node.pos]
+        ttNbIters = 1000#2*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
@@ -117,7 +117,7 @@ class MCTS:
                 first=False
         return node.children[bestAction], bestAction
 
-    def saveReward(self, reward):
+    def saveReward(self, reward, opts):
         INTER_DISP = 20
         #print(-reward)
         if(self.curIter == 0):
@@ -125,6 +125,7 @@ class MCTS:
             self.curr_best = reward
         if(self.curIter == 0 or reward > self.curr_best):
             print(-reward)
+            print(opts)
         self.curIter += 1
         self.running_reward = self.running_reward * 0.99 + reward * 0.01
         self.curr_best = max(self.curr_best, reward)
