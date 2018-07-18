@@ -123,6 +123,8 @@ class MCTS:
         if(self.curIter == 0):
             self.running_reward = reward
             self.curr_best = reward
+        if(self.curIter == 0 or reward > self.curr_best):
+            print(-reward)
         self.curIter += 1
         self.running_reward = self.running_reward * 0.99 + reward * 0.01
         self.curr_best = max(self.curr_best, reward)
@@ -140,7 +142,7 @@ class MCTS:
         for i in range(my_utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
-        print(optsVector)
+        #print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
         self.saveReward(reward)
         return reward
@@ -171,7 +173,7 @@ opts = []
 curr_node = mcts.tree
 mcts.main_search(curr_node)
 for i in range(my_utils.NB_HYPERPARAMS):
-    opts.append(mcts.getBestChild2(curr_node))
+    opts.append(mcts.getBestChild2(curr_node)[1])
     curr_node = mcts.take_action(curr_node, opts[-1])
 #for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
 #    opts.append(mcts.main_search(curr_node))
