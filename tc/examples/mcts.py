@@ -169,10 +169,14 @@ mcts = MCTS()
 
 opts = []
 curr_node = mcts.tree
-for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
-    opts.append(mcts.main_search(curr_node))
+mcts.main_search(curr_node)
+for i in range(my_utils.NB_HYPERPARAMS):
+    opts.append(mcts.getBestChild2(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
-    print(opts)
+#for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
+#    opts.append(mcts.main_search(curr_node))
+#    curr_node = mcts.take_action(curr_node, opts[-1])
+#    print(opts)
 opts = np.array(opts).astype(int)
 print(my_utils.evalTime(opts.tolist()))
 my_utils.print_opt(opts)
