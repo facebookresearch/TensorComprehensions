@@ -140,3 +140,5 @@ bool isMappingTo(const detail::ScheduleTree* tree) {
 
 } // namespace polyhedral
 } // namespace tc
+
+#include "tc/core/polyhedral/schedule_utils-inl.h"
