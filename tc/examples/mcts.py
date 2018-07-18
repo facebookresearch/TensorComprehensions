@@ -94,8 +94,8 @@ class MCTS:
         pos = node.pos
         for act in range(self.nbActions[pos]):
             child = node.children[act]
-            indic = np.percentile(child.values, 20)
-            #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            #indic = np.percentile(child.values, 20)
+            indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
@@ -109,8 +109,8 @@ class MCTS:
         pos = node.pos
         for act in range(self.nbActions[pos]):
             child = node.children[act]
-            indic = np.percentile(child.values, 20) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
-            #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            #indic = np.percentile(child.values, 20) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
@@ -150,7 +150,7 @@ class MCTS:
 
     def evaluate(self, leaf):
         score = 0
-        nb_iters=2
+        nb_iters=5
         for _ in range(nb_iters):
             score += self.randomSampleScoreFrom(leaf)
         return score / nb_iters
@@ -161,7 +161,7 @@ class MCTS:
         node = leaf
         while(node.notRoot()):
             node.nbVisits += 1
-            node.values.append(val)
+            #node.values.append(val)
             node.value += val
             node = node.getParent()
         node.nbVisits += 1
