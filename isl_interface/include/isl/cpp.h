@@ -194,14 +194,6 @@ public:
 	}
 };
 
-enum class ast_loop_type {
-	error = isl_ast_loop_error,
-	_default = isl_ast_loop_default,
-	atomic = isl_ast_loop_atomic,
-	unroll = isl_ast_loop_unroll,
-	separate = isl_ast_loop_separate
-};
-
 } // namespace isl
 
 namespace isl {
@@ -2471,9 +2463,7 @@ public:
   inline bool get_permutable() const;
   inline isl::space get_space() const;
   inline bool member_get_coincident(int pos) const;
-  inline isl::schedule_node_band member_set_ast_loop_type(int pos, enum isl::ast_loop_type type) const;
   inline isl::schedule_node_band member_set_coincident(int pos, int coincident) const;
-  inline isl::schedule_node_band member_set_isolate_ast_loop_type(int pos, enum isl::ast_loop_type type) const;
   inline isl::schedule_node_band mod(isl::multi_val mv) const;
   inline unsigned int n_member() const;
   inline isl::schedule_node_band scale(isl::multi_val mv) const;
@@ -2483,6 +2473,14 @@ public:
   inline isl::schedule_node_band shift(isl::multi_union_pw_aff shift) const;
   inline isl::schedule_node_band split(int pos) const;
   inline isl::schedule_node_band tile(isl::multi_val sizes) const;
+  inline isl::schedule_node_band member_set_ast_loop_default(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_atomic(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_unroll(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_separate(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_default(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_atomic(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_unroll(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_separate(int pos) const;
   typedef isl_schedule_node* isl_ptr_t;
 };
 
@@ -3843,7 +3841,7 @@ bool aff::plain_is_equal(const isl::aff &aff2) const
   auto res = isl_aff_plain_is_equal(get(), aff2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::aff aff::project_domain_on_params() const
@@ -4604,7 +4602,7 @@ bool ast_expr::is_equal(const isl::ast_expr &expr2) const
   auto res = isl_ast_expr_is_equal(get(), expr2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::ast_expr ast_expr::set_op_arg(int pos, isl::ast_expr arg) const
@@ -5123,7 +5121,7 @@ bool ast_node_for::is_coincident() const
   auto res = isl_ast_node_for_is_coincident(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool ast_node_for::is_degenerate() const
@@ -5135,7 +5133,7 @@ bool ast_node_for::is_degenerate() const
   auto res = isl_ast_node_for_is_degenerate(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::ast_node_if
@@ -5224,7 +5222,7 @@ bool ast_node_if::has_else() const
   auto res = isl_ast_node_if_has_else(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::ast_node_list
@@ -6906,7 +6904,7 @@ bool basic_map::can_curry() const
   auto res = isl_basic_map_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::can_uncurry() const
@@ -6918,7 +6916,7 @@ bool basic_map::can_uncurry() const
   auto res = isl_basic_map_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_map basic_map::curry() const
@@ -7113,7 +7111,7 @@ bool basic_map::is_empty() const
   auto res = isl_basic_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::is_equal(const isl::basic_map &bmap2) const
@@ -7125,7 +7123,7 @@ bool basic_map::is_equal(const isl::basic_map &bmap2) const
   auto res = isl_basic_map_is_equal(get(), bmap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::is_subset(const isl::basic_map &bmap2) const
@@ -7137,7 +7135,7 @@ bool basic_map::is_subset(const isl::basic_map &bmap2) const
   auto res = isl_basic_map_is_subset(get(), bmap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map basic_map::lexmax() const
@@ -7673,7 +7671,7 @@ bool basic_set::is_empty() const
   auto res = isl_basic_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_equal(const isl::basic_set &bset2) const
@@ -7685,7 +7683,7 @@ bool basic_set::is_equal(const isl::basic_set &bset2) const
   auto res = isl_basic_set_is_equal(get(), bset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_subset(const isl::basic_set &bset2) const
@@ -7697,7 +7695,7 @@ bool basic_set::is_subset(const isl::basic_set &bset2) const
   auto res = isl_basic_set_is_subset(get(), bset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_universe() const
@@ -7709,7 +7707,7 @@ bool basic_set::is_universe() const
   auto res = isl_basic_set_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_wrapping() const
@@ -7721,7 +7719,7 @@ bool basic_set::is_wrapping() const
   auto res = isl_basic_set_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set basic_set::lexmax() const
@@ -7814,7 +7812,7 @@ bool basic_set::plain_is_universe() const
   auto res = isl_basic_set_plain_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_set basic_set::sample() const
@@ -8193,7 +8191,7 @@ bool fixed_box::is_valid() const
   auto res = isl_fixed_box_is_valid(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::id
@@ -8666,7 +8664,7 @@ bool local_space::is_equal(const isl::local_space &ls2) const
   auto res = isl_local_space_is_equal(get(), ls2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool local_space::is_params() const
@@ -8678,7 +8676,7 @@ bool local_space::is_params() const
   auto res = isl_local_space_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool local_space::is_set() const
@@ -8690,7 +8688,7 @@ bool local_space::is_set() const
   auto res = isl_local_space_is_set(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_map local_space::lifting() const
@@ -8918,7 +8916,7 @@ bool map::can_curry() const
   auto res = isl_map_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::can_range_curry() const
@@ -8930,7 +8928,7 @@ bool map::can_range_curry() const
   auto res = isl_map_can_range_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::can_uncurry() const
@@ -8942,7 +8940,7 @@ bool map::can_uncurry() const
   auto res = isl_map_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map map::coalesce() const
@@ -9360,7 +9358,7 @@ bool map::is_bijective() const
   auto res = isl_map_is_bijective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_disjoint(const isl::map &map2) const
@@ -9372,7 +9370,7 @@ bool map::is_disjoint(const isl::map &map2) const
   auto res = isl_map_is_disjoint(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_empty() const
@@ -9384,7 +9382,7 @@ bool map::is_empty() const
   auto res = isl_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_equal(const isl::map &map2) const
@@ -9396,7 +9394,7 @@ bool map::is_equal(const isl::map &map2) const
   auto res = isl_map_is_equal(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_injective() const
@@ -9408,7 +9406,7 @@ bool map::is_injective() const
   auto res = isl_map_is_injective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_single_valued() const
@@ -9420,7 +9418,7 @@ bool map::is_single_valued() const
   auto res = isl_map_is_single_valued(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_strict_subset(const isl::map &map2) const
@@ -9432,7 +9430,7 @@ bool map::is_strict_subset(const isl::map &map2) const
   auto res = isl_map_is_strict_subset(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_subset(const isl::map &map2) const
@@ -9444,7 +9442,7 @@ bool map::is_subset(const isl::map &map2) const
   auto res = isl_map_is_subset(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map map::lexmax() const
@@ -11079,7 +11077,7 @@ bool multi_pw_aff::is_equal(const isl::multi_pw_aff &mpa2) const
   auto res = isl_multi_pw_aff_is_equal(get(), mpa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::mod(isl::multi_val mv) const
@@ -11747,7 +11745,7 @@ bool multi_union_pw_aff::involves_param(const isl::id &id) const
   auto res = isl_multi_union_pw_aff_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::multi_val multi_union_pw_aff::max_multi_val() const
@@ -12573,7 +12571,7 @@ bool point::is_void() const
   auto res = isl_point_is_void(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::pw_aff
@@ -12913,7 +12911,7 @@ bool pw_aff::involves_nan() const
   auto res = isl_pw_aff_involves_nan(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool pw_aff::is_cst() const
@@ -12925,7 +12923,7 @@ bool pw_aff::is_cst() const
   auto res = isl_pw_aff_is_cst(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool pw_aff::is_equal(const isl::pw_aff &pa2) const
@@ -12937,7 +12935,7 @@ bool pw_aff::is_equal(const isl::pw_aff &pa2) const
   auto res = isl_pw_aff_is_equal(get(), pa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set pw_aff::le_set(isl::pw_aff pwaff2) const
@@ -13657,7 +13655,7 @@ bool pw_multi_aff::is_equal(const isl::pw_multi_aff &pma2) const
   auto res = isl_pw_multi_aff_is_equal(get(), pma2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 int pw_multi_aff::n_piece() const
@@ -13964,7 +13962,7 @@ bool schedule::plain_is_equal(const isl::schedule &schedule2) const
   auto res = isl_schedule_plain_is_equal(get(), schedule2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule schedule::pullback(isl::union_pw_multi_aff upma) const
@@ -14737,7 +14735,7 @@ bool schedule_node::has_children() const
   auto res = isl_schedule_node_has_children(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_next_sibling() const
@@ -14749,7 +14747,7 @@ bool schedule_node::has_next_sibling() const
   auto res = isl_schedule_node_has_next_sibling(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_parent() const
@@ -14761,7 +14759,7 @@ bool schedule_node::has_parent() const
   auto res = isl_schedule_node_has_parent(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_previous_sibling() const
@@ -14773,7 +14771,7 @@ bool schedule_node::has_previous_sibling() const
   auto res = isl_schedule_node_has_previous_sibling(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule_node schedule_node::insert_context(isl::set context) const
@@ -14869,7 +14867,7 @@ bool schedule_node::is_equal(const isl::schedule_node &node2) const
   auto res = isl_schedule_node_is_equal(get(), node2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::is_subtree_anchored() const
@@ -14881,7 +14879,7 @@ bool schedule_node::is_subtree_anchored() const
   auto res = isl_schedule_node_is_subtree_anchored(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule_node schedule_node::map_descendant_bottom_up(const std::function<isl::schedule_node(isl::schedule_node)> &fn) const
@@ -15096,7 +15094,7 @@ bool schedule_node_band::get_permutable() const
   auto res = isl_schedule_node_band_get_permutable(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space schedule_node_band::get_space() const
@@ -15120,19 +15118,7 @@ bool schedule_node_band::member_get_coincident(int pos) const
   auto res = isl_schedule_node_band_member_get_coincident(get(), pos);
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
-}
-
-isl::schedule_node_band schedule_node_band::member_set_ast_loop_type(int pos, enum isl::ast_loop_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, static_cast<enum isl_ast_loop_type>(type));
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res).as<isl::schedule_node_band>();
+  return bool(res);
 }
 
 isl::schedule_node_band schedule_node_band::member_set_coincident(int pos, int coincident) const
@@ -15142,18 +15128,6 @@ isl::schedule_node_band schedule_node_band::member_set_coincident(int pos, int c
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_schedule_node_band_member_set_coincident(copy(), pos, coincident);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res).as<isl::schedule_node_band>();
-}
-
-isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_type(int pos, enum isl::ast_loop_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, static_cast<enum isl_ast_loop_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res).as<isl::schedule_node_band>();
@@ -15260,6 +15234,102 @@ isl::schedule_node_band schedule_node_band::tile(isl::multi_val sizes) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_schedule_node_band_tile(copy(), sizes.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_default(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_default);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_atomic(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_atomic);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_unroll(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_unroll);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_separate(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_separate);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_default(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_default);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_atomic(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_atomic);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_unroll(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_unroll);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_separate(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_separate);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res).as<isl::schedule_node_band>();
@@ -16225,7 +16295,7 @@ bool set::has_tuple_id() const
   auto res = isl_set_has_tuple_id(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::has_tuple_name() const
@@ -16237,7 +16307,7 @@ bool set::has_tuple_name() const
   auto res = isl_set_has_tuple_name(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map set::identity() const
@@ -16285,7 +16355,7 @@ bool set::involves_param(const isl::id &id) const
   auto res = isl_set_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_disjoint(const isl::set &set2) const
@@ -16297,7 +16367,7 @@ bool set::is_disjoint(const isl::set &set2) const
   auto res = isl_set_is_disjoint(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_empty() const
@@ -16309,7 +16379,7 @@ bool set::is_empty() const
   auto res = isl_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_equal(const isl::set &set2) const
@@ -16321,7 +16391,7 @@ bool set::is_equal(const isl::set &set2) const
   auto res = isl_set_is_equal(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_singleton() const
@@ -16333,7 +16403,7 @@ bool set::is_singleton() const
   auto res = isl_set_is_singleton(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_strict_subset(const isl::set &set2) const
@@ -16345,7 +16415,7 @@ bool set::is_strict_subset(const isl::set &set2) const
   auto res = isl_set_is_strict_subset(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_subset(const isl::set &set2) const
@@ -16357,7 +16427,7 @@ bool set::is_subset(const isl::set &set2) const
   auto res = isl_set_is_subset(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_wrapping() const
@@ -16369,7 +16439,7 @@ bool set::is_wrapping() const
   auto res = isl_set_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set set::lexmax() const
@@ -16484,7 +16554,7 @@ bool set::plain_is_universe() const
   auto res = isl_set_plain_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_set set::polyhedral_hull() const
@@ -17049,7 +17119,7 @@ bool space::can_curry() const
   auto res = isl_space_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::can_uncurry() const
@@ -17061,7 +17131,7 @@ bool space::can_uncurry() const
   auto res = isl_space_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space space::curry() const
@@ -17157,7 +17227,7 @@ bool space::has_equal_params(const isl::space &space2) const
   auto res = isl_space_has_equal_params(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::has_equal_tuples(const isl::space &space2) const
@@ -17169,7 +17239,7 @@ bool space::has_equal_tuples(const isl::space &space2) const
   auto res = isl_space_has_equal_tuples(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::has_param(const isl::id &id) const
@@ -17181,7 +17251,7 @@ bool space::has_param(const isl::id &id) const
   auto res = isl_space_has_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_equal(const isl::space &space2) const
@@ -17193,7 +17263,7 @@ bool space::is_equal(const isl::space &space2) const
   auto res = isl_space_is_equal(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_params() const
@@ -17205,7 +17275,7 @@ bool space::is_params() const
   auto res = isl_space_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_set() const
@@ -17217,7 +17287,7 @@ bool space::is_set() const
   auto res = isl_space_is_set(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_wrapping() const
@@ -17229,7 +17299,7 @@ bool space::is_wrapping() const
   auto res = isl_space_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space space::map_from_domain_and_range(isl::space range) const
@@ -18401,7 +18471,7 @@ bool union_map::is_bijective() const
   auto res = isl_union_map_is_bijective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_empty() const
@@ -18413,7 +18483,7 @@ bool union_map::is_empty() const
   auto res = isl_union_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_equal(const isl::union_map &umap2) const
@@ -18425,7 +18495,7 @@ bool union_map::is_equal(const isl::union_map &umap2) const
   auto res = isl_union_map_is_equal(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_injective() const
@@ -18437,7 +18507,7 @@ bool union_map::is_injective() const
   auto res = isl_union_map_is_injective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_single_valued() const
@@ -18449,7 +18519,7 @@ bool union_map::is_single_valued() const
   auto res = isl_union_map_is_single_valued(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_strict_subset(const isl::union_map &umap2) const
@@ -18461,7 +18531,7 @@ bool union_map::is_strict_subset(const isl::union_map &umap2) const
   auto res = isl_union_map_is_strict_subset(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_subset(const isl::union_map &umap2) const
@@ -18473,7 +18543,7 @@ bool union_map::is_subset(const isl::union_map &umap2) const
   auto res = isl_union_map_is_subset(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_map union_map::lex_gt_at(isl::multi_union_pw_aff mupa) const
@@ -19024,7 +19094,7 @@ bool union_pw_aff::involves_param(const isl::id &id) const
   auto res = isl_union_pw_aff_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val union_pw_aff::max_val() const
@@ -19095,7 +19165,7 @@ bool union_pw_aff::plain_is_equal(const isl::union_pw_aff &upa2) const
   auto res = isl_union_pw_aff_plain_is_equal(get(), upa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_pw_aff union_pw_aff::pullback(isl::union_pw_multi_aff upma) const
@@ -20076,7 +20146,7 @@ bool union_set::involves_param(const isl::id &id) const
   auto res = isl_union_set_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_disjoint(const isl::union_set &uset2) const
@@ -20088,7 +20158,7 @@ bool union_set::is_disjoint(const isl::union_set &uset2) const
   auto res = isl_union_set_is_disjoint(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_empty() const
@@ -20100,7 +20170,7 @@ bool union_set::is_empty() const
   auto res = isl_union_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_equal(const isl::union_set &uset2) const
@@ -20112,7 +20182,7 @@ bool union_set::is_equal(const isl::union_set &uset2) const
   auto res = isl_union_set_is_equal(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_params() const
@@ -20124,7 +20194,7 @@ bool union_set::is_params() const
   auto res = isl_union_set_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_strict_subset(const isl::union_set &uset2) const
@@ -20136,7 +20206,7 @@ bool union_set::is_strict_subset(const isl::union_set &uset2) const
   auto res = isl_union_set_is_strict_subset(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_subset(const isl::union_set &uset2) const
@@ -20148,7 +20218,7 @@ bool union_set::is_subset(const isl::union_set &uset2) const
   auto res = isl_union_set_is_subset(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_set union_set::lexmax() const
@@ -20626,7 +20696,7 @@ bool val::abs_eq(const isl::val &v2) const
   auto res = isl_val_abs_eq(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::add(isl::val v2) const
@@ -20684,7 +20754,7 @@ bool val::eq(const isl::val &v2) const
   auto res = isl_val_eq(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::floor() const
@@ -20720,7 +20790,7 @@ bool val::ge(const isl::val &v2) const
   auto res = isl_val_ge(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 long val::get_den_si() const
@@ -20752,7 +20822,7 @@ bool val::gt(const isl::val &v2) const
   auto res = isl_val_gt(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::infty(isl::ctx ctx)
@@ -20785,7 +20855,7 @@ bool val::is_divisible_by(const isl::val &v2) const
   auto res = isl_val_is_divisible_by(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_infty() const
@@ -20797,7 +20867,7 @@ bool val::is_infty() const
   auto res = isl_val_is_infty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_int() const
@@ -20809,7 +20879,7 @@ bool val::is_int() const
   auto res = isl_val_is_int(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nan() const
@@ -20821,7 +20891,7 @@ bool val::is_nan() const
   auto res = isl_val_is_nan(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_neg() const
@@ -20833,7 +20903,7 @@ bool val::is_neg() const
   auto res = isl_val_is_neg(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_neginfty() const
@@ -20845,7 +20915,7 @@ bool val::is_neginfty() const
   auto res = isl_val_is_neginfty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_negone() const
@@ -20857,7 +20927,7 @@ bool val::is_negone() const
   auto res = isl_val_is_negone(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nonneg() const
@@ -20869,7 +20939,7 @@ bool val::is_nonneg() const
   auto res = isl_val_is_nonneg(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nonpos() const
@@ -20881,7 +20951,7 @@ bool val::is_nonpos() const
   auto res = isl_val_is_nonpos(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_one() const
@@ -20893,7 +20963,7 @@ bool val::is_one() const
   auto res = isl_val_is_one(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_pos() const
@@ -20905,7 +20975,7 @@ bool val::is_pos() const
   auto res = isl_val_is_pos(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_rat() const
@@ -20917,7 +20987,7 @@ bool val::is_rat() const
   auto res = isl_val_is_rat(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_zero() const
@@ -20929,7 +20999,7 @@ bool val::is_zero() const
   auto res = isl_val_is_zero(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::le(const isl::val &v2) const
@@ -20941,7 +21011,7 @@ bool val::le(const isl::val &v2) const
   auto res = isl_val_le(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::lt(const isl::val &v2) const
@@ -20953,7 +21023,7 @@ bool val::lt(const isl::val &v2) const
   auto res = isl_val_lt(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::max(isl::val v2) const
@@ -21022,7 +21092,7 @@ bool val::ne(const isl::val &v2) const
   auto res = isl_val_ne(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::neg() const
