@@ -145,7 +145,7 @@ class MCTS:
             optsVector[i+(pos)] = a
         #print(optsVector)
         reward = -np.log(my_utils.evalTime(optsVector))
-        self.saveReward(reward)
+        self.saveReward(reward, optsVector)
         return reward
 
     def evaluate(self, leaf):
