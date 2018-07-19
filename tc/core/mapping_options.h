@@ -365,15 +365,6 @@ class MappingOptions {
 };
 
 namespace callbacks {
-__isl_give isl_basic_set* AddPositiveCoefficientConstraints(
-    __isl_take isl_basic_set* lp,
-    int n_param,
-    int dim,
-    __isl_keep isl_id_list* stmt_ids,
-    int* node_n_params,
-    int* node_n_dims,
-    void*);
-
 isl_bool FuseAllPreserve3Coincident(
     __isl_take isl_union_map* original_schedule,
     __isl_take isl_union_map* updated_schedule,

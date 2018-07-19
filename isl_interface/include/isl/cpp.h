@@ -1776,6 +1776,7 @@ public:
   inline isl::basic_map_list get_basic_map_list() const;
   inline isl::fixed_box get_range_simple_fixed_box_hull() const;
   inline isl::stride_info get_range_stride_info(int pos) const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::map gist(isl::map context) const;
@@ -1808,6 +1809,7 @@ public:
   inline isl::map range_product(isl::map map2) const;
   inline isl::map reverse() const;
   inline isl::basic_map sample() const;
+  inline isl::map set_range_tuple_id(isl::id id) const;
   inline isl::map set_tuple_id(enum isl::dim_type type, isl::id id) const;
   inline isl::basic_map simple_hull() const;
   inline isl::map subtract(isl::map map2) const;
@@ -1874,9 +1876,9 @@ protected:
 public:
   inline /* implicit */ multi_aff();
   inline /* implicit */ multi_aff(const isl::multi_aff &obj);
-  inline explicit multi_aff(isl::space space, isl::aff_list list);
   inline /* implicit */ multi_aff(isl::aff aff);
   inline explicit multi_aff(isl::ctx ctx, const std::string &str);
+  inline explicit multi_aff(isl::space space, isl::aff_list list);
   inline isl::multi_aff &operator=(isl::multi_aff obj);
   inline ~multi_aff();
   inline __isl_give isl_multi_aff *copy() const &;
@@ -1900,6 +1902,7 @@ public:
   inline isl::aff get_aff(int pos) const;
   inline isl::aff_list get_aff_list() const;
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::multi_aff identity(isl::space space);
@@ -1913,15 +1916,17 @@ public:
   inline isl::multi_aff range_product(isl::multi_aff multi2) const;
   inline isl::multi_aff range_splice(unsigned int pos, isl::multi_aff multi2) const;
   inline isl::multi_aff reset_user() const;
-  inline isl::multi_aff scale(isl::multi_val mv) const;
   inline isl::multi_aff scale(isl::val v) const;
+  inline isl::multi_aff scale(isl::multi_val mv) const;
   inline isl::multi_aff scale_down(isl::val v) const;
   inline isl::multi_aff scale_down(isl::multi_val mv) const;
   inline isl::multi_aff set_aff(int pos, isl::aff el) const;
+  inline isl::multi_aff set_range_tuple_id(isl::id id) const;
   inline isl::multi_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
   inline int size() const;
   inline isl::multi_aff splice(unsigned int in_pos, unsigned int out_pos, isl::multi_aff multi2) const;
   inline isl::multi_aff sub(isl::multi_aff multi2) const;
+  static inline isl::multi_aff wrapped_range_map(isl::space space);
   static inline isl::multi_aff zero(isl::space space);
   typedef isl_multi_aff* isl_ptr_t;
 };
@@ -2016,6 +2021,7 @@ public:
   inline isl::space get_domain_space() const;
   inline isl::pw_aff get_pw_aff(int pos) const;
   inline isl::pw_aff_list get_pw_aff_list() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::multi_pw_aff identity(isl::space space);
@@ -2036,6 +2042,7 @@ public:
   inline isl::multi_pw_aff scale_down(isl::val v) const;
   inline isl::multi_pw_aff scale_down(isl::multi_val mv) const;
   inline isl::multi_pw_aff set_pw_aff(int pos, isl::pw_aff el) const;
+  inline isl::multi_pw_aff set_range_tuple_id(isl::id id) const;
   inline isl::multi_pw_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
   inline int size() const;
   inline isl::multi_pw_aff splice(unsigned int in_pos, unsigned int out_pos, isl::multi_pw_aff multi2) const;
@@ -2060,11 +2067,11 @@ protected:
 public:
   inline /* implicit */ multi_union_pw_aff();
   inline /* implicit */ multi_union_pw_aff(const isl::multi_union_pw_aff &obj);
+  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_val mv);
+  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list);
   inline /* implicit */ multi_union_pw_aff(isl::union_pw_aff upa);
   inline /* implicit */ multi_union_pw_aff(isl::multi_pw_aff mpa);
-  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_val mv);
-  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::ctx ctx, const std::string &str);
   inline isl::multi_union_pw_aff &operator=(isl::multi_union_pw_aff obj);
   inline ~multi_union_pw_aff();
@@ -2091,6 +2098,7 @@ public:
   inline isl::multi_union_pw_aff from_range() const;
   static inline isl::multi_union_pw_aff from_union_map(isl::union_map umap);
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::union_pw_aff get_union_pw_aff(int pos) const;
@@ -2113,6 +2121,7 @@ public:
   inline isl::multi_union_pw_aff scale(isl::multi_val mv) const;
   inline isl::multi_union_pw_aff scale_down(isl::val v) const;
   inline isl::multi_union_pw_aff scale_down(isl::multi_val mv) const;
+  inline isl::multi_union_pw_aff set_range_tuple_id(isl::id id) const;
   inline isl::multi_union_pw_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
   inline isl::multi_union_pw_aff set_union_pw_aff(int pos, isl::union_pw_aff el) const;
   inline int size() const;
@@ -2159,6 +2168,7 @@ public:
   inline isl::multi_val flatten_range() const;
   inline isl::multi_val from_range() const;
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::val get_val(int pos) const;
@@ -2175,6 +2185,7 @@ public:
   inline isl::multi_val scale(isl::multi_val mv) const;
   inline isl::multi_val scale_down(isl::val v) const;
   inline isl::multi_val scale_down(isl::multi_val mv) const;
+  inline isl::multi_val set_range_tuple_id(isl::id id) const;
   inline isl::multi_val set_tuple_id(enum isl::dim_type type, isl::id id) const;
   inline isl::multi_val set_val(int pos, isl::val el) const;
   inline int size() const;
@@ -2366,6 +2377,7 @@ public:
   inline void foreach_piece(const std::function<void(isl::set, isl::multi_aff)> &fn) const;
   static inline isl::pw_multi_aff from(isl::multi_pw_aff mpa);
   inline isl::pw_aff get_pw_aff(int pos) const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::pw_multi_aff identity(isl::space space);
@@ -2880,7 +2892,6 @@ public:
   inline isl::set reset_tuple_id() const;
   inline isl::basic_set sample() const;
   inline isl::point sample_point() const;
-  inline isl::set set_dim_id(enum isl::dim_type type, unsigned int pos, isl::id id) const;
   inline isl::set set_tuple_id(isl::id id) const;
   inline isl::set set_tuple_name(const std::string &s) const;
   inline isl::basic_set simple_hull() const;
@@ -2975,6 +2986,7 @@ public:
   inline isl::space domain_product(isl::space right) const;
   inline isl::space from_domain() const;
   inline isl::space from_range() const;
+  inline isl::id get_map_range_tuple_id() const;
   inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline bool has_equal_params(const isl::space &space2) const;
   inline bool has_equal_tuples(const isl::space &space2) const;
@@ -2991,6 +3003,7 @@ public:
   inline isl::space range_map() const;
   inline isl::space range_product(isl::space right) const;
   inline isl::space set_from_params() const;
+  inline isl::space set_set_tuple_id(isl::id id) const;
   inline isl::space uncurry() const;
   inline isl::space unwrap() const;
   inline isl::space wrap() const;
@@ -3472,8 +3485,8 @@ protected:
 public:
   inline /* implicit */ val();
   inline /* implicit */ val(const isl::val &obj);
-  inline explicit val(isl::ctx ctx, long i);
   inline explicit val(isl::ctx ctx, const std::string &str);
+  inline explicit val(isl::ctx ctx, long i);
   inline isl::val &operator=(isl::val obj);
   inline ~val();
   inline __isl_give isl_val *copy() const &;
@@ -9933,6 +9946,18 @@ isl::stride_info map::get_range_stride_info(int pos) const
   return manage(res);
 }
 
+isl::id map::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space map::get_space() const
 {
   if (!ptr)
@@ -10316,6 +10341,18 @@ isl::basic_map map::sample() const
   return manage(res);
 }
 
+isl::map map::set_range_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_set_range_tuple_id(copy(), id.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::map map::set_tuple_id(enum isl::dim_type type, isl::id id) const
 {
   if (!ptr || id.is_null())
@@ -10644,18 +10681,6 @@ multi_aff::multi_aff(const isl::multi_aff &obj)
 multi_aff::multi_aff(__isl_take isl_multi_aff *ptr)
     : ptr(ptr) {}
 
-multi_aff::multi_aff(isl::space space, isl::aff_list list)
-{
-  if (space.is_null() || list.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = space.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_from_aff_list(space.release(), list.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
 multi_aff::multi_aff(isl::aff aff)
 {
   if (aff.is_null())
@@ -10672,6 +10697,18 @@ multi_aff::multi_aff(isl::ctx ctx, const std::string &str)
 {
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_read_from_str(ctx.release(), str.c_str());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+multi_aff::multi_aff(isl::space space, isl::aff_list list)
+{
+  if (space.is_null() || list.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = space.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_from_aff_list(space.release(), list.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -10874,6 +10911,18 @@ isl::space multi_aff::get_domain_space() const
   return manage(res);
 }
 
+isl::id multi_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_aff::get_space() const
 {
   if (!ptr)
@@ -11032,18 +11081,6 @@ isl::multi_aff multi_aff::reset_user() const
   return manage(res);
 }
 
-isl::multi_aff multi_aff::scale(isl::multi_val mv) const
-{
-  if (!ptr || mv.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_scale_multi_val(copy(), mv.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::multi_aff multi_aff::scale(isl::val v) const
 {
   if (!ptr || v.is_null())
@@ -11051,6 +11088,18 @@ isl::multi_aff multi_aff::scale(isl::val v) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_scale_val(copy(), v.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_aff multi_aff::scale(isl::multi_val mv) const
+{
+  if (!ptr || mv.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_scale_multi_val(copy(), mv.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11087,6 +11136,18 @@ isl::multi_aff multi_aff::set_aff(int pos, isl::aff el) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_set_aff(copy(), pos, el.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_aff multi_aff::set_range_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11135,6 +11196,19 @@ isl::multi_aff multi_aff::sub(isl::multi_aff multi2) const
   auto res = isl_multi_aff_sub(copy(), multi2.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_aff multi_aff::wrapped_range_map(isl::space space)
+{
+  if (space.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = space.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_wrapped_range_map(space.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
   return manage(res);
 }
 
@@ -11711,6 +11785,18 @@ isl::pw_aff_list multi_pw_aff::get_pw_aff_list() const
   return manage(res);
 }
 
+isl::id multi_pw_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_pw_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_pw_aff::get_space() const
 {
   if (!ptr)
@@ -11952,6 +12038,18 @@ isl::multi_pw_aff multi_pw_aff::set_pw_aff(int pos, isl::pw_aff el) const
   return manage(res);
 }
 
+isl::multi_pw_aff multi_pw_aff::set_range_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_pw_aff_set_range_tuple_id(copy(), id.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::multi_pw_aff multi_pw_aff::set_tuple_id(enum isl::dim_type type, isl::id id) const
 {
   if (!ptr || id.is_null())
@@ -12042,6 +12140,30 @@ multi_union_pw_aff::multi_union_pw_aff(const isl::multi_union_pw_aff &obj)
 multi_union_pw_aff::multi_union_pw_aff(__isl_take isl_multi_union_pw_aff *ptr)
     : ptr(ptr) {}
 
+multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_val mv)
+{
+  if (domain.is_null() || mv.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = domain.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_multi_val_on_domain(domain.release(), mv.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
+{
+  if (domain.is_null() || ma.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = domain.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
 multi_union_pw_aff::multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list)
 {
   if (space.is_null() || list.is_null())
@@ -12074,30 +12196,6 @@ multi_union_pw_aff::multi_union_pw_aff(isl::multi_pw_aff mpa)
   auto ctx = mpa.get_ctx();
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_from_multi_pw_aff(mpa.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
-multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_val mv)
-{
-  if (domain.is_null() || mv.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = domain.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_multi_val_on_domain(domain.release(), mv.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
-multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
-{
-  if (domain.is_null() || ma.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = domain.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -12327,6 +12425,18 @@ isl::space multi_union_pw_aff::get_domain_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_get_domain_space(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::id multi_union_pw_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_get_range_tuple_id(get());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -12591,6 +12701,18 @@ isl::multi_union_pw_aff multi_union_pw_aff::scale_down(isl::multi_val mv) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_scale_down_multi_val(copy(), mv.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_union_pw_aff multi_union_pw_aff::set_range_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -12871,6 +12993,18 @@ isl::space multi_val::get_domain_space() const
   return manage(res);
 }
 
+isl::id multi_val::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_val_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_val::get_space() const
 {
   if (!ptr)
@@ -13058,6 +13192,18 @@ isl::multi_val multi_val::scale_down(isl::multi_val mv) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_val_scale_down_multi_val(copy(), mv.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_val multi_val::set_range_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_val_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -14284,6 +14430,18 @@ isl::pw_aff pw_multi_aff::get_pw_aff(int pos) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_pw_multi_aff_get_pw_aff(get(), pos);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::id pw_multi_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_multi_aff_get_range_tuple_id(get());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -17249,18 +17407,6 @@ isl::point set::sample_point() const
   return manage(res);
 }
 
-isl::set set::set_dim_id(enum isl::dim_type type, unsigned int pos, isl::id id) const
-{
-  if (!ptr || id.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_set_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::set set::set_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
@@ -17838,6 +17984,18 @@ isl::space space::from_range() const
   return manage(res);
 }
 
+isl::id space::get_map_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_get_map_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::id space::get_tuple_id(enum isl::dim_type type) const
 {
   if (!ptr)
@@ -18025,6 +18183,18 @@ isl::space space::set_from_params() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_set_from_params(copy());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::space space::set_set_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_set_set_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -21226,18 +21396,18 @@ val::val(const isl::val &obj)
 val::val(__isl_take isl_val *ptr)
     : ptr(ptr) {}
 
-val::val(isl::ctx ctx, long i)
-{
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_val_int_from_si(ctx.release(), i);
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
 val::val(isl::ctx ctx, const std::string &str)
 {
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_val_read_from_str(ctx.release(), str.c_str());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+val::val(isl::ctx ctx, long i)
+{
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_val_int_from_si(ctx.release(), i);
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
