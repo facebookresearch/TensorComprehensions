@@ -57,9 +57,6 @@ using IteratorMapType = std::unordered_map<std::string, isl::ast_expr>;
 using IteratorMapsType =
     std::unordered_map<isl::id, IteratorMapType, isl::IslIdIslHash>;
 
-using IteratorLLVMValueMapType =
-    std::unordered_map<isl::id, llvm::Value*, isl::IslIdIslHash>;
-
 using StmtSubscriptExprMapType =
     std::unordered_map<isl::id, std::vector<isl::ast_expr>, isl::IslIdIslHash>;
 
@@ -458,8 +455,6 @@ class LLVMCodegen {
   }
 
   llvm::BasicBlock* emitFor(isl::ast_node_for node) {
-    IteratorLLVMValueMapType iterPHIs;
-
     auto* incoming = halide_cg.get_builder().GetInsertBlock();
     auto* function = incoming->getParent();
     auto* headerBB = llvm::BasicBlock::Create(llvmCtx, "loop_header", function);
