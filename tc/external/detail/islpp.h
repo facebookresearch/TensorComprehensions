@@ -252,6 +252,8 @@ struct UnionAsVector
   }
 };
 
+#include <isl/template_cpp.h>
+
 struct IslIdIslHash {
   size_t operator()(const isl::id& id) const {
     return isl_id_get_hash(id.get());
