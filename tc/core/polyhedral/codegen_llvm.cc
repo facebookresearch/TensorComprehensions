@@ -173,7 +173,7 @@ static constexpr int kOptLevel = 3;
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
   const IteratorMapType* iteratorMap_;
-  CodeGen_TC(Target t) : CodeGen_X86(t) {}
+  CodeGen_TC(Target t) : CodeGen_X86(t), iteratorMap_(nullptr) {}
 
   using CodeGen_X86::codegen;
   using CodeGen_X86::llvm_type_of;
@@ -210,10 +210,10 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     return std::move(module);
   }
 
-  // Convert an isl AST expression into an llvm::Value.
-  // Only expressions that consist of a pure identifier or
-  // a pure integer constant are currently supported.
-  llvm::Value* getValue(isl::ast_expr expr);
+  Halide::Expr makeHalideExpr(isl::ast_expr expr);
+  llvm::Value* codegen(isl::ast_expr expr) {
+    return codegen(makeHalideExpr(expr));
+  }
 
  protected:
   using CodeGen_X86::visit;
@@ -236,8 +236,17 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     }
   }
 
+  // The type of Variables in TC come in 2 flavors:
+  // 1. the ones for which we explicitly registered LLVMIR with sym_push
+  //    (i.e. the Halide way).
+  // 2. the ones coming from an isl::ast_build which need to be translated
+  //    through the iteratorMap_,
   void visit(const Halide::Internal::Variable* op) override {
-    value = getValue(iteratorMap_->at(op->name));
+    if ((value = sym_get(op->name, false))) {
+      return;
+    }
+    TC_CHECK(iteratorMap_) << "IteratorMap must be set";
+    value = codegen(iteratorMap_->at(op->name));
 
     // Generate code for type casting if necessary.
     llvm::Type* ty = llvm_type_of(op->type);
@@ -302,15 +311,56 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
   }
 };
 
-llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
+// For now we always generate int32 for induction variables and integer
+// constants. Note that we may soon need to also support int64.
+Halide::Expr CodeGen_TC::makeHalideExpr(isl::ast_expr expr) {
   if (auto idExpr = expr.as<isl::ast_expr_id>()) {
-    return sym_get(idExpr.get_id().get_name());
+    return Halide::Internal::Variable::make(
+        Halide::Int(32), idExpr.get_id().get_name());
   } else if (auto intExpr = expr.as<isl::ast_expr_int>()) {
-    return getLLVMConstantSignedInt64(toSInt(intExpr.get_val()));
-  } else {
-    LOG(FATAL) << "NYI";
-    return nullptr;
+    return Halide::Internal::IntImm::make(
+        Halide::Int(32), toSInt(intExpr.get_val()));
+  } else if (auto op = expr.as<isl::ast_expr_op>()) {
+#define MAKE_UN_OP(ISL_TYPE, HALIDE_TYPE)                    \
+  if (auto ty = op.as<ISL_TYPE>()) {                         \
+    return HALIDE_TYPE::make(makeHalideExpr(op.get_arg(0))); \
   }
+
+#define MAKE_BIN_OP(ISL_TYPE, HALIDE_TYPE)                             \
+  if (auto ty = op.as<ISL_TYPE>()) {                                   \
+    return HALIDE_TYPE::make(                                          \
+        makeHalideExpr(op.get_arg(0)), makeHalideExpr(op.get_arg(1))); \
+  }
+
+    // Minus in Halide is done with a binary operator, this is a special case
+    // for us.
+    if (auto ty = op.as<isl::ast_op_minus>()) {
+      auto a = makeHalideExpr(op.get_arg(0));
+      auto zero = Halide::Internal::make_zero(a.type());
+      return Halide::Internal::Sub::make(zero, a);
+    }
+
+    // clang-format off
+    MAKE_BIN_OP(isl::ast_op_eq, Halide::Internal::EQ);
+    MAKE_BIN_OP(isl::ast_op_le, Halide::Internal::LE);
+    MAKE_BIN_OP(isl::ast_op_lt, Halide::Internal::LT);
+    MAKE_BIN_OP(isl::ast_op_ge, Halide::Internal::GE);
+    MAKE_BIN_OP(isl::ast_op_gt, Halide::Internal::GT);
+    MAKE_BIN_OP(isl::ast_op_and, Halide::Internal::And);
+    MAKE_BIN_OP(isl::ast_op_or, Halide::Internal::Or);
+    MAKE_BIN_OP(isl::ast_op_min, Halide::Internal::Min);
+    MAKE_BIN_OP(isl::ast_op_max, Halide::Internal::Max);
+    MAKE_BIN_OP(isl::ast_op_add, Halide::Internal::Add);
+    MAKE_BIN_OP(isl::ast_op_sub, Halide::Internal::Sub);
+    MAKE_BIN_OP(isl::ast_op_mul, Halide::Internal::Mul);
+    // clang-format on
+
+#undef MAKE_UN_OP
+#undef MAKE_BIN_OP
+  }
+
+  LOG(FATAL) << "NYI: " << expr;
+  return Halide::Internal::IntImm::make(Halide::Int(32), 0);
 }
 
 class LLVMCodegen {
@@ -538,14 +588,14 @@ class LLVMCodegen {
     const auto& subscripts = stmtSubscripts_.at(id);
     llvm::SmallVector<llvm::Value*, 5> subscriptValues;
 
+    halide_cg.iteratorMap_ = &iteratorMaps_.at(id);
     for (const auto& subscript : subscripts) {
-      subscriptValues.push_back(halide_cg.getValue(subscript));
+      subscriptValues.push_back(halide_cg.codegen(subscript));
     }
 
     auto destAddr = halide_cg.get_builder().CreateInBoundsGEP(
         halide_cg.sym_get(arrayName), subscriptValues);
 
-    halide_cg.iteratorMap_ = &iteratorMaps_.at(id);
     llvm::Value* rhs = halide_cg.codegen(op->values[0]);
     halide_cg.get_builder().CreateStore(rhs, destAddr);
     return halide_cg.get_builder().GetInsertBlock();
