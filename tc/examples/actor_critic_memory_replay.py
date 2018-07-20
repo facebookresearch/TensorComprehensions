@@ -120,8 +120,8 @@ def add_to_buffer(actions_probs, values, reward):
 
 def select_batch():
     #random.sample()
-    batch = [buff[np.random.randint(len(buff))] for i in range(BATCH_SZ-1)]
-    batch.append(buff[-1])
+    batch = [buff[np.random.randint(len(buff))] for i in range(BATCH_SZ)]
+    #batch.append(buff[-1])
     batch=np.array(batch)
     return batch[:,0], batch[:,1], batch[:,2]
 
@@ -147,11 +147,12 @@ for i in range(NB_EPOCHS):
     reward = -np.log(reward)
     add_to_buffer(out_probs, out_values, reward)
     best_in_buffer = get_best_buff()
-    actions_probs, values, rewards = select_batch()
-    for j in range(1):
-        vloss, ploss = finish_episode(actions_probs, values, rewards)
-    v_losses.append(vloss)
-    p_losses.append(ploss)
+    if(i >= 20):
+        actions_probs, values, rewards = select_batch()
+        for j in range(1):
+            vloss, ploss = finish_episode(actions_probs, values, rewards)
+        v_losses.append(vloss)
+        p_losses.append(ploss)
     if(best < reward or i==0):
         best=reward
         best_options = out_actions.numpy().astype(int)
