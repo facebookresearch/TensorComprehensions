@@ -88,7 +88,8 @@ std::vector<int64_t> getTensorSizesWithoutLeadingDim(
   for (int d = 1; d < dims; ++d) {
     Halide::Expr extent = t.parameter().extent_constraint(d);
     TC_CHECK(extent.defined())
-        << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
+        << "Undefined extent on input/output tensor. "
+        << "Forward bounds inference should have set these\n";
     sizes.push_back(getTensorSize(context, extent));
   }
   return sizes;
