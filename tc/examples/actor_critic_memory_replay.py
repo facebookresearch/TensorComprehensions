@@ -11,6 +11,7 @@ from torch.distributions import Categorical
 import tensor_comprehensions as tc
 from visdom import Visdom
 from collections import deque
+from heapq import heappush, heappop
 
 import my_utils
 
@@ -21,7 +22,7 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 steps_done = 0
-buff = deque()
+buff = []#deque()
 MAXI_BUFF_SZ = 50
 
 (tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
@@ -115,15 +116,17 @@ def add_to_buffer(actions_probs, values, reward):
     #    if(reward < 10*min_reward):
     #        return
     if len(buff) == MAXI_BUFF_SZ:
-        buff.popleft()
-    buff.append((actions_probs, values, reward))
+        heappop(buff)
+        #buff.popleft()
+    heappush(buff, (reward, actions_prob, values))
+    #buff.append((actions_probs, values, reward))
 
 def select_batch():
     #random.sample()
     batch = [buff[np.random.randint(len(buff))] for i in range(BATCH_SZ)]
     #batch.append(buff[-1])
     batch=np.array(batch)
-    return batch[:,0], batch[:,1], batch[:,2]
+    return batch[:,1], batch[:,2], batch[:,0]
 
 def get_best_buff():
     return np.max(np.array(buff)[:,2])
