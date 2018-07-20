@@ -129,7 +129,7 @@ def select_batch():
     return batch[:,1], batch[:,2], batch[:,0]
 
 def get_best_buff():
-    return np.max(np.array(buff)[:,2])
+    return np.max(np.array(buff)[:,0])
 
 INTER_DISP = 20
 
