@@ -403,7 +403,11 @@ class LLVMCodegen {
     } else if (auto userNode = node.as<isl::ast_node_user>()) {
       return emitStmt(userNode);
     } else if (auto blockNode = node.as<isl::ast_node_block>()) {
-      return emitBlock(blockNode);
+      llvm::BasicBlock* curBB;
+      for (auto child : blockNode.get_children()) {
+        curBB = emitAst(child);
+      }
+      return curBB;
     } else {
       if (auto cond = node.as<isl::ast_node_if>()) {
         return emitIf(cond);
@@ -415,24 +419,6 @@ class LLVMCodegen {
   }
 
  private:
-  llvm::BasicBlock* emitBlock(isl::ast_node_block node) {
-    auto* function = halide_cg.get_builder().GetInsertBlock()->getParent();
-    auto* currBB = llvm::BasicBlock::Create(llvmCtx, "block_exit", function);
-    halide_cg.get_builder().CreateBr(currBB);
-    halide_cg.get_builder().SetInsertPoint(currBB);
-
-    for (auto child : node.get_children()) {
-      currBB = emitAst(child);
-      halide_cg.get_builder().SetInsertPoint(currBB);
-    }
-
-    auto* exit = llvm::BasicBlock::Create(llvmCtx, "block_exit", function);
-    halide_cg.get_builder().SetInsertPoint(currBB);
-    halide_cg.get_builder().CreateBr(exit);
-    halide_cg.get_builder().SetInsertPoint(exit);
-    return exit;
-  }
-
   llvm::Type* makePtrToArrayType(
       llvm::Type* baseTy,
       const std::vector<int64_t>& sizes) {
