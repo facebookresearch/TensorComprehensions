@@ -405,8 +405,8 @@ class LLVMCodegen {
     } else if (auto blockNode = node.as<isl::ast_node_block>()) {
       return emitBlock(blockNode);
     } else {
-      if (node.as<isl::ast_node_if>()) {
-        LOG(FATAL) << "NYI if node: " << node << std::endl;
+      if (auto cond = node.as<isl::ast_node_if>()) {
+        return emitIf(cond);
       } else {
         LOG(FATAL) << "NYI " << node << std::endl;
       }
@@ -443,6 +443,38 @@ class LLVMCodegen {
       arrTy = llvm::ArrayType::get(arrTy, *s);
     }
     return arrTy->getPointerTo();
+  }
+
+  llvm::BasicBlock* emitIf(isl::ast_node_if node) {
+    auto* incoming = halide_cg.get_builder().GetInsertBlock();
+    auto* function = incoming->getParent();
+
+    llvm::Value* condVal = halide_cg.codegen(node.get_cond());
+    auto* thenBB = llvm::BasicBlock::Create(llvmCtx, "then", function);
+    // Recursively emit "then" in a new thenBB
+    halide_cg.get_builder().SetInsertPoint(thenBB);
+    auto innerBB = emitAst(node.get_then());
+
+    // outer -> thenBB
+    halide_cg.get_builder().SetInsertPoint(incoming);
+    // outer ---------> if_exit
+    // TODO: When we support "else", go to elseBB instead of exit
+    auto* exit = llvm::BasicBlock::Create(llvmCtx, "if_exit", function);
+    halide_cg.get_builder().CreateCondBr(condVal, thenBB, exit);
+
+    //          then -> if_exit
+    halide_cg.get_builder().SetInsertPoint(innerBB);
+    halide_cg.get_builder().CreateBr(exit);
+
+    // Else is often empty in the absence of full tile extraction
+    if (node.has_else()) {
+      LOG(FATAL) << "NYI: else conditional branch";
+      return halide_cg.get_builder().GetInsertBlock();
+    }
+
+    // Set the insertion point to if_exit
+    halide_cg.get_builder().SetInsertPoint(exit);
+    return halide_cg.get_builder().GetInsertBlock();
   }
 
   llvm::BasicBlock* emitFor(isl::ast_node_for node) {
