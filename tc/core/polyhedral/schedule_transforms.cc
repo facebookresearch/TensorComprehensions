@@ -289,8 +289,7 @@ void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
     root->appendChild(
         ScheduleTree::makeContext(context, root->detachChildren()));
   }
-  auto contextElem = const_cast<detail::ScheduleTreeContext*>(
-      root->child({0})->as<detail::ScheduleTreeContext>());
+  auto contextElem = root->child({0})->as<detail::ScheduleTreeContext>();
   TC_CHECK(contextElem) << "Expected domain(context(any()))";
   contextElem->context_ = contextElem->context_ & context;
 }
