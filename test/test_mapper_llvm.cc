@@ -50,14 +50,20 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
   Jit jit;
   jit.codegenScop("kernel_anon", *scop);
-  auto fptr =
-      (void (*)(float*, float*, float*))jit.getSymbolAddress("kernel_anon");
+  auto fptr = reinterpret_cast<void (*)(float*, float*, float*, int, int)>(
+      jit.getSymbolAddress("kernel_anon"));
 
   at::Tensor A = at::CPU(at::kFloat).rand({N, M});
   at::Tensor B = at::CPU(at::kFloat).rand({N, M});
   at::Tensor C = at::CPU(at::kFloat).rand({N, M});
   at::Tensor Cc = A + B;
-  fptr(A.data<float>(), B.data<float>(), C.data<float>());
+  auto orderedParameters = scop->getParameterValues();
+  fptr(
+      A.data<float>(),
+      B.data<float>(),
+      C.data<float>(),
+      orderedParameters[0],
+      orderedParameters[1]);
 
   checkRtol(Cc - C, {A, B}, N * M);
 }
@@ -96,8 +102,19 @@ TEST(LLVMCodegen, MultiStmt) {
 
   Jit jit;
   jit.codegenScop("kernel_anon", *scop);
-  auto fptr = (void (*)(float*, float*, float*, float*, float*, float*, float*))
-                  jit.getSymbolAddress("kernel_anon");
+  auto fptr = reinterpret_cast<void (*)(
+      float*,
+      float*,
+      float*,
+      float*,
+      float*,
+      float*,
+      float*,
+      int,
+      int,
+      int,
+      int)>(jit.getSymbolAddress("kernel_anon"));
+  auto orderedParameters = scop->getParameterValues();
   fptr(
       A.data<float>(),
       B.data<float>(),
@@ -105,7 +122,11 @@ TEST(LLVMCodegen, MultiStmt) {
       D.data<float>(),
       O1.data<float>(),
       O2.data<float>(),
-      O3.data<float>());
+      O3.data<float>(),
+      orderedParameters[0],
+      orderedParameters[1],
+      orderedParameters[2],
+      orderedParameters[3]);
 
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < M; c1 += 1) {
@@ -157,8 +178,17 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
   Jit jit;
   jit.codegenScop("batch_matmul", *scop);
   auto fptr =
-      (void (*)(float*, float*, float*))jit.getSymbolAddress("batch_matmul");
-  fptr(X.data<float>(), Y.data<float>(), Oc.data<float>());
+      reinterpret_cast<void (*)(float*, float*, float*, int, int, int, int)>(
+          jit.getSymbolAddress("batch_matmul"));
+  auto orderedParameters = scop->getParameterValues();
+  fptr(
+      X.data<float>(),
+      Y.data<float>(),
+      Oc.data<float>(),
+      orderedParameters[0],
+      orderedParameters[1],
+      orderedParameters[2],
+      orderedParameters[3]);
   checkRtol(O - Oc, {Y, X}, M, 3e-7);
 }
 
@@ -197,18 +227,37 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
 
   Jit jit;
   jit.codegenScop("convolution", *scop);
-  auto fptr =
-      (void (*)(float*, float*, float*, float*, float*))jit.getSymbolAddress(
-          "convolution");
+  auto fptr = reinterpret_cast<void (*)(
+      float*,
+      float*,
+      float*,
+      float*,
+      float*,
+      int,
+      int,
+      int,
+      int,
+      int,
+      int,
+      int)>(jit.getSymbolAddress("convolution"));
   at::Tensor tmp = at::CPU(at::kFloat).zeros_like(expected);
   at::Tensor output = at::CPU(at::kFloat).zeros_like(expected);
 
+  auto orderedParameters = scop->getParameterValues();
   fptr(
       I.data<float>(),
       W1.data<float>(),
       B.data<float>(),
       tmp.data<float>(),
-      output.data<float>());
+      output.data<float>(),
+      orderedParameters[0],
+      orderedParameters[1],
+      orderedParameters[2],
+      orderedParameters[3],
+      orderedParameters[4],
+      orderedParameters[5],
+      orderedParameters[6]);
+
   TC_CHECK_EQ(output.ndimension(), 4);
   checkRtol(output - expected, {I, W1, B}, C * KH * KW, 1e-6);
 }
@@ -228,7 +277,8 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
 
   Jit jit;
   jit.codegenScop("concat", *scop);
-  auto fptr = (void (*)(float*, float*, float*))jit.getSymbolAddress("concat");
+  auto fptr = reinterpret_cast<void (*)(float*, float*, float*, int, int)>(
+      jit.getSymbolAddress("concat"));
 
   at::Tensor A = at::CPU(at::kFloat).rand({M, N});
   at::Tensor B = at::CPU(at::kFloat).rand({M, N});
@@ -241,7 +291,14 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
       O1c[n][1][m] = B[m][n];
     }
   }
-  fptr(A.data<float>(), B.data<float>(), O1.data<float>());
+
+  auto orderedParameters = scop->getParameterValues();
+  fptr(
+      A.data<float>(),
+      B.data<float>(),
+      O1.data<float>(),
+      orderedParameters[0],
+      orderedParameters[1]);
   checkRtol(O1c - O1, {A, B}, N * M);
 }
 
