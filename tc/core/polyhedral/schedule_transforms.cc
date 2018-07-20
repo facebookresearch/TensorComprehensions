@@ -286,8 +286,8 @@ ScheduleTree* insertTopLevelEmptyBand(ScheduleTree* root) {
 
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
   if (!matchOne(tc::polyhedral::domain(tc::polyhedral::context(any())), root)) {
-    root->appendChild(ScheduleTree::makeContext(
-        isl::set::universe(context.get_space()), root->detachChildren()));
+    root->appendChild(
+        ScheduleTree::makeContext(context, root->detachChildren()));
   }
   auto contextElem = const_cast<detail::ScheduleTreeContext*>(
       root->child({0})->as<detail::ScheduleTreeContext>());

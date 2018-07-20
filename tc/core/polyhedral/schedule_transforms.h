@@ -109,7 +109,7 @@ detail::ScheduleTree* insertTopLevelEmptyBand(detail::ScheduleTree* root);
 
 // Update the top-level context node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
-// If there is no such node, insert one with universe context first.
+// If there is no such node, insert one first.
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
 
 // In a tree starting at "root", insert a sequence node with
