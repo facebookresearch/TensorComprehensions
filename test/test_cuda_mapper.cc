@@ -449,7 +449,7 @@ def fun(float(N, N) A) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected(
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA) {
+      R"RES(__global__ __launch_bounds__(1) void kernel_anon(int32 N, float32* pO, const float32* pA) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
@@ -478,7 +478,7 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected =
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
+      R"RES(__global__ __launch_bounds__(1) void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
   float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
