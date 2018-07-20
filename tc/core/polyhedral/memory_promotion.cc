@@ -87,8 +87,8 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
     isl::map scopedAccess,
     AccessType type) {
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
-  auto refId = scopedAccess.get_space().domain().unwrap().get_tuple_id(
-      isl::dim_type::out);
+  auto refId =
+      scopedAccess.get_space().domain().unwrap().get_map_range_tuple_id();
   scopedAccess = scopedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
   ref->scopedAccess = scopedAccess;
@@ -306,7 +306,7 @@ void addSingletonReferenceGroups(
       continue;
     }
 
-    auto tensorId = a.get_tuple_id(isl::dim_type::out);
+    auto tensorId = a.get_range_tuple_id();
     if (unapproximatable.count(tensorId) != 0) {
       continue;
     }
@@ -474,21 +474,20 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  auto promotion =
-      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
+  auto promotion = isl::map(group.promotion()).set_range_tuple_id(groupId);
   auto promotionSpace = promotion.get_space();
 
   auto identityCopySchedule =
       isl::multi_aff::identity(promotionSpace.range().map_from_set());
-  identityCopySchedule =
-      identityCopySchedule.pullback(isl::multi_aff::range_map(promotionSpace));
   // Only iterate over significant tensor dimensions.
   auto decl = scop.promotedDecl(groupId);
   identityCopySchedule = dropDummyTensorDimensions(identityCopySchedule, decl);
-  auto readSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, readId));
-  auto writeSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, writeId));
+  auto readSpace = promotionSpace.wrap().set_set_tuple_id(readId);
+  auto writeSpace = promotionSpace.wrap().set_set_tuple_id(writeId);
+  auto readSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(readSpace)));
+  auto writeSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(writeSpace)));
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
@@ -508,18 +507,17 @@ ScheduleTree* insertCopiesUnder(
   auto promotedFootprint = group.promotedFootprint().set_tuple_id(groupId);
   auto scheduleUniverse =
       isl::set::universe(promotionSpace.domain().unwrap().domain());
-  auto arrayId =
-      promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
+  auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
   auto approximatedRead =
       group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
-  auto readExtension = extension.intersect_range(approximatedRead)
-                           .set_tuple_id(isl::dim_type::out, readId);
+  auto readExtension =
+      extension.intersect_range(approximatedRead).set_range_tuple_id(readId);
   auto writtenElements =
       group.scopedWrites().intersect_range(tensorElements).wrap();
   writtenElements = writtenElements.product(promotedFootprint);
-  auto writeExtension = extension.intersect_range(writtenElements)
-                            .set_tuple_id(isl::dim_type::out, writeId);
+  auto writeExtension =
+      extension.intersect_range(writtenElements).set_range_tuple_id(writeId);
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),

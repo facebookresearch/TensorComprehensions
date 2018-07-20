@@ -114,7 +114,7 @@ struct CodegenStatementContext : CodegenContext {
     return this->nodeInfoMap.at(astNodeId).build;
   }
   isl::id statementId() const {
-    return this->iteratorMap().get_tuple_id(isl::dim_type::out);
+    return this->iteratorMap().get_range_tuple_id();
   }
   isl::set domain() const {
     return isl::map::from(this->iteratorMap()).range();

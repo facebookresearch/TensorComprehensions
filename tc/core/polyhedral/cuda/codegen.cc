@@ -438,7 +438,7 @@ void emitRegisterAccess(
 void emitGlobalAccess(
     isl::multi_pw_aff access,
     const CodegenStatementContext& context) {
-  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
+  LdgWrapper ldgWrapper(context, access.get_range_tuple_id());
   emitAccess(access, context);
 }
 } // namespace
@@ -674,7 +674,7 @@ void emitMappedTensorAccess(
   auto access =
       makeMultiAffAccess(tensorId, subscripts, context); // MA :: D -> O
   auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
-  promotion = promotion.set_tuple_id(isl::dim_type::out, promotionInfo.groupId);
+  promotion = promotion.set_range_tuple_id(promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
   auto schedule =
       isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(
