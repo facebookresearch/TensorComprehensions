@@ -573,7 +573,7 @@ Scop::SyncLevel MappedScop::findBestSync(
   auto contextSt = scop_->scheduleRoot()->children()[0];
   auto contextElem = contextSt->as<detail::ScheduleTreeContext>();
   TC_CHECK(nullptr != contextElem);
-  dependences = dependences.intersect_params(contextElem->context_);
+  dependences = dependences.intersect_params(contextElem->context_.params());
 
   if (dependences.is_subset(dependences.eq_at(domainToThread))) {
     return Scop::SyncLevel::None;
