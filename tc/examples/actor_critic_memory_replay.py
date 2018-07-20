@@ -118,7 +118,7 @@ def add_to_buffer(actions_probs, values, reward):
     if len(buff) == MAXI_BUFF_SZ:
         heappop(buff)
         #buff.popleft()
-    heappush(buff, (reward, actions_prob, values))
+    heappush(buff, (reward, actions_probs, values))
     #buff.append((actions_probs, values, reward))
 
 def select_batch():
