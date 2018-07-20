@@ -111,7 +111,9 @@ with tempfile.NamedTemporaryFile() as cache_file:
         tuner_config)
     cache = MappingOptionsCache(cache_file.name)
     top10 = cache.load(mm, "matmul", (A, B), 10)
-    assert top1.__str__() == top10[0].__str__()
+    assert top1.__str__() == top10[0].__str__(), (
+        "Expected {}\nGot {}\nTop10 are {}".format(
+            top1, top10[0], "\n".join(opt for opt in top10)))
 
     # Compile and run with the new options
     compilation_cache.compile("matmul", (A, B), top1)
