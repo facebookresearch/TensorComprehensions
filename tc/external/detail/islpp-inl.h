@@ -195,20 +195,12 @@ inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-inline isl::set operator&(isl::set S1, isl::set S2) {
-  return S1.intersect(S2);
-}
-
 inline isl::union_set operator&(isl::union_set S1, isl::set S2) {
   return S1.intersect(isl::union_set(S2));
 }
 
 inline isl::union_set operator&(isl::set S1, isl::union_set S2) {
   return S2 & S1;
-}
-
-inline isl::union_set operator&(isl::union_set S1, isl::union_set S2) {
-  return S1.intersect(S2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

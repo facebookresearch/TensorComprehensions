@@ -40,6 +40,11 @@ inline T operator-(T a, T b) {
   return a.sub(b);
 }
 
+template <typename T>
+inline T operator&(T S1, T S2) {
+  return S1.intersect(S2);
+}
+
 inline isl::val operator*(isl::val l, isl::val r) {
   return l.mul(r);
 }
@@ -184,10 +189,8 @@ isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-isl::set operator&(isl::set S1, isl::set S2);
 isl::union_set operator&(isl::union_set S1, isl::set S2);
 isl::union_set operator&(isl::set S1, isl::union_set S2);
-isl::union_set operator&(isl::union_set S1, isl::union_set S2);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::point
