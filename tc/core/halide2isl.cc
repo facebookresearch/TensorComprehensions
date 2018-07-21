@@ -277,7 +277,7 @@ isl::map extractAccess(
     // ... equals the coordinate accessed as a function of the parameters.
     auto domainPoint = halide2isl::makeIslAffFromExpr(tensorSpace, args[i]);
     if (!domainPoint.is_null()) {
-      access = access.intersect(isl::pw_aff(domainPoint).eq_set(rangePoint));
+      access = access.intersect(domainPoint.eq_set(rangePoint));
     }
   }
 
