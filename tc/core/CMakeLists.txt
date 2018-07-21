@@ -34,6 +34,7 @@ add_library(
   polyhedral/scop.cc
   polyhedral/separation.cc
   polyhedral/unroll.cc
+  polyhedral/utils.cc
 )
 target_include_directories(tc_core PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(

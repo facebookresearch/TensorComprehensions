@@ -24,6 +24,7 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/utils.h"
 #include "tc/core/tc2halide.h"
 
 namespace tc {
@@ -259,7 +260,8 @@ isl::map extractAccess(
 
   isl::space paramSpace = domain.paramSpace;
   isl::id tensorID(paramSpace.get_ctx(), tensor);
-  auto tensorSpace = paramSpace.add_named_tuple_id_ui(tensorID, args.size());
+  auto tensorTuple = constructTensorTuple(paramSpace, tensorID, args.size());
+  auto tensorSpace = tensorTuple.get_space();
 
   // Start with a totally unconstrained set - every point in
   // the allocation could be accessed.
@@ -275,8 +277,9 @@ isl::map extractAccess(
     // The coordinate written to in the range ...
     auto rangePoint = identity.get_aff(i);
     // ... equals the coordinate accessed as a function of the parameters.
-    auto domainPoint = halide2isl::makeIslAffFromExpr(tensorSpace, args[i]);
+    auto domainPoint = halide2isl::makeIslAffFromExpr(paramSpace, args[i]);
     if (!domainPoint.is_null()) {
+      domainPoint = domainPoint.unbind_params_insert_domain(tensorTuple);
       access = access.intersect(domainPoint.eq_set(rangePoint));
     }
   }
