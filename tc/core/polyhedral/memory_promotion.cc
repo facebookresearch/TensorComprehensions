@@ -409,7 +409,7 @@ namespace {
 // context of the scop.
 isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
-  auto space = scop.domain().get_space().params();
+  auto space = scop.domain().get_space();
   auto nDim = halideParameter.dimensions();
   space = space.add_named_tuple_id_ui(tensorId, nDim);
 
