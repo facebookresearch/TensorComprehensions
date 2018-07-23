@@ -18,7 +18,7 @@ my_utils.set_tc(tc_code, tc_name)
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 
 def createY(x):
-    y = my_utils.evalTime(my_utils.optionsFromVector(x))
+    y = my_utils.evalTime(x)
     return y
 
 def getRandom():
