@@ -29,7 +29,7 @@ def getRandom():
     return opt_v
 
 def makeDataset():
-    sz = 100
+    sz = 500
     datasetX, datasetY = [], []
     for _ in tqdm(range(sz)):
         opt = getRandom()
@@ -48,8 +48,8 @@ def learn():
     model1.fit(Xtrain, Ytrain)
     pred0 = model1.predict(Xtrain)
     pred1 = model1.predict(Xtest)
-    score0 = model1.score(Xtrain, Ytrain)
-    score1 = model1.score(Xtest, Ytest)
+    #score0 = model1.score(Xtrain, Ytrain)
+    #score1 = model1.score(Xtest, Ytest)
     #print(score0)
     #print(score1)
     print(np.corrcoef(pred0, Ytrain)[0, 1]**2)
