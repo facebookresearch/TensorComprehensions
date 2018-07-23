@@ -14,7 +14,7 @@ import my_utils
 NB_EPOCHS = 10000
 BATCH_SZ = 1
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 (tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()

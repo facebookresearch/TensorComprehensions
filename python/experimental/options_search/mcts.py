@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from visdom import Visdom
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom()
 
 class Node:
     def __init__(self, father=None, new_act=0):

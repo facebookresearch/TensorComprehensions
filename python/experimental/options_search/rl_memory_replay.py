@@ -26,7 +26,7 @@ my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
 NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 

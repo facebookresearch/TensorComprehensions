@@ -14,12 +14,12 @@ set_options = [
 #[1, 1, 0, 1, 1, 20, 14, 3, 8, 5, 3, 0, 18, 15, 1, 0, 0, 0, 1]
 ]
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
-
 (tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
 
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
+
+NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 
 for i in range(len(set_options)):
     opts = np.array(set_options[i])

@@ -14,7 +14,6 @@ from collections import deque
 
 import my_utils
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
 BATCH_SZ = 16
 EPS_START = 0.9
@@ -29,7 +28,9 @@ MAXI_BUFF_SZ = 50
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
 
-viz = Visdom(server="http://100.97.69.78")
+NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
+
+viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 

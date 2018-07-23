@@ -22,7 +22,7 @@ EPS_END = 0.05
 EPS_DECAY = 200
 steps_done = 0
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
