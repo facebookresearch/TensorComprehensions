@@ -30,7 +30,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
-#include "tc/core/polyhedral/functional.h"
+#include "tc/core/functional.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"

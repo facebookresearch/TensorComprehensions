@@ -33,6 +33,7 @@
 #include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
+#include "tc/core/functional.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"
 

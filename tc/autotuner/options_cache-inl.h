@@ -28,6 +28,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/compiler.h"
+#include "tc/core/functional.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/math.h"
 #include "tc/core/utils/time.h"
@@ -235,8 +236,8 @@ std::vector<OptionsWithMedianAndRuntimes<Backend>> sortedOptions(
 } // namespace detail
 
 template <typename Backend>
-std::vector<typename Backend::MappingOptionsType>
-OptionsCache<Backend>::getTopKOptions(
+std::vector<std::pair<typename Backend::MappingOptionsType, Duration>>
+OptionsCache<Backend>::getTopKEntries(
     const lang::CanonicalTcString& tc,
     const std::vector<TensorInfo>& inputs,
     const std::vector<TensorInfo>& outputs,
@@ -249,13 +250,30 @@ OptionsCache<Backend>::getTopKOptions(
   if (sorted.size() == 0u) {
     return {};
   }
-  std::vector<typename Backend::MappingOptionsType> res;
-  res.reserve(K);
+  std::vector<std::pair<typename Backend::MappingOptionsType, Duration>> res;
+  res.reserve(std::min(K, sorted.size()));
   for (size_t i = 0; i < std::min(K, sorted.size()); ++i) {
-    res.push_back(sorted[i].mappingOptions);
+    res.push_back(std::make_pair(sorted[i].mappingOptions, sorted[i].median));
   }
   ++numberSuccessfulRetrievals;
   return res;
+}
+
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType>
+OptionsCache<Backend>::getTopKOptions(
+    const lang::CanonicalTcString& tc,
+    const std::vector<TensorInfo>& inputs,
+    const std::vector<TensorInfo>& outputs,
+    const std::string& backendStr,
+    size_t K) const {
+  auto vBest = getTopKEntries(tc, inputs, outputs, backendStr, K);
+  using ReturnType = typename Backend::MappingOptionsType;
+  using ValueType = typename decltype(vBest)::value_type;
+  std::function<ReturnType(ValueType)> map = [](ValueType in) {
+    return in.first;
+  };
+  return tc::functional::Map(map, vBest);
 }
 
 template <typename Backend>

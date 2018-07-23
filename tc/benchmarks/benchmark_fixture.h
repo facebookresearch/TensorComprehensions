@@ -188,7 +188,7 @@ struct Benchmark : public ::testing::Test {
         geneticAutotuneATen(tc);
     auto bestOptions = [&]() {
       auto options = geneticAutotuneATen.tune(
-          kernelName, inputs, {baseMapping}, fixedParams);
+          kernelName, inputs, {baseMapping}, 1, fixedParams);
       TC_CHECK_GE(options.size(), 1u) << "Benchmark mode: at least one "
                                       << "options expected";
       return options[0];

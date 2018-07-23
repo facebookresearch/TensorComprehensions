@@ -72,7 +72,8 @@ struct ATenCompilationUnitTest : public ::testing::Test {
     if (FLAGS_no_memory_promotion) {
       fix.fixUseSharedMemory(false).fixUsePrivateMemory(false);
     }
-    auto options = geneticAutotuneATen.tune(name, inputs, {baseMapping}, fix);
+    auto options = geneticAutotuneATen.tune(
+        name, inputs, {baseMapping}, std::numeric_limits<size_t>::max(), fix);
     if (options.size() > 0) {
       return options[0];
     }

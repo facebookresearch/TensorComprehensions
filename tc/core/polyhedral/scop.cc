@@ -24,9 +24,9 @@
 #include <vector>
 
 #include "tc/core/check.h"
+#include "tc/core/functional.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/polyhedral/body.h"
-#include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"

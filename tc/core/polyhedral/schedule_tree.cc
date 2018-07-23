@@ -29,7 +29,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
-#include "tc/core/polyhedral/functional.h"
+#include "tc/core/functional.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/scope_guard.h"
 #include "tc/external/isl.h"
