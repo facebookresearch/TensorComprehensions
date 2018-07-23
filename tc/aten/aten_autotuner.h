@@ -80,6 +80,7 @@ class ATenAutotuner : public tc::autotune::Autotuner<Backend, SearchStrategy> {
       const std::string& tcEntryPoint,
       const std::vector<at::Tensor>& inputs,
       const std::vector<MappingOptionsType>& baseMappings,
+      size_t topK = 1,
       const tc::autotune::TuningParameterFixer& fixedParams = {});
 
  protected:

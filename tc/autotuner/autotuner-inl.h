@@ -15,6 +15,7 @@
  */
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <numeric>
 #include <thread>
 
@@ -48,8 +49,6 @@ TuningHarness<Backend>::TuningHarness(
       baseMapping_(baseMapping),
       inputs_(inputs),
       outputs_(outputs),
-      bestTime_(Duration::max()),
-      bestMappingOptions_(baseMapping),
       optionsCache_(optionsCache) {}
 
 template <typename Backend>
@@ -65,13 +64,6 @@ void TuningHarness<Backend>::run(SearchStrategy& searchStrategy) {
 template <typename Backend>
 void TuningHarness<Backend>::stopAfterCurrentIteration() {
   stopRequested_ = true;
-}
-
-template <typename Backend>
-const typename Backend::MappingOptionsType&
-TuningHarness<Backend>::bestMappingOptions() const {
-  std::lock_guard<std::mutex> lock(bestTimeMutex_);
-  return bestMappingOptions_;
 }
 
 #define LOG_LINE_BY_LINE(GSTREAM, ISTREAM)               \
@@ -180,11 +172,14 @@ void TuningHarness<Backend>::doEvaluate(
 
     std::vector<Duration> runtimes{Duration::max()};
     try {
-      Duration bestTimeSoFar(Duration::max());
-      {
-        std::lock_guard<std::mutex> lock(bestTimeMutex_);
-        bestTimeSoFar = bestTime_;
-      }
+      auto vBest = optionsCache_->getTopKEntries(
+          lang::canonicalTc(tcTree_),
+          makeTensorInfoVector(inputs),
+          makeTensorInfoVector(outputs),
+          Backend::backendString(),
+          1);
+      Duration bestTimeSoFar =
+          (vBest.size() > 0) ? vBest[0].second : Duration::max();
       auto prune = detail::skipExecutionOrWarmup<Backend>(
           *pExecutor, outputs, inputs, bestTimeSoFar);
       if (prune) {
@@ -234,15 +229,6 @@ void TuningHarness<Backend>::doEvaluate(
         Backend::backendString(),
         options,
         prof);
-
-    // Save best time under lock
-    {
-      std::lock_guard<std::mutex> lock(bestTimeMutex_);
-      if (prof < bestTime_) {
-        bestTime_ = prof;
-        bestMappingOptions_ = options;
-      }
-    }
   } // end while
 }
 
@@ -310,7 +296,14 @@ void TuningHarness<Backend>::runOneIteration(
     LOG(INFO) << "[TUNER][ITERATION LOG] best option so far:";
     std::stringstream ssInfo;
     typename Backend::MappingOptionsCppPrinter infoPrinter(ssInfo);
-    infoPrinter << bestMappingOptions();
+    auto vBest = optionsCache_->getTopKOptions(
+        lang::canonicalTc(tcTree_),
+        makeTensorInfoVector(inputs_.begin()->second),
+        makeTensorInfoVector(outputs_.begin()->second),
+        Backend::backendString(),
+        1);
+    CHECK_GT(vBest.size(), 0);
+    infoPrinter << vBest[0];
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }
   searchStrategy.updateParameters();
@@ -426,6 +419,7 @@ Autotuner<Backend, SearchStrategy>::tune(
     const std::unordered_map<size_t, std::vector<const DLConstTensor*>>& inputs,
     std::unordered_map<size_t, std::vector<const DLTensor*>>& outputs,
     const std::vector<typename Backend::MappingOptionsType>& baseMappings,
+    size_t topK,
     const TuningParameterFixer& fixedParams) {
   std::map<std::string, lang::TreeRef> tcEntryPointMap(tc::detail::parse(tc));
   TC_CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
@@ -511,7 +505,12 @@ Autotuner<Backend, SearchStrategy>::tune(
     std::rethrow_exception(tuningHarnessThreadEx);
   }
 
-  return {tuningHarness.bestMappingOptions()};
+  return optionsCache->getTopKOptions(
+      lang::canonicalTc(tcEntryPointMap.at(tcEntryPoint)),
+      makeTensorInfoVector(inputs.begin()->second),
+      makeTensorInfoVector(outputs.begin()->second),
+      Backend::backendString(),
+      topK);
 }
 } // namespace autotune
 } // namespace tc

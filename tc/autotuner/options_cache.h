@@ -132,6 +132,19 @@ struct OptionsCache {
   /// particular TC/inputs/outputs/device. Note that the result may be empty
   /// (in particular if problem size is small and pruning threshold is too high
   /// for the problem size).
+  /// \returns a vector of pair<mapping options, Duration>
+  std::vector<std::pair<typename Backend::MappingOptionsType, Duration>>
+  getTopKEntries(
+      const lang::CanonicalTcString& tc,
+      const std::vector<TensorInfo>& inputs,
+      const std::vector<TensorInfo>& outputs,
+      const std::string& backendStr,
+      size_t K) const;
+
+  /// Returns the top-K mapping options that have the best median runtime for a
+  /// particular TC/inputs/outputs/device. Note that the result may be empty
+  /// (in particular if problem size is small and pruning threshold is too high
+  /// for the problem size).
   /// \returns a vector of mapping options
   std::vector<typename Backend::MappingOptionsType> getTopKOptions(
       const lang::CanonicalTcString& tc,
