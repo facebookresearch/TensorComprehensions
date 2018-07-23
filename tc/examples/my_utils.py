@@ -12,7 +12,7 @@ NB_HYPERPARAMS, INIT_INPUT_SZ = 26, 7
 def getrand(l):
     return np.random.choice(l).item()
 
-def get_convolution_example(already_set=False, inp_sz_list=[]):
+def get_convolution_example(size_type="default", inp_sz_list=[]):
     global INIT_INPUT_SZ
     INIT_INPUT_SZ = 7
     tc_name = "convolution"
@@ -22,9 +22,11 @@ def get_convolution_example(already_set=False, inp_sz_list=[]):
         }
     """
 
-    if(already_set):
+    if(size_type=="input"):
         N, C, H, W, O, kH, kW = tuple(inp_sz_list)
-    else:
+    elif(size_type=="default"):
+        N, C, H, W, O, kH, kW = 16, 4, 56, 56, 16, 1, 1 #8, 2, 28, 28, 8, 1, 1
+    elif(size_type=="random"):
         N, C, H, W, O, kH, kW = \
             getrand([8, 16, 32, 64]), \
             getrand([2, 4, 8, 16]), \
@@ -33,6 +35,9 @@ def get_convolution_example(already_set=False, inp_sz_list=[]):
             getrand([8, 16, 32]), \
             getrand([1, 2, 4]), \
             getrand([1, 2, 4])
+    else:
+        print("Unknown size type")
+        exit()
     I, W1 = torch.randn(N, C, H, W, device='cuda'), torch.randn(O, C, kH, kW, device='cuda')
     init_input = (I, W1)
     init_input_sz = np.array([N,C,H,W,O, kH, kW])
@@ -68,10 +73,8 @@ def catVec_to_optVec(catVec):
     #opt[19] = min(opt[19], 1024//(opt[17] * opt[18]))
     return opt
 
-def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
+def evalTime(opt, iters=50, warmup=10, estimator="mean", naive=False, prune=-1, curr_best=-1):
     global tc_code, tc_name, inp, cat_val
-    #print(opt)
-    #print(cat_val)
 
     infty = 30000
     opt = catVec_to_optVec(opt)
@@ -94,12 +97,21 @@ def evalTime(opt, iters=50, warmup=10, naive=False, prune=-1, curr_best=-1):
     if(prune != -1 and first_t > prune*curr_best):
         return first_t
 
-    liste_t_tc = []
+    tc_time_list = []
     for i in range(iters):
         iter_time = tc_prog.executor.profile_kernel(inp)
-        liste_t_tc.append(iter_time)
-    mean_time = np.mean(liste_t_tc)
-    return mean_time
+        tc_time_list.append(iter_time)
+    if(estimator == "mean"):
+        mean_time = np.mean(tc_time_list)
+        return mean_time
+    elif(estimator == "median"):
+        median_time = np.median(tc_time_list)
+        return median_time
+    elif(estimator == "p25"):
+        p25_time = np.percentile(tc_time_list, 25)
+        return p25_time
+    print("Unknown estimator")
+    return infty
 
 def getRawVectorFromTcOpt(tc_opt):
     tr_dic = {"Max":0, "Preserve3Coincident":1, "Min":2}
@@ -110,7 +122,7 @@ def getRawVectorFromTcOpt(tc_opt):
     opt_vect[3] = len(tc_opt["tile"])
     opt_vect[4:4+opt_vect[3]] = tc_opt["tile"]
     opt_vect[10] = tc_opt["unroll"]
-    #opt_vect[11] = tc_opt["tileImperfectlyNested"]
+    #opt_vect[11] = tc_opt["tileImperfectlyNested"] #todo: pybind
     opt_vect[11] = tc_opt["matchLibraryCalls"]
     opt_vect[12] = len(tc_opt["mapToBlocks"])
     opt_vect[13:13+opt_vect[12]] = tc_opt["mapToBlocks"]
@@ -158,8 +170,6 @@ def getAllDivs(inp, maxp2=8):
         p2.append(pp)
         pp*=2
     l = []
-    #for sz in inp[0].shape[:1]:
-    #    l+=computeDivs(sz)
     for elem in inp:
         for sz in elem.shape:
             l += computeDivs(sz)
@@ -194,7 +204,7 @@ def computeCat(inp_arg):
     cat_val.append([0,1])                      #22
     cat_val.append([0]) #cat_val.append(divs2) #23
     cat_val.append([0,1])                      #24
-    cat_val.append([i for i in range(6)]) #6 ou 7 ?? #25
+    cat_val.append([i for i in range(6)])      #25
 
     for i in range(NB_HYPERPARAMS):
         cat_sz[i] = len(cat_val[i])

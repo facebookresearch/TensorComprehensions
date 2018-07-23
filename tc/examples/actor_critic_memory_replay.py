@@ -15,20 +15,16 @@ from heapq import heappush, heappop
 
 import my_utils
 
-NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 NB_EPOCHS = 10000
 BATCH_SZ = 16
-EPS_START = 0.9
-EPS_END = 0.05
-EPS_DECAY = 200
-steps_done = 0
-buff = []#deque()
+buff = deque()
 MAXI_BUFF_SZ = 50
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
+(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(size_type="input", inp_sz_list=[8,2,28,28,8,1,1])
 
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
+NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 
 viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
@@ -50,7 +46,7 @@ class Predictor(nn.Module):
 
     def forward(self, x):
         #ipdb.set_trace()
-        x = F.softmax(self.W(x), dim=-1) * x
+        #x = F.softmax(self.W(x), dim=-1) * x #attention mecanism
         tmp1 = F.relu(self.affine1(x))
         #tmp1 = F.relu(self.affine15(tmp1))
         out_action = F.softmax(self.affine2(tmp1), dim=-1)
@@ -89,7 +85,7 @@ net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
 eps = np.finfo(np.float32).eps.item()
 
-print(my_utils.getAllDivs(inp))
+#print(my_utils.getAllDivs(inp))
 
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
@@ -116,10 +112,10 @@ def add_to_buffer(actions_probs, values, reward):
     #    if(reward < 10*min_reward):
     #        return
     if len(buff) == MAXI_BUFF_SZ:
-        heappop(buff)
-        #buff.popleft()
-    heappush(buff, (reward, actions_probs, values))
-    #buff.append((actions_probs, values, reward))
+        #heappop(buff)
+        buff.popleft()
+    #heappush(buff, (reward, actions_probs, values))
+    buff.append((reward, actions_probs, values))
 
 def select_batch():
     #random.sample()
@@ -171,7 +167,7 @@ for i in range(NB_EPOCHS):
             viz.line(X=np.column_stack((np.arange(len(v_losses)), np.arange(len(v_losses)))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
     print(-running_reward)
     print(-best)
-    print("Best in buff: " + str(-best_in_buffer))
+    print("Best in buffer: " + str(-best_in_buffer))
 
 print("Finally, best options are:")
 my_utils.print_opt(best_options)

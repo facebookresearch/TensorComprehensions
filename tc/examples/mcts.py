@@ -37,7 +37,7 @@ class MCTS:
     def __init__(self):
         self.C = 1 #to tune
 
-        (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(already_set=True, inp_sz_list=[8,2,28,28,8,1,1])
+        (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(size_type="input", inp_sz_list=[8,2,28,28,8,1,1])
 
         my_utils.computeCat(inp)
         my_utils.set_tc(tc_code, tc_name)
@@ -56,13 +56,13 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 1000#2*self.nbActions[node.pos]
+        ttNbIters = 30#2*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
             self.backup(leaf, val)
             #print(node.value / node.nbVisits)
-        _, action = self.getBestChild(node)
+        _, action = self.getBestChild2(node)
         return action
 
     def take_action(self, node, act):
@@ -95,7 +95,7 @@ class MCTS:
         for act in range(self.nbActions[pos]):
             child = node.children[act]
             #indic = np.percentile(child.values, 20)
-            indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            indic = child.value / child.nbVisits
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
@@ -172,14 +172,10 @@ mcts = MCTS()
 
 opts = []
 curr_node = mcts.tree
-mcts.main_search(curr_node)
-for i in range(my_utils.NB_HYPERPARAMS):
-    opts.append(mcts.getBestChild2(curr_node)[1])
+for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
+    opts.append(mcts.main_search(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
-#for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
-#    opts.append(mcts.main_search(curr_node))
-#    curr_node = mcts.take_action(curr_node, opts[-1])
-#    print(opts)
+    print(opts)
 opts = np.array(opts).astype(int)
 print(my_utils.evalTime(opts.tolist()))
 my_utils.print_opt(opts)

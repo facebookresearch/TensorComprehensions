@@ -21,10 +21,7 @@ NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
 my_utils.computeCat(inp)
 my_utils.set_tc(tc_code, tc_name)
 
-#perm = np.random.permutation(len(set_options))
-#print(perm)
-#set_options = set_options[perm]
 for i in range(len(set_options)):
     opts = np.array(set_options[i])
-    temps = my_utils.evalTime(opts)
-    print(temps)
+    time = my_utils.evalTime(opts)
+    print(time)
