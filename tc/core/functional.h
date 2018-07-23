@@ -21,7 +21,6 @@
 #include <vector>
 
 namespace tc {
-namespace polyhedral {
 namespace functional {
 
 template <typename I>
@@ -178,5 +177,4 @@ R MapReduce(std::function<R(R, I, bool)> fun, const std::vector<I>& vec) {
 }
 
 } // namespace functional
-} // namespace polyhedral
 } // namespace tc
