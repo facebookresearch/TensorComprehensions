@@ -85,11 +85,13 @@ def evalTime(opt, iters=50, warmup=10, estimator="mean", naive=False, prune=-1, 
     try:
         tc_prog = tc.compile(tc_code, tc_name, opt, *inp)
         first_ft = tc_prog.executor.profile_kernel(inp)
+    except (KeyboardInterrupt, SystemExit):
+        raise
     except:
         return infty
     if(prune != -1 and first_ft > 100*curr_best):
         return first_ft
-    for i in range(warmup):
+    for _ in range(warmup):
         tc_prog.executor.profile_kernel(inp)
 
     first_t = tc_prog.executor.profile_kernel(inp)
