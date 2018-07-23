@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from multiprocessing import Pool
 from itertools import repeat
 import my_utils
+from tqdm import tqdm
 
 (tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(size_type="input", inp_sz_list=[8,2,28,28,8,1,1])
 
@@ -30,7 +31,7 @@ def getRandom():
 def makeDataset():
     sz = 500
     datasetX, datasetY = [], []
-    for _ in range(sz):
+    for _ in tqdm(range(sz)):
         opt = getRandom()
         yi = createY(opt)
         datasetX.append(opt)
