@@ -76,6 +76,7 @@ add_library(
 
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
+  polyhedral/cpu/mapped_scop.cc
 )
 target_include_directories(tc_core_cpu PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
