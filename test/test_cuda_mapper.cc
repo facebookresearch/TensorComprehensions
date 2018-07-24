@@ -50,7 +50,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
   std::unique_ptr<Scop> Prepare(std::string tc) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     // Build the SCoP corresponding to the Tc
-    return Scop::makeScop(ctx, tc);
+    return Scop::makeScop(ctx, tc, CompilerOptions());
   }
 
   std::unique_ptr<Scop> PrepareAndJoinBands(std::string tc) {

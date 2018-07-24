@@ -46,7 +46,7 @@ class TestMapper : public ::testing::Test {
       const CudaMappingOptions& mappingOptions,
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
-    auto scop = Scop::makeScop(ctx, tc);
+    auto scop = Scop::makeScop(ctx, tc, CompilerOptions());
     scop = Scop::makeSpecializedScop(*scop, problemSizes);
     scop->specializeToContext();
     return MappedScop::makeWithOuterBlockInnerThreadStrategy(

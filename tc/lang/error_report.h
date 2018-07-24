@@ -16,6 +16,7 @@
 #pragma once
 
 #include "tc/lang/tree.h"
+#include "tc/utils/compiler_options.h"
 
 namespace lang {
 
@@ -42,8 +43,12 @@ struct ErrorReport : public std::exception {
   mutable std::string the_message;
 };
 
-inline void warn(const ErrorReport& err) {
-  std::cerr << "WARNING: " << err.what();
+inline void warn(
+    const ErrorReport& err,
+    const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
+  if (compilerOptions.emitWarnings) {
+    std::cerr << "WARNING: " << err.what();
+  }
 }
 
 template <typename T>

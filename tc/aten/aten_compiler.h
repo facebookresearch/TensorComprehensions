@@ -22,6 +22,7 @@
 #include "tc/aten/aten.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/time.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace aten {
@@ -57,7 +58,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     const std::string& tc,
     const std::string& entryPoint,
     const std::vector<at::Tensor>& inputs,
-    const typename Backend::MappingOptionsType& options);
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions = CompilerOptions());
 
 /// Given an executor resulting from compiling a TC, run the TC and fill the
 /// outputs vector with the results. The output vector must have as many

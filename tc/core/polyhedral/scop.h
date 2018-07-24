@@ -32,6 +32,7 @@
 #include "tc/core/tc2halide.h"
 #include "tc/core/tensor.h"
 #include "tc/external/isl.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace polyhedral {
@@ -56,11 +57,15 @@ struct Scop {
   // Halide IR is constructed and made a member by setting halideComponents.
   // These operations are grouped and scheduled in a halide::Stmt which becomes
   // the unit from which the scop is constructed.
-  static std::unique_ptr<Scop> makeScop(isl::ctx ctx, const std::string& tc);
+  static std::unique_ptr<Scop> makeScop(
+      isl::ctx ctx,
+      const std::string& tc,
+      const CompilerOptions& compilerOptions = CompilerOptions());
 
   static std::unique_ptr<Scop> makeScop(
       isl::ctx ctx,
-      const lang::TreeRef& treeRef);
+      const lang::TreeRef& treeRef,
+      const CompilerOptions& compilerOptions = CompilerOptions());
 
   // Clone a Scop
   static std::unique_ptr<Scop> makeScop(const Scop& scop) {
