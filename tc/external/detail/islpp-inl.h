@@ -42,8 +42,7 @@ inline isl::aff operator/(isl::aff A, int i) {
 }
 
 inline isl::aff operator+(int i, isl::aff A) {
-  isl::ctx ctx = A.get_ctx();
-  return A + isl::val(ctx, i);
+  return A.add_constant_si(i);
 }
 
 inline isl::aff operator+(isl::aff A, isl::val v) {
