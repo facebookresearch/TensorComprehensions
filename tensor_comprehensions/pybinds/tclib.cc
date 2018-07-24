@@ -275,7 +275,7 @@ struct TcExecutor {
     }
   }
 
-  size_t profile(const py::tuple& inputs, const py::tuple& outputs) {
+  size_t profile_kernel(const py::tuple& inputs, const py::tuple& outputs) {
     auto atInputs = getATenTensors(inputs);
     auto atOutputs = (outputs.size() > 0)
         ? getATenTensors(outputs)
@@ -480,7 +480,7 @@ PYBIND11_MODULE(tclib, m) {
           py::arg("outputs") = py::tuple())
       .def(
           "profile_kernel",
-          &TcExecutor::profile,
+          &TcExecutor::profile_kernel,
           py::arg("inputs"),
           py::arg("outputs") = py::tuple());
 
@@ -686,7 +686,7 @@ PYBIND11_MODULE(tclib, m) {
             rv["privateDepth"] = instance.proto().private_depth();
             return rv;
           },
-          "Returns a dictionnary with the CudaMappingOptions")
+          "Returns a dictionary with the CudaMappingOptions")
       .def(
           "serialize",
           [](tc::CudaMappingOptions& instance) {
@@ -713,7 +713,10 @@ PYBIND11_MODULE(tclib, m) {
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If an unroll "
           "value is not provided, has no effect")
-      .def("privateDepth", &tc::CudaMappingOptions::privateDepth, "blabla")
+      .def(
+            "privateDepth",
+            &tc::CudaMappingOptions::privateDepth,
+            "Specify the private depth")
       .def(
           "useReadOnlyCache",
           &tc::CudaMappingOptions::useReadOnlyCache,
