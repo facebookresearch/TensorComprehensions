@@ -714,9 +714,9 @@ PYBIND11_MODULE(tclib, m) {
           "Also unroll the copies to and from shared memory. If an unroll "
           "value is not provided, has no effect")
       .def(
-            "privateDepth",
-            &tc::CudaMappingOptions::privateDepth,
-            "Specify the private depth")
+          "privateDepth",
+          &tc::CudaMappingOptions::privateDepth,
+          "Specify the private depth")
       .def(
           "useReadOnlyCache",
           &tc::CudaMappingOptions::useReadOnlyCache,
