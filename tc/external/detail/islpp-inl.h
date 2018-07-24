@@ -55,10 +55,6 @@ inline isl::aff operator+(isl::val v, isl::aff A) {
   return A + v;
 }
 
-inline isl::aff operator+(isl::aff A, isl::aff B) {
-  return A.add(B);
-}
-
 inline isl::aff operator+(isl::aff A, int i) {
   return i + A;
 }

@@ -36,6 +36,11 @@ namespace isl {
 //
 
 template <typename T>
+inline T operator+(T a, T b) {
+  return a.add(b);
+}
+
+template <typename T>
 inline T operator-(T a, T b) {
   return a.sub(b);
 }
@@ -55,10 +60,6 @@ inline isl::val operator*(isl::val v, long i) {
 
 inline isl::val operator*(long i, isl::val v) {
   return v * i;
-}
-
-inline isl::val operator+(isl::val l, isl::val r) {
-  return l.add(r);
 }
 
 inline isl::val operator+(isl::val v, long i) {
@@ -128,7 +129,6 @@ isl::aff operator*(isl::val V, isl::aff A);
 isl::aff operator/(isl::aff A, int i);
 
 isl::aff operator+(int i, isl::aff A);
-isl::aff operator+(isl::aff A, isl::aff B);
 isl::aff operator+(isl::aff A, int i);
 isl::aff operator+(isl::aff A, isl::val v);
 isl::aff operator+(isl::val v, isl::aff A);
