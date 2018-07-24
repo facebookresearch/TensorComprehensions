@@ -915,7 +915,8 @@ HalideComponents translate(
     const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << treeRef;
   return translateDef(
-      lang::Def(lang::Sema().checkFunction(treeRef)), compilerOptions);
+      lang::Def(lang::Sema(compilerOptions).checkFunction(treeRef)),
+      compilerOptions);
 }
 
 // NOTE: there is no guarantee here that the tc string has only one def. It
