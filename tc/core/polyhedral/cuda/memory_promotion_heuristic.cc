@@ -133,60 +133,6 @@ std::vector<T> collectBranchMarkers(T root, T node) {
 }
 
 /*
- * Transform schedule bands into a union_map.
- * Takes all partial schedules at leaves as MUPAs (without accounting for
- * intermediate non-band nodes), intersects
- * their domain with the filters between the root and the
- * current leaves and transforms them into union maps.
- * Mapping filters are ignored.
- */
-isl::union_map fullSchedule(const detail::ScheduleTree* root) {
-  using namespace tc::polyhedral::detail;
-
-  if (!root->as<ScheduleTreeDomain>()) {
-    throw promotion::PromotionLogicError("expected root to be a domain node");
-  }
-
-  std::function<bool(const ScheduleTree* tree)> isLeaf =
-      [](const ScheduleTree* tree) { return tree->numChildren() == 0; };
-
-  // Find all innermost nodes.
-  auto leaves = functional::Filter(isLeaf, ScheduleTree::collect(root));
-
-  // Take a union of partial schedules of the innermost nodes.  Because they
-  // are innermost, the partial schedule can no longer be affected by deeper
-  // nodes and hence is full.
-  auto schedule = isl::union_map::empty(
-      root->as<ScheduleTreeDomain>()->domain_.get_space());
-  for (auto node : leaves) {
-    auto domain = root->as<ScheduleTreeDomain>()->domain_;
-    auto prefixMupa = prefixScheduleMupa(root, node);
-    if (auto band = node->as<ScheduleTreeBand>()) {
-      prefixMupa = prefixMupa.flat_range_product(band->mupa_);
-    }
-
-    auto pathToRoot = node->ancestors(root);
-    pathToRoot.push_back(node);
-    for (auto n : pathToRoot) {
-      if (auto filterNode = n->as<ScheduleTreeFilter>()) {
-        domain = domain.intersect(filterNode->filter_);
-      }
-    }
-
-    prefixMupa = prefixMupa.intersect_domain(domain);
-
-    schedule = schedule.unite(isl::union_map::from(prefixMupa));
-    if (!schedule.is_single_valued()) {
-      std::stringstream ss;
-      ss << "schedules must be single-valued " << schedule << std::endl
-         << *root;
-      throw promotion::PromotionLogicError(ss.str());
-    }
-  }
-  return schedule;
-}
-
-/*
  * Check if a reference group features reuse within the "outer" schedule.
  * In particular, check that for some given point in the outer schedule and
  * some given group element, there is more than one statement instance
@@ -264,8 +210,7 @@ const detail::ScheduleTree* findThreadMappingAncestor(
 bool promotionImprovesCoalescing(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node,
-    const TensorReferenceGroup& group,
-    isl::union_map schedule) {
+    const TensorReferenceGroup& group) {
   auto originalAccesses = group.originalAccesses();
 
   auto tensorDim = group.approximation.dim();
@@ -279,6 +224,7 @@ bool promotionImprovesCoalescing(
     auto depth = marker->scheduleDepth(root);
     auto activePoints = activeDomainPoints(root, mapping);
     auto localAccesses = originalAccesses.intersect_domain(activePoints);
+    auto schedule = prefixSchedule(root, marker);
     auto scheduledAccesses = localAccesses.apply_domain(schedule);
     for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
       auto scheduleSpace = access.get_space().domain();
@@ -484,129 +430,126 @@ std::vector<detail::ScheduleTree*> bandsSplitAfterDepth(
 }
 
 /*
- * For every place in the schedule tree where schedule depth (i.e., the number
- * of preceding band members) is "depth", promote tensor reference groups to
- * shared memory.  Split bands if necessary to insert promotions.
- *
- * Use at most "maxMemory" bytes.  If a groups does not fit the remaining
- * memory, do not promote it and keep looking for a smaller group.
- *
- * Only promote if the tensor elements referenced by the group are reused or
- * accessed in a non-coalesced way.
+ * Check if "node" or any of its ancestors until "root" are thread mappings.
  */
-void promoteToSharedGreedy(
-    Scop& scop,
-    const Block& block,
-    size_t depth,
-    size_t maxMemory) {
-  using namespace tc::polyhedral::detail;
-
-  if (depth == 0) {
-    throw promotion::PromotionNYI("promotion before any band");
+bool isInThreadMappedScope(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  auto ancestors = node->ancestors(root);
+  ancestors.push_back(node);
+  for (auto ancestor : ancestors) {
+    if (isMappingTo<mapping::ThreadId>(ancestor)) {
+      return true;
+    }
   }
+  return false;
+}
 
+/*
+ * Promote to shared memory in "scop" below "node".  Use at most
+ * "remainingMemory" bytes, and update the variable to reflect the amount of
+ * available shared memory remaining after promotion.
+ */
+void promoteToSharedBelow(
+    Scop& scop,
+    detail::ScheduleTree* node,
+    size_t& remainingMemory) {
   auto root = scop.scheduleRoot();
 
-  // 1. Collect all bands with a member located at the given depth in the
-  // overall schedule.  Make sure this is the last member of the band by
-  // splitting off the subsequent members into a different band.
-  auto bands = bandsContainingScheduleDepth(root, depth);
-  bands = bandsSplitAfterDepth(bands, root, depth);
-
-  // 2. Compute full schedule without mapping filters.  The filters would make
-  // it impossible to test for coalescing by incrementing a member of a band as
-  // only the values divisible by grid or block size pass through the filter.
-  auto fullSched = fullSchedule(root);
-
-  // 3. For each band that ends at "depth", take decisions about promotion
-  // immediately below it in the tree.  In particular, promote if the
-  // approximated footprint fits into the remaining memory, and the reference
-  // group either features reuse or is accessed in a non-coalesced way, or
-  // both.
-  size_t remainingMemory = maxMemory;
-  for (auto bandNode : bands) {
-    auto activePoints = activeDomainPoints(root, bandNode);
-    auto partialSched = partialSchedule(root, bandNode);
-
-    auto groupMap = TensorReferenceGroup::accessedWithin(
-        partialSched.intersect_domain(activePoints), scop.body);
-    // Pure affine schedule without (mapping) filters.
-    auto partialSchedMupa = partialScheduleMupa(root, bandNode);
-
-    // Prepare groups for sorting, to have specified order necessary for
-    // reproducibility and tests.
-    using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
-    std::vector<TensorGroupList> groupLists(
-        std::make_move_iterator(groupMap.begin()),
-        std::make_move_iterator(groupMap.end()));
-
-    // Computes the total number of references in all groups.
-    auto refsCount = [](const TensorGroupsInfo& info) {
-      size_t refs = 0;
-      for (auto const& group : info) {
-        refs += group->referenceIds().size();
-      }
-      return refs;
-    };
-
-    // Sort by the total number of references, then by name.  Because names are
-    // guarenteed to be unique, the order is total.
-    std::sort(
-        groupLists.begin(),
-        groupLists.end(),
-        [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
-          auto r1 = refsCount(l1.second);
-          auto r2 = refsCount(l2.second);
-          return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
-        });
-    for (auto& tensorGroups : groupLists) {
-      auto tensorId = tensorGroups.first;
-      // Sort the reference groups to prioritize groups with more references as
-      // they are more likely to benefit from promotion.
-      std::sort(
-          tensorGroups.second.begin(),
-          tensorGroups.second.end(),
-          [refsCount](
-              const std::unique_ptr<TensorReferenceGroup>& group1,
-              const std::unique_ptr<TensorReferenceGroup>& group2) {
-            return group1->referenceIds().size() >
-                group2->referenceIds().size();
-          });
-
-      for (auto& group : tensorGroups.second) {
-        auto sizes = group->approximationSizes();
-        if (sizes.size() == 0) {
-          throw promotion::PromotionLogicError("cannot promote a scalar");
-        }
-        if (sizes.back() % 2 == 0) {
-          sizes.back() += 1;
-        }
-        auto nApproximationElements = std::accumulate(
-            sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
-        size_t memoryRequirement =
-            nApproximationElements * scop.findArgument(tensorId).type().bytes();
-        if (memoryRequirement > remainingMemory) {
-          continue;
-        }
-        // Do not promote if the group features no reuse and is accessed in a
-        // coalesced way.
-        if (!hasReuseWithin(*group, partialSchedMupa) &&
-            !promotionImprovesCoalescing(root, bandNode, *group, fullSched)) {
-          continue;
-        }
-
-        scop.promoteGroup(
-            Scop::PromotedDecl::Kind::SharedMem,
-            tensorId,
-            std::move(group),
-            bandNode,
-            partialSched,
-            true);
-        remainingMemory -= memoryRequirement;
-      }
-    }
-    scop.insertSyncsAroundCopies(bandNode);
+  // Promotion to shared below threads does not make sense because the computed
+  // groups would be specific to threads thus not benefiting from coalescing or
+  // inter-thread communication through shared memory (use registers instead).
+  if (isInThreadMappedScope(root, node)) {
+    throw promotion::IncorrectScope(
+        "shared memory promotion below thread mapping");
   }
+  // Children of a sequence/set band must be filters, but promotion would
+  // insert an extension node.
+  if (node->as<detail::ScheduleTreeSequence>() ||
+      node->as<detail::ScheduleTreeSet>()) {
+    throw promotion::IncorrectScope("cannot promote below a sequence/set node");
+  }
+
+  auto partialSched = partialSchedule(root, node);
+  auto mapping = collectMappingsTo<mapping::BlockId>(scop);
+
+  auto groupMap = TensorReferenceGroup::accessedWithin(
+      partialSched.intersect_domain(mapping), scop.body);
+  // Pure affine schedule without (mapping) filters.
+  auto partialSchedMupa = partialScheduleMupa(root, node);
+
+  // Prepare groups for sorting, to have specified order necessary for
+  // reproducibility and tests.
+  using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
+  std::vector<TensorGroupList> groupLists(
+      std::make_move_iterator(groupMap.begin()),
+      std::make_move_iterator(groupMap.end()));
+
+  // Computes the total number of references in all groups.
+  auto refsCount = [](const TensorGroupsInfo& info) {
+    size_t refs = 0;
+    for (auto const& group : info) {
+      refs += group->referenceIds().size();
+    }
+    return refs;
+  };
+
+  // Sort by the total number of references, then by name.  Because names are
+  // guarenteed to be unique, the order is total.
+  std::sort(
+      groupLists.begin(),
+      groupLists.end(),
+      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
+        auto r1 = refsCount(l1.second);
+        auto r2 = refsCount(l2.second);
+        return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
+      });
+  for (auto& tensorGroups : groupLists) {
+    auto tensorId = tensorGroups.first;
+    // Sort the reference groups to prioritize groups with more references as
+    // they are more likely to benefit from promotion.
+    std::sort(
+        tensorGroups.second.begin(),
+        tensorGroups.second.end(),
+        [refsCount](
+            const std::unique_ptr<TensorReferenceGroup>& group1,
+            const std::unique_ptr<TensorReferenceGroup>& group2) {
+          return group1->referenceIds().size() > group2->referenceIds().size();
+        });
+
+    for (auto& group : tensorGroups.second) {
+      auto sizes = group->approximationSizes();
+      if (sizes.size() == 0) {
+        throw promotion::PromotionLogicError("cannot promote a scalar");
+      }
+      if (sizes.back() % 2 == 0) {
+        sizes.back() += 1;
+      }
+      auto nApproximationElements = std::accumulate(
+          sizes.begin(), sizes.end(), 1, std::multiplies<size_t>());
+      size_t memoryRequirement =
+          nApproximationElements * scop.findArgument(tensorId).type().bytes();
+      if (memoryRequirement > remainingMemory) {
+        continue;
+      }
+      // Do not promote if the group features no reuse and is accessed in a
+      // coalesced way.
+      if (!hasReuseWithin(*group, partialSchedMupa) &&
+          !promotionImprovesCoalescing(root, node, *group)) {
+        continue;
+      }
+
+      scop.promoteGroup(
+          Scop::PromotedDecl::Kind::SharedMem,
+          tensorId,
+          std::move(group),
+          node,
+          partialSched,
+          true);
+      remainingMemory -= memoryRequirement;
+    }
+  }
+  scop.insertSyncsAroundCopies(node);
 }
 
 /*
@@ -619,16 +562,55 @@ inline bool isThreadMappedBand(const detail::ScheduleTree* tree) {
 }
 } // namespace
 
-void promoteGreedilyAtDepth(
+/*
+ * For every place in the schedule tree where schedule depth (i.e., the number
+ * of preceding band members) is "depth", promote tensor reference groups to
+ * shared memory if there is no thread mapping above this place.  Split bands
+ * if necessary to insert promotions.
+ *
+ * Use at most "maxMemory" bytes.  If a groups does not fit the remaining
+ * memory, do not promote it and keep looking for a smaller group.
+ *
+ * Only promote if the tensor elements referenced by the group are reused or
+ * accessed in a non-coalesced way.
+ *
+ * If "unrollCopies" is set, use the unroll factor from "mscop" to unroll the
+ * loops that copy values from global to shared memory and back.
+ */
+void promoteToSharedAtDepth(
     MappedScop& mscop,
     size_t depth,
-    size_t sharedMemorySize,
+    size_t maxMemory,
     bool unrollCopies) {
-  // 1. Promote using heuristic.
-  promoteToSharedGreedy(
-      mscop.scop(), mscop.numThreads, depth, sharedMemorySize);
+  using namespace tc::polyhedral::detail;
 
-  // 2. Map copies to shared, state by copy
+  auto& scop = mscop.scop();
+  auto root = scop.scheduleRoot();
+
+  // 1. Collect all bands with a member located at the given depth in the
+  // overall schedule.  Make sure this is the last member of the band by
+  // splitting off the subsequent members into a different band.
+  auto bands = bandsContainingScheduleDepth(root, depth);
+  bands = bandsSplitAfterDepth(bands, root, depth);
+
+  // 2. For each band that ends at "depth", take decisions about promotion
+  // immediately below it in the tree.  In particular, promote if the
+  // approximated footprint fits into the remaining memory, and the reference
+  // group either features reuse or is accessed in a non-coalesced way, or
+  // both.  Do not promote if the band node is located below the thread mapping
+  // as promotion to shared is not allowed in this context.
+  size_t remainingMemory = maxMemory;
+  for (auto bandNode : bands) {
+    if (isInThreadMappedScope(root, bandNode)) {
+      LOG_IF(INFO, FLAGS_debug_tc_mapper)
+          << "not promoting subtree to shared because it is below "
+          << "a thread mapping node";
+      continue;
+    }
+    promoteToSharedBelow(scop, bandNode, remainingMemory);
+  }
+
+  // 3. Map copies to shared.
   mapCopiesToThreads(mscop, unrollCopies);
 }
 

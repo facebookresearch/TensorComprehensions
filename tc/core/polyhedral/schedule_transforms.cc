@@ -30,7 +30,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
-#include "tc/core/polyhedral/functional.h"
+#include "tc/core/functional.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -286,11 +286,10 @@ ScheduleTree* insertTopLevelEmptyBand(ScheduleTree* root) {
 
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
   if (!matchOne(tc::polyhedral::domain(tc::polyhedral::context(any())), root)) {
-    root->appendChild(ScheduleTree::makeContext(
-        isl::set::universe(context.get_space()), root->detachChildren()));
+    root->appendChild(
+        ScheduleTree::makeContext(context, root->detachChildren()));
   }
-  auto contextElem = const_cast<detail::ScheduleTreeContext*>(
-      root->child({0})->as<detail::ScheduleTreeContext>());
+  auto contextElem = root->child({0})->as<detail::ScheduleTreeContext>();
   TC_CHECK(contextElem) << "Expected domain(context(any()))";
   contextElem->context_ = contextElem->context_ & context;
 }
@@ -366,7 +365,7 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
 isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
   auto prefix = prefixScheduleMupa(root, tree);
   auto scheduleSpace = prefix.get_space();
-  auto space = scheduleSpace.params().named_set_from_params_id(id, 0);
+  auto space = scheduleSpace.params().add_named_tuple_id_ui(id, 0);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
   return isl::map::universe(extensionSpace);
 }
@@ -551,7 +550,7 @@ bool canOrder(
   }
   // Create an ordering schedule function first -> 0; second -> 1.
   auto ctx = dependences.get_ctx();
-  auto space = isl::space(ctx, 0).unnamed_set_from_params(1);
+  auto space = isl::space(ctx, 0).add_unnamed_tuple_ui(1);
   auto zero = isl::multi_val::zero(space);
   auto one = zero.set_val(0, isl::val::one(ctx));
   auto order = isl::multi_union_pw_aff(first, zero);

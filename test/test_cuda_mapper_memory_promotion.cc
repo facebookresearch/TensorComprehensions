@@ -273,7 +273,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
 
     EXPECT_EQ(groups.size(), 3u);
 
-    isl::space tileSpace = isl::space(ctx, 0).unnamed_set_from_params(2);
+    isl::space tileSpace = isl::space(ctx, 0).add_unnamed_tuple_ui(2);
     auto tileZero = isl::set::from(isl::multi_aff::zero(tileSpace));
 
     // Must have groups for these tensors, in arbitrary order.
@@ -392,7 +392,7 @@ def fun(float(N, M) A) -> (B, C) {
       size_t maxSharedMemory) {
     auto mscop = prepareScop(
         tc, {{"N", problemSize1}, {"M", problemSize2}}, {tileSize1, tileSize2});
-    promoteGreedilyAtDepth(*mscop, depth, maxSharedMemory, false);
+    promoteToSharedAtDepth(*mscop, depth, maxSharedMemory, false);
     return mscop;
   }
 };
@@ -437,14 +437,14 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
       << "expected one reference group to be promoted";
 }
 
-TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192),
-      promotion::PromotionBelowThreadsException);
+TEST_F(MapperMemoryPromotionRAW, noSharedPromotionBelowThreads) {
+  auto mscop1 = makeWithSharedGreedy(42, 40, 64, 64, 3, 8192);
+  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192),
-      promotion::PromotionBelowThreadsException);
+  auto mscop2 = makeWithSharedGreedy(42, 40, 64, 64, 4, 8192);
+  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 }
 
 class MatMulBias : public TestMapper {

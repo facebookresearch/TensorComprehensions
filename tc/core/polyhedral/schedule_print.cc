@@ -87,26 +87,6 @@ ostream_joiner make_ostream_joiner(std::ostream& os, const char* delimiter) {
 
 } // namespace
 
-std::ostream& operator<<(std::ostream& os, isl::ast_loop_type lt) {
-  WS w;
-  os << "type(";
-  if (lt == isl::ast_loop_type::error) {
-    os << "error";
-  } else if (lt == isl::ast_loop_type::_default) {
-    os << "default";
-  } else if (lt == isl::ast_loop_type::atomic) {
-    os << "atomic";
-  } else if (lt == isl::ast_loop_type::unroll) {
-    os << "unroll";
-  } else if (lt == isl::ast_loop_type::separate) {
-    os << "separate";
-  } else {
-    LOG(FATAL) << "NYI: print type: " << static_cast<int>(lt);
-  }
-  os << ")";
-  return os;
-}
-
 std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
   WS w;
   os << w.tab() << "type(";

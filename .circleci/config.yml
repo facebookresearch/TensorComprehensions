@@ -9,11 +9,11 @@ jobs:
     steps:
       - checkout
       - run:
-          name: conda_tapir_halide
+          name: conda_llvm_halide
           command: |
             . /opt/conda/anaconda/bin/activate
             source activate tc_build
-            conda install -y -c nicolasvasilache llvm-tapir50 halide
+            conda install -y -c nicolasvasilache llvm-trunk halide
 
       - run:
           name: check_formatting

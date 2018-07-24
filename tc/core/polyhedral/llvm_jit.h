@@ -34,7 +34,6 @@ class Scop;
 class Jit {
  private:
 #if LLVM_VERSION_MAJOR > 6
-  llvm::orc::SymbolStringPool SSP;
   llvm::orc::ExecutionSession ES;
   std::shared_ptr<llvm::orc::SymbolResolver> Resolver;
 #endif

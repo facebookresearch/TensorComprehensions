@@ -438,7 +438,7 @@ void emitRegisterAccess(
 void emitGlobalAccess(
     isl::multi_pw_aff access,
     const CodegenStatementContext& context) {
-  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
+  LdgWrapper ldgWrapper(context, access.get_range_tuple_id());
   emitAccess(access, context);
 }
 } // namespace
@@ -554,8 +554,8 @@ isl::multi_aff makeMultiAffAccess(
       << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
-  auto tensorSpace = domainSpace.params().named_set_from_params_id(
-      tensorId, subscripts.size());
+  auto tensorSpace =
+      domainSpace.params().add_named_tuple_id_ui(tensorId, subscripts.size());
   auto space = domainSpace.map_from_domain_and_range(tensorSpace);
 
   auto ma = isl::multi_aff::zero(space);
@@ -674,7 +674,7 @@ void emitMappedTensorAccess(
   auto access =
       makeMultiAffAccess(tensorId, subscripts, context); // MA :: D -> O
   auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
-  promotion = promotion.set_tuple_id(isl::dim_type::out, promotionInfo.groupId);
+  promotion = promotion.set_range_tuple_id(promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
   auto schedule =
       isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(

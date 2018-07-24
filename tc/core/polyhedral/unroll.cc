@@ -100,7 +100,8 @@ isl::val boundInstancesAndMarkUnroll(
     auto outerMap = prefix;
     if (i > 0) {
       list = list.drop(i, 1);
-      auto outer = isl::multi_union_pw_aff(addRange(space, list.size()), list);
+      auto outerSpace = space.add_unnamed_tuple_ui(list.size());
+      auto outer = isl::multi_union_pw_aff(outerSpace, list);
       outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
     }
     bound = bound.mul(relativeRange(outerMap, member));

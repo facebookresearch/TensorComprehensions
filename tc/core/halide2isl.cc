@@ -259,7 +259,7 @@ isl::map extractAccess(
 
   isl::space paramSpace = domain.paramSpace;
   isl::id tensorID(paramSpace.get_ctx(), tensor);
-  auto tensorSpace = paramSpace.named_set_from_params_id(tensorID, args.size());
+  auto tensorSpace = paramSpace.add_named_tuple_id_ui(tensorID, args.size());
 
   // Start with a totally unconstrained set - every point in
   // the allocation could be accessed.
@@ -290,7 +290,7 @@ isl::map extractAccess(
   isl::id tagID(domain.paramSpace.get_ctx(), tag);
   accesses->emplace(op, tagID);
   isl::space domainSpace = map.get_space().domain();
-  isl::space tagSpace = domainSpace.params().named_set_from_params_id(tagID, 0);
+  isl::space tagSpace = domainSpace.params().add_named_tuple_id_ui(tagID, 0);
   domainSpace = domainSpace.product(tagSpace).unwrap();
   map = map.preimage_domain(isl::multi_aff::domain_map(domainSpace));
 
@@ -367,7 +367,7 @@ static isl::multi_aff mapToOther(
     list = list.add(aff);
   }
   auto domainSpace = iterationDomain.tuple.get_space();
-  auto space = domainSpace.params().named_set_from_params_id(id, list.size());
+  auto space = domainSpace.params().add_named_tuple_id_ui(id, list.size());
   space = domainSpace.product(space).unwrap();
   return isl::multi_aff(space, list);
 }
@@ -525,7 +525,7 @@ isl::schedule makeScheduleTreeHelper(
     isl::id id(set.get_ctx(), kStatementLabel + std::to_string(stmtIndex));
     statements->emplace(id, op);
     auto tupleSpace = isl::space(set.get_ctx(), 0);
-    tupleSpace = tupleSpace.named_set_from_params_id(id, outer.size());
+    tupleSpace = tupleSpace.add_named_tuple_id_ui(id, outer.size());
     IterationDomain iterationDomain;
     iterationDomain.paramSpace = set.get_space();
     iterationDomain.tuple = isl::multi_id(tupleSpace, outer);

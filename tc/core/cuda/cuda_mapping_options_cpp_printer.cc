@@ -39,6 +39,7 @@ CudaMappingOptionsCppPrinter& operator<<(
         "maxSharedMemory", cudaOptions.proto().max_shared_memory());
   }
   prn.printValueOption("privateDepth", cudaOptions.proto().private_depth());
+  prn.printValueOption("sharedDepth", cudaOptions.proto().shared_depth());
   prn.endStmt();
   return prn;
 }

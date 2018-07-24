@@ -171,8 +171,7 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     }
     for (size_t i = 0; i < band->unroll_.size(); ++i) {
       if (band->unroll_[i]) {
-        bandNode =
-            bandNode.member_set_ast_loop_type(i, isl::ast_loop_type::unroll);
+        bandNode = bandNode.member_set_ast_loop_unroll(i);
       }
     }
     node = bandNode;

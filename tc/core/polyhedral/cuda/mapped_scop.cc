@@ -26,13 +26,13 @@
 #include "tc/core/check.h"
 #include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/flags.h"
+#include "tc/core/functional.h"
 #include "tc/core/gpu.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
 #include "tc/core/polyhedral/exceptions.h"
-#include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
 #include "tc/core/polyhedral/schedule_utils.h"
@@ -514,8 +514,8 @@ isl::multi_aff constructThreadToWarp(
     const Block& block) {
   auto space = isl::space(ctx, 0);
   auto id = isl::id(ctx, kBlock);
-  auto blockSpace = space.named_set_from_params_id(id, block.view.size());
-  auto warpSpace = space.named_set_from_params_id(isl::id(ctx, kWarp), 1);
+  auto blockSpace = space.add_named_tuple_id_ui(id, block.view.size());
+  auto warpSpace = space.add_named_tuple_id_ui(isl::id(ctx, kWarp), 1);
   auto aff = isl::aff::zero_on_domain(blockSpace);
 
   auto nThread = block.view.size();
@@ -1049,8 +1049,9 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "After mapping to blocks:" << std::endl
                                       << *mappedScop->schedule();
 
-  // 8. Promote to shared memory below the loops mapped to blocks.
-  // This may split the outer band, so find the new outer band after promotion.
+  // 8. Promote to shared memory.
+  // If shared promotion depth is specified in the mapping options, use the
+  // specified value.  Otherwise, promote below the loops mapped to blocks.
   if (cudaOptions.proto().use_shared_memory()) {
     size_t sharedMemorySize = cudaOptions.proto().has_max_shared_memory()
         ? cudaOptions.proto().max_shared_memory()
@@ -1069,29 +1070,24 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
       sharedMemorySize -= reductionMemoryRequirement;
     }
 
-    auto band = outerBand->as<ScheduleTreeBand>();
-    LOG_IF(WARNING, FLAGS_debug_tc_mapper && band->nMember() == 0)
-        << "Aborting memory promotion because outer band has 0 members (NYI)";
-    if (band->nMember() > 0 && sharedMemorySize > 0) {
+    if (sharedMemorySize > 0) {
       LOG_IF(
           WARNING,
           cudaOptions.proto().unroll_copy_shared() &&
               !generic.proto.has_unroll())
           << "requested to unroll copies to shared memory without providing the unroll size";
 
-      promoteGreedilyAtDepth(
+      auto depth = cudaOptions.proto().has_shared_depth()
+          ? cudaOptions.proto().shared_depth()
+          : std::min(
+                outerBand->as<ScheduleTreeBand>()->nOuterCoincident(),
+                mappedScop->numBlocks.view.size());
+      promoteToSharedAtDepth(
           *mappedScop,
-          std::min(band->nOuterCoincident(), mappedScop->numBlocks.view.size()),
+          depth,
           sharedMemorySize,
           cudaOptions.proto().unroll_copy_shared() &&
               generic.proto.has_unroll());
-
-      auto bands = ScheduleTree::collectDFSPreorder(
-          scop->scheduleRoot(), ScheduleTreeType::Band);
-      if (bands.size() == 0) { // Sanity check.
-        throw NoBandsException("no bands after promotion");
-      }
-      outerBand = bands[0];
     }
   }
 

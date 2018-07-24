@@ -8,10 +8,10 @@ source:
 
 requirements:
   build:
-    - llvm-tapir50==1.0.0
+    - llvm-trunk==1.0.0
     - cmake
   run:
-    - llvm-tapir50==1.0.0
+    - llvm-trunk==1.0.0
     - cmake
 
 build:

@@ -102,7 +102,7 @@ add_custom_command(
   COMMAND cat ${ISL_DIR}/cpp/cpp.h.pre >> ${ISL_CPP_H} || exit 1
   COMMAND extract_isl_interface --language=cpp
     -I${ISL_DIR}/include ${ISL_DIR}/all.h
-    -I${CMAKE_CURRENT_LIST_DIR} >> ${ISL_CPP_H} || exit 1
+    -I${CMAKE_CURRENT_LIST_DIR}/include >> ${ISL_CPP_H} || exit 1
   COMMAND cat ${ISL_DIR}/cpp/cpp.h.bot >> ${ISL_CPP_H} || exit 1
   DEPENDS extract_isl_interface
 )

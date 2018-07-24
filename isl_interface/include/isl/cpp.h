@@ -21,7 +21,6 @@
 #include <isl/schedule.h>
 #include <isl/schedule_node.h>
 #include <isl/ast_build.h>
-#include <isl/constraint.h>
 #include <isl/id.h>
 #include <isl/fixed_box.h>
 
@@ -195,24 +194,6 @@ public:
 	}
 };
 
-enum class dim_type {
-  cst = isl_dim_cst,
-  param = isl_dim_param,
-  in = isl_dim_in,
-  out = isl_dim_out,
-  set = isl_dim_set,
-  div = isl_dim_div,
-  all = isl_dim_all
-};
-
-enum class ast_loop_type {
-	error = isl_ast_loop_error,
-	_default = isl_ast_loop_default,
-	atomic = isl_ast_loop_atomic,
-	unroll = isl_ast_loop_unroll,
-	separate = isl_ast_loop_separate
-};
-
 } // namespace isl
 
 namespace isl {
@@ -262,8 +243,6 @@ class basic_map;
 class basic_map_list;
 class basic_set;
 class basic_set_list;
-class constraint;
-class constraint_list;
 class fixed_box;
 class id;
 class id_list;
@@ -1305,7 +1284,6 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
-  inline isl::basic_map add_constraint(isl::constraint constraint) const;
   inline isl::basic_map affine_hull() const;
   inline isl::basic_map apply_domain(isl::basic_map bmap2) const;
   inline isl::basic_map apply_range(isl::basic_map bmap2) const;
@@ -1319,10 +1297,8 @@ public:
   inline isl::basic_map flatten() const;
   inline isl::basic_map flatten_domain() const;
   inline isl::basic_map flatten_range() const;
-  inline void foreach_constraint(const std::function<void(isl::constraint)> &fn) const;
   static inline isl::basic_map from_domain(isl::basic_set bset);
   static inline isl::basic_map from_range(isl::basic_set bset);
-  inline isl::constraint_list get_constraint_list() const;
   inline isl::space get_space() const;
   inline isl::basic_map gist(isl::basic_map context) const;
   inline isl::basic_map intersect(isl::basic_map bmap2) const;
@@ -1333,7 +1309,6 @@ public:
   inline bool is_subset(const isl::basic_map &bmap2) const;
   inline isl::map lexmax() const;
   inline isl::map lexmin() const;
-  inline int n_constraint() const;
   inline isl::basic_map reverse() const;
   inline isl::basic_map sample() const;
   inline isl::basic_map uncurry() const;
@@ -1410,17 +1385,13 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
-  inline isl::basic_set add_constraint(isl::constraint constraint) const;
   inline isl::basic_set affine_hull() const;
   inline isl::basic_set apply(isl::basic_map bmap) const;
   inline isl::set compute_divs() const;
   inline isl::basic_set detect_equalities() const;
   inline isl::val dim_max_val(int pos) const;
   inline isl::basic_set flatten() const;
-  inline void foreach_constraint(const std::function<void(isl::constraint)> &fn) const;
   inline isl::basic_set from_params() const;
-  inline isl::constraint_list get_constraint_list() const;
-  inline isl::local_space get_local_space() const;
   inline isl::space get_space() const;
   inline isl::basic_set gist(isl::basic_set context) const;
   inline isl::basic_set intersect(isl::basic_set bset2) const;
@@ -1433,7 +1404,6 @@ public:
   inline isl::set lexmax() const;
   inline isl::set lexmin() const;
   inline isl::val max_val(const isl::aff &obj) const;
-  inline int n_constraint() const;
   inline unsigned int n_dim() const;
   inline unsigned int n_param() const;
   static inline isl::basic_set nat_universe(isl::space dim);
@@ -1484,88 +1454,6 @@ public:
   inline isl::basic_set_list reverse() const;
   inline int size() const;
   typedef isl_basic_set_list* isl_ptr_t;
-};
-
-// declarations for isl::constraint
-inline isl::constraint manage(__isl_take isl_constraint *ptr);
-inline isl::constraint manage_copy(__isl_keep isl_constraint *ptr);
-
-class constraint {
-  friend inline isl::constraint manage(__isl_take isl_constraint *ptr);
-  friend inline isl::constraint manage_copy(__isl_keep isl_constraint *ptr);
-
-protected:
-  isl_constraint *ptr = nullptr;
-
-  inline explicit constraint(__isl_take isl_constraint *ptr);
-
-public:
-  inline /* implicit */ constraint();
-  inline /* implicit */ constraint(const isl::constraint &obj);
-  inline isl::constraint &operator=(isl::constraint obj);
-  inline ~constraint();
-  inline __isl_give isl_constraint *copy() const &;
-  inline __isl_give isl_constraint *copy() && = delete;
-  inline __isl_keep isl_constraint *get() const;
-  inline __isl_give isl_constraint *release();
-  inline bool is_null() const;
-  inline explicit operator bool() const;
-  inline isl::ctx get_ctx() const;
-
-  static inline isl::constraint alloc_equality(isl::local_space ls);
-  static inline isl::constraint alloc_inequality(isl::local_space ls);
-  inline int cmp_last_non_zero(const isl::constraint &c2) const;
-  inline isl::aff get_aff() const;
-  inline isl::val get_constant_val() const;
-  inline isl::aff get_div(int pos) const;
-  inline isl::local_space get_local_space() const;
-  inline isl::space get_space() const;
-  inline int is_div_constraint() const;
-  inline bool is_equal(const isl::constraint &constraint2) const;
-  inline bool is_equality() const;
-  inline int plain_cmp(const isl::constraint &c2) const;
-  inline isl::constraint set_coefficient_si(enum isl::dim_type type, int pos, int v) const;
-  inline isl::constraint set_constant_si(int v) const;
-  inline isl::constraint set_constant_val(isl::val v) const;
-  typedef isl_constraint* isl_ptr_t;
-};
-
-// declarations for isl::constraint_list
-inline isl::constraint_list manage(__isl_take isl_constraint_list *ptr);
-inline isl::constraint_list manage_copy(__isl_keep isl_constraint_list *ptr);
-
-class constraint_list {
-  friend inline isl::constraint_list manage(__isl_take isl_constraint_list *ptr);
-  friend inline isl::constraint_list manage_copy(__isl_keep isl_constraint_list *ptr);
-
-protected:
-  isl_constraint_list *ptr = nullptr;
-
-  inline explicit constraint_list(__isl_take isl_constraint_list *ptr);
-
-public:
-  inline /* implicit */ constraint_list();
-  inline /* implicit */ constraint_list(const isl::constraint_list &obj);
-  inline explicit constraint_list(isl::constraint el);
-  inline explicit constraint_list(isl::ctx ctx, int n);
-  inline isl::constraint_list &operator=(isl::constraint_list obj);
-  inline ~constraint_list();
-  inline __isl_give isl_constraint_list *copy() const &;
-  inline __isl_give isl_constraint_list *copy() && = delete;
-  inline __isl_keep isl_constraint_list *get() const;
-  inline __isl_give isl_constraint_list *release();
-  inline bool is_null() const;
-  inline explicit operator bool() const;
-  inline isl::ctx get_ctx() const;
-
-  inline isl::constraint_list add(isl::constraint el) const;
-  inline isl::constraint_list concat(isl::constraint_list list2) const;
-  inline isl::constraint_list drop(unsigned int first, unsigned int n) const;
-  inline void foreach(const std::function<void(isl::constraint)> &fn) const;
-  inline isl::constraint get_at(int index) const;
-  inline isl::constraint_list reverse() const;
-  inline int size() const;
-  typedef isl_constraint_list* isl_ptr_t;
 };
 
 // declarations for isl::fixed_box
@@ -1746,7 +1634,6 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
-  inline isl::map add_constraint(isl::constraint constraint) const;
   inline isl::basic_map affine_hull() const;
   inline isl::map apply_domain(isl::map map2) const;
   inline isl::map apply_range(isl::map map2) const;
@@ -1776,8 +1663,8 @@ public:
   inline isl::basic_map_list get_basic_map_list() const;
   inline isl::fixed_box get_range_simple_fixed_box_hull() const;
   inline isl::stride_info get_range_stride_info(int pos) const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::map gist(isl::map context) const;
   inline isl::map gist_domain(isl::set context) const;
   static inline isl::map identity(isl::space dim);
@@ -1808,7 +1695,7 @@ public:
   inline isl::map range_product(isl::map map2) const;
   inline isl::map reverse() const;
   inline isl::basic_map sample() const;
-  inline isl::map set_tuple_id(enum isl::dim_type type, isl::id id) const;
+  inline isl::map set_range_tuple_id(isl::id id) const;
   inline isl::basic_map simple_hull() const;
   inline isl::map subtract(isl::map map2) const;
   inline isl::map sum(isl::map map2) const;
@@ -1874,9 +1761,9 @@ protected:
 public:
   inline /* implicit */ multi_aff();
   inline /* implicit */ multi_aff(const isl::multi_aff &obj);
-  inline explicit multi_aff(isl::space space, isl::aff_list list);
   inline /* implicit */ multi_aff(isl::aff aff);
   inline explicit multi_aff(isl::ctx ctx, const std::string &str);
+  inline explicit multi_aff(isl::space space, isl::aff_list list);
   inline isl::multi_aff &operator=(isl::multi_aff obj);
   inline ~multi_aff();
   inline __isl_give isl_multi_aff *copy() const &;
@@ -1900,8 +1787,8 @@ public:
   inline isl::aff get_aff(int pos) const;
   inline isl::aff_list get_aff_list() const;
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::multi_aff identity(isl::space space);
   inline isl::multi_aff mod(isl::multi_val mv) const;
   inline isl::multi_aff neg() const;
@@ -1913,15 +1800,16 @@ public:
   inline isl::multi_aff range_product(isl::multi_aff multi2) const;
   inline isl::multi_aff range_splice(unsigned int pos, isl::multi_aff multi2) const;
   inline isl::multi_aff reset_user() const;
-  inline isl::multi_aff scale(isl::multi_val mv) const;
   inline isl::multi_aff scale(isl::val v) const;
+  inline isl::multi_aff scale(isl::multi_val mv) const;
   inline isl::multi_aff scale_down(isl::val v) const;
   inline isl::multi_aff scale_down(isl::multi_val mv) const;
   inline isl::multi_aff set_aff(int pos, isl::aff el) const;
-  inline isl::multi_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
+  inline isl::multi_aff set_range_tuple_id(isl::id id) const;
   inline int size() const;
   inline isl::multi_aff splice(unsigned int in_pos, unsigned int out_pos, isl::multi_aff multi2) const;
   inline isl::multi_aff sub(isl::multi_aff multi2) const;
+  static inline isl::multi_aff wrapped_range_map(isl::space space);
   static inline isl::multi_aff zero(isl::space space);
   typedef isl_multi_aff* isl_ptr_t;
 };
@@ -2016,8 +1904,8 @@ public:
   inline isl::space get_domain_space() const;
   inline isl::pw_aff get_pw_aff(int pos) const;
   inline isl::pw_aff_list get_pw_aff_list() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::multi_pw_aff identity(isl::space space);
   inline bool is_equal(const isl::multi_pw_aff &mpa2) const;
   inline isl::multi_pw_aff mod(isl::multi_val mv) const;
@@ -2036,7 +1924,7 @@ public:
   inline isl::multi_pw_aff scale_down(isl::val v) const;
   inline isl::multi_pw_aff scale_down(isl::multi_val mv) const;
   inline isl::multi_pw_aff set_pw_aff(int pos, isl::pw_aff el) const;
-  inline isl::multi_pw_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
+  inline isl::multi_pw_aff set_range_tuple_id(isl::id id) const;
   inline int size() const;
   inline isl::multi_pw_aff splice(unsigned int in_pos, unsigned int out_pos, isl::multi_pw_aff multi2) const;
   inline isl::multi_pw_aff sub(isl::multi_pw_aff multi2) const;
@@ -2060,11 +1948,11 @@ protected:
 public:
   inline /* implicit */ multi_union_pw_aff();
   inline /* implicit */ multi_union_pw_aff(const isl::multi_union_pw_aff &obj);
+  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list);
   inline /* implicit */ multi_union_pw_aff(isl::union_pw_aff upa);
   inline /* implicit */ multi_union_pw_aff(isl::multi_pw_aff mpa);
   inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_val mv);
-  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::ctx ctx, const std::string &str);
   inline isl::multi_union_pw_aff &operator=(isl::multi_union_pw_aff obj);
   inline ~multi_union_pw_aff();
@@ -2091,8 +1979,8 @@ public:
   inline isl::multi_union_pw_aff from_range() const;
   static inline isl::multi_union_pw_aff from_union_map(isl::union_map umap);
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::union_pw_aff get_union_pw_aff(int pos) const;
   inline isl::union_pw_aff_list get_union_pw_aff_list() const;
   inline isl::multi_union_pw_aff gist(isl::union_set context) const;
@@ -2113,7 +2001,7 @@ public:
   inline isl::multi_union_pw_aff scale(isl::multi_val mv) const;
   inline isl::multi_union_pw_aff scale_down(isl::val v) const;
   inline isl::multi_union_pw_aff scale_down(isl::multi_val mv) const;
-  inline isl::multi_union_pw_aff set_tuple_id(enum isl::dim_type type, isl::id id) const;
+  inline isl::multi_union_pw_aff set_range_tuple_id(isl::id id) const;
   inline isl::multi_union_pw_aff set_union_pw_aff(int pos, isl::union_pw_aff el) const;
   inline int size() const;
   inline isl::multi_union_pw_aff sub(isl::multi_union_pw_aff multi2) const;
@@ -2159,8 +2047,8 @@ public:
   inline isl::multi_val flatten_range() const;
   inline isl::multi_val from_range() const;
   inline isl::space get_domain_space() const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   inline isl::val get_val(int pos) const;
   inline isl::val_list get_val_list() const;
   inline isl::multi_val mod(isl::multi_val mv) const;
@@ -2175,7 +2063,7 @@ public:
   inline isl::multi_val scale(isl::multi_val mv) const;
   inline isl::multi_val scale_down(isl::val v) const;
   inline isl::multi_val scale_down(isl::multi_val mv) const;
-  inline isl::multi_val set_tuple_id(enum isl::dim_type type, isl::id id) const;
+  inline isl::multi_val set_range_tuple_id(isl::id id) const;
   inline isl::multi_val set_val(int pos, isl::val el) const;
   inline int size() const;
   inline isl::multi_val splice(unsigned int in_pos, unsigned int out_pos, isl::multi_val multi2) const;
@@ -2366,8 +2254,8 @@ public:
   inline void foreach_piece(const std::function<void(isl::set, isl::multi_aff)> &fn) const;
   static inline isl::pw_multi_aff from(isl::multi_pw_aff mpa);
   inline isl::pw_aff get_pw_aff(int pos) const;
+  inline isl::id get_range_tuple_id() const;
   inline isl::space get_space() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
   static inline isl::pw_multi_aff identity(isl::space space);
   inline bool is_equal(const isl::pw_multi_aff &pma2) const;
   inline int n_piece() const;
@@ -2575,9 +2463,7 @@ public:
   inline bool get_permutable() const;
   inline isl::space get_space() const;
   inline bool member_get_coincident(int pos) const;
-  inline isl::schedule_node_band member_set_ast_loop_type(int pos, enum isl::ast_loop_type type) const;
   inline isl::schedule_node_band member_set_coincident(int pos, int coincident) const;
-  inline isl::schedule_node_band member_set_isolate_ast_loop_type(int pos, enum isl::ast_loop_type type) const;
   inline isl::schedule_node_band mod(isl::multi_val mv) const;
   inline unsigned int n_member() const;
   inline isl::schedule_node_band scale(isl::multi_val mv) const;
@@ -2587,6 +2473,14 @@ public:
   inline isl::schedule_node_band shift(isl::multi_union_pw_aff shift) const;
   inline isl::schedule_node_band split(int pos) const;
   inline isl::schedule_node_band tile(isl::multi_val sizes) const;
+  inline isl::schedule_node_band member_set_ast_loop_default(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_atomic(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_unroll(int pos) const;
+  inline isl::schedule_node_band member_set_ast_loop_separate(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_default(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_atomic(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_unroll(int pos) const;
+  inline isl::schedule_node_band member_set_isolate_ast_loop_separate(int pos) const;
   typedef isl_schedule_node* isl_ptr_t;
 };
 
@@ -2828,7 +2722,6 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
-  inline isl::set add_constraint(isl::constraint constraint) const;
   inline isl::basic_set affine_hull() const;
   inline isl::set align_params(isl::space model) const;
   inline isl::set apply(isl::map map) const;
@@ -2880,7 +2773,6 @@ public:
   inline isl::set reset_tuple_id() const;
   inline isl::basic_set sample() const;
   inline isl::point sample_point() const;
-  inline isl::set set_dim_id(enum isl::dim_type type, unsigned int pos, isl::id id) const;
   inline isl::set set_tuple_id(isl::id id) const;
   inline isl::set set_tuple_name(const std::string &s) const;
   inline isl::basic_set simple_hull() const;
@@ -2963,7 +2855,9 @@ public:
   inline isl::ctx get_ctx() const;
   inline std::string to_str() const;
 
+  inline isl::space add_named_tuple_id_ui(isl::id tuple_id, unsigned int dim) const;
   inline isl::space add_param(isl::id id) const;
+  inline isl::space add_unnamed_tuple_ui(unsigned int dim) const;
   inline isl::space align_params(isl::space dim2) const;
   inline bool can_curry() const;
   inline bool can_uncurry() const;
@@ -2973,7 +2867,7 @@ public:
   inline isl::space domain_product(isl::space right) const;
   inline isl::space from_domain() const;
   inline isl::space from_range() const;
-  inline isl::id get_tuple_id(enum isl::dim_type type) const;
+  inline isl::id get_map_range_tuple_id() const;
   inline bool has_equal_params(const isl::space &space2) const;
   inline bool has_equal_tuples(const isl::space &space2) const;
   inline bool has_param(const isl::id &id) const;
@@ -2983,15 +2877,14 @@ public:
   inline bool is_wrapping() const;
   inline isl::space map_from_domain_and_range(isl::space range) const;
   inline isl::space map_from_set() const;
-  inline isl::space named_set_from_params_id(isl::id tuple_id, unsigned int dim) const;
   inline isl::space params() const;
   inline isl::space product(isl::space right) const;
   inline isl::space range() const;
   inline isl::space range_map() const;
   inline isl::space range_product(isl::space right) const;
   inline isl::space set_from_params() const;
+  inline isl::space set_set_tuple_id(isl::id id) const;
   inline isl::space uncurry() const;
-  inline isl::space unnamed_set_from_params(unsigned int dim) const;
   inline isl::space unwrap() const;
   inline isl::space wrap() const;
   typedef isl_space* isl_ptr_t;
@@ -3472,8 +3365,8 @@ protected:
 public:
   inline /* implicit */ val();
   inline /* implicit */ val(const isl::val &obj);
-  inline explicit val(isl::ctx ctx, long i);
   inline explicit val(isl::ctx ctx, const std::string &str);
+  inline explicit val(isl::ctx ctx, long i);
   inline isl::val &operator=(isl::val obj);
   inline ~val();
   inline __isl_give isl_val *copy() const &;
@@ -3948,7 +3841,7 @@ bool aff::plain_is_equal(const isl::aff &aff2) const
   auto res = isl_aff_plain_is_equal(get(), aff2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::aff aff::project_domain_on_params() const
@@ -4709,7 +4602,7 @@ bool ast_expr::is_equal(const isl::ast_expr &expr2) const
   auto res = isl_ast_expr_is_equal(get(), expr2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::ast_expr ast_expr::set_op_arg(int pos, isl::ast_expr arg) const
@@ -5228,7 +5121,7 @@ bool ast_node_for::is_coincident() const
   auto res = isl_ast_node_for_is_coincident(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool ast_node_for::is_degenerate() const
@@ -5240,7 +5133,7 @@ bool ast_node_for::is_degenerate() const
   auto res = isl_ast_node_for_is_degenerate(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::ast_node_if
@@ -5329,7 +5222,7 @@ bool ast_node_if::has_else() const
   auto res = isl_ast_node_if_has_else(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::ast_node_list
@@ -6966,18 +6859,6 @@ isl::ctx basic_map::get_ctx() const {
   return isl::ctx(isl_basic_map_get_ctx(ptr));
 }
 
-isl::basic_map basic_map::add_constraint(isl::constraint constraint) const
-{
-  if (!ptr || constraint.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_map_add_constraint(copy(), constraint.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::basic_map basic_map::affine_hull() const
 {
   if (!ptr)
@@ -7023,7 +6904,7 @@ bool basic_map::can_curry() const
   auto res = isl_basic_map_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::can_uncurry() const
@@ -7035,7 +6916,7 @@ bool basic_map::can_uncurry() const
   auto res = isl_basic_map_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_map basic_map::curry() const
@@ -7135,34 +7016,6 @@ isl::basic_map basic_map::flatten_range() const
   return manage(res);
 }
 
-void basic_map::foreach_constraint(const std::function<void(isl::constraint)> &fn) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  struct fn_data {
-    std::function<void(isl::constraint)> func;
-    std::exception_ptr eptr;
-  } fn_data = { fn };
-  auto fn_lambda = [](isl_constraint *arg_0, void *arg_1) -> isl_stat {
-    auto *data = static_cast<struct fn_data *>(arg_1);
-    try {
-      (data->func)(isl::manage(arg_0));
-      return isl_stat_ok;
-    } catch (...) {
-      data->eptr = std::current_exception();
-      return isl_stat_error;
-    }
-  };
-  auto res = isl_basic_map_foreach_constraint(get(), fn_lambda, &fn_data);
-  if (fn_data.eptr)
-    std::rethrow_exception(fn_data.eptr);
-  if (res < 0)
-    throw exception::create_from_last_error(get_ctx());
-  return void(res);
-}
-
 isl::basic_map basic_map::from_domain(isl::basic_set bset)
 {
   if (bset.is_null())
@@ -7186,18 +7039,6 @@ isl::basic_map basic_map::from_range(isl::basic_set bset)
   auto res = isl_basic_map_from_range(bset.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
-  return manage(res);
-}
-
-isl::constraint_list basic_map::get_constraint_list() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_map_get_constraint_list(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
   return manage(res);
 }
 
@@ -7270,7 +7111,7 @@ bool basic_map::is_empty() const
   auto res = isl_basic_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::is_equal(const isl::basic_map &bmap2) const
@@ -7282,7 +7123,7 @@ bool basic_map::is_equal(const isl::basic_map &bmap2) const
   auto res = isl_basic_map_is_equal(get(), bmap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_map::is_subset(const isl::basic_map &bmap2) const
@@ -7294,7 +7135,7 @@ bool basic_map::is_subset(const isl::basic_map &bmap2) const
   auto res = isl_basic_map_is_subset(get(), bmap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map basic_map::lexmax() const
@@ -7319,16 +7160,6 @@ isl::map basic_map::lexmin() const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int basic_map::n_constraint() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_map_n_constraint(get());
-  return res;
 }
 
 isl::basic_map basic_map::reverse() const
@@ -7699,18 +7530,6 @@ isl::ctx basic_set::get_ctx() const {
   return isl::ctx(isl_basic_set_get_ctx(ptr));
 }
 
-isl::basic_set basic_set::add_constraint(isl::constraint constraint) const
-{
-  if (!ptr || constraint.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_add_constraint(copy(), constraint.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::basic_set basic_set::affine_hull() const
 {
   if (!ptr)
@@ -7783,34 +7602,6 @@ isl::basic_set basic_set::flatten() const
   return manage(res);
 }
 
-void basic_set::foreach_constraint(const std::function<void(isl::constraint)> &fn) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  struct fn_data {
-    std::function<void(isl::constraint)> func;
-    std::exception_ptr eptr;
-  } fn_data = { fn };
-  auto fn_lambda = [](isl_constraint *arg_0, void *arg_1) -> isl_stat {
-    auto *data = static_cast<struct fn_data *>(arg_1);
-    try {
-      (data->func)(isl::manage(arg_0));
-      return isl_stat_ok;
-    } catch (...) {
-      data->eptr = std::current_exception();
-      return isl_stat_error;
-    }
-  };
-  auto res = isl_basic_set_foreach_constraint(get(), fn_lambda, &fn_data);
-  if (fn_data.eptr)
-    std::rethrow_exception(fn_data.eptr);
-  if (res < 0)
-    throw exception::create_from_last_error(get_ctx());
-  return void(res);
-}
-
 isl::basic_set basic_set::from_params() const
 {
   if (!ptr)
@@ -7818,30 +7609,6 @@ isl::basic_set basic_set::from_params() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_basic_set_from_params(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint_list basic_set::get_constraint_list() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_get_constraint_list(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::local_space basic_set::get_local_space() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_get_local_space(get());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -7904,7 +7671,7 @@ bool basic_set::is_empty() const
   auto res = isl_basic_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_equal(const isl::basic_set &bset2) const
@@ -7916,7 +7683,7 @@ bool basic_set::is_equal(const isl::basic_set &bset2) const
   auto res = isl_basic_set_is_equal(get(), bset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_subset(const isl::basic_set &bset2) const
@@ -7928,7 +7695,7 @@ bool basic_set::is_subset(const isl::basic_set &bset2) const
   auto res = isl_basic_set_is_subset(get(), bset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_universe() const
@@ -7940,7 +7707,7 @@ bool basic_set::is_universe() const
   auto res = isl_basic_set_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool basic_set::is_wrapping() const
@@ -7952,7 +7719,7 @@ bool basic_set::is_wrapping() const
   auto res = isl_basic_set_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set basic_set::lexmax() const
@@ -7989,16 +7756,6 @@ isl::val basic_set::max_val(const isl::aff &obj) const
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
-}
-
-int basic_set::n_constraint() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_basic_set_n_constraint(get());
-  return res;
 }
 
 unsigned int basic_set::n_dim() const
@@ -8055,7 +7812,7 @@ bool basic_set::plain_is_universe() const
   auto res = isl_basic_set_plain_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_set basic_set::sample() const
@@ -8319,444 +8076,6 @@ int basic_set_list::size() const
   return res;
 }
 
-// implementations for isl::constraint
-isl::constraint manage(__isl_take isl_constraint *ptr) {
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  return constraint(ptr);
-}
-isl::constraint manage_copy(__isl_keep isl_constraint *ptr) {
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = isl_constraint_get_ctx(ptr);
-  ptr = isl_constraint_copy(ptr);
-  if (!ptr)
-    throw exception::create_from_last_error(ctx);
-  return constraint(ptr);
-}
-
-constraint::constraint()
-    : ptr(nullptr) {}
-
-constraint::constraint(const isl::constraint &obj)
-    : ptr(obj.copy())
-{
-  if (obj.ptr && !ptr)
-    throw exception::create_from_last_error(isl_constraint_get_ctx(obj.ptr));
-}
-
-constraint::constraint(__isl_take isl_constraint *ptr)
-    : ptr(ptr) {}
-
-
-constraint &constraint::operator=(isl::constraint obj) {
-  std::swap(this->ptr, obj.ptr);
-  return *this;
-}
-
-constraint::~constraint() {
-  if (ptr)
-    isl_constraint_free(ptr);
-}
-
-__isl_give isl_constraint *constraint::copy() const & {
-  return isl_constraint_copy(ptr);
-}
-
-__isl_keep isl_constraint *constraint::get() const {
-  return ptr;
-}
-
-__isl_give isl_constraint *constraint::release() {
-  isl_constraint *tmp = ptr;
-  ptr = nullptr;
-  return tmp;
-}
-
-bool constraint::is_null() const {
-  return ptr == nullptr;
-}
-constraint::operator bool() const
-{
-  return !is_null();
-}
-
-inline bool operator==(const constraint& C1, const constraint& C2) {
-  return C1.is_equal(C2);
-}
-
-
-
-isl::ctx constraint::get_ctx() const {
-  return isl::ctx(isl_constraint_get_ctx(ptr));
-}
-
-isl::constraint constraint::alloc_equality(isl::local_space ls)
-{
-  if (ls.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = ls.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_alloc_equality(ls.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  return manage(res);
-}
-
-isl::constraint constraint::alloc_inequality(isl::local_space ls)
-{
-  if (ls.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = ls.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_alloc_inequality(ls.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  return manage(res);
-}
-
-int constraint::cmp_last_non_zero(const isl::constraint &c2) const
-{
-  if (!ptr || c2.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_cmp_last_non_zero(get(), c2.get());
-  return res;
-}
-
-isl::aff constraint::get_aff() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_get_aff(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::val constraint::get_constant_val() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_get_constant_val(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::aff constraint::get_div(int pos) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_get_div(get(), pos);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::local_space constraint::get_local_space() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_get_local_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::space constraint::get_space() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-int constraint::is_div_constraint() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_is_div_constraint(get());
-  return res;
-}
-
-bool constraint::is_equal(const isl::constraint &constraint2) const
-{
-  if (!ptr || constraint2.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_is_equal(get(), constraint2.get());
-  if (res < 0)
-    throw exception::create_from_last_error(get_ctx());
-  return res;
-}
-
-bool constraint::is_equality() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_is_equality(get());
-  if (res < 0)
-    throw exception::create_from_last_error(get_ctx());
-  return res;
-}
-
-int constraint::plain_cmp(const isl::constraint &c2) const
-{
-  if (!ptr || c2.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_plain_cmp(get(), c2.get());
-  return res;
-}
-
-isl::constraint constraint::set_coefficient_si(enum isl::dim_type type, int pos, int v) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_set_coefficient_si(copy(), static_cast<enum isl_dim_type>(type), pos, v);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint constraint::set_constant_si(int v) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_set_constant_si(copy(), v);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint constraint::set_constant_val(isl::val v) const
-{
-  if (!ptr || v.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_set_constant_val(copy(), v.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-// implementations for isl::constraint_list
-isl::constraint_list manage(__isl_take isl_constraint_list *ptr) {
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  return constraint_list(ptr);
-}
-isl::constraint_list manage_copy(__isl_keep isl_constraint_list *ptr) {
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = isl_constraint_list_get_ctx(ptr);
-  ptr = isl_constraint_list_copy(ptr);
-  if (!ptr)
-    throw exception::create_from_last_error(ctx);
-  return constraint_list(ptr);
-}
-
-constraint_list::constraint_list()
-    : ptr(nullptr) {}
-
-constraint_list::constraint_list(const isl::constraint_list &obj)
-    : ptr(obj.copy())
-{
-  if (obj.ptr && !ptr)
-    throw exception::create_from_last_error(isl_constraint_list_get_ctx(obj.ptr));
-}
-
-constraint_list::constraint_list(__isl_take isl_constraint_list *ptr)
-    : ptr(ptr) {}
-
-constraint_list::constraint_list(isl::constraint el)
-{
-  if (el.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = el.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_from_constraint(el.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
-constraint_list::constraint_list(isl::ctx ctx, int n)
-{
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_alloc(ctx.release(), n);
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
-
-constraint_list &constraint_list::operator=(isl::constraint_list obj) {
-  std::swap(this->ptr, obj.ptr);
-  return *this;
-}
-
-constraint_list::~constraint_list() {
-  if (ptr)
-    isl_constraint_list_free(ptr);
-}
-
-__isl_give isl_constraint_list *constraint_list::copy() const & {
-  return isl_constraint_list_copy(ptr);
-}
-
-__isl_keep isl_constraint_list *constraint_list::get() const {
-  return ptr;
-}
-
-__isl_give isl_constraint_list *constraint_list::release() {
-  isl_constraint_list *tmp = ptr;
-  ptr = nullptr;
-  return tmp;
-}
-
-bool constraint_list::is_null() const {
-  return ptr == nullptr;
-}
-constraint_list::operator bool() const
-{
-  return !is_null();
-}
-
-
-
-isl::ctx constraint_list::get_ctx() const {
-  return isl::ctx(isl_constraint_list_get_ctx(ptr));
-}
-
-isl::constraint_list constraint_list::add(isl::constraint el) const
-{
-  if (!ptr || el.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_add(copy(), el.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint_list constraint_list::concat(isl::constraint_list list2) const
-{
-  if (!ptr || list2.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_concat(copy(), list2.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint_list constraint_list::drop(unsigned int first, unsigned int n) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_drop(copy(), first, n);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-void constraint_list::foreach(const std::function<void(isl::constraint)> &fn) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  struct fn_data {
-    std::function<void(isl::constraint)> func;
-    std::exception_ptr eptr;
-  } fn_data = { fn };
-  auto fn_lambda = [](isl_constraint *arg_0, void *arg_1) -> isl_stat {
-    auto *data = static_cast<struct fn_data *>(arg_1);
-    try {
-      (data->func)(isl::manage(arg_0));
-      return isl_stat_ok;
-    } catch (...) {
-      data->eptr = std::current_exception();
-      return isl_stat_error;
-    }
-  };
-  auto res = isl_constraint_list_foreach(get(), fn_lambda, &fn_data);
-  if (fn_data.eptr)
-    std::rethrow_exception(fn_data.eptr);
-  if (res < 0)
-    throw exception::create_from_last_error(get_ctx());
-  return void(res);
-}
-
-isl::constraint constraint_list::get_at(int index) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_get_at(get(), index);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::constraint_list constraint_list::reverse() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_reverse(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-int constraint_list::size() const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_constraint_list_size(get());
-  return res;
-}
-
 // implementations for isl::fixed_box
 isl::fixed_box manage(__isl_take isl_fixed_box *ptr) {
   if (!ptr)
@@ -8872,7 +8191,7 @@ bool fixed_box::is_valid() const
   auto res = isl_fixed_box_is_valid(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::id
@@ -9345,7 +8664,7 @@ bool local_space::is_equal(const isl::local_space &ls2) const
   auto res = isl_local_space_is_equal(get(), ls2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool local_space::is_params() const
@@ -9357,7 +8676,7 @@ bool local_space::is_params() const
   auto res = isl_local_space_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool local_space::is_set() const
@@ -9369,7 +8688,7 @@ bool local_space::is_set() const
   auto res = isl_local_space_is_set(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_map local_space::lifting() const
@@ -9552,18 +8871,6 @@ isl::ctx map::get_ctx() const {
   return isl::ctx(isl_map_get_ctx(ptr));
 }
 
-isl::map map::add_constraint(isl::constraint constraint) const
-{
-  if (!ptr || constraint.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_add_constraint(copy(), constraint.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::basic_map map::affine_hull() const
 {
   if (!ptr)
@@ -9609,7 +8916,7 @@ bool map::can_curry() const
   auto res = isl_map_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::can_range_curry() const
@@ -9621,7 +8928,7 @@ bool map::can_range_curry() const
   auto res = isl_map_can_range_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::can_uncurry() const
@@ -9633,7 +8940,7 @@ bool map::can_uncurry() const
   auto res = isl_map_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map map::coalesce() const
@@ -9933,6 +9240,18 @@ isl::stride_info map::get_range_stride_info(int pos) const
   return manage(res);
 }
 
+isl::id map::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space map::get_space() const
 {
   if (!ptr)
@@ -9940,18 +9259,6 @@ isl::space map::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_map_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id map::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -10051,7 +9358,7 @@ bool map::is_bijective() const
   auto res = isl_map_is_bijective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_disjoint(const isl::map &map2) const
@@ -10063,7 +9370,7 @@ bool map::is_disjoint(const isl::map &map2) const
   auto res = isl_map_is_disjoint(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_empty() const
@@ -10075,7 +9382,7 @@ bool map::is_empty() const
   auto res = isl_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_equal(const isl::map &map2) const
@@ -10087,7 +9394,7 @@ bool map::is_equal(const isl::map &map2) const
   auto res = isl_map_is_equal(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_injective() const
@@ -10099,7 +9406,7 @@ bool map::is_injective() const
   auto res = isl_map_is_injective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_single_valued() const
@@ -10111,7 +9418,7 @@ bool map::is_single_valued() const
   auto res = isl_map_is_single_valued(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_strict_subset(const isl::map &map2) const
@@ -10123,7 +9430,7 @@ bool map::is_strict_subset(const isl::map &map2) const
   auto res = isl_map_is_strict_subset(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool map::is_subset(const isl::map &map2) const
@@ -10135,7 +9442,7 @@ bool map::is_subset(const isl::map &map2) const
   auto res = isl_map_is_subset(get(), map2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map map::lexmax() const
@@ -10316,13 +9623,13 @@ isl::basic_map map::sample() const
   return manage(res);
 }
 
-isl::map map::set_tuple_id(enum isl::dim_type type, isl::id id) const
+isl::map map::set_range_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.release());
+  auto res = isl_map_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -10644,18 +9951,6 @@ multi_aff::multi_aff(const isl::multi_aff &obj)
 multi_aff::multi_aff(__isl_take isl_multi_aff *ptr)
     : ptr(ptr) {}
 
-multi_aff::multi_aff(isl::space space, isl::aff_list list)
-{
-  if (space.is_null() || list.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = space.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_from_aff_list(space.release(), list.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
 multi_aff::multi_aff(isl::aff aff)
 {
   if (aff.is_null())
@@ -10672,6 +9967,18 @@ multi_aff::multi_aff(isl::ctx ctx, const std::string &str)
 {
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_read_from_str(ctx.release(), str.c_str());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+multi_aff::multi_aff(isl::space space, isl::aff_list list)
+{
+  if (space.is_null() || list.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = space.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_from_aff_list(space.release(), list.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -10874,6 +10181,18 @@ isl::space multi_aff::get_domain_space() const
   return manage(res);
 }
 
+isl::id multi_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_aff::get_space() const
 {
   if (!ptr)
@@ -10881,18 +10200,6 @@ isl::space multi_aff::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id multi_aff::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11032,18 +10339,6 @@ isl::multi_aff multi_aff::reset_user() const
   return manage(res);
 }
 
-isl::multi_aff multi_aff::scale(isl::multi_val mv) const
-{
-  if (!ptr || mv.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_scale_multi_val(copy(), mv.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::multi_aff multi_aff::scale(isl::val v) const
 {
   if (!ptr || v.is_null())
@@ -11051,6 +10346,18 @@ isl::multi_aff multi_aff::scale(isl::val v) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_aff_scale_val(copy(), v.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_aff multi_aff::scale(isl::multi_val mv) const
+{
+  if (!ptr || mv.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_scale_multi_val(copy(), mv.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11092,13 +10399,13 @@ isl::multi_aff multi_aff::set_aff(int pos, isl::aff el) const
   return manage(res);
 }
 
-isl::multi_aff multi_aff::set_tuple_id(enum isl::dim_type type, isl::id id) const
+isl::multi_aff multi_aff::set_range_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.release());
+  auto res = isl_multi_aff_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11135,6 +10442,19 @@ isl::multi_aff multi_aff::sub(isl::multi_aff multi2) const
   auto res = isl_multi_aff_sub(copy(), multi2.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::multi_aff multi_aff::wrapped_range_map(isl::space space)
+{
+  if (space.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = space.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_aff_wrapped_range_map(space.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
   return manage(res);
 }
 
@@ -11711,6 +11031,18 @@ isl::pw_aff_list multi_pw_aff::get_pw_aff_list() const
   return manage(res);
 }
 
+isl::id multi_pw_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_pw_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_pw_aff::get_space() const
 {
   if (!ptr)
@@ -11718,18 +11050,6 @@ isl::space multi_pw_aff::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_pw_aff_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id multi_pw_aff::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_pw_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -11757,7 +11077,7 @@ bool multi_pw_aff::is_equal(const isl::multi_pw_aff &mpa2) const
   auto res = isl_multi_pw_aff_is_equal(get(), mpa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::multi_pw_aff multi_pw_aff::mod(isl::multi_val mv) const
@@ -11952,13 +11272,13 @@ isl::multi_pw_aff multi_pw_aff::set_pw_aff(int pos, isl::pw_aff el) const
   return manage(res);
 }
 
-isl::multi_pw_aff multi_pw_aff::set_tuple_id(enum isl::dim_type type, isl::id id) const
+isl::multi_pw_aff multi_pw_aff::set_range_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_pw_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.release());
+  auto res = isl_multi_pw_aff_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -12042,6 +11362,18 @@ multi_union_pw_aff::multi_union_pw_aff(const isl::multi_union_pw_aff &obj)
 multi_union_pw_aff::multi_union_pw_aff(__isl_take isl_multi_union_pw_aff *ptr)
     : ptr(ptr) {}
 
+multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
+{
+  if (domain.is_null() || ma.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = domain.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
 multi_union_pw_aff::multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list)
 {
   if (space.is_null() || list.is_null())
@@ -12086,18 +11418,6 @@ multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_val mv)
   auto ctx = domain.get_ctx();
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_multi_val_on_domain(domain.release(), mv.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
-multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
-{
-  if (domain.is_null() || ma.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = domain.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -12332,6 +11652,18 @@ isl::space multi_union_pw_aff::get_domain_space() const
   return manage(res);
 }
 
+isl::id multi_union_pw_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_union_pw_aff::get_space() const
 {
   if (!ptr)
@@ -12339,18 +11671,6 @@ isl::space multi_union_pw_aff::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id multi_union_pw_aff::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -12425,7 +11745,7 @@ bool multi_union_pw_aff::involves_param(const isl::id &id) const
   auto res = isl_multi_union_pw_aff_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::multi_val multi_union_pw_aff::max_multi_val() const
@@ -12596,13 +11916,13 @@ isl::multi_union_pw_aff multi_union_pw_aff::scale_down(isl::multi_val mv) const
   return manage(res);
 }
 
-isl::multi_union_pw_aff multi_union_pw_aff::set_tuple_id(enum isl::dim_type type, isl::id id) const
+isl::multi_union_pw_aff multi_union_pw_aff::set_range_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.release());
+  auto res = isl_multi_union_pw_aff_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -12871,6 +12191,18 @@ isl::space multi_val::get_domain_space() const
   return manage(res);
 }
 
+isl::id multi_val::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_val_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space multi_val::get_space() const
 {
   if (!ptr)
@@ -12878,18 +12210,6 @@ isl::space multi_val::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_val_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id multi_val::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_val_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -13063,13 +12383,13 @@ isl::multi_val multi_val::scale_down(isl::multi_val mv) const
   return manage(res);
 }
 
-isl::multi_val multi_val::set_tuple_id(enum isl::dim_type type, isl::id id) const
+isl::multi_val multi_val::set_range_tuple_id(isl::id id) const
 {
   if (!ptr || id.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_val_set_tuple_id(copy(), static_cast<enum isl_dim_type>(type), id.release());
+  auto res = isl_multi_val_set_range_tuple_id(copy(), id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -13251,7 +12571,7 @@ bool point::is_void() const
   auto res = isl_point_is_void(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 // implementations for isl::pw_aff
@@ -13591,7 +12911,7 @@ bool pw_aff::involves_nan() const
   auto res = isl_pw_aff_involves_nan(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool pw_aff::is_cst() const
@@ -13603,7 +12923,7 @@ bool pw_aff::is_cst() const
   auto res = isl_pw_aff_is_cst(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool pw_aff::is_equal(const isl::pw_aff &pa2) const
@@ -13615,7 +12935,7 @@ bool pw_aff::is_equal(const isl::pw_aff &pa2) const
   auto res = isl_pw_aff_is_equal(get(), pa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set pw_aff::le_set(isl::pw_aff pwaff2) const
@@ -14289,6 +13609,18 @@ isl::pw_aff pw_multi_aff::get_pw_aff(int pos) const
   return manage(res);
 }
 
+isl::id pw_multi_aff::get_range_tuple_id() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_multi_aff_get_range_tuple_id(get());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space pw_multi_aff::get_space() const
 {
   if (!ptr)
@@ -14296,18 +13628,6 @@ isl::space pw_multi_aff::get_space() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_pw_multi_aff_get_space(get());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::id pw_multi_aff::get_tuple_id(enum isl::dim_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_pw_multi_aff_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -14335,7 +13655,7 @@ bool pw_multi_aff::is_equal(const isl::pw_multi_aff &pma2) const
   auto res = isl_pw_multi_aff_is_equal(get(), pma2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 int pw_multi_aff::n_piece() const
@@ -14642,7 +13962,7 @@ bool schedule::plain_is_equal(const isl::schedule &schedule2) const
   auto res = isl_schedule_plain_is_equal(get(), schedule2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule schedule::pullback(isl::union_pw_multi_aff upma) const
@@ -15415,7 +14735,7 @@ bool schedule_node::has_children() const
   auto res = isl_schedule_node_has_children(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_next_sibling() const
@@ -15427,7 +14747,7 @@ bool schedule_node::has_next_sibling() const
   auto res = isl_schedule_node_has_next_sibling(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_parent() const
@@ -15439,7 +14759,7 @@ bool schedule_node::has_parent() const
   auto res = isl_schedule_node_has_parent(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::has_previous_sibling() const
@@ -15451,7 +14771,7 @@ bool schedule_node::has_previous_sibling() const
   auto res = isl_schedule_node_has_previous_sibling(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule_node schedule_node::insert_context(isl::set context) const
@@ -15547,7 +14867,7 @@ bool schedule_node::is_equal(const isl::schedule_node &node2) const
   auto res = isl_schedule_node_is_equal(get(), node2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool schedule_node::is_subtree_anchored() const
@@ -15559,7 +14879,7 @@ bool schedule_node::is_subtree_anchored() const
   auto res = isl_schedule_node_is_subtree_anchored(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::schedule_node schedule_node::map_descendant_bottom_up(const std::function<isl::schedule_node(isl::schedule_node)> &fn) const
@@ -15774,7 +15094,7 @@ bool schedule_node_band::get_permutable() const
   auto res = isl_schedule_node_band_get_permutable(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space schedule_node_band::get_space() const
@@ -15798,19 +15118,7 @@ bool schedule_node_band::member_get_coincident(int pos) const
   auto res = isl_schedule_node_band_member_get_coincident(get(), pos);
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
-}
-
-isl::schedule_node_band schedule_node_band::member_set_ast_loop_type(int pos, enum isl::ast_loop_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, static_cast<enum isl_ast_loop_type>(type));
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res).as<isl::schedule_node_band>();
+  return bool(res);
 }
 
 isl::schedule_node_band schedule_node_band::member_set_coincident(int pos, int coincident) const
@@ -15820,18 +15128,6 @@ isl::schedule_node_band schedule_node_band::member_set_coincident(int pos, int c
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_schedule_node_band_member_set_coincident(copy(), pos, coincident);
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res).as<isl::schedule_node_band>();
-}
-
-isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_type(int pos, enum isl::ast_loop_type type) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, static_cast<enum isl_ast_loop_type>(type));
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res).as<isl::schedule_node_band>();
@@ -15938,6 +15234,102 @@ isl::schedule_node_band schedule_node_band::tile(isl::multi_val sizes) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_schedule_node_band_tile(copy(), sizes.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_default(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_default);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_atomic(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_atomic);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_unroll(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_unroll);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_ast_loop_separate(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_ast_loop_type(copy(), pos, isl_ast_loop_separate);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_default(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_default);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_atomic(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_atomic);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_unroll(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_unroll);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res).as<isl::schedule_node_band>();
+}
+
+isl::schedule_node_band schedule_node_band::member_set_isolate_ast_loop_separate(int pos) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_schedule_node_band_member_set_isolate_ast_loop_type(copy(), pos, isl_ast_loop_separate);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res).as<isl::schedule_node_band>();
@@ -16612,18 +16004,6 @@ isl::ctx set::get_ctx() const {
   return isl::ctx(isl_set_get_ctx(ptr));
 }
 
-isl::set set::add_constraint(isl::constraint constraint) const
-{
-  if (!ptr || constraint.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_set_add_constraint(copy(), constraint.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
 isl::basic_set set::affine_hull() const
 {
   if (!ptr)
@@ -16915,7 +16295,7 @@ bool set::has_tuple_id() const
   auto res = isl_set_has_tuple_id(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::has_tuple_name() const
@@ -16927,7 +16307,7 @@ bool set::has_tuple_name() const
   auto res = isl_set_has_tuple_name(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::map set::identity() const
@@ -16975,7 +16355,7 @@ bool set::involves_param(const isl::id &id) const
   auto res = isl_set_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_disjoint(const isl::set &set2) const
@@ -16987,7 +16367,7 @@ bool set::is_disjoint(const isl::set &set2) const
   auto res = isl_set_is_disjoint(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_empty() const
@@ -16999,7 +16379,7 @@ bool set::is_empty() const
   auto res = isl_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_equal(const isl::set &set2) const
@@ -17011,7 +16391,7 @@ bool set::is_equal(const isl::set &set2) const
   auto res = isl_set_is_equal(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_singleton() const
@@ -17023,7 +16403,7 @@ bool set::is_singleton() const
   auto res = isl_set_is_singleton(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_strict_subset(const isl::set &set2) const
@@ -17035,7 +16415,7 @@ bool set::is_strict_subset(const isl::set &set2) const
   auto res = isl_set_is_strict_subset(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_subset(const isl::set &set2) const
@@ -17047,7 +16427,7 @@ bool set::is_subset(const isl::set &set2) const
   auto res = isl_set_is_subset(get(), set2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool set::is_wrapping() const
@@ -17059,7 +16439,7 @@ bool set::is_wrapping() const
   auto res = isl_set_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::set set::lexmax() const
@@ -17174,7 +16554,7 @@ bool set::plain_is_universe() const
   auto res = isl_set_plain_is_universe(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::basic_set set::polyhedral_hull() const
@@ -17244,18 +16624,6 @@ isl::point set::sample_point() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_set_sample_point(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::set set::set_dim_id(enum isl::dim_type type, unsigned int pos, isl::id id) const
-{
-  if (!ptr || id.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_set_set_dim_id(copy(), static_cast<enum isl_dim_type>(type), pos, id.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -17694,6 +17062,18 @@ isl::ctx space::get_ctx() const {
   return isl::ctx(isl_space_get_ctx(ptr));
 }
 
+isl::space space::add_named_tuple_id_ui(isl::id tuple_id, unsigned int dim) const
+{
+  if (!ptr || tuple_id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_add_named_tuple_id_ui(copy(), tuple_id.release(), dim);
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space space::add_param(isl::id id) const
 {
   if (!ptr || id.is_null())
@@ -17701,6 +17081,18 @@ isl::space space::add_param(isl::id id) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_add_param_id(copy(), id.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::space space::add_unnamed_tuple_ui(unsigned int dim) const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_add_unnamed_tuple_ui(copy(), dim);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -17727,7 +17119,7 @@ bool space::can_curry() const
   auto res = isl_space_can_curry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::can_uncurry() const
@@ -17739,7 +17131,7 @@ bool space::can_uncurry() const
   auto res = isl_space_can_uncurry(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space space::curry() const
@@ -17814,13 +17206,13 @@ isl::space space::from_range() const
   return manage(res);
 }
 
-isl::id space::get_tuple_id(enum isl::dim_type type) const
+isl::id space::get_map_range_tuple_id() const
 {
   if (!ptr)
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_space_get_tuple_id(get(), static_cast<enum isl_dim_type>(type));
+  auto res = isl_space_get_map_range_tuple_id(get());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -17835,7 +17227,7 @@ bool space::has_equal_params(const isl::space &space2) const
   auto res = isl_space_has_equal_params(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::has_equal_tuples(const isl::space &space2) const
@@ -17847,7 +17239,7 @@ bool space::has_equal_tuples(const isl::space &space2) const
   auto res = isl_space_has_equal_tuples(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::has_param(const isl::id &id) const
@@ -17859,7 +17251,7 @@ bool space::has_param(const isl::id &id) const
   auto res = isl_space_has_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_equal(const isl::space &space2) const
@@ -17871,7 +17263,7 @@ bool space::is_equal(const isl::space &space2) const
   auto res = isl_space_is_equal(get(), space2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_params() const
@@ -17883,7 +17275,7 @@ bool space::is_params() const
   auto res = isl_space_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_set() const
@@ -17895,7 +17287,7 @@ bool space::is_set() const
   auto res = isl_space_is_set(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool space::is_wrapping() const
@@ -17907,7 +17299,7 @@ bool space::is_wrapping() const
   auto res = isl_space_is_wrapping(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::space space::map_from_domain_and_range(isl::space range) const
@@ -17929,18 +17321,6 @@ isl::space space::map_from_set() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_map_from_set(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::space space::named_set_from_params_id(isl::id tuple_id, unsigned int dim) const
-{
-  if (!ptr || tuple_id.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_space_named_set_from_params_id(copy(), tuple_id.release(), dim);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -18018,6 +17398,18 @@ isl::space space::set_from_params() const
   return manage(res);
 }
 
+isl::space space::set_set_tuple_id(isl::id id) const
+{
+  if (!ptr || id.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_space_set_set_tuple_id(copy(), id.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::space space::uncurry() const
 {
   if (!ptr)
@@ -18025,18 +17417,6 @@ isl::space space::uncurry() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_space_uncurry(copy());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::space space::unnamed_set_from_params(unsigned int dim) const
-{
-  if (!ptr)
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_space_unnamed_set_from_params(copy(), dim);
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -19091,7 +18471,7 @@ bool union_map::is_bijective() const
   auto res = isl_union_map_is_bijective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_empty() const
@@ -19103,7 +18483,7 @@ bool union_map::is_empty() const
   auto res = isl_union_map_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_equal(const isl::union_map &umap2) const
@@ -19115,7 +18495,7 @@ bool union_map::is_equal(const isl::union_map &umap2) const
   auto res = isl_union_map_is_equal(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_injective() const
@@ -19127,7 +18507,7 @@ bool union_map::is_injective() const
   auto res = isl_union_map_is_injective(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_single_valued() const
@@ -19139,7 +18519,7 @@ bool union_map::is_single_valued() const
   auto res = isl_union_map_is_single_valued(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_strict_subset(const isl::union_map &umap2) const
@@ -19151,7 +18531,7 @@ bool union_map::is_strict_subset(const isl::union_map &umap2) const
   auto res = isl_union_map_is_strict_subset(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_map::is_subset(const isl::union_map &umap2) const
@@ -19163,7 +18543,7 @@ bool union_map::is_subset(const isl::union_map &umap2) const
   auto res = isl_union_map_is_subset(get(), umap2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_map union_map::lex_gt_at(isl::multi_union_pw_aff mupa) const
@@ -19714,7 +19094,7 @@ bool union_pw_aff::involves_param(const isl::id &id) const
   auto res = isl_union_pw_aff_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val union_pw_aff::max_val() const
@@ -19785,7 +19165,7 @@ bool union_pw_aff::plain_is_equal(const isl::union_pw_aff &upa2) const
   auto res = isl_union_pw_aff_plain_is_equal(get(), upa2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_pw_aff union_pw_aff::pullback(isl::union_pw_multi_aff upma) const
@@ -20766,7 +20146,7 @@ bool union_set::involves_param(const isl::id &id) const
   auto res = isl_union_set_involves_param_id(get(), id.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_disjoint(const isl::union_set &uset2) const
@@ -20778,7 +20158,7 @@ bool union_set::is_disjoint(const isl::union_set &uset2) const
   auto res = isl_union_set_is_disjoint(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_empty() const
@@ -20790,7 +20170,7 @@ bool union_set::is_empty() const
   auto res = isl_union_set_is_empty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_equal(const isl::union_set &uset2) const
@@ -20802,7 +20182,7 @@ bool union_set::is_equal(const isl::union_set &uset2) const
   auto res = isl_union_set_is_equal(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_params() const
@@ -20814,7 +20194,7 @@ bool union_set::is_params() const
   auto res = isl_union_set_is_params(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_strict_subset(const isl::union_set &uset2) const
@@ -20826,7 +20206,7 @@ bool union_set::is_strict_subset(const isl::union_set &uset2) const
   auto res = isl_union_set_is_strict_subset(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool union_set::is_subset(const isl::union_set &uset2) const
@@ -20838,7 +20218,7 @@ bool union_set::is_subset(const isl::union_set &uset2) const
   auto res = isl_union_set_is_subset(get(), uset2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::union_set union_set::lexmax() const
@@ -21226,18 +20606,18 @@ val::val(const isl::val &obj)
 val::val(__isl_take isl_val *ptr)
     : ptr(ptr) {}
 
-val::val(isl::ctx ctx, long i)
-{
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_val_int_from_si(ctx.release(), i);
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
 val::val(isl::ctx ctx, const std::string &str)
 {
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_val_read_from_str(ctx.release(), str.c_str());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+val::val(isl::ctx ctx, long i)
+{
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_val_int_from_si(ctx.release(), i);
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -21316,7 +20696,7 @@ bool val::abs_eq(const isl::val &v2) const
   auto res = isl_val_abs_eq(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::add(isl::val v2) const
@@ -21374,7 +20754,7 @@ bool val::eq(const isl::val &v2) const
   auto res = isl_val_eq(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::floor() const
@@ -21410,7 +20790,7 @@ bool val::ge(const isl::val &v2) const
   auto res = isl_val_ge(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 long val::get_den_si() const
@@ -21442,7 +20822,7 @@ bool val::gt(const isl::val &v2) const
   auto res = isl_val_gt(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::infty(isl::ctx ctx)
@@ -21475,7 +20855,7 @@ bool val::is_divisible_by(const isl::val &v2) const
   auto res = isl_val_is_divisible_by(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_infty() const
@@ -21487,7 +20867,7 @@ bool val::is_infty() const
   auto res = isl_val_is_infty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_int() const
@@ -21499,7 +20879,7 @@ bool val::is_int() const
   auto res = isl_val_is_int(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nan() const
@@ -21511,7 +20891,7 @@ bool val::is_nan() const
   auto res = isl_val_is_nan(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_neg() const
@@ -21523,7 +20903,7 @@ bool val::is_neg() const
   auto res = isl_val_is_neg(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_neginfty() const
@@ -21535,7 +20915,7 @@ bool val::is_neginfty() const
   auto res = isl_val_is_neginfty(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_negone() const
@@ -21547,7 +20927,7 @@ bool val::is_negone() const
   auto res = isl_val_is_negone(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nonneg() const
@@ -21559,7 +20939,7 @@ bool val::is_nonneg() const
   auto res = isl_val_is_nonneg(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_nonpos() const
@@ -21571,7 +20951,7 @@ bool val::is_nonpos() const
   auto res = isl_val_is_nonpos(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_one() const
@@ -21583,7 +20963,7 @@ bool val::is_one() const
   auto res = isl_val_is_one(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_pos() const
@@ -21595,7 +20975,7 @@ bool val::is_pos() const
   auto res = isl_val_is_pos(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_rat() const
@@ -21607,7 +20987,7 @@ bool val::is_rat() const
   auto res = isl_val_is_rat(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::is_zero() const
@@ -21619,7 +20999,7 @@ bool val::is_zero() const
   auto res = isl_val_is_zero(get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::le(const isl::val &v2) const
@@ -21631,7 +21011,7 @@ bool val::le(const isl::val &v2) const
   auto res = isl_val_le(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 bool val::lt(const isl::val &v2) const
@@ -21643,7 +21023,7 @@ bool val::lt(const isl::val &v2) const
   auto res = isl_val_lt(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::max(isl::val v2) const
@@ -21712,7 +21092,7 @@ bool val::ne(const isl::val &v2) const
   auto res = isl_val_ne(get(), v2.get());
   if (res < 0)
     throw exception::create_from_last_error(get_ctx());
-  return res;
+  return bool(res);
 }
 
 isl::val val::neg() const
