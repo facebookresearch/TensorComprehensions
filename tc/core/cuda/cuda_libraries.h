@@ -240,7 +240,7 @@ inline __device__ void CubReduceAlongXPowerOf2(T* dest, T val) {
 }
 
 #define POWEROF2(X)                             \
-  ((X) & ((X) - 1) == 0)
+  (((X) & ((X) - 1)) == 0)
 
 template <int REDUCTION_SIZE, int BLOCKDIMY, int BLOCKDIMZ, ReductionOp R, typename T>
 inline __device__ void CubReduceAlongX(T* dest, T val) {
