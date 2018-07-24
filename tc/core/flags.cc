@@ -49,7 +49,7 @@ DEFINE_string(
     "compiler flags to set when llvm is used");
 DEFINE_string(
     nvcc_flags,
-    "-std=c++11 -ptx -DNVRTC_CUB=1 --use_fast_math",
+    "-std=c++11 -ptx --use_fast_math",
     "compiler flags to set when nvcc is used");
 
 // CPU codegen options

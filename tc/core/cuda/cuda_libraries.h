@@ -31,9 +31,11 @@ namespace code {
 namespace c {
 
 constexpr auto types = R"C(
+#ifndef __CUDACC_RTC__
 // Can't include system dependencies with NVRTC
 // Can't include cuda_fp16.h with NVRTC due to transitive system dependencies
-// #include <cuda_fp16.h>
+#include <cuda_fp16.h>
+#endif
 )C";
 
 constexpr auto defines = R"C(
@@ -211,7 +213,12 @@ struct SegmentedReducer {
 
 constexpr auto cubBlockReduce = R"CUDA(
 
+#if __CUDACC_RTC__
 #include "cub/nvrtc_cub.cuh"
+#else
+#include <assert.h>
+#include "cub/cub.cuh"
+#endif
 
 namespace __tc {
 

@@ -128,7 +128,6 @@ static std::string llvmCompile(
        std::string("-I") + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR),
        std::string("-I") + TC_STRINGIFY(TC_CUB_INCLUDE_DIR),
        tc::FLAGS_llvm_flags,
-       "-DNVRTC_CUB=1",
        "-nocudalib",
        "-S",
        "-emit-llvm",
