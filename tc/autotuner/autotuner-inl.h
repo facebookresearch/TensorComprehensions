@@ -29,6 +29,7 @@
 #include "tc/core/tensor.h"
 #include "tc/core/utils/math.h"
 #include "tc/lang/canonicalize.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace autotune {
@@ -74,6 +75,9 @@ void TuningHarness<Backend>::stopAfterCurrentIteration() {
 template <typename Backend>
 template <typename SearchStrategy>
 void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
+  CompilerOptions supressWarningsOptions;
+  supressWarningsOptions.emitWarnings = false;
+
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
@@ -93,7 +97,7 @@ void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
           LOG_LINE_BY_LINE(INFO, ssInfo);
         }
         pExecutor = tc::detail::compile<Backend>(
-            tcTree_, inputs_.begin()->second, options);
+            tcTree_, inputs_.begin()->second, options, supressWarningsOptions);
         LOG_IF(INFO, FLAGS_debug_tuner) << "[COMPILE] Done compilation";
       } catch (const std::exception& e) {
         LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
