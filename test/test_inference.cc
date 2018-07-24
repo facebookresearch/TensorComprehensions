@@ -22,11 +22,14 @@
 
 using namespace std;
 using namespace lang;
+using tc::CompilerOptions;
 
 struct InferenceTest : public ::testing::Test {
   void Check(const string& tc, const string& expected) {
-    auto halideComponents =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc, true);
+    CompilerOptions compilerOptions;
+    compilerOptions.throwWarnings = true;
+    auto halideComponents = tc2halide::translate(
+        isl::with_exceptions::globalIslCtx(), tc, compilerOptions);
 
     stringstream ss;
     // Ordered map for repro

@@ -55,8 +55,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
 
   auto inputsInfo = makeTensorInfoVector(inputs);
   auto outputsInfo = detail::inferOutputTensorInfo(tcDefinition, inputs);
-  auto halideComponents =
-      tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcDefinition);
+  auto halideComponents = tc2halide::translate(
+      isl::with_exceptions::globalIslCtx(), tcDefinition, CompilerOptions());
   detail::checkInputsCompliant(halideComponents, inputs);
 
   auto tcName = lang::Def(tcDefinition).name().name();

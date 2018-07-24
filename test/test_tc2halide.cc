@@ -32,8 +32,8 @@ using namespace std;
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}
   void Check(const string& tc) {
-    auto halide =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
+    auto halide = tc2halide::translate(
+        isl::with_exceptions::globalIslCtx(), tc, CompilerOptions());
     auto scop = polyhedral::Scop::makeScop(
         isl::with_exceptions::globalIslCtx(), halide);
     auto scheduleHalide = scop->scheduleRoot();

@@ -103,7 +103,10 @@ std::vector<TensorInfo> inferOutputTensorInfo(
     lang::TreeRef tcDefinition,
     const std::vector<const DLConstTensor*> inputs) {
   return tc::inferOutputTensorInfo(
-      tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcDefinition),
+      tc2halide::translate(
+          isl::with_exceptions::globalIslCtx(),
+          tcDefinition,
+          CompilerOptions()),
       inputs);
 }
 

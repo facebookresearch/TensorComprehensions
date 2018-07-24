@@ -20,6 +20,7 @@
 #include "tc/core/tc2halide.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc2halide {
 
@@ -270,7 +271,7 @@ void forwardBoundsInference(
     const std::vector<Expr>& exprs,
     const FunctionBounds& bounds,
     const lang::TreeRef& comprehension,
-    bool throwWarnings,
+    const tc::CompilerOptions& compilerOptions,
     Scope<Interval>* solution) {
   class CreateConstraints : public IRVisitor {
     using IRVisitor::visit;
@@ -488,10 +489,10 @@ void forwardBoundsInference(
     lang::ErrorReport err(comprehension);
     err << "Required precondition will not be checked at runtime: "
         << remaining;
-    if (throwWarnings) {
+    if (compilerOptions.throwWarnings) {
       throw err;
     } else {
-      warn(err);
+      warn(err, compilerOptions);
     }
   }
 }
@@ -509,7 +510,7 @@ Expr reductionUpdate(Expr e) {
 void translateComprehension(
     const lang::Comprehension& comprehension,
     const map<string, Parameter>& params,
-    bool throwWarnings,
+    const tc::CompilerOptions& compilerOptions,
     map<string, Function>* funcs,
     FunctionBounds* bounds) {
   Function f;
@@ -670,7 +671,7 @@ void translateComprehension(
   // Infer the rest
   all_exprs.push_back(rhs);
   forwardBoundsInference(
-      all_exprs, *bounds, comprehension, throwWarnings, &solution);
+      all_exprs, *bounds, comprehension, compilerOptions, &solution);
 
   // TODO: What if subsequent updates have incompatible bounds
   // (e.g. an in-place stencil)?. The .bound directive will use the
@@ -754,7 +755,9 @@ void translateComprehension(
 }
 
 // Translate a semantically checked TC def to HalideComponents struct.
-HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
+HalideComponents translateDef(
+    const lang::Def& def,
+    const tc::CompilerOptions& compilerOptions) {
   map<string, Function> funcs;
   HalideComponents components;
   components.def = def;
@@ -765,7 +768,7 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   }
   for (auto c : def.statements()) {
     translateComprehension(
-        c, components.params, throwWarnings, &funcs, &bounds);
+        c, components.params, compilerOptions, &funcs, &bounds);
   }
   vector<Function> outputs;
   for (auto p : def.returns()) {
@@ -906,19 +909,23 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
 }
 } // namespace
 
-HalideComponents
-translate(isl::ctx ctx, const lang::TreeRef& treeRef, bool throwWarnings) {
+HalideComponents translate(
+    isl::ctx ctx,
+    const lang::TreeRef& treeRef,
+    const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << treeRef;
   return translateDef(
-      lang::Def(lang::Sema().checkFunction(treeRef)), throwWarnings);
+      lang::Def(lang::Sema().checkFunction(treeRef)), compilerOptions);
 }
 
 // NOTE: there is no guarantee here that the tc string has only one def. It
 // could have many defs. Only first def will be converted in that case.
-HalideComponents
-translate(isl::ctx ctx, const std::string& tc, bool throwWarnings) {
+HalideComponents translate(
+    isl::ctx ctx,
+    const std::string& tc,
+    const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << tc;
-  return translate(ctx, lang::Parser(tc).parseFunction(), throwWarnings);
+  return translate(ctx, lang::Parser(tc).parseFunction(), compilerOptions);
 }
 
 } // namespace tc2halide

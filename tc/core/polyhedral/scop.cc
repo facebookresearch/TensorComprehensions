@@ -34,6 +34,7 @@
 #include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tc2halide.h"
+#include "tc/utils/compiler_options.h"
 
 using namespace std;
 
@@ -69,12 +70,18 @@ ScopUPtr Scop::makeScop(
   return scop;
 }
 
-ScopUPtr Scop::makeScop(isl::ctx ctx, const string& tc) {
-  return makeScop(ctx, tc2halide::translate(ctx, tc));
+ScopUPtr Scop::makeScop(
+    isl::ctx ctx,
+    const string& tc,
+    const CompilerOptions& compilerOptions) {
+  return makeScop(ctx, tc2halide::translate(ctx, tc, compilerOptions));
 }
 
-ScopUPtr Scop::makeScop(isl::ctx ctx, const lang::TreeRef& treeRef) {
-  return makeScop(ctx, tc2halide::translate(ctx, treeRef));
+ScopUPtr Scop::makeScop(
+    isl::ctx ctx,
+    const lang::TreeRef& treeRef,
+    const CompilerOptions& compilerOptions) {
+  return makeScop(ctx, tc2halide::translate(ctx, treeRef, compilerOptions));
 }
 
 isl::union_set& Scop::domainRef() {

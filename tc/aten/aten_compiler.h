@@ -22,6 +22,7 @@
 #include "tc/aten/aten.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/time.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace aten {
