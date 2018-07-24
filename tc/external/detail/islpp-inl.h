@@ -41,7 +41,8 @@ inline isl::aff operator/(isl::aff A, int i) {
   return A.scale_down(isl::val(A.get_ctx(), i));
 }
 
-inline isl::aff operator+(int i, isl::aff A) {
+template <typename T>
+inline isl::aff operator+(int i, T A) {
   return A.add_constant_si(i);
 }
 
