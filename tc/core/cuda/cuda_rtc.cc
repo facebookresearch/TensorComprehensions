@@ -65,6 +65,17 @@ void checkOrCreateContext() {
 }
 
 namespace {
+static void checkedSystemCall(
+    const std::string& cmd,
+    const std::vector<std::string>& args) {
+  std::stringstream command;
+  command << cmd << " ";
+  for (const auto& s : args) {
+    command << s << " ";
+  }
+  TC_CHECK_EQ(std::system(command.str().c_str()), 0) << command.str();
+}
+
 static std::tuple<int, int, int> getCudaArchitecture() {
   int device, major, minor;
   CUdevice deviceHandle;
@@ -107,30 +118,48 @@ static std::string llvmCompile(
     std::remove(outputPtxFile.c_str());
   });
 
-  std::string cmdLlvmIr = std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) +
-      "/clang++ -x cuda " + inputFileName + " " + "--cuda-device-only " +
-      "--cuda-gpu-arch=" + arch + " " +
-      "--cuda-path=" + TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR) + " " + "-I" +
-      TC_STRINGIFY(TC_CUDA_INCLUDE_DIR) + " " + "-I" +
-      TC_STRINGIFY(TC_CUB_INCLUDE_DIR) + " " + tc::FLAGS_llvm_flags +
-      "  -DNVRTC_CUB=1 " + "-nocudalib -S -emit-llvm " + "-o " +
-      outputClangFile;
-  TC_CHECK_EQ(std::system(cmdLlvmIr.c_str()), 0) << cmdLlvmIr;
+  // Compile
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/clang++",
+      {"-x cuda " + inputFileName,
+       "--cuda-device-only",
+       std::string("--cuda-gpu-arch=") + arch,
+       std::string("--cuda-path=") + TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUB_INCLUDE_DIR),
+       tc::FLAGS_llvm_flags,
+       "-DNVRTC_CUB=1",
+       "-nocudalib",
+       "-S",
+       "-emit-llvm",
+       "-o " + outputClangFile});
 
-  std::string cmdLlvmLink = std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) +
-      "/llvm-link " + outputClangFile + " " +
-      TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR) +
-      "/nvvm/libdevice/libdevice.*.bc " + "-S -o " + outputLinkFile;
-  TC_CHECK_EQ(std::system(cmdLlvmLink.c_str()), 0) << cmdLlvmLink;
+  // Link libdevice before opt
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llvm-link ",
+      {outputClangFile,
+       std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) +
+           "/nvvm/libdevice/libdevice.*.bc",
+       "-S",
+       "-o " + outputLinkFile});
 
-  std::string cmdOpt = std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/opt " +
-      "-internalize -internalize-public-api-list=" + name + " " +
-      "-nvvm-reflect -O3 " + outputLinkFile + " -S -o " + outputOptFile;
-  TC_CHECK_EQ(std::system(cmdOpt.c_str()), 0) << cmdOpt;
+  // Opt
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/opt",
+      {"-internalize",
+       std::string("-internalize-public-api-list=") + name,
+       "-nvvm-reflect",
+       "-O3",
+       outputLinkFile,
+       "-S",
+       std::string("-o ") + outputOptFile});
 
-  std::string cmdPtx = std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) +
-      "/llc -mcpu=" + arch + " " + outputOptFile + " -o " + outputPtxFile;
-  TC_CHECK_EQ(std::system(cmdPtx.c_str()), 0) << cmdPtx;
+  // Ptx
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
+      {std::string("-mcpu=") + arch,
+       outputOptFile,
+       std::string("-o ") + outputPtxFile});
 
   std::ifstream stream(outputPtxFile);
   return std::string(
@@ -160,12 +189,16 @@ static std::string nvccCompile(
   // cstdio's std::remove to delete files
   tc::ScopeGuard sgo([&]() { std::remove(outputPtxFile.c_str()); });
 
-  std::string cmdPtx = std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) +
-      "/bin/nvcc -x cu " + inputFileName + " --gpu-architecture=" + arch + " " +
-      "--ptx " + "-I" + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR) + " " + "-I" +
-      TC_STRINGIFY(TC_CUB_INCLUDE_DIR) + " " + tc::FLAGS_nvcc_flags + " -o " +
-      outputPtxFile;
-  TC_CHECK_EQ(std::system(cmdPtx.c_str()), 0) << cmdPtx;
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) + "/bin/nvcc",
+      {"-x cu",
+       inputFileName,
+       std::string("--gpu-architecture=") + arch,
+       "--ptx",
+       std::string("-I") + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUB_INCLUDE_DIR),
+       tc::FLAGS_nvcc_flags,
+       std::string("-o ") + outputPtxFile});
 
   std::ifstream stream(outputPtxFile);
   return std::string(
