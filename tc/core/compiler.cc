@@ -24,16 +24,19 @@
 #include "tc/core/halide_utils.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/canonicalize.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 std::vector<TensorInfo> inferOutputTensorInfo(
     const std::string& tc,
     const std::string& entryPoint,
-    const std::vector<const DLConstTensor*> inputs) {
+    const std::vector<const DLConstTensor*> inputs,
+    const CompilerOptions& compilerOptions) {
   auto parsedTcs = detail::parse(tc);
   TC_CHECK_EQ(parsedTcs.count(entryPoint), 1u)
       << "attempting to access undefined function " << entryPoint;
-  return tc::detail::inferOutputTensorInfo(parsedTcs[entryPoint], inputs);
+  return tc::detail::inferOutputTensorInfo(
+      parsedTcs[entryPoint], inputs, compilerOptions);
 }
 
 namespace detail {
@@ -101,12 +104,11 @@ void checkInputsCompliant(
 
 std::vector<TensorInfo> inferOutputTensorInfo(
     lang::TreeRef tcDefinition,
-    const std::vector<const DLConstTensor*> inputs) {
+    const std::vector<const DLConstTensor*> inputs,
+    const CompilerOptions& compilerOptions) {
   return tc::inferOutputTensorInfo(
       tc2halide::translate(
-          isl::with_exceptions::globalIslCtx(),
-          tcDefinition,
-          CompilerOptions()),
+          isl::with_exceptions::globalIslCtx(), tcDefinition, compilerOptions),
       inputs);
 }
 
