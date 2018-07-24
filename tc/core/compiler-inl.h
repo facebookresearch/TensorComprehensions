@@ -41,9 +41,10 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
   auto parsedTcs = detail::parse(tc);
   TC_CHECK_EQ(parsedTcs.count(entryPoint), 1u)
       << "attempting to access undefined function " << entryPoint;
-  return compile<Backend>(parsedTcs[entryPoint], inputs, options);
+  return detail::compile<Backend>(parsedTcs[entryPoint], inputs, options);
 }
 
+namespace detail {
 template <typename Backend>
 std::unique_ptr<typename Backend::ExecutorType> compile(
     lang::TreeRef tcDefinition,
@@ -69,4 +70,5 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
       new typename Backend::ExecutorType(
           inputsInfo, outputsInfo, halideComponents, compilationResult));
 }
+} // namespace detail
 } // namespace tc
