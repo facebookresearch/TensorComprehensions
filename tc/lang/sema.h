@@ -170,8 +170,6 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
 /// variable objects.
 /// - checks that input variables are readonly.
 struct Sema {
-  std::unordered_map<TreeRef, TreeRef> expr_to_type;
-
   TreeRef typeOfExpr(TreeRef ref) {
     if (expr_to_type.count(ref) == 0) {
       throw ErrorReport(ref)
@@ -706,6 +704,8 @@ struct Sema {
   // if you write to an input, using it in a range expression is no longer
   // allowed
   std::unordered_set<std::string> live_input_names;
+
+  std::unordered_map<TreeRef, TreeRef> expr_to_type;
 
   std::unordered_set<std::string> inputParameters;
   std::unordered_set<std::string> nonTemporaries;
