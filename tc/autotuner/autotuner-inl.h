@@ -425,6 +425,9 @@ Autotuner<Backend, SearchStrategy>::tune(
   TC_CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
       << "Error looking up " << tcEntryPoint;
 
+  // Do not emit lang warnings during the tuning run
+  auto enableWarnings = lang::EnableWarnings(false);
+
   // Initialize a model configuration
   TC_CHECK_GE(inputs.size(), 1u);
   auto modelConfiguration =

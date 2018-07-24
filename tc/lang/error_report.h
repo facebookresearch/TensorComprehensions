@@ -17,7 +17,11 @@
 
 #include "tc/lang/tree.h"
 
+#include <gflags/gflags.h>
+
 namespace lang {
+
+DECLARE_bool(warn);
 
 struct ErrorReport : public std::exception {
   ErrorReport(const ErrorReport& e)
@@ -43,6 +47,9 @@ struct ErrorReport : public std::exception {
 };
 
 inline void warn(const ErrorReport& err) {
+  if (!FLAGS_warn) {
+    return;
+  }
   std::cerr << "WARNING: " << err.what();
 }
 
@@ -57,4 +64,20 @@ const ErrorReport& operator<<(const ErrorReport& e, const T& t) {
     throw ::lang::ErrorReport(ctx)                                         \
         << __FILE__ << ":" << __LINE__ << ": assertion failed: " << #cond; \
   }
+
+// Simple RAII to change the value of FLAGS_warn locally to a scope.
+class EnableWarnings {
+ public:
+  explicit EnableWarnings(bool warn) {
+    previous_ = FLAGS_warn;
+    FLAGS_warn = warn;
+  }
+
+  ~EnableWarnings() {
+    FLAGS_warn = previous_;
+  }
+
+ private:
+  bool previous_;
+};
 } // namespace lang

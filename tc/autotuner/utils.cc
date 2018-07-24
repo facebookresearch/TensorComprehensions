@@ -19,6 +19,7 @@
 #include <cmath>
 #include <sstream>
 
+#include <glog/logging.h>
 #include <glog/stl_logging.h>
 
 #include "tc/core/flags.h"
