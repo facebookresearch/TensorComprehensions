@@ -302,7 +302,7 @@ void TuningHarness<Backend>::runOneIteration(
         makeTensorInfoVector(outputs_.begin()->second),
         Backend::backendString(),
         1);
-    CHECK_GT(vBest.size(), 0);
+    TC_CHECK_GT(vBest.size(), 0u);
     infoPrinter << vBest[0];
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }
