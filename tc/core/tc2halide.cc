@@ -33,6 +33,21 @@ using std::vector;
 
 namespace {
 
+using FunctionBounds = map<Function, map<string, Interval>, Function::Compare>;
+
+struct TranslationUnit {
+  HalideComponents components;
+  Scope<Interval> enclosingLoopIndices;
+  map<string, Function> funcs;
+  FunctionBounds bounds;
+  bool throwWarnings;
+};
+
+void translateFor(const lang::For& f, TranslationUnit* tu);
+void translateComprehension(
+    const lang::Comprehension& comprehension,
+    TranslationUnit* tu);
+
 Type translateScalarType(int tcType) {
   switch (tcType) {
     case lang::TK_BOOL:
@@ -263,8 +278,6 @@ vector<const Variable*> unboundVariables(const vector<Var>& lhs, Expr rhs) {
   rhs.accept(&finder);
   return finder.result;
 }
-
-typedef map<Function, map<string, Interval>, Function::Compare> FunctionBounds;
 
 void forwardBoundsInference(
     const std::vector<Expr>& exprs,
@@ -500,6 +513,29 @@ Expr reductionUpdate(Expr e) {
   return Call::make(e.type(), kReductionUpdate, {e}, Call::Intrinsic);
 }
 
+void translateStatement(const lang::TreeRef& stmt, TranslationUnit* tu) {
+  if (stmt->kind() == lang::TK_COMPREHENSION) {
+    translateComprehension(lang::Comprehension(stmt), tu);
+  } else {
+    CHECK_EQ(stmt->kind(), lang::TK_FOR);
+    translateFor(lang::For(stmt), tu);
+  }
+}
+
+void translateFor(const lang::For& f, TranslationUnit* pTU) {
+  const map<string, Parameter>& params = pTU->components.params;
+  auto constraint = lang::RangeConstraint(f.rangeConstraint());
+  Interval i;
+  const map<string, Expr> lets;
+  i.min = translateExpr(constraint.start(), params, pTU->funcs, lets);
+  i.max = translateExpr(constraint.end(), params, pTU->funcs, lets) - 1;
+  pTU->enclosingLoopIndices.push(f.index().name(), i);
+  for (auto stm : f.statements()) {
+    translateStatement(stm, pTU);
+  }
+  pTU->enclosingLoopIndices.pop(f.index().name());
+}
+
 // Translate a single TC comprehension/statement to Halide components: funcs,
 // bounds, reductions.
 //
@@ -508,10 +544,11 @@ Expr reductionUpdate(Expr e) {
 // in order to be able to apply internal Halide analysis passes on them.
 void translateComprehension(
     const lang::Comprehension& comprehension,
-    const map<string, Parameter>& params,
-    bool throwWarnings,
-    map<string, Function>* funcs,
-    FunctionBounds* bounds) {
+    TranslationUnit* pTU) {
+  const map<string, Parameter>& params = pTU->components.params;
+  bool throwWarnings = pTU->throwWarnings;
+  map<string, Function>* funcs = &pTU->funcs;
+  FunctionBounds* bounds = &pTU->bounds;
   Function f;
   auto it = funcs->find(comprehension.ident().name());
   if (it != funcs->end()) {
@@ -647,6 +684,12 @@ void translateComprehension(
   // demand).
   Scope<Interval> solution;
 
+  // Copy information from enclosing "for" loops
+  for (auto entry = pTU->enclosingLoopIndices.cbegin();
+       entry != pTU->enclosingLoopIndices.cend();
+       ++entry) {
+    solution.push(entry.name(), entry.value());
+  }
   // Put anything explicitly specified with a 'where' class in the solution
   for (auto constraint_ : comprehension.whereClauses()) {
     if (constraint_->kind() != lang::TK_RANGE_CONSTRAINT)
@@ -655,6 +698,11 @@ void translateComprehension(
     Interval i;
     i.min = translateExpr(constraint.start(), params, *funcs, lets);
     i.max = translateExpr(constraint.end(), params, *funcs, lets) - 1;
+
+    if (solution.contains(constraint.ident().name())) {
+      throw lang::ErrorReport(constraint_)
+          << "Multiple range constraints per index NYI";
+    }
 
     // TODO: In the future we'll want to make any non-trivial bounds
     // into hidden scalar parameters, and just pass variables to the
@@ -755,21 +803,20 @@ void translateComprehension(
 
 // Translate a semantically checked TC def to HalideComponents struct.
 HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
-  map<string, Function> funcs;
-  HalideComponents components;
-  components.def = def;
-  FunctionBounds bounds;
+  TranslationUnit tu;
+  tu.components.def = def;
+  tu.throwWarnings = throwWarnings;
 
   for (auto p : def.params()) {
-    translateParam(p, &components.params, &components.inputs);
+    translateParam(p, &tu.components.params, &tu.components.inputs);
   }
-  for (auto c : def.statements()) {
-    translateComprehension(
-        c, components.params, throwWarnings, &funcs, &bounds);
+  // Semantically valid TCs include at most one outer sequential loop for now
+  for (auto stm : def.statements()) {
+    translateStatement(stm, &tu);
   }
   vector<Function> outputs;
   for (auto p : def.returns()) {
-    translateOutput(p, funcs, &outputs);
+    translateOutput(p, tu.funcs, &outputs);
   }
 
   // Now apply an extremely simplified version of Halide lowering
@@ -800,11 +847,12 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   // used in the pipelines we construct here, so just make a host target.
   Target target("host");
   Stmt s = schedule_functions(outputs, fused_groups, env, target, any_memoized);
+  LOG_IF(ERROR, tc::FLAGS_debug_halide) << s;
   // we insert these to allow for inplace mutation of in/out tensors
   s = remove_undef(s);
   // Apply forward bounds inference results. This replaces the usual Halide
   // bounds inference.
-  for (auto p : bounds) {
+  for (auto p : tu.bounds) {
     const Function& f = p.first;
     for (auto b : p.second) {
       const string& var = b.first;
@@ -889,20 +937,20 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   };
   s = SubstituteAllLets().mutate(s);
 
-  components.stmt = s;
+  tu.components.stmt = s;
 
   for (Function f : outputs) {
     OutputImageParam o = Func(f).output_buffers()[0];
     // Apply forward bounds inference results to the output buffers.
-    const auto& b = bounds[f];
+    const auto& b = tu.bounds[f];
     for (int i = 0; i < o.dimensions(); i++) {
       const Interval& bound = b.at(f.args()[i]);
       o.dim(i).set_bounds(bound.min, simplify(bound.max - bound.min + 1));
     }
-    components.outputs.push_back(o);
+    tu.components.outputs.push_back(o);
   }
 
-  return components;
+  return tu.components;
 }
 } // namespace
 

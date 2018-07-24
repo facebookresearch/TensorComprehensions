@@ -9,60 +9,76 @@ ANACONDA_USER=nicolasvasilache
 # set the anaconda upload to NO for now
 conda config --set anaconda_upload no
 
-echo "Packaging Caffe2"
-
+#echo "Packaging Caffe2"
+#
+################################################################################
+## Caffe2 settings
+#CAFFE2_BUILD_VERSION="1.0.0"
+#CAFFE2_BUILD_NUMBER=1
+#PYTORCH_GIT_HASH="8d91a602cc2beab090715bb6bd63ab108db5fa36"
+#
+#echo "Packaging Caffe2 ==> CAFFE2_BUILD_VERSION: ${CAFFE2_BUILD_VERSION} CAFFE2_BUILD_NUMBER: ${CAFFE2_BUILD_NUMBER}"
+#
+#export CAFFE2_BUILD_VERSION=$CAFFE2_BUILD_VERSION
+#export CAFFE2_BUILD_NUMBER=$CAFFE2_BUILD_NUMBER
+#export PYTORCH_GIT_HASH=$CAFFE2PYTORCH_GIT_HASH
+#
+#time conda build -c $ANACONDA_USER --python 3.6 caffe2
+#
+#echo "Caffe2 packaged Successfully"
+#
+################################################################################
+## LLVM_TRUNK settings
+#LLVM_TRUNK_BUILD_VERSION="1.0.0"
+#LLVM_TRUNK_BUILD_NUMBER=1
+#LLVM_TRUNK_SOURCE_DIR=$(mktemp -d /tmp/d.XXXXXX)
+#trap 'rm -rf "${LLVM_TRUNK_SOURCE_DIR}"' EXIT
+#
+#svn co http://llvm.org/svn/llvm-project/llvm/trunk ${LLVM_TRUNK_SOURCE_DIR}
+#svn co http://llvm.org/svn/llvm-project/cfe/trunk ${LLVM_TRUNK_SOURCE_DIR}/tools/clang
+#
+#echo "Building llvm-trunk"
+#echo "LLVM_TRUNK_BUILD_VERSION: $LLVM_TRUNK_BUILD_VERSION LLVM_TRUNK_BUILD_NUMBER: ${LLVM_TRUNK_BUILD_NUMBER}"
+#
+#export LLVM_TRUNK_BUILD_VERSION=$LLVM_TRUNK_BUILD_VERSION
+#export LLVM_TRUNK_BUILD_NUMBER=$LLVM_TRUNK_BUILD_NUMBER
+#export LLVM_TRUNK_SOURCE_DIR=$LLVM_TRUNK_SOURCE_DIR
+#
+#time conda build -c $ANACONDA_USER --python 3.6 llvm-trunk
+#
+#echo "llvm-trunk packaged Successfully"
+#
 ###############################################################################
-# Caffe2 settings
-CAFFE2_BUILD_VERSION="1.0.0"
-CAFFE2_BUILD_NUMBER=1
-PYTORCH_GIT_HASH="8d91a602cc2beab090715bb6bd63ab108db5fa36"
-
-echo "Packaging Caffe2 ==> CAFFE2_BUILD_VERSION: ${CAFFE2_BUILD_VERSION} CAFFE2_BUILD_NUMBER: ${CAFFE2_BUILD_NUMBER}"
-
-export CAFFE2_BUILD_VERSION=$CAFFE2_BUILD_VERSION
-export CAFFE2_BUILD_NUMBER=$CAFFE2_BUILD_NUMBER
-export PYTORCH_GIT_HASH=$CAFFE2PYTORCH_GIT_HASH
-
-time conda build -c $ANACONDA_USER --python 3.6 caffe2
-
-echo "Caffe2 packaged Successfully"
-
-###############################################################################
-# LLVM_TRUNK settings
-LLVM_TRUNK_BUILD_VERSION="1.0.0"
-LLVM_TRUNK_BUILD_NUMBER=1
-LLVM_TRUNK_SOURCE_DIR=$(mktemp -d /tmp/d.XXXXXX)
-trap 'rm -rf "${LLVM_TRUNK_SOURCE_DIR}"' EXIT
-
-svn co http://llvm.org/svn/llvm-project/llvm/trunk ${LLVM_TRUNK_SOURCE_DIR}
-svn co http://llvm.org/svn/llvm-project/cfe/trunk ${LLVM_TRUNK_SOURCE_DIR}/tools/clang
-
-echo "Building llvm-trunk"
-echo "LLVM_TRUNK_BUILD_VERSION: $LLVM_TRUNK_BUILD_VERSION LLVM_TRUNK_BUILD_NUMBER: ${LLVM_TRUNK_BUILD_NUMBER}"
-
-export LLVM_TRUNK_BUILD_VERSION=$LLVM_TRUNK_BUILD_VERSION
-export LLVM_TRUNK_BUILD_NUMBER=$LLVM_TRUNK_BUILD_NUMBER
-export LLVM_TRUNK_SOURCE_DIR=$LLVM_TRUNK_SOURCE_DIR
-
-time conda build -c $ANACONDA_USER --python 3.6 llvm-trunk
-
-echo "llvm-trunk packaged Successfully"
+## Halide settings
+#HALIDE_BUILD_VERSION="1.0.0"
+#HALIDE_BUILD_NUMBER=1
+#HALIDE_GIT_HASH="0b29cacf636852933892bbaa61dd2050c8dcaff2"
+#
+#echo "Packaging HALIDE ==> HALIDE_BUILD_VERSION: ${HALIDE_BUILD_VERSION} HALIDE_BUILD_NUMBER: ${HALIDE_BUILD_NUMBER}"
+#
+#export HALIDE_BUILD_VERSION=$HALIDE_BUILD_VERSION
+#export HALIDE_BUILD_NUMBER=$HALIDE_BUILD_NUMBER
+#export HALIDE_GIT_HASH=$HALIDE_GIT_HASH
+#
+#time conda build -c $ANACONDA_USER --python 3.6 halide
+#
+#echo "HALIDE packaged Successfully"
 
 ##############################################################################
-# Halide settings
-HALIDE_BUILD_VERSION="1.0.0"
-HALIDE_BUILD_NUMBER=1
-HALIDE_GIT_HASH="0b29cacf636852933892bbaa61dd2050c8dcaff2"
+# Halide_Experimental settings
+HALIDE_EXPERIMENTAL_BUILD_VERSION="1.0.0"
+HALIDE_EXPERIMENTAL_BUILD_NUMBER=1
+HALIDE_EXPERIMENTAL_GIT_HASH="0c6f23c9c7b17a82718ffee69b6360483302d63a"
 
-echo "Packaging HALIDE ==> HALIDE_BUILD_VERSION: ${HALIDE_BUILD_VERSION} HALIDE_BUILD_NUMBER: ${HALIDE_BUILD_NUMBER}"
+echo "Packaging HALIDE_EXPERIMENTAL ==> HALIDE_EXPERIMENTAL_BUILD_VERSION: ${HALIDE_EXPERIMENTAL_BUILD_VERSION} HALIDE_EXPERIMENTAL_BUILD_NUMBER: ${HALIDE_EXPERIMENTAL_BUILD_NUMBER}"
 
-export HALIDE_BUILD_VERSION=$HALIDE_BUILD_VERSION
-export HALIDE_BUILD_NUMBER=$HALIDE_BUILD_NUMBER
-export HALIDE_GIT_HASH=$HALIDE_GIT_HASH
+export HALIDE_EXPERIMENTAL_BUILD_VERSION=$HALIDE_EXPERIMENTAL_BUILD_VERSION
+export HALIDE_EXPERIMENTAL_BUILD_NUMBER=$HALIDE_EXPERIMENTAL_BUILD_NUMBER
+export HALIDE_EXPERIMENTAL_GIT_HASH=$HALIDE_EXPERIMENTAL_GIT_HASH
 
-time conda build -c $ANACONDA_USER --python 3.6 halide
+time conda build -c $ANACONDA_USER --python 3.6 halide_experimental
 
-echo "HALIDE packaged Successfully"
+echo "HALIDE_EXPERIMENTAL packaged Successfully"
 
 ################################################################################
 ## Tensor Comprehensions settings

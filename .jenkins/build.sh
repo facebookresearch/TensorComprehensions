@@ -60,7 +60,7 @@ cd /var/lib/jenkins/workspace
 git submodule update --init --recursive
 
 source activate tc_build
-conda install -y -c nicolasvasilache llvm-trunk halide
+conda install -y -c nicolasvasilache llvm-trunk halide_experimental
 conda install -y -c conda-forge eigen
 conda install -y -c nicolasvasilache caffe2
 

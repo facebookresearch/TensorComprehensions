@@ -24,9 +24,9 @@ using namespace std;
 using namespace lang;
 
 struct InferenceTest : public ::testing::Test {
-  void Check(const string& tc, const string& expected) {
+  void Check(const string& tc, const string& expected, bool warn = true) {
     auto halideComponents =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc, true);
+        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc, warn);
 
     stringstream ss;
     // Ordered map for repro
@@ -526,6 +526,94 @@ def fun(float(N) size) -> (O) {
 )TC";
   // Not a rectangular iteration domain for starters, but that's the
   // least of the problems here.
+  EXPECT_THROW(Check(tc, {}), ::lang::ErrorReport);
+}
+
+TEST_F(InferenceTest, For1) {
+  string tc = R"TC(
+    def fun(float(M, N) X) -> (R1) {
+        for t in 0:123 {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+        }
+    }
+)TC";
+  Check(tc, R"HALIDE(mins:
+X@[0; 0; ]
+R1@[0; 0; 0; ]
+extents:
+X@[M; N; ]
+R1@[123; M; N; ]
+)HALIDE");
+}
+
+TEST_F(InferenceTest, For2) {
+  string tc = R"TC(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        for t in 0:T {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0
+            R2(t, m, n) = R1(t, m, n)
+        }
+    }
+)TC";
+  Check(
+      tc,
+      R"HALIDE(mins:
+X@[0; 0; ]
+Meta@[0; ]
+R1@[0; 0; 0; ]
+R2@[0; 0; 0; ]
+extents:
+X@[M; N; ]
+Meta@[T; ]
+R1@[T; M; N; ]
+R2@[T; M; N; ]
+)HALIDE");
+}
+
+TEST_F(InferenceTest, For3) {
+  string tc = R"TC(
+    def fun(float(M, N) X, float(T) Meta) -> (R1, R2) {
+        R1(t, m, n) = (t == 0) ? X(m, n) : 0.0 where t in 0:T
+        R2(t, m, n) = 0.0 where t in 0:T, m in 0:M, n in 0:N
+        for t in 1:T {
+            R1(t, m, n) += R1(t-1, m, n)
+            R2(t, m, n) += R1(t, m, n)
+        }
+    }
+)TC";
+  Check(
+      tc,
+      R"HALIDE(mins:
+X@[0; 0; ]
+Meta@[0; ]
+R1@[1; 0; 0; ]
+R2@[1; 0; 0; ]
+extents:
+X@[M; N; ]
+Meta@[T; ]
+R1@[(T + -1); M; N; ]
+R2@[(T + -1); M; N; ]
+)HALIDE",
+      false); // nowarn
+}
+
+TEST_F(InferenceTest, MultipleRangeConstraints) {
+  string tc = R"TC(
+def fun(float(N, M) I) -> (O) {
+  O(i, j) = I(i, j) where i in 3:N-1, i in 1:N
+}
+)TC";
+  EXPECT_THROW(Check(tc, {}), ::lang::ErrorReport);
+}
+
+TEST_F(InferenceTest, MultipleRangeConstraintsFor) {
+  string tc = R"TC(
+    def fun(float(M, N) X) -> (R1) {
+        for t in 0:123 {
+            R1(t, m, n) = (t == 0) ? X(m, n) : 0.0 where t in 0:N
+        }
+    }
+)TC";
   EXPECT_THROW(Check(tc, {}), ::lang::ErrorReport);
 }
 

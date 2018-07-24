@@ -225,6 +225,27 @@ struct Parser {
     }
   }
   TreeRef parseStmt() {
+    if (L.cur().kind == TK_FOR) {
+      auto r = L.cur().range;
+      L.expect(TK_FOR);
+      // parseRangeConstraint and reuse its ident allows us to write:
+      //         "for t in A:B { ... }"
+      //     instead of "for t where t in A:B { ... }" and
+      //                       ~~~~~~~~~~~~~~~~~~~~~~
+      //                         WhereClause of 1 of 3 types
+      //     instead of "for t t in A:B { ... }" and
+      //                       ~~~~~~~~~~~~~~~~
+      //                         RangeConstraints with index duplication
+      auto rangeConstraint = parseRangeConstraint();
+      auto index = RangeConstraint(rangeConstraint).ident();
+      L.expect('{');
+      TreeList stmts;
+      while (!L.nextIf('}')) {
+        stmts.push_back(parseStmt());
+      }
+      auto stmts_list = List::create(r, std::move(stmts));
+      return For::create(r, index, rangeConstraint, stmts_list);
+    }
     auto ident = parseIdent();
     TreeRef list = parseOptionalIdentList();
     auto assign = parseAssignment();

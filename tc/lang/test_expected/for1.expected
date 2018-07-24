@@ -1,0 +1,79 @@
+(def
+  (ident fun)
+  (list
+    (param
+      (ident X)
+      (tensor_type
+        (float)
+        (list (ident M) (ident N))))
+    (param
+      (ident Meta)
+      (tensor_type
+        (float)
+        (list (ident T)))))
+  (list
+    (param (ident R1) (inferred))
+    (param (ident R2) (inferred)))
+  (list
+    (for
+      (ident t)
+      (range_constraint
+        (ident t)
+        (const 0 (int32))
+        (ident T))
+      (list
+        (comprehension
+          (ident R1)
+          (list
+            (ident t)
+            (ident m)
+            (ident n))
+          (=)
+          (?
+            (eq
+              (ident t)
+              (const 0 (int32)))
+            (access
+              (ident X)
+              (list
+                (ident m)
+                (ident n)))
+            (const 0 (float)))
+          (list)
+          (option)
+          (list))
+        (comprehension
+          (ident R2)
+          (list
+            (ident t)
+            (ident m)
+            (ident n))
+          (=)
+          (access
+            (ident R1)
+            (list
+              (ident t)
+              (ident m)
+              (ident n)))
+          (list)
+          (option)
+          (list))))))
+M: (int32)
+Meta: (tensor_type (float) (list (ident T)))
+N: (int32)
+R1: (tensor_type
+  (float)
+  (list
+    (ident R1.0)
+    (ident R1.1)
+    (ident R1.2)))
+R2: (tensor_type
+  (float)
+  (list
+    (ident R2.0)
+    (ident R2.1)
+    (ident R2.2)))
+T: (int32)
+X: (tensor_type
+  (float)
+  (list (ident M) (ident N)))
