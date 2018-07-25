@@ -469,6 +469,11 @@ struct ScheduleTree {
   // Note that this function does _not_ clone the child trees.
   virtual ScheduleTreeUPtr clone() const = 0;
 
+  // Compare the current node to the "other" node.
+  // Note that this function does _not_ compare the child trees,
+  // use treeEquals() instead to compare entire trees.
+  virtual bool nodeEquals(const ScheduleTree* other) const = 0;
+
   //
   // Data members
   //

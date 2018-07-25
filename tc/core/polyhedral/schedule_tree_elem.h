@@ -61,6 +61,10 @@ struct ScheduleTreeContext : public ScheduleTree {
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherContext = other->as<ScheduleTreeContext>();
+    return otherContext && *this == *otherContext;
+  }
 
  public:
   isl::set context_;
@@ -96,6 +100,10 @@ struct ScheduleTreeDomain : public ScheduleTree {
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
+  }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherDomain = other->as<ScheduleTreeDomain>();
+    return otherDomain && *this == *otherDomain;
   }
 
  public:
@@ -133,6 +141,10 @@ struct ScheduleTreeExtension : public ScheduleTree {
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherExtension = other->as<ScheduleTreeExtension>();
+    return otherExtension && *this == *otherExtension;
+  }
 
  public:
   isl::union_map extension_;
@@ -168,6 +180,10 @@ struct ScheduleTreeFilter : public ScheduleTree {
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
+  }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherFilter = other->as<ScheduleTreeFilter>();
+    return otherFilter && *this == *otherFilter;
   }
 
  public:
@@ -210,6 +226,10 @@ struct ScheduleTreeMapping : public ScheduleTree {
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherMapping = other->as<ScheduleTreeMapping>();
+    return otherMapping && *this == *otherMapping;
+  }
 
  public:
   // Mapping from identifiers to affine functions on domain elements.
@@ -247,6 +267,10 @@ struct ScheduleTreeSequence : public ScheduleTree {
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherSequence = other->as<ScheduleTreeSequence>();
+    return otherSequence && *this == *otherSequence;
+  }
 };
 
 struct ScheduleTreeSet : public ScheduleTree {
@@ -277,6 +301,10 @@ struct ScheduleTreeSet : public ScheduleTree {
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherSet = other->as<ScheduleTreeSet>();
+    return otherSet && *this == *otherSet;
+  }
 };
 
 struct ScheduleTreeBand : public ScheduleTree {
@@ -303,6 +331,10 @@ struct ScheduleTreeBand : public ScheduleTree {
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
+  }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherBand = other->as<ScheduleTreeBand>();
+    return otherBand && *this == *otherBand;
   }
 
   // Make a schedule node band from partial schedule.
@@ -379,6 +411,10 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
+  }
+  virtual bool nodeEquals(const ScheduleTree* other) const override {
+    auto otherMarker = other->as<ScheduleTreeThreadSpecificMarker>();
+    return otherMarker && *this == *otherMarker;
   }
 };
 
