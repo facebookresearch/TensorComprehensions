@@ -15,6 +15,7 @@
  */
 #include "tc/core/polyhedral/codegen_llvm.h"
 
+#include <fstream>
 #include <sstream>
 #include <vector>
 
@@ -41,7 +42,9 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/utils/system.h"
 #include "tc/external/isl.h"
+#include "tc/tc_config.h"
 
 #ifndef LLVM_VERSION_MAJOR
 #error LLVM_VERSION_MAJOR not set
@@ -640,6 +643,34 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
       << "LLVM generated module is invalid." << cg.str().c_str();
 
   cg.halide_cg.optimize_module();
+  if (FLAGS_llvm_dump_asm) {
+    std::string pat("/tmp/tcXXXXXX");
+    std::vector<char> ifn(pat.begin(), pat.end());
+    TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
+    std::string fileName(ifn.begin(), ifn.end());
+    std::string optFile = fileName + "-opt.ll";
+    std::string asmFile = fileName + ".s";
+    // cstdio's std::remove to delete files
+    tc::ScopeGuard sgi([&]() {
+      std::remove(optFile.c_str());
+      std::remove(asmFile.c_str());
+    });
+    {
+      std::ofstream ostream(optFile, std::ios::binary);
+      ostream << cg.str();
+    }
+    utils::checkedSystemCall(
+        std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
+        {FLAGS_llvm_dump_asm_options, optFile, std::string("-o ") + asmFile});
+    {
+      std::ifstream is(asmFile);
+      std::string str(
+          (std::istreambuf_iterator<char>(is)),
+          std::istreambuf_iterator<char>());
+      LOG(INFO) << str;
+    }
+  }
+
   return cg.halide_cg.move_module();
 }
 

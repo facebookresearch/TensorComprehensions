@@ -39,6 +39,8 @@ DECLARE_string(nvcc_flags);
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);
+DECLARE_bool(llvm_dump_asm);
+DECLARE_string(llvm_dump_asm_options);
 
 // Used in benchmarking and autotuning
 DECLARE_uint32(benchmark_warmup);
