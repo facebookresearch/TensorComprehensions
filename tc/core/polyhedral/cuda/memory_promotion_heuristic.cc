@@ -477,6 +477,20 @@ static std::vector<std::pair<isl::id, TensorGroupsInfo>> sortTensorGroupMap(
   return groupLists;
 }
 
+/* Sorts the given vector of tensor groups in place following the number of
+ * references in the group in decreasing order.  This prioritize groups with
+ * more references as they are more likely to benefit from promotion.
+ */
+static void sortTensorGroups(TensorGroupsInfo& tensorGroups) {
+  std::sort(
+      tensorGroups.begin(),
+      tensorGroups.end(),
+      [](const std::unique_ptr<TensorReferenceGroup>& group1,
+         const std::unique_ptr<TensorReferenceGroup>& group2) {
+        return group1->referenceIds().size() > group2->referenceIds().size();
+      });
+}
+
 /*
  * Promote to shared memory in "scop" below "node".  Use at most
  * "remainingMemory" bytes, and update the variable to reflect the amount of
@@ -512,15 +526,7 @@ void promoteToSharedBelow(
 
   for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
-    // Sort the reference groups to prioritize groups with more references as
-    // they are more likely to benefit from promotion.
-    std::sort(
-        tensorGroups.second.begin(),
-        tensorGroups.second.end(),
-        [](const std::unique_ptr<TensorReferenceGroup>& group1,
-           const std::unique_ptr<TensorReferenceGroup>& group2) {
-          return group1->referenceIds().size() > group2->referenceIds().size();
-        });
+    sortTensorGroups(tensorGroups.second);
 
     for (auto& group : tensorGroups.second) {
       auto sizes = group->approximationSizes();
