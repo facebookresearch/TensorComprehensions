@@ -364,8 +364,18 @@ bool ScheduleTreeFilter::operator==(const ScheduleTreeFilter& other) const {
 }
 
 bool ScheduleTreeMapping::operator==(const ScheduleTreeMapping& other) const {
-  auto res = filter_.is_equal(other.filter_);
-  return res;
+  if (mapping.size() != other.mapping.size()) {
+    return false;
+  }
+  for (const auto& kvp : mapping) {
+    if (other.mapping.count(kvp.first) == 0) {
+      return false;
+    }
+    if (!other.mapping.at(kvp.first).plain_is_equal(kvp.second)) {
+      return false;
+    }
+  }
+  return filter_.is_equal(other.filter_);
 }
 
 bool ScheduleTreeSequence::operator==(const ScheduleTreeSequence& other) const {
