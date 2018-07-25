@@ -229,10 +229,10 @@ ScheduleTree* bandTile(
     if (ts[i]) {
       upa = upa.scale_down(isl::val(st->ctx_, ts[i])).floor();
       if (tileOptions & TileOptions::ScaleTileLoops) {
-        upa = upa.scale_val(isl::val(st->ctx_, ts[i]));
+        upa = upa.scale(isl::val(st->ctx_, ts[i]));
       }
     } else {
-      upa = upa.scale_val(isl::val(st->ctx_, ts[i]));
+      upa = upa.scale(isl::val(st->ctx_, ts[i]));
     }
     band.mupa_ = band.mupa_.set_union_pw_aff(i, upa);
   }

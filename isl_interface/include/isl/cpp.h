@@ -1948,11 +1948,11 @@ protected:
 public:
   inline /* implicit */ multi_union_pw_aff();
   inline /* implicit */ multi_union_pw_aff(const isl::multi_union_pw_aff &obj);
-  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list);
   inline /* implicit */ multi_union_pw_aff(isl::union_pw_aff upa);
   inline /* implicit */ multi_union_pw_aff(isl::multi_pw_aff mpa);
   inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_val mv);
+  inline explicit multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma);
   inline explicit multi_union_pw_aff(isl::ctx ctx, const std::string &str);
   inline isl::multi_union_pw_aff &operator=(isl::multi_union_pw_aff obj);
   inline ~multi_union_pw_aff();
@@ -2164,6 +2164,7 @@ public:
   inline int n_piece() const;
   inline isl::set ne_set(isl::pw_aff pwaff2) const;
   inline isl::pw_aff neg() const;
+  inline isl::set nonneg_set() const;
   inline isl::set params() const;
   inline isl::pw_aff project_domain_on_params() const;
   inline isl::pw_aff pullback(isl::multi_aff ma) const;
@@ -2175,6 +2176,7 @@ public:
   inline isl::pw_aff tdiv_q(isl::pw_aff pa2) const;
   inline isl::pw_aff tdiv_r(isl::pw_aff pa2) const;
   inline isl::pw_aff union_add(isl::pw_aff pwaff2) const;
+  inline isl::set zero_set() const;
   typedef isl_pw_aff* isl_ptr_t;
 };
 
@@ -2266,8 +2268,8 @@ public:
   inline isl::pw_multi_aff range_factor_domain() const;
   inline isl::pw_multi_aff range_factor_range() const;
   inline isl::pw_multi_aff range_product(isl::pw_multi_aff pma2) const;
-  inline isl::pw_multi_aff scale_down_val(isl::val v) const;
-  inline isl::pw_multi_aff scale_val(isl::val v) const;
+  inline isl::pw_multi_aff scale(isl::val v) const;
+  inline isl::pw_multi_aff scale_down(isl::val v) const;
   inline isl::pw_multi_aff set_pw_aff(unsigned int pos, isl::pw_aff pa) const;
   inline isl::pw_multi_aff union_add(isl::pw_multi_aff pma2) const;
   typedef isl_pw_multi_aff* isl_ptr_t;
@@ -3144,8 +3146,8 @@ public:
   static inline isl::union_pw_aff param_on_domain(isl::union_set domain, isl::id id);
   inline bool plain_is_equal(const isl::union_pw_aff &upa2) const;
   inline isl::union_pw_aff pullback(isl::union_pw_multi_aff upma) const;
+  inline isl::union_pw_aff scale(isl::val v) const;
   inline isl::union_pw_aff scale_down(isl::val v) const;
-  inline isl::union_pw_aff scale_val(isl::val v) const;
   inline isl::union_pw_aff sub(isl::union_pw_aff upa2) const;
   inline isl::union_pw_aff union_add(isl::union_pw_aff upa2) const;
   inline isl::union_set zero_union_set() const;
@@ -3232,8 +3234,8 @@ public:
   inline isl::union_pw_aff get_union_pw_aff(int pos) const;
   inline int n_pw_multi_aff() const;
   inline isl::union_pw_multi_aff pullback(isl::union_pw_multi_aff upma2) const;
-  inline isl::union_pw_multi_aff scale_down_val(isl::val val) const;
-  inline isl::union_pw_multi_aff scale_val(isl::val val) const;
+  inline isl::union_pw_multi_aff scale(isl::val val) const;
+  inline isl::union_pw_multi_aff scale_down(isl::val val) const;
   inline isl::union_pw_multi_aff union_add(isl::union_pw_multi_aff upma2) const;
   typedef isl_union_pw_multi_aff* isl_ptr_t;
 };
@@ -11362,18 +11364,6 @@ multi_union_pw_aff::multi_union_pw_aff(const isl::multi_union_pw_aff &obj)
 multi_union_pw_aff::multi_union_pw_aff(__isl_take isl_multi_union_pw_aff *ptr)
     : ptr(ptr) {}
 
-multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
-{
-  if (domain.is_null() || ma.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = domain.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  ptr = res;
-}
 multi_union_pw_aff::multi_union_pw_aff(isl::space space, isl::union_pw_aff_list list)
 {
   if (space.is_null() || list.is_null())
@@ -11418,6 +11408,18 @@ multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_val mv)
   auto ctx = domain.get_ctx();
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_multi_union_pw_aff_multi_val_on_domain(domain.release(), mv.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  ptr = res;
+}
+multi_union_pw_aff::multi_union_pw_aff(isl::union_set domain, isl::multi_aff ma)
+{
+  if (domain.is_null() || ma.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = domain.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_multi_union_pw_aff_multi_aff_on_domain(domain.release(), ma.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   ptr = res;
@@ -13056,6 +13058,18 @@ isl::pw_aff pw_aff::neg() const
   return manage(res);
 }
 
+isl::set pw_aff::nonneg_set() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_aff_nonneg_set(copy());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::set pw_aff::params() const
 {
   if (!ptr)
@@ -13183,6 +13197,18 @@ isl::pw_aff pw_aff::union_add(isl::pw_aff pwaff2) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_pw_aff_union_add(copy(), pwaff2.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::set pw_aff::zero_set() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_aff_zero_set(copy());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -13752,25 +13778,25 @@ isl::pw_multi_aff pw_multi_aff::range_product(isl::pw_multi_aff pma2) const
   return manage(res);
 }
 
-isl::pw_multi_aff pw_multi_aff::scale_down_val(isl::val v) const
-{
-  if (!ptr || v.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_pw_multi_aff_scale_down_val(copy(), v.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::pw_multi_aff pw_multi_aff::scale_val(isl::val v) const
+isl::pw_multi_aff pw_multi_aff::scale(isl::val v) const
 {
   if (!ptr || v.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_pw_multi_aff_scale_val(copy(), v.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::pw_multi_aff pw_multi_aff::scale_down(isl::val v) const
+{
+  if (!ptr || v.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_multi_aff_scale_down_val(copy(), v.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -19180,6 +19206,18 @@ isl::union_pw_aff union_pw_aff::pullback(isl::union_pw_multi_aff upma) const
   return manage(res);
 }
 
+isl::union_pw_aff union_pw_aff::scale(isl::val v) const
+{
+  if (!ptr || v.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_union_pw_aff_scale_val(copy(), v.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
 isl::union_pw_aff union_pw_aff::scale_down(isl::val v) const
 {
   if (!ptr || v.is_null())
@@ -19187,18 +19225,6 @@ isl::union_pw_aff union_pw_aff::scale_down(isl::val v) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_union_pw_aff_scale_down_val(copy(), v.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::union_pw_aff union_pw_aff::scale_val(isl::val v) const
-{
-  if (!ptr || v.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_pw_aff_scale_val(copy(), v.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -19704,25 +19730,25 @@ isl::union_pw_multi_aff union_pw_multi_aff::pullback(isl::union_pw_multi_aff upm
   return manage(res);
 }
 
-isl::union_pw_multi_aff union_pw_multi_aff::scale_down_val(isl::val val) const
-{
-  if (!ptr || val.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
-  auto res = isl_union_pw_multi_aff_scale_down_val(copy(), val.release());
-  if (!res)
-    throw exception::create_from_last_error(get_ctx());
-  return manage(res);
-}
-
-isl::union_pw_multi_aff union_pw_multi_aff::scale_val(isl::val val) const
+isl::union_pw_multi_aff union_pw_multi_aff::scale(isl::val val) const
 {
   if (!ptr || val.is_null())
     throw isl::exception::create(isl_error_invalid,
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_union_pw_multi_aff_scale_val(copy(), val.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::union_pw_multi_aff union_pw_multi_aff::scale_down(isl::val val) const
+{
+  if (!ptr || val.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_union_pw_multi_aff_scale_down_val(copy(), val.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
