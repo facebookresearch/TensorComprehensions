@@ -86,7 +86,7 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
 
   // Now we can build stuff
   auto mappedScop =
-      polyhedral::MappedScop::makeWithOuterBlockInnerThreadStrategy(
+      polyhedral::cuda::MappedScop::makeWithOuterBlockInnerThreadStrategy(
           std::move(scop), options);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());

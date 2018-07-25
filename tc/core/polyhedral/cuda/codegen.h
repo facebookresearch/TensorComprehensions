@@ -26,6 +26,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 struct CodegenContext;
 struct CodegenStatementContext;
@@ -146,5 +147,6 @@ std::string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& scop);
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

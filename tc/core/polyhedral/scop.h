@@ -41,8 +41,6 @@ namespace polyhedral {
 using ReductionDimSet = std::set<std::string>;
 class TensorReferenceGroup;
 
-class MappedScop;
-
 struct Scop {
  private:
   Scop() {}
