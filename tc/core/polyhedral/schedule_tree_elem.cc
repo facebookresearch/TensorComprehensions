@@ -250,17 +250,6 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   TC_CHECK_EQ(nBegin - n, nMember());
 }
 
-isl::multi_union_pw_aff ScheduleTreeBand::memberRange(size_t first, size_t n)
-    const {
-  auto list = mupa_.get_union_pw_aff_list();
-  auto space = mupa_.get_space().params().add_unnamed_tuple_ui(n);
-  auto end = first + n;
-  TC_CHECK_LE(end, nMember());
-  list = list.drop(end, nMember() - end);
-  list = list.drop(0, first);
-  return isl::multi_union_pw_aff(space, list);
-}
-
 std::unique_ptr<ScheduleTreeThreadSpecificMarker>
 ScheduleTreeThreadSpecificMarker::make(
     isl::ctx ctx,

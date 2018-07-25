@@ -331,7 +331,15 @@ struct ScheduleTreeBand : public ScheduleTree {
 
   // Extract the range of "n" members starting at "first"
   // (in an anonymous space).
-  isl::multi_union_pw_aff memberRange(size_t first, size_t n) const;
+  isl::multi_union_pw_aff memberRange(size_t first, size_t n) const {
+    auto list = mupa_.get_union_pw_aff_list();
+    auto space = mupa_.get_space().params().add_unnamed_tuple_ui(n);
+    auto end = first + n;
+    TC_CHECK_LE(end, nMember());
+    list = list.drop(end, nMember() - end);
+    list = list.drop(0, first);
+    return isl::multi_union_pw_aff(space, list);
+  }
 
  public:
   bool permutable_{false};
