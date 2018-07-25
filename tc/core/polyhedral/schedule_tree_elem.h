@@ -52,19 +52,15 @@ struct ScheduleTreeContext : public ScheduleTree {
       const ScheduleTreeContext* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
-  bool operator==(const ScheduleTreeContext& other) const;
-  bool operator!=(const ScheduleTreeContext& other) const {
-    return !(*this == other);
-  }
-
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherContext = other->as<ScheduleTreeContext>();
-    return otherContext && *this == *otherContext;
+    return otherContext && nodeEquals(otherContext);
   }
+  bool nodeEquals(const ScheduleTreeContext* otherContext) const;
 
  public:
   isl::set context_;
@@ -92,19 +88,15 @@ struct ScheduleTreeDomain : public ScheduleTree {
       const ScheduleTreeDomain* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
-  bool operator==(const ScheduleTreeDomain& other) const;
-  bool operator!=(const ScheduleTreeDomain& other) const {
-    return !(*this == other);
-  }
-
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherDomain = other->as<ScheduleTreeDomain>();
-    return otherDomain && *this == *otherDomain;
+    return otherDomain && nodeEquals(otherDomain);
   }
+  bool nodeEquals(const ScheduleTreeDomain* otherDomain) const;
 
  public:
   isl::union_set domain_;
@@ -132,19 +124,15 @@ struct ScheduleTreeExtension : public ScheduleTree {
       const ScheduleTreeExtension* tree,
       std::vector<ScheduleTreeUPtr>&& children = {});
 
-  bool operator==(const ScheduleTreeExtension& other) const;
-  bool operator!=(const ScheduleTreeExtension& other) const {
-    return !(*this == other);
-  }
-
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherExtension = other->as<ScheduleTreeExtension>();
-    return otherExtension && *this == *otherExtension;
+    return otherExtension && nodeEquals(otherExtension);
   }
+  bool nodeEquals(const ScheduleTreeExtension* otherExtension) const;
 
  public:
   isl::union_map extension_;
@@ -165,11 +153,6 @@ struct ScheduleTreeFilter : public ScheduleTree {
  public:
   virtual ~ScheduleTreeFilter() override {}
 
-  bool operator==(const ScheduleTreeFilter& other) const;
-  bool operator!=(const ScheduleTreeFilter& other) const {
-    return !(*this == other);
-  }
-
   static std::unique_ptr<ScheduleTreeFilter> make(
       isl::union_set filter,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -183,8 +166,9 @@ struct ScheduleTreeFilter : public ScheduleTree {
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherFilter = other->as<ScheduleTreeFilter>();
-    return otherFilter && *this == *otherFilter;
+    return otherFilter && nodeEquals(otherFilter);
   }
+  bool nodeEquals(const ScheduleTreeFilter* otherFilter) const;
 
  public:
   isl::union_set filter_;
@@ -209,11 +193,6 @@ struct ScheduleTreeMapping : public ScheduleTree {
  public:
   virtual ~ScheduleTreeMapping() override {}
 
-  bool operator==(const ScheduleTreeMapping& other) const;
-  bool operator!=(const ScheduleTreeMapping& other) const {
-    return !(*this == other);
-  }
-
   static std::unique_ptr<ScheduleTreeMapping> make(
       isl::ctx ctx,
       const Mapping& mapping,
@@ -228,8 +207,9 @@ struct ScheduleTreeMapping : public ScheduleTree {
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherMapping = other->as<ScheduleTreeMapping>();
-    return otherMapping && *this == *otherMapping;
+    return otherMapping && nodeEquals(otherMapping);
   }
+  bool nodeEquals(const ScheduleTreeMapping* otherMapping) const;
 
  public:
   // Mapping from identifiers to affine functions on domain elements.
@@ -251,11 +231,6 @@ struct ScheduleTreeSequence : public ScheduleTree {
  public:
   virtual ~ScheduleTreeSequence() override {}
 
-  bool operator==(const ScheduleTreeSequence& other) const;
-  bool operator!=(const ScheduleTreeSequence& other) const {
-    return !(*this == other);
-  }
-
   static std::unique_ptr<ScheduleTreeSequence> make(
       isl::ctx ctx,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -269,8 +244,9 @@ struct ScheduleTreeSequence : public ScheduleTree {
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherSequence = other->as<ScheduleTreeSequence>();
-    return otherSequence && *this == *otherSequence;
+    return otherSequence && nodeEquals(otherSequence);
   }
+  bool nodeEquals(const ScheduleTreeSequence* otherSequence) const;
 };
 
 struct ScheduleTreeSet : public ScheduleTree {
@@ -285,11 +261,6 @@ struct ScheduleTreeSet : public ScheduleTree {
  public:
   virtual ~ScheduleTreeSet() override {}
 
-  bool operator==(const ScheduleTreeSet& other) const;
-  bool operator!=(const ScheduleTreeSet& other) const {
-    return !(*this == other);
-  }
-
   static std::unique_ptr<ScheduleTreeSet> make(
       isl::ctx ctx,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -303,8 +274,9 @@ struct ScheduleTreeSet : public ScheduleTree {
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherSet = other->as<ScheduleTreeSet>();
-    return otherSet && *this == *otherSet;
+    return otherSet && nodeEquals(otherSet);
   }
+  bool nodeEquals(const ScheduleTreeSet* otherSet) const;
 };
 
 struct ScheduleTreeBand : public ScheduleTree {
@@ -323,19 +295,15 @@ struct ScheduleTreeBand : public ScheduleTree {
 
   virtual ~ScheduleTreeBand() override {}
 
-  bool operator==(const ScheduleTreeBand& other) const;
-  bool operator!=(const ScheduleTreeBand& other) const {
-    return !(*this == other);
-  }
-
   virtual std::ostream& write(std::ostream& os) const override;
   virtual ScheduleTreeUPtr clone() const override {
     return make(this);
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherBand = other->as<ScheduleTreeBand>();
-    return otherBand && *this == *otherBand;
+    return otherBand && nodeEquals(otherBand);
   }
+  bool nodeEquals(const ScheduleTreeBand* other) const;
 
   // Make a schedule node band from partial schedule.
   // Replace "mupa" by its greatest integer part to ensure that the
@@ -394,13 +362,6 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
  public:
   virtual ~ScheduleTreeThreadSpecificMarker() override {}
 
-  bool operator==(const ScheduleTreeThreadSpecificMarker& other) const {
-    return true;
-  }
-  bool operator!=(const ScheduleTreeThreadSpecificMarker& other) const {
-    return !(*this == other);
-  }
-
   static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
       isl::ctx ctx,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -414,8 +375,9 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
   }
   virtual bool nodeEquals(const ScheduleTree* other) const override {
     auto otherMarker = other->as<ScheduleTreeThreadSpecificMarker>();
-    return otherMarker && *this == *otherMarker;
+    return otherMarker && nodeEquals(otherMarker);
   }
+  bool nodeEquals(const ScheduleTreeThreadSpecificMarker* other) const;
 };
 
 std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt);
