@@ -94,7 +94,7 @@ isl::val boundInstancesAndMarkUnroll(
   auto n = band->nMember();
 
   auto list = partial.get_union_pw_aff_list();
-  auto space = partial.get_space().domain();
+  auto space = partial.get_space().params();
   for (int i = n - 1; i >= 0; --i) {
     auto member = partial.get_union_pw_aff(i);
     auto outerMap = prefix;
