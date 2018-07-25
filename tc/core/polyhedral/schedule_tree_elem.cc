@@ -37,15 +37,176 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
-std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::fromMultiUnionPwAff(
-    isl::multi_union_pw_aff mupa) {
+std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
+    isl::set context,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(context));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
+    const ScheduleTreeContext* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    isl::union_set domain,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(domain));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    const ScheduleTreeDomain* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
+    isl::union_map extension,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeExtension>(
+      new ScheduleTreeExtension(extension));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
+    const ScheduleTreeExtension* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeExtension>(new ScheduleTreeExtension(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
+    isl::union_set filter,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(filter));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
+    const ScheduleTreeFilter* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    isl::ctx ctx,
+    const ScheduleTreeMapping::Mapping& mapping,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeMapping>(
+      new ScheduleTreeMapping(ctx, mapping));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    const ScheduleTreeMapping* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeMapping>(new ScheduleTreeMapping(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+ScheduleTreeMapping::ScheduleTreeMapping(
+    isl::ctx ctx,
+    const ScheduleTreeMapping::Mapping& mapping)
+    : ScheduleTree(ctx, {}, NodeType),
+      mapping(mapping),
+      filter_(isl::union_set()) {
+  TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
+
+  auto domain = mapping.cbegin()->second.domain();
+  for (auto& kvp : mapping) {
+    TC_CHECK(domain.is_equal(kvp.second.domain()));
+  }
+  filter_ = domain.universe();
+  for (auto& kvp : mapping) {
+    auto upa = kvp.second;
+    auto id = kvp.first;
+    // Create mapping filter by equating the
+    // parameter mappedIds[i] to the "i"-th affine function.
+    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
+    filter_ = filter_.intersect(upa.zero_union_set());
+  }
+}
+
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    const ScheduleTreeSequence* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
+    const ScheduleTreeSet* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
+    isl::multi_union_pw_aff mupa,
+    bool permutable,
+    std::vector<bool> coincident,
+    std::vector<bool> unroll,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), coincident.size());
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), unroll.size());
   isl::ctx ctx(mupa.get_ctx());
   std::unique_ptr<ScheduleTreeBand> band(new ScheduleTreeBand(ctx));
+  band->permutable_ = permutable;
   band->mupa_ = mupa.floor();
-  size_t n = band->mupa_.size();
-  band->coincident_ = vector<bool>(n, false);
-  band->unroll_ = vector<bool>(n, false);
+  band->coincident_ = coincident;
+  band->unroll_ = unroll;
+  band->appendChildren(std::move(children));
   return band;
+}
+
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
+    const ScheduleTreeBand* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeBand>(new ScheduleTreeBand(*tree));
+  res->appendChildren(std::move(children));
+  return res;
 }
 
 // Return the number of scheduling dimensions in the band
@@ -98,6 +259,26 @@ isl::multi_union_pw_aff ScheduleTreeBand::memberRange(size_t first, size_t n)
   list = list.drop(end, nMember() - end);
   list = list.drop(0, first);
   return isl::multi_union_pw_aff(space, list);
+}
+
+std::unique_ptr<ScheduleTreeThreadSpecificMarker>
+ScheduleTreeThreadSpecificMarker::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeThreadSpecificMarker>(
+      new ScheduleTreeThreadSpecificMarker(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeThreadSpecificMarker>
+ScheduleTreeThreadSpecificMarker::make(
+    const ScheduleTreeThreadSpecificMarker* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeThreadSpecificMarker>(
+      new ScheduleTreeThreadSpecificMarker(*tree));
+  res->appendChildren(std::move(children));
+  return res;
 }
 
 bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {

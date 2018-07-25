@@ -401,11 +401,11 @@ struct ScheduleTree {
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
     auto ctx = arg->ctx_;
-    auto res = new T(ctx);
-    flattenSequenceOrSet(res);
+    auto res = T::make(ctx);
+    flattenSequenceOrSet(res.get());
     res->appendChildren(
         vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
-    return ScheduleTreeUPtr(res);
+    return res;
   }
 
   // Make a (deep) copy of "tree".
@@ -464,6 +464,10 @@ struct ScheduleTree {
   // Write the textual representation of the node to "os".
   // Note that this function does _not_ output the child trees.
   virtual std::ostream& write(std::ostream& os) const = 0;
+
+  // Clone the current node.
+  // Note that this function does _not_ clone the child trees.
+  virtual ScheduleTreeUPtr clone() const = 0;
 
   //
   // Data members
