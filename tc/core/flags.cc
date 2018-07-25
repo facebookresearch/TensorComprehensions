@@ -59,7 +59,7 @@ DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
 DEFINE_bool(llvm_dump_asm, false, "Print asm");
 DEFINE_string(
     llvm_dump_asm_options,
-    "-march=x86-64 -mcpu=broadwell -filetype=asm",
+    "-filetype=asm",
     "Options used when dumping asm");
 
 DEFINE_uint32(

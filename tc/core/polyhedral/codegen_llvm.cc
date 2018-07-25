@@ -42,6 +42,7 @@
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/utils/cpu.h"
 #include "tc/core/utils/system.h"
 #include "tc/external/isl.h"
 #include "tc/tc_config.h"
@@ -661,7 +662,7 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
     }
     utils::checkedSystemCall(
         std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
-        {FLAGS_llvm_dump_asm_options, optFile, std::string("-o ") + asmFile});
+        {FLAGS_llvm_dump_asm_options, utils::CPUID::llcFlags(), optFile, std::string("-o ") + asmFile});
     {
       std::ifstream is(asmFile);
       std::string str(
