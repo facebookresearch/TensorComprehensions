@@ -144,8 +144,9 @@ struct PolyhedralMapperTest : public ::testing::Test {
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
       auto scheduleISL = fromIslSchedule(islNode.get_schedule().reset_user());
 
-      ASSERT_TRUE(*scheduleISL == *scheduleISLPP) << *scheduleISL << "\nVS\n"
-                                                  << *scheduleISLPP;
+      ASSERT_TRUE(scheduleISL->treeEquals(scheduleISLPP.get()))
+          << *scheduleISL << "\nVS\n"
+          << *scheduleISLPP;
     }
   }
 
