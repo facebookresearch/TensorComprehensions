@@ -365,9 +365,9 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   std::string expected(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*C)[M] = reinterpret_cast<float32 (*)[M]>(pC);
-  const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
-  const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
+  float (*C)[M] = reinterpret_cast<float (*)[M]>(pC);
+  const float (*A)[M] = reinterpret_cast<const float (*)[M]>(pA);
+  const float (*B)[M] = reinterpret_cast<const float (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t0 + c1 + 1) {
       C[(t1 + 16 * b0)][(t0 + c1)] = (A[(t1 + 16 * b0)][(t0 + c1)] + B[(t1 + 16 * b0)][(t0 + c1)]);
@@ -400,16 +400,16 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
   std::string expected(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O1)[N] = reinterpret_cast<float32 (*)[N]>(pO1);
-  float32 (*O2)[N] = reinterpret_cast<float32 (*)[N]>(pO2);
-  float32 (*O3)[N] = reinterpret_cast<float32 (*)[N]>(pO3);
-  const float32 (*A)[N][N][N] = reinterpret_cast<const float32 (*)[N][N][N]>(pA);
-  const float32 (*B)[N] = reinterpret_cast<const float32 (*)[N]>(pB);
-  const float32 (*C)[N] = reinterpret_cast<const float32 (*)[N]>(pC);
-  const float32 (*D)[N] = reinterpret_cast<const float32 (*)[N]>(pD);
+  float (*O1)[N] = reinterpret_cast<float (*)[N]>(pO1);
+  float (*O2)[N] = reinterpret_cast<float (*)[N]>(pO2);
+  float (*O3)[N] = reinterpret_cast<float (*)[N]>(pO3);
+  const float (*A)[N][N][N] = reinterpret_cast<const float (*)[N][N][N]>(pA);
+  const float (*B)[N] = reinterpret_cast<const float (*)[N]>(pB);
+  const float (*C)[N] = reinterpret_cast<const float (*)[N]>(pC);
+  const float (*D)[N] = reinterpret_cast<const float (*)[N]>(pD);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
-      O1[c0][c1] = 0.000000f;
+      O1[c0][c1] = (float)0.000000;
     }
   }
   for (int c0 = 0; c0 < N; c0 += 1) {
@@ -449,14 +449,14 @@ def fun(float(N, N) A) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected(
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA) {
+      R"RES(__global__ void kernel_anon(int N, float* pO, const float* pA) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
-  const float32 (*A)[N] = reinterpret_cast<const float32 (*)[N]>(pA);
+  float (*O)[N] = reinterpret_cast<float (*)[N]>(pO);
+  const float (*A)[N] = reinterpret_cast<const float (*)[N]>(pA);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
-      O[c0][c1] = (((A[c0][c1] + float32(c0)) + float32(c1)) + float32(N));
+      O[c0][c1] = (((A[c0][c1] + (float)(c0)) + (float)(c1)) + (float)(N));
     }
   }
 }
@@ -478,13 +478,13 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected =
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
+      R"RES(__global__ void kernel_anon(int N, float* pO, const float* pA, const float* pB, const float* pC) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
-  const float32 (*A)[512] = reinterpret_cast<const float32 (*)[512]>(pA);
-  const float32 (*B)[512] = reinterpret_cast<const float32 (*)[512]>(pB);
-  const float32 (*C) = reinterpret_cast<const float32 (*)>(pC);
+  float (*O)[512] = reinterpret_cast<float (*)[512]>(pO);
+  const float (*A)[512] = reinterpret_cast<const float (*)[512]>(pA);
+  const float (*B)[512] = reinterpret_cast<const float (*)[512]>(pB);
+  const float (*C) = reinterpret_cast<const float (*)>(pC);
   for (int c0 = 0; c0 <= 511; c0 += 1) {
     for (int c1 = 0; c1 <= 511; c1 += 1) {
       O[c0][c1] = (nextafter(C[c0], exp(A[c0][c1])) + log(B[c1][c0]));
@@ -499,13 +499,13 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
 constexpr auto kExpectedMatmul_64_64_64 =
     R"CUDA(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[64] = reinterpret_cast<float32 (*)[64]>(pO);
-  const float32 (*A)[64] = reinterpret_cast<const float32 (*)[64]>(pA);
-  const float32 (*B)[64] = reinterpret_cast<const float32 (*)[64]>(pB);
+  float (*O)[64] = reinterpret_cast<float (*)[64]>(pO);
+  const float (*A)[64] = reinterpret_cast<const float (*)[64]>(pA);
+  const float (*B)[64] = reinterpret_cast<const float (*)[64]>(pB);
   for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
-        O[(c0 + c2)][(t0 + c1)] = 0.000000f;
+        O[(c0 + c2)][(t0 + c1)] = (float)0.000000;
         for (int c4 = 0; c4 <= 63; c4 += 1) {
           O[(c0 + c2)][(t0 + c1)] = (O[(c0 + c2)][(t0 + c1)] + (A[(c0 + c2)][c4]*B[c4][(t0 + c1)]));
         }

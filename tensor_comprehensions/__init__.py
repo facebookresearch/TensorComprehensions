@@ -28,6 +28,10 @@ from tensor_comprehensions.tclib import debug_halide
 from tensor_comprehensions.tclib import debug_tc_mapper
 from tensor_comprehensions.tclib import debug_tuner
 from tensor_comprehensions.tclib import dump_cuda
+from tensor_comprehensions.tclib import dump_ptx
+from tensor_comprehensions.tclib import cuda_compiler
+from tensor_comprehensions.tclib import llvm_flags
+from tensor_comprehensions.tclib import nvcc_flags
 
 from tensor_comprehensions.tclib import CompilationCache
 from tensor_comprehensions.tclib import MappingOptions
@@ -604,6 +608,10 @@ __all__ = [
     'debug_tc_mapper',
     'debug_tuner',
     'dump_cuda',
+    'dump_ptx',
+    'cuda_compiler',
+    'llvm_flags',
+    'nvcc_flags',
     # Functions exposed by the tclib
     'compile',
     'autotune',

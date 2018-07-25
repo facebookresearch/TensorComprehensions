@@ -15,13 +15,15 @@
  */
 #pragma once
 
-#ifndef CUDA_HOME
-#error "CUDA_HOME must be defined"
-#endif // CUDA_HOME
+#include "tc/tc_config.h"
 
-#ifndef CUB_HOME
-#error "CUB_HOME must be defined"
-#endif // CUB_HOME
+#ifndef TC_CUDA_INCLUDE_DIR
+#error "TC_CUDA_INCLUDE_DIR must be defined"
+#endif // TC_CUDA_INCLUDE_DIR
+
+#ifndef TC_CUB_INCLUDE_DIR
+#error "TC_CUB_INCLUDE_DIR must be defined"
+#endif // TC_CUB_INCLUDE_DIR
 
 #include <sstream>
 #include <stdexcept>

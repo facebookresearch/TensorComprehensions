@@ -59,7 +59,7 @@ class TestTC(unittest.TestCase):
             .outerScheduleFusionStrategy("Preserve3Coincident"))
 
     #
-    # Simple TC example with explicit 'naive' compilation
+    # Simple TC example with explicit 'naive' compilation with nvrtc (default)
     #
     def test_tc(self):
         A, B = torch.randn(100, device='cuda'), torch.randn(100, device='cuda')
@@ -69,6 +69,40 @@ class TestTC(unittest.TestCase):
             'naive',
             A, B,
         )
+        C = add(A, B)
+        tc.assert_almost_equal(C, torch.add(A, B), A, B)
+
+    #
+    # Simple TC example with explicit 'naive' compilation with llvm
+    #
+    def test_tc_llvm(self):
+        A, B = torch.randn(100, device='cuda'), torch.randn(100, device='cuda')
+        tc.cuda_compiler('llvm')
+        add = tc.compile(
+            "def add(float(N) A, float(N) B) -> (C) { C(i) = A(i) + B(i) }",
+            "add",
+            'naive',
+            A, B,
+        )
+        # Reset the cuda compiler back to nvrtc
+        tc.cuda_compiler('nvrtc')
+        C = add(A, B)
+        tc.assert_almost_equal(C, torch.add(A, B), A, B)
+
+    #
+    # Simple TC example with explicit 'naive' compilation with nvcc
+    #
+    def test_tc_nvcc(self):
+        A, B = torch.randn(100, device='cuda'), torch.randn(100, device='cuda')
+        tc.cuda_compiler('nvcc')
+        add = tc.compile(
+            "def add(float(N) A, float(N) B) -> (C) { C(i) = A(i) + B(i) }",
+            "add",
+            'naive',
+            A, B,
+        )
+        # Reset the cuda compiler back to nvrtc
+        tc.cuda_compiler('nvrtc')
         C = add(A, B)
         tc.assert_almost_equal(C, torch.add(A, B), A, B)
 

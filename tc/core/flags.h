@@ -31,6 +31,11 @@ DECLARE_bool(debug_tuner);
 DECLARE_bool(dump_cuda);
 DECLARE_bool(dump_ptx);
 
+// ptx generation
+DECLARE_string(cuda_compiler);
+DECLARE_string(llvm_flags);
+DECLARE_string(nvcc_flags);
+
 // llvm codegen
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);
