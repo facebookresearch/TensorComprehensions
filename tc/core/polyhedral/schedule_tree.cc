@@ -344,7 +344,7 @@ bool ScheduleTree::operator==(const ScheduleTree& other) const {
   if (children_.size() != other.children_.size()) {
     return false;
   }
-  if (!elemEquals(this, &other, type_)) {
+  if (!this->nodeEquals(&other)) {
     return false;
   }
   TC_CHECK(!other.as<ScheduleTreeSet>())

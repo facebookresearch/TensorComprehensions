@@ -418,11 +418,6 @@ struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
   }
 };
 
-bool elemEquals(
-    const ScheduleTree* e1,
-    const ScheduleTree* e2,
-    detail::ScheduleTreeType type);
-
 std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt);
 std::ostream& operator<<(
     std::ostream& os,

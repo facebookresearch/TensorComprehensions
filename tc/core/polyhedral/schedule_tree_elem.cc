@@ -385,36 +385,6 @@ bool ScheduleTreeSequence::operator==(const ScheduleTreeSequence& other) const {
 bool ScheduleTreeSet::operator==(const ScheduleTreeSet& other) const {
   return true;
 }
-
-bool elemEquals(
-    const ScheduleTree* e1,
-    const ScheduleTree* e2,
-    detail::ScheduleTreeType type) {
-#define ELEM_EQUALS_CASE(CLASS)                                              \
-  else if (type == CLASS::NodeType) {                                        \
-    return *static_cast<const CLASS*>(e1) == *static_cast<const CLASS*>(e2); \
-  }
-
-  if (type == detail::ScheduleTreeType::None) {
-    LOG(FATAL) << "Hit Error node!";
-  }
-  ELEM_EQUALS_CASE(ScheduleTreeBand)
-  ELEM_EQUALS_CASE(ScheduleTreeContext)
-  ELEM_EQUALS_CASE(ScheduleTreeDomain)
-  ELEM_EQUALS_CASE(ScheduleTreeExtension)
-  ELEM_EQUALS_CASE(ScheduleTreeFilter)
-  ELEM_EQUALS_CASE(ScheduleTreeMapping)
-  ELEM_EQUALS_CASE(ScheduleTreeSequence)
-  ELEM_EQUALS_CASE(ScheduleTreeSet)
-  else {
-    LOG(FATAL) << "NYI: ScheduleTree::operator== for type: "
-               << static_cast<int>(type);
-  }
-
-#undef ELEM_EQUALS_CASE
-
-  return false;
-}
 } // namespace detail
 } // namespace polyhedral
 } // namespace tc
