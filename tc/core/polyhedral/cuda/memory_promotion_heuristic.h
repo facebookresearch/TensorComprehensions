@@ -22,12 +22,14 @@
 
 namespace tc {
 namespace polyhedral {
-class MappedScop;
 class Scop;
 
 namespace detail {
 class ScheduleTree;
 }
+
+namespace cuda {
+class MappedScop;
 
 // In the given mapped scop "mscop",
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
@@ -43,5 +45,6 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope);
 
 void promoteToRegistersAtDepth(MappedScop& scop, std::size_t depth);
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

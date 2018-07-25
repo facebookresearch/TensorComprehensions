@@ -30,6 +30,7 @@ using namespace std;
 
 using namespace tc;
 using namespace tc::polyhedral;
+using namespace tc::polyhedral::cuda;
 
 namespace {
 int npoints(isl::set s) {

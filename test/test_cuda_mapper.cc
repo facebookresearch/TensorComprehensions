@@ -44,6 +44,7 @@ using namespace std;
 
 using namespace tc;
 using namespace tc::polyhedral;
+using namespace tc::polyhedral::cuda;
 using namespace tc::polyhedral::detail;
 
 struct PolyhedralMapperTest : public ::testing::Test {

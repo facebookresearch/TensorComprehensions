@@ -33,6 +33,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 namespace {
 
 // Map global<->shared copy bands to threads, starting from the innermost
@@ -760,5 +761,6 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   }
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

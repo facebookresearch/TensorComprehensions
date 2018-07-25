@@ -30,6 +30,11 @@
 
 namespace tc {
 namespace polyhedral {
+namespace detail {
+class ScheduleTree;
+} // namespace detail
+
+namespace cuda {
 
 // Scop associated with fixed block and grid dimensions.
 //
@@ -256,5 +261,7 @@ class MappedScop {
   // about the detected reduction.
   std::map<const detail::ScheduleTree*, Reduction> reductionBandUpdates_;
 };
+
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

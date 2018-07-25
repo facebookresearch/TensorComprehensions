@@ -31,11 +31,17 @@
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
+#include "tc/core/polyhedral/scop.h"
 
 using namespace std;
 
+using tc::polyhedral::detail::ScheduleTreeContext;
+using tc::polyhedral::detail::ScheduleTreeDomain;
+using tc::polyhedral::detail::toIslSchedule;
+
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 namespace {
 
@@ -612,8 +618,7 @@ void emitHalideExpr(
   class EmitHalide : public Halide::Internal::IRPrinter {
     using Halide::Internal::IRPrinter::visit;
     void visit(const Halide::Internal::Variable* op) {
-      auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
-          Halide::Expr(op), context);
+      auto pwAff = detail::makeAffFromMappedExpr(Halide::Expr(op), context);
       auto expr = context.build().expr_from(pwAff);
       auto s = expr.to_C_str();
       if (!is_identifier_or_nonnegative_integer(expr)) {
@@ -627,8 +632,7 @@ void emitHalideExpr(
       } else if (
           op->call_type == Halide::Internal::Call::CallType::Halide ||
           op->call_type == Halide::Internal::Call::CallType::Image) {
-        tc::polyhedral::detail::emitMappedTensorAccess(
-            op->name, op, op->args, context);
+        detail::emitMappedTensorAccess(op->name, op, op->args, context);
       } else if (op->is_intrinsic(tc2halide::kReductionUpdate)) {
         op->args[0].accept(this);
       } else {
@@ -831,8 +835,8 @@ string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
   // Expecting a schedule with domain root and context first child.
-  TC_CHECK(mscop.schedule()->as<detail::ScheduleTreeDomain>());
-  TC_CHECK(mscop.schedule()->child({0})->as<detail::ScheduleTreeContext>());
+  TC_CHECK(mscop.schedule()->as<ScheduleTreeDomain>());
+  TC_CHECK(mscop.schedule()->child({0})->as<ScheduleTreeContext>());
   const auto& scop = mscop.scop();
 
   // Make a map of the specialized scalar parameter values
@@ -876,7 +880,7 @@ string emitCudaKernel(
     return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
-  auto schedule = detail::toIslSchedule(mscop.schedule());
+  auto schedule = toIslSchedule(mscop.schedule());
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);
   auto root = mscop.schedule();
@@ -890,5 +894,6 @@ string emitCudaKernel(
   return ss.str();
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc
