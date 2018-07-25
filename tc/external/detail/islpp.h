@@ -36,8 +36,18 @@ namespace isl {
 //
 
 template <typename T>
+inline T operator+(T a, T b) {
+  return a.add(b);
+}
+
+template <typename T>
 inline T operator-(T a, T b) {
   return a.sub(b);
+}
+
+template <typename T>
+inline T operator&(T S1, T S2) {
+  return S1.intersect(S2);
 }
 
 inline isl::val operator*(isl::val l, isl::val r) {
@@ -50,10 +60,6 @@ inline isl::val operator*(isl::val v, long i) {
 
 inline isl::val operator*(long i, isl::val v) {
   return v * i;
-}
-
-inline isl::val operator+(isl::val l, isl::val r) {
-  return l.add(r);
 }
 
 inline isl::val operator+(isl::val v, long i) {
@@ -122,8 +128,6 @@ isl::aff operator*(isl::val V, isl::aff A);
 
 isl::aff operator/(isl::aff A, int i);
 
-isl::aff operator+(int i, isl::aff A);
-isl::aff operator+(isl::aff A, isl::aff B);
 isl::aff operator+(isl::aff A, int i);
 isl::aff operator+(isl::aff A, isl::val v);
 isl::aff operator+(isl::val v, isl::aff A);
@@ -184,10 +188,8 @@ isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-isl::set operator&(isl::set S1, isl::set S2);
 isl::union_set operator&(isl::union_set S1, isl::set S2);
 isl::union_set operator&(isl::set S1, isl::union_set S2);
-isl::union_set operator&(isl::union_set S1, isl::union_set S2);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::point
