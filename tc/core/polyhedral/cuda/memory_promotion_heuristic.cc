@@ -512,9 +512,8 @@ void promoteToSharedBelow(
     std::sort(
         tensorGroups.second.begin(),
         tensorGroups.second.end(),
-        [refsCount](
-            const std::unique_ptr<TensorReferenceGroup>& group1,
-            const std::unique_ptr<TensorReferenceGroup>& group2) {
+        [](const std::unique_ptr<TensorReferenceGroup>& group1,
+           const std::unique_ptr<TensorReferenceGroup>& group2) {
           return group1->referenceIds().size() > group2->referenceIds().size();
         });
 
