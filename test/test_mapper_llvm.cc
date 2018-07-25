@@ -48,7 +48,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
   scop = Scop::makeSpecializedScop<int>(*scop, {{"N", N}, {"M", M}});
-  auto mscop = MappedScop::makeSequential(
+  auto mscop = cpu::MappedScop::makeSequential(
       std::move(scop), CpuMappingOptions::makeNaiveMappingOptions());
   auto pJit = mscop->codegen("kernel_anon");
   auto fptr = reinterpret_cast<void (*)(float*, float*, float*, int, int)>(
@@ -89,7 +89,7 @@ TEST(LLVMCodegen, MultiStmt) {
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
   scop = Scop::makeSpecializedScop<int>(
       *scop, {{"N", N}, {"M", M}, {"K", K}, {"L", L}});
-  auto mscop = MappedScop::makeSequential(
+  auto mscop = cpu::MappedScop::makeSequential(
       std::move(scop), CpuMappingOptions::makeNaiveMappingOptions());
   auto pJit = mscop->codegen("kernel_anon");
   auto fptr = reinterpret_cast<void (*)(
@@ -170,7 +170,7 @@ def batch_matmul(float(B, N, M) X, float(B, M, K) Y) -> (Z) {
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
   scop = Scop::makeSpecializedScop<int>(
       *scop, {{"N", N}, {"M", M}, {"K", K}, {"B", B}});
-  auto mscop = MappedScop::makeSequential(
+  auto mscop = cpu::MappedScop::makeSequential(
       std::move(scop), CpuMappingOptions::makeNaiveMappingOptions());
   auto pJit = mscop->codegen("batch_matmul");
   auto fptr =
@@ -220,7 +220,7 @@ def convolution(float(N,C,H,W) I, float(O,C,KH,KW) W1, float(O) B) -> (tmp, O1)
        {"W", W},
        {"KW", KW},
        {"C", C}});
-  auto mscop = MappedScop::makeSequential(
+  auto mscop = cpu::MappedScop::makeSequential(
       std::move(scop), CpuMappingOptions::makeNaiveMappingOptions());
   auto pJit = mscop->codegen("convolution");
   auto fptr = reinterpret_cast<void (*)(
@@ -274,7 +274,7 @@ def concat(float(M, N) A, float(M, N) B) -> (O1) {
   auto ctx = isl::with_exceptions::globalIslCtx();
   auto scop = polyhedral::Scop::makeScop(ctx, tc);
   scop = Scop::makeSpecializedScop<int>(*scop, {{"N", N}, {"M", M}});
-  auto mscop = MappedScop::makeSequential(
+  auto mscop = cpu::MappedScop::makeSequential(
       std::move(scop), CpuMappingOptions::makeNaiveMappingOptions());
   auto pJit = mscop->codegen("concat");
   auto fptr = reinterpret_cast<void (*)(float*, float*, float*, int, int)>(

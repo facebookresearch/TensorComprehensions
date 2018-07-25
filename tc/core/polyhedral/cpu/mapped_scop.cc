@@ -37,6 +37,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cpu {
 
 std::unique_ptr<Jit> MappedScop::codegen(
     const std::string& specializedName) const {
@@ -89,5 +90,6 @@ std::unique_ptr<MappedScop> MappedScop::makeSequential(
   return mappedScop;
 }
 
+} // namespace cpu
 } // namespace polyhedral
 } // namespace tc

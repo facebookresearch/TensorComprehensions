@@ -29,6 +29,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cpu {
 
 class MappedScop {
  private:
@@ -70,5 +71,7 @@ class MappedScop {
  public:
   const uint64_t unroll;
 };
+
+} // namespace cpu
 } // namespace polyhedral
 } // namespace tc
