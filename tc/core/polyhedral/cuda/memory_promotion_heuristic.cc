@@ -446,6 +446,37 @@ bool isInThreadMappedScope(
   return false;
 }
 
+static std::vector<std::pair<isl::id, TensorGroupsInfo>> sortTensorGroupMap(
+    TensorGroups&& groupMap) {
+  // Prepare groups for sorting, to have specified order necessary for
+  // reproducibility and tests.
+  using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
+  std::vector<TensorGroupList> groupLists(
+      std::make_move_iterator(groupMap.begin()),
+      std::make_move_iterator(groupMap.end()));
+
+  // Computes the total number of references in all groups.
+  auto refsCount = [](const TensorGroupsInfo& info) {
+    size_t refs = 0;
+    for (auto const& group : info) {
+      refs += group->referenceIds().size();
+    }
+    return refs;
+  };
+
+  // Sort by the total number of references, then by name.  Because names are
+  // guarenteed to be unique, the order is total.
+  std::sort(
+      groupLists.begin(),
+      groupLists.end(),
+      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
+        auto r1 = refsCount(l1.second);
+        auto r2 = refsCount(l2.second);
+        return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
+      });
+  return groupLists;
+}
+
 /*
  * Promote to shared memory in "scop" below "node".  Use at most
  * "remainingMemory" bytes, and update the variable to reflect the amount of
@@ -474,37 +505,11 @@ void promoteToSharedBelow(
   auto partialSched = partialSchedule(root, node);
   auto mapping = collectMappingsTo<mapping::BlockId>(scop);
 
-  auto groupMap = TensorReferenceGroup::accessedWithin(
-      partialSched.intersect_domain(mapping), scop.body);
+  auto groupLists = sortTensorGroupMap(TensorReferenceGroup::accessedWithin(
+      partialSched.intersect_domain(mapping), scop.body));
   // Pure affine schedule without (mapping) filters.
   auto partialSchedMupa = partialScheduleMupa(root, node);
 
-  // Prepare groups for sorting, to have specified order necessary for
-  // reproducibility and tests.
-  using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
-  std::vector<TensorGroupList> groupLists(
-      std::make_move_iterator(groupMap.begin()),
-      std::make_move_iterator(groupMap.end()));
-
-  // Computes the total number of references in all groups.
-  auto refsCount = [](const TensorGroupsInfo& info) {
-    size_t refs = 0;
-    for (auto const& group : info) {
-      refs += group->referenceIds().size();
-    }
-    return refs;
-  };
-
-  // Sort by the total number of references, then by name.  Because names are
-  // guarenteed to be unique, the order is total.
-  std::sort(
-      groupLists.begin(),
-      groupLists.end(),
-      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
-        auto r1 = refsCount(l1.second);
-        auto r2 = refsCount(l2.second);
-        return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
-      });
   for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
     // Sort the reference groups to prioritize groups with more references as
