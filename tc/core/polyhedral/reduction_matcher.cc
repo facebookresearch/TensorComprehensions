@@ -66,16 +66,5 @@ isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop) {
   return update;
 }
 
-bool isSingleReductionWithin(
-    isl::union_set domain,
-    isl::multi_union_pw_aff prefix,
-    const Scop& scop) {
-  auto reductions = scop.body.reductions;
-  reductions = reductions.intersect_domain(domain);
-  auto prefixMap = isl::union_map::from(prefix);
-  auto prefixToReduction = reductions.apply_domain(prefixMap);
-  return prefixToReduction.is_single_valued();
-}
-
 } // namespace polyhedral
 } // namespace tc
