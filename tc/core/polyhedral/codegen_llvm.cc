@@ -27,6 +27,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO.h"
@@ -99,6 +100,32 @@ std::vector<int64_t> getTensorSizesWithoutLeadingDim(
   return sizes;
 }
 
+// Set some options, grabbed from Halide + we force fast math atm
+static llvm::TargetOptions makeTargetOptions() {
+  bool use_soft_float_abi = false;
+  bool per_instruction_fast_math_flags = true;
+
+  llvm::TargetOptions options;
+  options.AllowFPOpFusion = per_instruction_fast_math_flags
+      ? llvm::FPOpFusion::Strict
+      : llvm::FPOpFusion::Fast;
+  options.UnsafeFPMath = !per_instruction_fast_math_flags;
+  options.NoInfsFPMath = !per_instruction_fast_math_flags;
+  options.NoNaNsFPMath = !per_instruction_fast_math_flags;
+  options.HonorSignDependentRoundingFPMathOption =
+      !per_instruction_fast_math_flags;
+  options.NoZerosInBSS = false;
+  options.GuaranteedTailCallOpt = false;
+  options.StackAlignmentOverride = 0;
+  options.FunctionSections = true;
+  options.UseInitArray = false;
+  options.FloatABIType =
+      use_soft_float_abi ? llvm::FloatABI::Soft : llvm::FloatABI::Hard;
+  options.RelaxELFRelocations = false;
+
+  return options;
+}
+
 static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
@@ -116,6 +143,7 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     const char* llvm_args[] = {"tc (LLVM argument parsing)", nullptr};
     llvm::cl::ParseCommandLineOptions(
         sizeof(llvm_args) / sizeof(*llvm_args) - 1, llvm_args);
+
     init_context();
     module =
         llvm::make_unique<llvm::Module>("TensorComprehensionsModule", *context);
@@ -198,33 +226,35 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
   }
 
  public:
-  void optimize_module() {
+  void optimize_module(const llvm::TargetMachine& targetMachine) {
     LOG_IF(INFO, FLAGS_llvm_dump_before_opt)
         << "[LLVM-IR] Before optimization:\n"
         << toString(module.get());
 
-    llvm::legacy::FunctionPassManager functionPassManager(module.get());
-    llvm::legacy::PassManager modulePassManager;
+    std::unique_ptr<llvm::TargetMachine> targetMachineWithOptions(
+        targetMachine.getTarget().createTargetMachine(
+            targetMachine.getTargetTriple().str(),
+            targetMachine.getTargetCPU(),
+            targetMachine.getTargetFeatureString(),
+            makeTargetOptions(),
+            llvm::Reloc::PIC_,
+            llvm::CodeModel::Small,
+            llvm::CodeGenOpt::Aggressive));
 
-    std::unique_ptr<llvm::TargetMachine> targetMachine =
-        Halide::Internal::make_target_machine(*module);
+    llvm::legacy::PassManager modulePassManager;
     modulePassManager.add(llvm::createTargetTransformInfoWrapperPass(
-        targetMachine ? targetMachine->getTargetIRAnalysis()
-                      : llvm::TargetIRAnalysis()));
+        targetMachineWithOptions->getTargetIRAnalysis()));
+
+    llvm::legacy::FunctionPassManager functionPassManager(module.get());
     functionPassManager.add(llvm::createTargetTransformInfoWrapperPass(
-        targetMachine ? targetMachine->getTargetIRAnalysis()
-                      : llvm::TargetIRAnalysis()));
+        targetMachineWithOptions->getTargetIRAnalysis()));
 
     llvm::PassManagerBuilder b;
     b.OptLevel = kOptLevel;
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
     b.LoopVectorize = true;
     b.SLPVectorize = true;
-
-    if (targetMachine) {
-      targetMachine->adjustPassManager(b);
-    }
-
+    targetMachineWithOptions->adjustPassManager(b);
     b.populateFunctionPassManager(functionPassManager);
     b.populateModulePassManager(modulePassManager);
 
@@ -233,7 +263,6 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     for (llvm::Module::iterator i = module->begin(); i != module->end(); i++) {
       functionPassManager.run(*i);
     }
-
     functionPassManager.doFinalization();
     modulePassManager.run(*module);
 
@@ -329,10 +358,12 @@ class LLVMCodegen {
   LLVMCodegen(
       const Scop& scop,
       const IteratorMapsType& iteratorMaps,
-      const StmtSubscriptExprMapType& stmtSubscripts)
+      const StmtSubscriptExprMapType& stmtSubscripts,
+      const llvm::TargetMachine& targetMachine)
       : scop_(scop),
         iteratorMaps_(iteratorMaps),
         stmtSubscripts_(stmtSubscripts),
+        targetMachine(targetMachine),
         halide_cg(Halide::Target(
             Halide::Target::OSUnknown,
             Halide::Target::X86,
@@ -558,6 +589,7 @@ class LLVMCodegen {
   std::vector<std::string> argNames_;
 
  public:
+  const llvm::TargetMachine& targetMachine;
   CodeGen_TC halide_cg;
 };
 
@@ -601,7 +633,7 @@ isl::ast_node collectIteratorMaps(
   return node.set_annotation(stmtId);
 }
 
-IslCodegenRes codegenISL(const Scop& scop) {
+static IslCodegenRes codegenISL(const Scop& scop) {
   IteratorMapsType iteratorMaps;
   StmtSubscriptExprMapType stmtSubscripts;
   auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
@@ -625,10 +657,10 @@ IslCodegenRes codegenISL(const Scop& scop) {
 std::unique_ptr<llvm::Module> emitLLVMKernel(
     const std::string& specializedName,
     const Scop& scop,
-    const llvm::DataLayout& dataLayout) {
+    const llvm::TargetMachine& targetMachine) {
   auto islCg = codegenISL(scop);
-  LLVMCodegen cg(scop, islCg.iteratorMaps, islCg.stmtSubscripts);
-  cg.halide_cg.get_module()->setDataLayout(dataLayout);
+  LLVMCodegen cg(scop, islCg.iteratorMaps, islCg.stmtSubscripts, targetMachine);
+  cg.halide_cg.get_module()->setDataLayout(targetMachine.createDataLayout());
   cg.halide_cg.get_module()->setTargetTriple(
       llvm::EngineBuilder().selectTarget()->getTargetTriple().str());
   auto entry = cg.createSignature(
@@ -643,7 +675,7 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
   TC_CHECK(!llvm::verifyModule(*cg.halide_cg.get_module()))
       << "LLVM generated module is invalid." << cg.str().c_str();
 
-  cg.halide_cg.optimize_module();
+  cg.halide_cg.optimize_module(cg.targetMachine);
   if (FLAGS_llvm_dump_asm) {
     std::string pat("/tmp/tcXXXXXX");
     std::vector<char> ifn(pat.begin(), pat.end());
@@ -662,7 +694,10 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
     }
     utils::checkedSystemCall(
         std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
-        {FLAGS_llvm_dump_asm_options, utils::CPUID::llcFlags(), optFile, std::string("-o ") + asmFile});
+        {FLAGS_llvm_dump_asm_options,
+         utils::CPUID::llcFlags(),
+         optFile,
+         std::string("-o ") + asmFile});
     {
       std::ifstream is(asmFile);
       std::string str(
@@ -671,7 +706,6 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
       LOG(INFO) << str;
     }
   }
-
   return cg.halide_cg.move_module();
 }
 

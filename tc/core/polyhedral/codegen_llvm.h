@@ -55,7 +55,7 @@ struct Scop;
 std::unique_ptr<llvm::Module> emitLLVMKernel(
     const std::string& specializedName,
     const Scop& scop,
-    const llvm::DataLayout& dataLayout);
+    const llvm::TargetMachine& targetMachine);
 
 // TODO: I want to do something like the following, but compilation was unhappy
 //  using initialize_llvm = Halide::Internal::CodeGen_LLVM::initialize_llvm;
