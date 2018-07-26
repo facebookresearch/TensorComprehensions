@@ -60,19 +60,14 @@ dtype {
 
 struct GenericHalideCoreTest : public ::testing::Test {
   void CheckC(const std::string& tc, const std::vector<std::string>& expected) {
-    auto curPos = std::string::npos;
+    auto curPos = 0;
     auto halide = tc2halide::translate(
         isl::with_exceptions::globalIslCtx(), tc, CompilerOptions());
     auto res = tc::halideCodegenC(halide.stmt);
     for (const auto& e : expected) {
-      auto newPos = res.find(e);
-      if (curPos == std::string::npos) {
-        curPos = newPos;
-      }
-      ASSERT_NE(std::string::npos, res.find(e)) << "No: " << e << " in:\n"
-                                                << res;
-      ASSERT_GE(newPos, curPos)
-          << "Improper ordering of expected outputs in:" << res;
+      auto newPos = res.find(e, curPos);
+      ASSERT_NE(std::string::npos, newPos)
+        << "No: " << e << " in:\n" << res;
       curPos = newPos;
     }
   }
@@ -100,27 +95,27 @@ def fun(float(M, K) I, float(K, N) W1, float(N, P) W2) -> (O1, O2) {
   CheckC(
       tc,
       R"C(
-for (int O1_s0_m = 0; O1_s0_m < M; O1_s0_m++) {
-  for (int O1_s0_n = 0; O1_s0_n < N; O1_s0_n++) {
-    O1[O1_s0_m][O1_s0_n] = 0.000000f;
+for (int m = 0; m < M; m++) {
+  for (int n = 0; n < N; n++) {
+    O1[m][n] = 0.000000f;
   }
 }
-for (int O1_s1_m = 0; O1_s1_m < M; O1_s1_m++) {
-  for (int O1_s1_n = 0; O1_s1_n < N; O1_s1_n++) {
-    for (int O1_s1_r_k = 0; O1_s1_r_k < K; O1_s1_r_k++) {
-      O1[O1_s1_m][O1_s1_n] = (O1[O1_s1_m][O1_s1_n] + (I[O1_s1_m][O1_s1_r_k]*W1[O1_s1_r_k][O1_s1_n]));
+for (int m = 0; m < M; m++) {
+  for (int n = 0; n < N; n++) {
+    for (int r_k = 0; r_k < K; r_k++) {
+      O1[m][n] = (O1[m][n] + (I[m][r_k]*W1[r_k][n]));
     }
   }
 }
-for (int O2_s0_m = 0; O2_s0_m < M; O2_s0_m++) {
-  for (int O2_s0_p = 0; O2_s0_p < P; O2_s0_p++) {
-    O2[O2_s0_m][O2_s0_p] = 0.000000f;
+for (int m = 0; m < M; m++) {
+  for (int p = 0; p < P; p++) {
+    O2[m][p] = 0.000000f;
   }
 }
-for (int O2_s1_m = 0; O2_s1_m < M; O2_s1_m++) {
-  for (int O2_s1_p = 0; O2_s1_p < P; O2_s1_p++) {
-    for (int O2_s1_r_n = 0; O2_s1_r_n < N; O2_s1_r_n++) {
-      O2[O2_s1_m][O2_s1_p] = (O2[O2_s1_m][O2_s1_p] + (O1[O2_s1_m][O2_s1_r_n]*W2[O2_s1_r_n][O2_s1_p]));
+for (int m = 0; m < M; m++) {
+  for (int p = 0; p < P; p++) {
+    for (int r_n = 0; r_n < N; r_n++) {
+      O2[m][p] = (O2[m][p] + (O1[m][r_n]*W2[r_n][p]));
     }
   }
 }
@@ -136,23 +131,23 @@ def fun(float(N, C, H, W) I1, float(C, F, KH, KW) W1) -> (O1) {
   CheckC(
       tc,
       R"C(
-for (int O1_s0_n = 0; O1_s0_n < N; O1_s0_n++) {
-  for (int O1_s0_f = 0; O1_s0_f < F; O1_s0_f++) {
-    for (int O1_s0_h = 0; O1_s0_h < ((H - KH) + 1); O1_s0_h++) {
-      for (int O1_s0_w = 0; O1_s0_w < ((W - KW) + 1); O1_s0_w++) {
-        O1[O1_s0_n][O1_s0_f][O1_s0_h][O1_s0_w] = 0.000000f;
+for (int n = 0; n < N; n++) {
+  for (int f = 0; f < F; f++) {
+    for (int h = 0; h < ((H - KH) + 1); h++) {
+      for (int w = 0; w < ((W - KW) + 1); w++) {
+        O1[n][f][h][w] = 0.000000f;
       }
     }
   }
 }
-for (int O1_s1_n = 0; O1_s1_n < N; O1_s1_n++) {
-  for (int O1_s1_f = 0; O1_s1_f < F; O1_s1_f++) {
-    for (int O1_s1_h = 0; O1_s1_h < ((H - KH) + 1); O1_s1_h++) {
-      for (int O1_s1_w = 0; O1_s1_w < ((W - KW) + 1); O1_s1_w++) {
-        for (int O1_s1_r_c = 0; O1_s1_r_c < C; O1_s1_r_c++) {
-          for (int O1_s1_r_kh = 0; O1_s1_r_kh < KH; O1_s1_r_kh++) {
-            for (int O1_s1_r_kw = 0; O1_s1_r_kw < KW; O1_s1_r_kw++) {
-              O1[O1_s1_n][O1_s1_f][O1_s1_h][O1_s1_w] = (O1[O1_s1_n][O1_s1_f][O1_s1_h][O1_s1_w] + (I1[O1_s1_n][O1_s1_r_c][(O1_s1_h + O1_s1_r_kh)][(O1_s1_w + O1_s1_r_kw)]*W1[O1_s1_r_c][O1_s1_f][O1_s1_r_kh][O1_s1_r_kw]));
+for (int n = 0; n < N; n++) {
+  for (int f = 0; f < F; f++) {
+    for (int h = 0; h < ((H - KH) + 1); h++) {
+      for (int w = 0; w < ((W - KW) + 1); w++) {
+        for (int r_c = 0; r_c < C; r_c++) {
+          for (int r_kh = 0; r_kh < KH; r_kh++) {
+            for (int r_kw = 0; r_kw < KW; r_kw++) {
+              O1[n][f][h][w] = (O1[n][f][h][w] + (I1[n][r_c][(h + r_kh)][(w + r_kw)]*W1[r_c][f][r_kh][r_kw]));
             }
           }
         }
@@ -166,10 +161,10 @@ for (int O1_s1_n = 0; O1_s1_n < N; O1_s1_n++) {
 TEST_F(GenericHalideCoreTest, Copy) {
   CheckC(
       makeCopyTc(3),
-      {"for (int O_s0_i0 = 0; O_s0_i0 < P0; O_s0_i0++) {",
-       "  for (int O_s0_i1 = 0; O_s0_i1 < P1; O_s0_i1++) {",
-       "    for (int O_s0_i2 = 0; O_s0_i2 < P2; O_s0_i2++) {",
-       "      O[O_s0_i0][O_s0_i1][O_s0_i2] = I[O_s0_i0][O_s0_i1][O_s0_i2];"});
+      {"for (int i0 = 0; i0 < P0; i0++) {",
+       "  for (int i1 = 0; i1 < P1; i1++) {",
+       "    for (int i2 = 0; i2 < P2; i2++) {",
+       "      O[i0][i1][i2] = I[i0][i1][i2];"});
 }
 
 TEST_F(GenericHalideCoreTest, GroupConvolution) {
@@ -181,26 +176,26 @@ def fun(float(N, G, C, H, W) I1, float(G, C, F, KH, KW) W1) -> (O1) {
   CheckC(
       tc,
       R"C(
-for (int O1_s0_n = 0; O1_s0_n < N; O1_s0_n++) {
-  for (int O1_s0_g = 0; O1_s0_g < G; O1_s0_g++) {
-    for (int O1_s0_f = 0; O1_s0_f < F; O1_s0_f++) {
-      for (int O1_s0_h = 0; O1_s0_h < ((H - KH) + 1); O1_s0_h++) {
-        for (int O1_s0_w = 0; O1_s0_w < ((W - KW) + 1); O1_s0_w++) {
-          O1[O1_s0_n][O1_s0_g][O1_s0_f][O1_s0_h][O1_s0_w] = 0.000000f;
+for (int n = 0; n < N; n++) {
+  for (int g = 0; g < G; g++) {
+    for (int f = 0; f < F; f++) {
+      for (int h = 0; h < ((H - KH) + 1); h++) {
+        for (int w = 0; w < ((W - KW) + 1); w++) {
+          O1[n][g][f][h][w] = 0.000000f;
         }
       }
     }
   }
 }
-for (int O1_s1_n = 0; O1_s1_n < N; O1_s1_n++) {
-  for (int O1_s1_g = 0; O1_s1_g < G; O1_s1_g++) {
-    for (int O1_s1_f = 0; O1_s1_f < F; O1_s1_f++) {
-      for (int O1_s1_h = 0; O1_s1_h < ((H - KH) + 1); O1_s1_h++) {
-        for (int O1_s1_w = 0; O1_s1_w < ((W - KW) + 1); O1_s1_w++) {
-          for (int O1_s1_r_c = 0; O1_s1_r_c < C; O1_s1_r_c++) {
-            for (int O1_s1_r_kh = 0; O1_s1_r_kh < KH; O1_s1_r_kh++) {
-              for (int O1_s1_r_kw = 0; O1_s1_r_kw < KW; O1_s1_r_kw++) {
-                O1[O1_s1_n][O1_s1_g][O1_s1_f][O1_s1_h][O1_s1_w] = (O1[O1_s1_n][O1_s1_g][O1_s1_f][O1_s1_h][O1_s1_w] + (I1[O1_s1_n][O1_s1_g][O1_s1_r_c][(O1_s1_h + O1_s1_r_kh)][(O1_s1_w + O1_s1_r_kw)]*W1[O1_s1_g][O1_s1_r_c][O1_s1_f][O1_s1_r_kh][O1_s1_r_kw]));
+for (int n = 0; n < N; n++) {
+  for (int g = 0; g < G; g++) {
+    for (int f = 0; f < F; f++) {
+      for (int h = 0; h < ((H - KH) + 1); h++) {
+        for (int w = 0; w < ((W - KW) + 1); w++) {
+          for (int r_c = 0; r_c < C; r_c++) {
+            for (int r_kh = 0; r_kh < KH; r_kh++) {
+              for (int r_kw = 0; r_kw < KW; r_kw++) {
+                O1[n][g][f][h][w] = (O1[n][g][f][h][w] + (I1[n][g][r_c][(h + r_kh)][(w + r_kw)]*W1[g][r_c][f][r_kh][r_kw]));
               }
             }
           }
@@ -216,15 +211,15 @@ TEST_F(GenericHalideCoreTest, Matmul) {
   CheckC(
       makeMatmulTc(false, false),
       R"C(
-for (int O_s0_i = 0; O_s0_i < N; O_s0_i++) {
-  for (int O_s0_j = 0; O_s0_j < M; O_s0_j++) {
-    O[O_s0_i][O_s0_j] = 0.000000f;
+for (int i = 0; i < N; i++) {
+  for (int j = 0; j < M; j++) {
+    O[i][j] = 0.000000f;
   }
 }
-for (int O_s1_i = 0; O_s1_i < N; O_s1_i++) {
-  for (int O_s1_j = 0; O_s1_j < M; O_s1_j++) {
-    for (int O_s1_k = 0; O_s1_k < K; O_s1_k++) {
-      O[O_s1_i][O_s1_j] = (O[O_s1_i][O_s1_j] + (A[O_s1_i][O_s1_k]*B[O_s1_k][O_s1_j]));
+for (int i = 0; i < N; i++) {
+  for (int j = 0; j < M; j++) {
+    for (int k = 0; k < K; k++) {
+      O[i][j] = (O[i][j] + (A[i][k]*B[k][j]));
     }
   }
 }
