@@ -55,9 +55,8 @@
 using namespace Halide;
 
 namespace tc {
-
 namespace polyhedral {
-
+namespace {
 using IteratorMapType = std::unordered_map<std::string, isl::ast_expr>;
 using IteratorMapsType =
     std::unordered_map<isl::id, IteratorMapType, isl::IslIdIslHash>;
@@ -65,7 +64,64 @@ using IteratorMapsType =
 using StmtSubscriptExprMapType =
     std::unordered_map<isl::id, std::vector<isl::ast_expr>, isl::IslIdIslHash>;
 
-namespace {
+struct IslCodegenRes {
+  IteratorMapsType iteratorMaps;
+  StmtSubscriptExprMapType stmtSubscripts;
+  isl::ast_node astNode;
+};
+
+isl::ast_node collectIteratorMaps(
+    isl::ast_node node,
+    isl::ast_build build,
+    IteratorMapsType& iteratorMaps,
+    const Scop& scop,
+    StmtSubscriptExprMapType& stmtSubscripts) {
+  auto user = node.as<isl::ast_node_user>();
+  TC_CHECK(user);
+  auto expr = user.get_expr().as<isl::ast_expr_op>();
+  auto schedule = build.get_schedule();
+  auto scheduleMap = isl::map::from_union_map(schedule);
+
+  auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
+  TC_CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
+  auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
+  auto tuple = scop.halide.domains.at(stmtId).tuple;
+  auto& stmtIteratorMap = iteratorMaps[stmtId];
+  for (int i = 0; i < tuple.size(); ++i) {
+    auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
+    stmtIteratorMap.emplace(tuple.get_id(i).get_name(), expr);
+  }
+  auto& subscripts = stmtSubscripts[stmtId];
+  auto provide =
+      scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
+  for (auto e : provide->args) {
+    const auto& map = iteratorMap;
+    auto aff = scop.makeIslAffFromStmtExpr(stmtId, e);
+    auto pulled = isl::pw_aff(aff).pullback(map);
+    TC_CHECK_EQ(pulled.n_piece(), 1);
+    subscripts.push_back(build.expr_from(pulled));
+  }
+  return node.set_annotation(stmtId);
+}
+
+static IslCodegenRes codegenISL(const Scop& scop) {
+  IteratorMapsType iteratorMaps;
+  StmtSubscriptExprMapType stmtSubscripts;
+  auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
+                     isl::ast_node n, isl::ast_build b) -> isl::ast_node {
+    auto& uv = iteratorMaps;
+    return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
+  };
+
+  auto schedule = detail::toIslSchedule(scop.scheduleRoot());
+  auto astBuild = isl::ast_build(schedule.get_ctx());
+  astBuild = astBuild.set_at_each_domain(collect);
+  auto root = scop.scheduleRoot();
+  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
+  auto astNode = astBuild.node_from(schedule);
+  return {
+      std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};
+}
 
 thread_local llvm::LLVMContext llvmCtx;
 
@@ -324,6 +380,71 @@ Halide::Expr CodeGen_TC::makeHalideExpr(isl::ast_expr expr) {
 }
 
 class LLVMCodegen {
+ public:
+  LLVMCodegen(
+      const std::string& specializedName,
+      const Scop& scop,
+      const llvm::TargetMachine& targetMachine)
+      : scop_(scop),
+        islCg_(codegenISL(scop_)),
+        iteratorMaps_(islCg_.iteratorMaps),
+        stmtSubscripts_(islCg_.stmtSubscripts),
+        targetMachine(targetMachine),
+        // we don't use Halide to tinker with llvm::Module optimization so we
+        // tthe Halide target can be whatever.
+        halide_cg(Halide::get_host_target()) {
+    halide_cg.set_context(llvmCtx);
+    halide_cg.init_module();
+    halide_cg.get_module()->setDataLayout(targetMachine.createDataLayout());
+    halide_cg.get_module()->setTargetTriple(
+        targetMachine.getTargetTriple().str());
+    auto entry = createSignature(
+        scop.halide.inputs,
+        scop.halide.outputs,
+        scop.halide.params,
+        specializedName);
+    auto exit = emitAst(islCg_.astNode, entry);
+    halide_cg.get_builder().SetInsertPoint(exit);
+    halide_cg.get_builder().CreateRetVoid();
+
+    TC_CHECK(!llvm::verifyModule(*halide_cg.get_module()))
+        << "LLVM generated module is invalid." << str().c_str();
+
+    halide_cg.optimize_module(targetMachine);
+
+    if (FLAGS_llvm_dump_asm) {
+      std::string pat("/tmp/tcXXXXXX");
+      std::vector<char> ifn(pat.begin(), pat.end());
+      TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
+      std::string fileName(ifn.begin(), ifn.end());
+      std::string optFile = fileName + "-opt.ll";
+      std::string asmFile = fileName + ".s";
+      // cstdio's std::remove to delete files
+      tc::ScopeGuard sgi([&]() {
+        std::remove(optFile.c_str());
+        std::remove(asmFile.c_str());
+      });
+      {
+        std::ofstream ostream(optFile, std::ios::binary);
+        ostream << str();
+      }
+      utils::checkedSystemCall(
+          std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
+          {FLAGS_llvm_dump_asm_options,
+           utils::CPUID::llcFlags(),
+           optFile,
+           std::string("-o ") + asmFile});
+
+      std::ifstream is(asmFile);
+      std::string str(
+          (std::istreambuf_iterator<char>(is)),
+          std::istreambuf_iterator<char>());
+      LOG(INFO) << "Dumping asm for: " << utils::CPUID::llcFlags() << "\n"
+                << str;
+    }
+  }
+
+ private:
   void collectTensor(const Halide::OutputImageParam& t) {
     auto sizes = getTensorSizesWithoutLeadingDim(t, scop_.context());
     if (not sizes.empty()) {
@@ -354,23 +475,16 @@ class LLVMCodegen {
     }
   }
 
- public:
-  LLVMCodegen(
-      const Scop& scop,
-      const IteratorMapsType& iteratorMaps,
-      const StmtSubscriptExprMapType& stmtSubscripts,
-      const llvm::TargetMachine& targetMachine)
-      : scop_(scop),
-        iteratorMaps_(iteratorMaps),
-        stmtSubscripts_(stmtSubscripts),
-        targetMachine(targetMachine),
-        halide_cg(Halide::Target(
-            Halide::Target::OSUnknown,
-            Halide::Target::X86,
-            64)) {
-    halide_cg.set_context(llvmCtx);
-
-    halide_cg.init_module();
+  llvm::Type* makePtrToArrayType(
+      llvm::Type* baseTy,
+      const std::vector<int64_t>& sizes) {
+    TC_CHECK_GE(sizes.size(), 1u);
+    TC_CHECK(baseTy);
+    llvm::Type* arrTy = llvm::ArrayType::get(baseTy, sizes.back());
+    for (auto s = sizes.rbegin() + 1; s != sizes.rend(); ++s) {
+      arrTy = llvm::ArrayType::get(arrTy, *s);
+    }
+    return arrTy->getPointerTo();
   }
 
   // This creates a signature of the form:
@@ -449,19 +563,6 @@ class LLVMCodegen {
       }
     }
     return nullptr;
-  }
-
- private:
-  llvm::Type* makePtrToArrayType(
-      llvm::Type* baseTy,
-      const std::vector<int64_t>& sizes) {
-    TC_CHECK_GE(sizes.size(), 1u);
-    TC_CHECK(baseTy);
-    llvm::Type* arrTy = llvm::ArrayType::get(baseTy, sizes.back());
-    for (auto s = sizes.rbegin() + 1; s != sizes.rend(); ++s) {
-      arrTy = llvm::ArrayType::get(arrTy, *s);
-    }
-    return arrTy->getPointerTo();
   }
 
   llvm::BasicBlock* emitIf(
@@ -582,6 +683,7 @@ class LLVMCodegen {
 
  private:
   const Scop& scop_;
+  const IslCodegenRes islCg_;
   const IteratorMapsType& iteratorMaps_;
   const StmtSubscriptExprMapType& stmtSubscripts_;
 
@@ -592,120 +694,13 @@ class LLVMCodegen {
   const llvm::TargetMachine& targetMachine;
   CodeGen_TC halide_cg;
 };
-
-struct IslCodegenRes {
-  IteratorMapsType iteratorMaps;
-  StmtSubscriptExprMapType stmtSubscripts;
-  isl::ast_node astNode;
-};
-
-isl::ast_node collectIteratorMaps(
-    isl::ast_node node,
-    isl::ast_build build,
-    IteratorMapsType& iteratorMaps,
-    const Scop& scop,
-    StmtSubscriptExprMapType& stmtSubscripts) {
-  auto user = node.as<isl::ast_node_user>();
-  TC_CHECK(user);
-  auto expr = user.get_expr().as<isl::ast_expr_op>();
-  auto schedule = build.get_schedule();
-  auto scheduleMap = isl::map::from_union_map(schedule);
-
-  auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
-  TC_CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;
-  auto iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
-  auto tuple = scop.halide.domains.at(stmtId).tuple;
-  auto& stmtIteratorMap = iteratorMaps[stmtId];
-  for (int i = 0; i < tuple.size(); ++i) {
-    auto expr = build.expr_from(iteratorMap.get_pw_aff(i));
-    stmtIteratorMap.emplace(tuple.get_id(i).get_name(), expr);
-  }
-  auto& subscripts = stmtSubscripts[stmtId];
-  auto provide =
-      scop.halide.statements.at(stmtId).as<Halide::Internal::Provide>();
-  for (auto e : provide->args) {
-    const auto& map = iteratorMap;
-    auto aff = scop.makeIslAffFromStmtExpr(stmtId, e);
-    auto pulled = isl::pw_aff(aff).pullback(map);
-    TC_CHECK_EQ(pulled.n_piece(), 1);
-    subscripts.push_back(build.expr_from(pulled));
-  }
-  return node.set_annotation(stmtId);
-}
-
-static IslCodegenRes codegenISL(const Scop& scop) {
-  IteratorMapsType iteratorMaps;
-  StmtSubscriptExprMapType stmtSubscripts;
-  auto collect = [&iteratorMaps, &scop, &stmtSubscripts](
-                     isl::ast_node n, isl::ast_build b) -> isl::ast_node {
-    auto& uv = iteratorMaps;
-    return collectIteratorMaps(n, b, uv, scop, stmtSubscripts);
-  };
-
-  auto schedule = detail::toIslSchedule(scop.scheduleRoot());
-  auto astBuild = isl::ast_build(schedule.get_ctx());
-  astBuild = astBuild.set_at_each_domain(collect);
-  auto root = scop.scheduleRoot();
-  astBuild = astBuild.set_iterators(Codegen::makeLoopIterators(root));
-  auto astNode = astBuild.node_from(schedule);
-  return {
-      std::move(iteratorMaps), std::move(stmtSubscripts), std::move(astNode)};
-}
-
 } // namespace
 
 std::unique_ptr<llvm::Module> emitLLVMKernel(
     const std::string& specializedName,
     const Scop& scop,
     const llvm::TargetMachine& targetMachine) {
-  auto islCg = codegenISL(scop);
-  LLVMCodegen cg(scop, islCg.iteratorMaps, islCg.stmtSubscripts, targetMachine);
-  cg.halide_cg.get_module()->setDataLayout(targetMachine.createDataLayout());
-  cg.halide_cg.get_module()->setTargetTriple(
-      llvm::EngineBuilder().selectTarget()->getTargetTriple().str());
-  auto entry = cg.createSignature(
-      scop.halide.inputs,
-      scop.halide.outputs,
-      scop.halide.params,
-      specializedName);
-  auto exit = cg.emitAst(islCg.astNode, entry);
-  cg.halide_cg.get_builder().SetInsertPoint(exit);
-  cg.halide_cg.get_builder().CreateRetVoid();
-
-  TC_CHECK(!llvm::verifyModule(*cg.halide_cg.get_module()))
-      << "LLVM generated module is invalid." << cg.str().c_str();
-
-  cg.halide_cg.optimize_module(cg.targetMachine);
-  if (FLAGS_llvm_dump_asm) {
-    std::string pat("/tmp/tcXXXXXX");
-    std::vector<char> ifn(pat.begin(), pat.end());
-    TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
-    std::string fileName(ifn.begin(), ifn.end());
-    std::string optFile = fileName + "-opt.ll";
-    std::string asmFile = fileName + ".s";
-    // cstdio's std::remove to delete files
-    tc::ScopeGuard sgi([&]() {
-      std::remove(optFile.c_str());
-      std::remove(asmFile.c_str());
-    });
-    {
-      std::ofstream ostream(optFile, std::ios::binary);
-      ostream << cg.str();
-    }
-    utils::checkedSystemCall(
-        std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
-        {FLAGS_llvm_dump_asm_options,
-         utils::CPUID::llcFlags(),
-         optFile,
-         std::string("-o ") + asmFile});
-    {
-      std::ifstream is(asmFile);
-      std::string str(
-          (std::istreambuf_iterator<char>(is)),
-          std::istreambuf_iterator<char>());
-      LOG(INFO) << str;
-    }
-  }
+  LLVMCodegen cg(specializedName, scop, targetMachine);
   return cg.halide_cg.move_module();
 }
 
