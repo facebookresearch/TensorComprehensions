@@ -862,7 +862,7 @@ void MappedScop::insertMappingContext() {
       {TX, TX.mappingSize(block)},
       {TY, TY.mappingSize(block)},
       {TZ, TZ.mappingSize(block)}};
-  auto space = scop.domain().universe().get_space();
+  auto space = scop.domain().get_space();
   auto mappingContext = makeParameterContext(
       space, mappingIdsWithSizes.begin(), mappingIdsWithSizes.end());
   updateTopLevelContext(scop.scheduleRoot(), mappingContext.from_params());
