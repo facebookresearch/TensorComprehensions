@@ -53,6 +53,7 @@ DEFINE_string(
     "compiler flags to set when nvcc is used");
 
 // CPU codegen options
+DEFINE_string(mcpu, "", "see llvm's --mcpu");
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
 DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
 DEFINE_bool(llvm_dump_asm, false, "Print asm");

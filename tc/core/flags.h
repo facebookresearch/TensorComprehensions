@@ -36,7 +36,8 @@ DECLARE_string(cuda_compiler);
 DECLARE_string(llvm_flags);
 DECLARE_string(nvcc_flags);
 
-// llvm codegen
+// CPU codegen options
+DECLARE_string(mcpu);
 DECLARE_bool(llvm_dump_before_opt);
 DECLARE_bool(llvm_dump_after_opt);
 DECLARE_bool(llvm_dump_asm);
