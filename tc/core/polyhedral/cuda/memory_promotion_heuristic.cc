@@ -656,8 +656,8 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto mapping =
       collectMappingsTo<mapping::ThreadId>(scop).intersect(blockMapping);
   auto schedule = partialSchedule(scop.scheduleRoot(), scope);
-  auto groupMap = TensorReferenceGroup::accessedWithin(
-      schedule.intersect_domain(mapping), scop.body);
+  auto groupLists = sortTensorGroupMap(TensorReferenceGroup::accessedWithin(
+      schedule.intersect_domain(mapping), scop.body));
 
   auto threadSchedule = mscop.threadMappingSchedule(mscop.schedule());
   auto blockSchedule = mscop.blockMappingSchedule(mscop.schedule());
@@ -673,10 +673,10 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   // identical dimensions without affecting the result of the checks.
   partialSchedMupa = partialSchedMupa.flat_range_product(blockSchedule);
 
-  for (auto& tensorGroups : groupMap) {
+  for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
-
-    // TODO: sorting of groups and counting the number of promoted elements
+    sortTensorGroups(tensorGroups.second);
+    // TODO: counting the number of promoted elements
 
     for (auto& group : tensorGroups.second) {
       auto sizes = group->approximationSizes();
