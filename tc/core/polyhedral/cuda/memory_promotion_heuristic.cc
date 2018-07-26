@@ -748,9 +748,12 @@ size_t promoteToRegistersBelow(
  * Promote to registers below "depth" schedule dimensions.  Split bands if
  * necessary to create promotion scopes.  Do not promote if it would require
  * splitting the band mapped to threads as we assume only one band can be
- * mapped.
+ * mapped.  Use at most "maxElements" per thread in all promoted subtrees.
  */
-void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
+void promoteToRegistersAtDepth(
+    MappedScop& mscop,
+    size_t depth,
+    size_t maxElements) {
   using namespace detail;
 
   auto root = mscop.scop().scheduleRoot();
@@ -784,7 +787,7 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   auto scopes = functional::Map(findScope, bands);
 
   for (auto scope : scopes) {
-    promoteToRegistersBelow(mscop, scope);
+    maxElements = promoteToRegistersBelow(mscop, scope, maxElements);
   }
 }
 
