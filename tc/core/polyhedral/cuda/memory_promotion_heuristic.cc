@@ -630,8 +630,17 @@ void promoteToSharedAtDepth(
  * of "mscop".  Throw if promotion would violate the well-formedness of the
  * schedule tree, in particular in cases of promotion immediately below
  * a set/sequence node or immediately above a thread-specific marker node.
+ * Promote at most "maxElements" elements per thread and return the difference
+ * between "maxElements" and the number of actuall promoted elements.  Note
+ * that this function does not differentitate types and sizes of the promoted
+ * elements because register allocation cannot be controlled at the CUDA level
+ * anyway.  Instead, the "maxElements" value controls how much register
+ * promotion is performed overall.
  */
-void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
+size_t promoteToRegistersBelow(
+    MappedScop& mscop,
+    detail::ScheduleTree* scope,
+    size_t maxElements) {
   // Cannot promote below a sequence or a set node.  Promotion may insert an
   // extension node, but sequence/set must be followed by filters.
   if (scope->as<detail::ScheduleTreeSequence>() ||
@@ -684,6 +693,12 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
       if (sizes.size() == 0) {
         continue;
       }
+      // Do not promote if requires more registers than remaining.
+      auto nElements = std::accumulate(
+          sizes.begin(), sizes.end(), 1u, std::multiplies<size_t>());
+      if (nElements > maxElements) {
+        continue;
+      }
       if (!isPromotableToRegistersBelow(
               *group, root, scope, partialSchedMupa, threadSchedule)) {
         continue;
@@ -703,13 +718,14 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
           std::move(group),
           scope,
           partialSched);
+      maxElements -= nElements;
     }
   }
 
   // Return immediately if nothing was promoted.
   if (scope->numChildren() == 0 ||
       !matchOne(extension(sequence(any())), scope->child({0}))) {
-    return;
+    return maxElements;
   }
 
   // If promoting above thread mapping, insert synchronizations.
@@ -725,6 +741,7 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   if (functional::Filter(isMappingTo<mapping::ThreadId>, ancestors).empty()) {
     scop.insertSyncsAroundSeqChildren(scope->child({0, 0}));
   }
+  return maxElements;
 }
 
 /*

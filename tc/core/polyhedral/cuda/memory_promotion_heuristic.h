@@ -41,7 +41,10 @@ void promoteToSharedAtDepth(
     std::size_t sharedMemorySize,
     bool unrollCopies);
 
-void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope);
+size_t promoteToRegistersBelow(
+    MappedScop& mscop,
+    detail::ScheduleTree* scope,
+    std::size_t maxElements = SIZE_MAX);
 
 void promoteToRegistersAtDepth(MappedScop& scop, std::size_t depth);
 
