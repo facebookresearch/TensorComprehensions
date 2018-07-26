@@ -318,6 +318,7 @@ public:
   inline std::string to_str() const;
 
   inline isl::aff add(isl::aff aff2) const;
+  inline isl::aff add_constant(isl::val v) const;
   inline isl::aff add_constant_si(int v) const;
   inline isl::aff ceil() const;
   inline isl::aff div(isl::aff aff2) const;
@@ -2166,6 +2167,7 @@ public:
   inline isl::pw_aff neg() const;
   inline isl::set nonneg_set() const;
   inline isl::set params() const;
+  inline isl::set pos_set() const;
   inline isl::pw_aff project_domain_on_params() const;
   inline isl::pw_aff pullback(isl::multi_aff ma) const;
   inline isl::pw_aff pullback(isl::pw_multi_aff pma) const;
@@ -3588,6 +3590,18 @@ isl::aff aff::add(isl::aff aff2) const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_aff_add(copy(), aff2.release());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::aff aff::add_constant(isl::val v) const
+{
+  if (!ptr || v.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_aff_add_constant_val(copy(), v.release());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
@@ -13077,6 +13091,18 @@ isl::set pw_aff::params() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_pw_aff_params(copy());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::set pw_aff::pos_set() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_pw_aff_pos_set(copy());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);
