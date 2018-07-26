@@ -16,14 +16,11 @@
 #pragma once
 
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
+#include "llvm/ExecutionEngine/Orc/Core.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/Target/TargetMachine.h"
-
-#if LLVM_VERSION_MAJOR > 6
-#include "llvm/ExecutionEngine/Orc/Core.h"
-#endif
 
 namespace tc {
 
@@ -33,10 +30,8 @@ class Scop;
 
 class Jit {
  private:
-#if LLVM_VERSION_MAJOR > 6
   llvm::orc::ExecutionSession ES;
   std::shared_ptr<llvm::orc::SymbolResolver> Resolver;
-#endif
   std::unique_ptr<llvm::TargetMachine> TM_;
   const llvm::DataLayout DL_;
   llvm::orc::RTDyldObjectLinkingLayer objectLayer_;
