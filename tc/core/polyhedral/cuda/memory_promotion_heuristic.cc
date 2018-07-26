@@ -685,7 +685,6 @@ size_t promoteToRegistersBelow(
   for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
     sortTensorGroups(tensorGroups.second);
-    // TODO: counting the number of promoted elements
 
     for (auto& group : tensorGroups.second) {
       auto sizes = group->approximationSizes();

@@ -40,6 +40,10 @@ CudaMappingOptionsCppPrinter& operator<<(
   }
   prn.printValueOption("privateDepth", cudaOptions.proto().private_depth());
   prn.printValueOption("sharedDepth", cudaOptions.proto().shared_depth());
+  if (cudaOptions.proto().has_max_private_elements()) {
+    prn.printValueOption(
+        "maxPrivateElements", cudaOptions.proto().max_private_elements());
+  }
   prn.endStmt();
   return prn;
 }

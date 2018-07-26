@@ -74,6 +74,9 @@ message CudaMappingOptionsProto {
   optional uint32 private_depth = 9;
   // Depth of promotion to shared memory, ignored if use_shared_memory is false.
   optional uint32 shared_depth = 10;
+  // Maximum number of elements to promote to registers per thread.  If not
+  // provided, the number 32-bit registers per thread will be used.
+  optional uint64 max_private_elements = 11;
 }
 
 message CpuMappingOptionsProto {
