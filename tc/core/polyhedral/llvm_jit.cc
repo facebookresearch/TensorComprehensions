@@ -31,11 +31,11 @@
 #include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/codegen_llvm.h"
+#include "tc/core/utils/cpu.h"
 
 using namespace llvm;
 
 namespace tc {
-
 Jit::Jit()
     : ES(),
       Resolver(llvm::orc::createLegacyLookupResolver(
@@ -51,7 +51,7 @@ Jit::Jit()
             return nullptr;
           },
           [](Error err) { throw std::runtime_error("Lookup failed!"); })),
-      TM_(EngineBuilder().selectTarget()),
+      TM_(EngineBuilder().setMCPU(utils::CPUID::mcpu()).selectTarget()),
       DL_(TM_->createDataLayout()),
       objectLayer_(
           ES,
@@ -71,8 +71,8 @@ void Jit::addModule(std::shared_ptr<Module> M) {
 std::shared_ptr<Module> Jit::codegenScop(
     const std::string& specializedName,
     const polyhedral::Scop& scop) {
-  std::shared_ptr<Module> mod = emitLLVMKernel(
-      specializedName, scop, getTargetMachine().createDataLayout());
+  std::shared_ptr<Module> mod =
+      emitLLVMKernel(specializedName, scop, getTargetMachine());
   addModule(mod);
   return mod;
 }

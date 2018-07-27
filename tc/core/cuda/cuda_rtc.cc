@@ -29,6 +29,7 @@
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
+#include "tc/core/utils/system.h"
 
 namespace tc {
 std::mutex nvrtc_mutex;
@@ -65,17 +66,6 @@ void checkOrCreateContext() {
 }
 
 namespace {
-static void checkedSystemCall(
-    const std::string& cmd,
-    const std::vector<std::string>& args) {
-  std::stringstream command;
-  command << cmd << " ";
-  for (const auto& s : args) {
-    command << s << " ";
-  }
-  TC_CHECK_EQ(std::system(command.str().c_str()), 0) << command.str();
-}
-
 static std::tuple<int, int, int> getCudaArchitecture() {
   int device, major, minor;
   CUdevice deviceHandle;
@@ -119,7 +109,7 @@ static std::string llvmCompile(
   });
 
   // Compile
-  checkedSystemCall(
+  utils::checkedSystemCall(
       std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/clang++",
       {"-x cuda " + inputFileName,
        "--cuda-device-only",
@@ -134,7 +124,7 @@ static std::string llvmCompile(
        "-o " + outputClangFile});
 
   // Link libdevice before opt
-  checkedSystemCall(
+  utils::checkedSystemCall(
       std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llvm-link ",
       {outputClangFile,
        std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) +
@@ -143,7 +133,7 @@ static std::string llvmCompile(
        "-o " + outputLinkFile});
 
   // Opt
-  checkedSystemCall(
+  utils::checkedSystemCall(
       std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/opt",
       {"-internalize",
        std::string("-internalize-public-api-list=") + name,
@@ -154,7 +144,7 @@ static std::string llvmCompile(
        std::string("-o ") + outputOptFile});
 
   // Ptx
-  checkedSystemCall(
+  utils::checkedSystemCall(
       std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
       {std::string("-mcpu=") + arch,
        outputOptFile,
@@ -188,7 +178,7 @@ static std::string nvccCompile(
   // cstdio's std::remove to delete files
   tc::ScopeGuard sgo([&]() { std::remove(outputPtxFile.c_str()); });
 
-  checkedSystemCall(
+  utils::checkedSystemCall(
       std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) + "/bin/nvcc",
       {"-x cu",
        inputFileName,
