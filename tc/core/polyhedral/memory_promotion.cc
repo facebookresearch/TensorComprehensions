@@ -22,6 +22,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
@@ -342,7 +343,7 @@ void addSingletonReferenceGroups(
 // TensorReferenceGroup, with each group potentially containing multiple
 // references.
 TensorGroups TensorReferenceGroup::accessedWithin(
-    isl::union_map outerSchedule,
+    isl::UnionMap<Statement, Prefix> outerSchedule,
     const Body& body) {
   TensorGroups tensorGroups;
   auto domain = outerSchedule.domain();

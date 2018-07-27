@@ -17,6 +17,7 @@
 
 #include <iostream>
 
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/external/isl.h"
@@ -112,7 +113,7 @@ class TensorReferenceGroup {
 
  public:
   static TensorGroups accessedWithin(
-      isl::union_map outerSchedule,
+      isl::UnionMap<Statement, Prefix> outerSchedule,
       const Body& body);
 
   bool isReadOnly() const;
