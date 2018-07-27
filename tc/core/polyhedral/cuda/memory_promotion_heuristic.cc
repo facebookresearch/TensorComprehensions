@@ -154,9 +154,12 @@ bool hasReuseWithin(
  * Create a map that increments the "dim"-th dimension and keeps all other
  * dimensions unchanged.
  */
-isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
+template <typename Domain>
+isl::Map<Domain, Domain> makeNextElementMap(
+    isl::Space<Domain> setSpace,
+    unsigned dim) {
   auto mapSpace = setSpace.map_from_set();
-  auto identityMA = isl::multi_aff::identity(mapSpace);
+  auto identityMA = isl::MultiAff<Domain, Domain>::identity(mapSpace);
 
   size_t size = identityMA.size();
   if (dim < 0 || dim >= size) {
@@ -167,7 +170,7 @@ isl::map makeNextElementMap(isl::space setSpace, unsigned dim) {
 
   auto aff = identityMA.get_aff(dim);
   identityMA = identityMA.set_aff(dim, aff + 1);
-  return isl::map(identityMA);
+  return identityMA.asMap();
 }
 
 /*
