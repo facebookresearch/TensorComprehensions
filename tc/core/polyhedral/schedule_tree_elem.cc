@@ -235,7 +235,7 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   auto nBegin = nMember();
 
   auto list = mupa_.get_union_pw_aff_list();
-  auto space = mupa_.get_space().domain();
+  auto space = mupa_.get_space().params();
   list = list.drop(pos, n);
   space = space.add_unnamed_tuple_ui(list.size());
   mupa_ = isl::multi_union_pw_aff(space, list);
