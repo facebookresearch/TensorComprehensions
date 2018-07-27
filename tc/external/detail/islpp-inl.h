@@ -42,7 +42,7 @@ inline isl::aff operator/(isl::aff A, int i) {
 }
 
 template <typename T>
-inline isl::aff operator+(int i, T A) {
+inline T operator+(int i, T A) {
   return A.add_constant_si(i);
 }
 
