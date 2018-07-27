@@ -142,11 +142,11 @@ std::vector<T> collectBranchMarkers(T root, T node) {
  * In other words, check that the mapping from statement instances
  * to pairs of outer schedule points and group elements is not injective.
  */
+template <typename Outer>
 bool hasReuseWithin(
     const TensorReferenceGroup& group,
-    isl::multi_union_pw_aff outer) {
-  auto map = isl::union_map::from(outer);
-  map = map.range_product(group.originalAccesses());
+    isl::MultiUnionPwAff<Statement, Outer> outer) {
+  auto map = outer.toUnionMap().range_product(group.originalAccesses());
   return !map.is_injective();
 }
 
