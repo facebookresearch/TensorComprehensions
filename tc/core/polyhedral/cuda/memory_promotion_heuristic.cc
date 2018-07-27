@@ -257,13 +257,13 @@ isl::UnionSet<Statement> collectMappingsTo(const Scop& scop) {
   auto mappingFilters =
       detail::ScheduleTree::collect(root, detail::ScheduleTreeType::Mapping);
   mappingFilters = functional::Filter(isMappingTo<MappingType>, mappingFilters);
-  auto mapping = isl::union_set::empty(domain.get_space());
+  auto mapping = isl::UnionSet<Statement>::empty(domain.get_space());
   for (auto mf : mappingFilters) {
     auto filterNode = mf->as<detail::ScheduleTreeMapping>();
     auto filter = filterNode->filter_.intersect(activeDomainPoints(root, mf));
     mapping = mapping.unite(filterNode->filter_);
   }
-  return isl::UnionSet<Statement>(mapping);
+  return mapping;
 }
 
 /*
