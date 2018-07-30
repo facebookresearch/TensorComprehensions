@@ -379,9 +379,10 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
   auto originalSpaceInserter = isl::multi_aff::domain_map(accessSpace);
 
   // Lower bounds and offsets space is S -> O; transform into [S -> O] -> O.
-  auto lowerBounds =
+  isl::multi_aff lowerBounds =
       approximation.lowerBounds().pullback(originalSpaceInserter);
-  auto offsets = approximation.strideOffsets.pullback(originalSpaceInserter);
+  isl::multi_aff offsets =
+      approximation.strideOffsets.pullback(originalSpaceInserter);
 
   // Create promotion starting by identity in [S -> O] -> O.
   auto original = isl::multi_aff::range_map(accessSpace);
