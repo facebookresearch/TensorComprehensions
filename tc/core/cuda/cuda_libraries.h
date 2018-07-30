@@ -31,22 +31,11 @@ namespace code {
 namespace c {
 
 constexpr auto types = R"C(
+#ifndef __CUDACC_RTC__
 // Can't include system dependencies with NVRTC
 // Can't include cuda_fp16.h with NVRTC due to transitive system dependencies
-// #include <cuda_fp16.h>
-
-// Halide type handling
-typedef char int8;
-typedef short int16;
-typedef int int32;
-typedef long int64;
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef unsigned int uint32;
-typedef unsigned long uint64;
-// typedef half float16;
-typedef float float32;
-typedef double float64;
+#include <cuda_fp16.h>
+#endif
 )C";
 
 constexpr auto defines = R"C(
@@ -56,103 +45,14 @@ constexpr auto defines = R"C(
 
 constexpr auto warpSyncFunctions = R"C(
 // Before CUDA 9, syncwarp is a noop since warps are always synchronized.
-#if __CUDACC_VER_MAJOR__ < 9
-__device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
+#if (!defined(__clang__) && __CUDACC_VER_MAJOR__ < 9) || \
+    ( defined(__clang__) && CUDA_VERSION < 9000)
+inline __device__ void __syncwarp(unsigned mask = 0xFFFFFFFF) {}
 #endif
 )C";
 
 constexpr auto mathFunctionDecl = R"C(
-
-// BEGIN MATH FUNCTIONS FROM CUDA
-float acosf ( float  x );
-float acoshf ( float  x );
-float asinf ( float  x );
-float asinhf ( float  x );
-float atan2f ( float  y, float  x );
-float atanf ( float  x );
-float atanhf ( float  x );
-float cbrtf ( float  x );
-float ceilf ( float  x );
-float copysignf ( float  x, float  y );
-float cosf ( float  x );
-float coshf ( float  x );
-float cospif ( float  x );
-float cyl_bessel_i0f ( float  x );
-float cyl_bessel_i1f ( float  x );
-float erfcf ( float  x );
-float erfcinvf ( float  y );
-float erfcxf ( float  x );
-float erff ( float  x );
-float erfinvf ( float  y );
-float exp10f ( float  x );
-float exp2f ( float  x );
-float expf ( float  x );
-float expm1f ( float  x );
-float fabsf ( float  x );
-float fdimf ( float  x, float  y );
-float fdividef ( float  x, float  y );
-float floorf ( float  x );
-float fmaf ( float  x, float  y, float  z );
-float fmaxf ( float  x, float  y );
-float fminf ( float  x, float  y );
-float fmodf ( float  x, float  y );
-//float frexpf ( float  x, int* nptr );
-float hypotf ( float  x, float  y );
-//int ilogbf ( float  x );
-//__RETURN_TYPE 	isfinite ( float  a );
-//__RETURN_TYPE 	isinf ( float  a );
-//__RETURN_TYPE 	isnan ( float  a );
-float j0f ( float  x );
-float j1f ( float  x );
-//float jnf ( int  n, float  x );
-//float ldexpf ( float  x, int  exp );
-float lgammaf ( float  x );
-//long long int 	llrintf ( float  x );
-//long long int 	llroundf ( float  x );
-float log10f ( float  x );
-float log1pf ( float  x );
-float log2f ( float  x );
-float logbf ( float  x );
-float logf ( float  x );
-//long int lrintf ( float  x );
-//long int lroundf ( float  x );
-//float modff ( float  x, float* iptr );
-//float nanf ( const char* tagp );
-//float nearbyintf ( float  x );
-float nextafterf ( float  x, float  y );
-float norm3df ( float  a, float  b, float  c );
-float norm4df ( float  a, float  b, float  c, float  d );
-float normcdff ( float  y );
-float normcdfinvf ( float  y );
-//float normf ( int  dim, const float* a );
-float powf ( float  x, float  y );
-float rcbrtf ( float  x );
-float remainderf ( float  x, float  y );
-//float remquof ( float  x, float  y, int* quo );
-float rhypotf ( float  x, float  y );
-//float rintf ( float  x );
-float rnorm3df ( float  a, float  b, float  c );
-float rnorm4df ( float  a, float  b, float  c, float  d );
-//float rnormf ( int  dim, const float* a );
-float roundf ( float  x );
-float rsqrtf ( float  x );
-//float scalblnf ( float  x, long int  n );
-//float scalbnf ( float  x, int  n );
-//__RETURN_TYPE 	signbit ( float  a );
-//void sincosf ( float  x, float* sptr, float* cptr );
-//void sincospif ( float  x, float* sptr, float* cptr );
-float sinf ( float  x );
-float sinhf ( float  x );
-float sinpif ( float  x );
-float sqrtf ( float  x );
-float tanf ( float  x );
-float tanhf ( float  x );
-float tgammaf ( float  x );
-float truncf ( float  x );
-float y0f ( float  x );
-float y1f ( float  x );
-//float ynf ( int  n, float  x );
-// END MATH FUNCTIONS FROM CUDA
+#include \"math_functions.hpp\"
 )C";
 
 } // namespace c
@@ -313,7 +213,12 @@ struct SegmentedReducer {
 
 constexpr auto cubBlockReduce = R"CUDA(
 
+#if __CUDACC_RTC__
 #include "cub/nvrtc_cub.cuh"
+#else
+#include <assert.h>
+#include "cub/cub.cuh"
+#endif
 
 namespace __tc {
 
@@ -335,7 +240,7 @@ inline __device__ void CubReduceAlongXPowerOf2(T* dest, T val) {
 }
 
 #define POWEROF2(X)                             \
-  ((X) & ((X) - 1) == 0)
+  (((X) & ((X) - 1)) == 0)
 
 template <int REDUCTION_SIZE, int BLOCKDIMY, int BLOCKDIMZ, ReductionOp R, typename T>
 inline __device__ void CubReduceAlongX(T* dest, T val) {

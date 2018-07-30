@@ -31,13 +31,50 @@
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
+#include "tc/core/polyhedral/scop.h"
 
 using namespace std;
 
+using tc::polyhedral::detail::ScheduleTreeContext;
+using tc::polyhedral::detail::ScheduleTreeDomain;
+using tc::polyhedral::detail::toIslSchedule;
+
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 namespace {
+
+static std::string halideTypeString(const Halide::Type& t) {
+  if (t.is_bool()) {
+    return "bool";
+  } else if (t.is_int() && t.bits() == 8) {
+    return "char";
+  } else if (t.is_int() && t.bits() == 16) {
+    return "short";
+  } else if (t.is_int() && t.bits() == 32) {
+    return "int";
+  } else if (t.is_int() && t.bits() == 64) {
+    return "long";
+  } else if (t.is_uint() && t.bits() == 8) {
+    return "unsigned char";
+  } else if (t.is_uint() && t.bits() == 16) {
+    return "unsigned short";
+  } else if (t.is_uint() && t.bits() == 32) {
+    return "unsigned int";
+  } else if (t.is_uint() && t.bits() == 64) {
+    return "unsigned long";
+  } else if (t.is_float() && t.bits() == 16) {
+    return "half";
+  } else if (t.is_float() && t.bits() == 32) {
+    return "float";
+  } else if (t.is_float() && t.bits() == 64) {
+    return "double";
+  }
+  std::stringstream ss;
+  ss << t;
+  return ss.str();
+}
 
 struct WS {
   static thread_local int n;
@@ -102,7 +139,7 @@ vector<string> emitParams(const Scop& scop) {
   // Halide params. One of these two vectors will be empty.
   for (auto p : scop.halide.params) {
     stringstream ss;
-    ss << p.type() << " " << p.name();
+    ss << halideTypeString(p.type()) << " " << p.name();
     res.push_back(ss.str());
   }
   return res;
@@ -113,7 +150,7 @@ string emitTypedTensorName(
     Halide::OutputImageParam t,
     bool constInput = false) {
   stringstream ss;
-  ss << (constInput ? "const " : "") << t.type() << "* "
+  ss << (constInput ? "const " : "") << halideTypeString(t.type()) << "* "
      << makePointerName(t.name());
   return ss.str();
 }
@@ -195,11 +232,11 @@ void emitTensorView(
     ssViewType << "[" << extent << "]";
   }
   ss << ws.tab();
-  ss << (constInput ? "const " : "") << p.type() << " (*" << p.name() << ")"
-     << ssViewType.str();
+  ss << (constInput ? "const " : "") << halideTypeString(p.type()) << " (*"
+     << p.name() << ")" << ssViewType.str();
   ss << " = ";
-  ss << "reinterpret_cast<" << (constInput ? "const " : "") << p.type()
-     << " (*)" << ssViewType.str() << ">";
+  ss << "reinterpret_cast<" << (constInput ? "const " : "")
+     << halideTypeString(p.type()) << " (*)" << ssViewType.str() << ">";
   ss << "(" << makePointerName(p.name()) << ")";
   ss << ";";
   ss << endl;
@@ -581,8 +618,7 @@ void emitHalideExpr(
   class EmitHalide : public Halide::Internal::IRPrinter {
     using Halide::Internal::IRPrinter::visit;
     void visit(const Halide::Internal::Variable* op) {
-      auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
-          Halide::Expr(op), context);
+      auto pwAff = detail::makeAffFromMappedExpr(Halide::Expr(op), context);
       auto expr = context.build().expr_from(pwAff);
       auto s = expr.to_C_str();
       if (!is_identifier_or_nonnegative_integer(expr)) {
@@ -596,13 +632,27 @@ void emitHalideExpr(
       } else if (
           op->call_type == Halide::Internal::Call::CallType::Halide ||
           op->call_type == Halide::Internal::Call::CallType::Image) {
-        tc::polyhedral::detail::emitMappedTensorAccess(
-            op->name, op, op->args, context);
+        detail::emitMappedTensorAccess(op->name, op, op->args, context);
       } else if (op->is_intrinsic(tc2halide::kReductionUpdate)) {
         op->args[0].accept(this);
       } else {
         IRPrinter::visit(op);
       }
+    }
+    void visit(const Halide::Internal::IntImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::UIntImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::FloatImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::Cast* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")";
+      context.ss << "(";
+      op->value.accept(this);
+      context.ss << ")";
     }
     // TODO: handle casts
     const CodegenStatementContext& context;
@@ -720,7 +770,7 @@ void emitTmpDecl(stringstream& ss, const Scop& scop) {
     auto updateId = kvp.second;
     auto provide =
         scop.halide.statements.at(updateId).as<Halide::Internal::Provide>();
-    ss << provide->values[0].type() << " "
+    ss << halideTypeString(provide->values[0].type()) << " "
        << makeReductionTmpName(updateId, scop) << ";" << endl;
   }
 }
@@ -745,7 +795,7 @@ void emitPromotedArrayViewsHalide(stringstream& ss, const Scop& scop) {
     if (p.second.kind == Scop::PromotedDecl::Kind::SharedMem) {
       ss << "__shared__ ";
     }
-    ss << t << " " << viewName;
+    ss << halideTypeString(t) << " " << viewName;
     for (auto s : p.second.sizes) {
       ss << "[" << s << "]";
     }
@@ -785,8 +835,8 @@ string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
   // Expecting a schedule with domain root and context first child.
-  TC_CHECK(mscop.schedule()->as<detail::ScheduleTreeDomain>());
-  TC_CHECK(mscop.schedule()->child({0})->as<detail::ScheduleTreeContext>());
+  TC_CHECK(mscop.schedule()->as<ScheduleTreeDomain>());
+  TC_CHECK(mscop.schedule()->child({0})->as<ScheduleTreeContext>());
   const auto& scop = mscop.scop();
 
   // Make a map of the specialized scalar parameter values
@@ -830,7 +880,7 @@ string emitCudaKernel(
     return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
-  auto schedule = detail::toIslSchedule(mscop.schedule());
+  auto schedule = toIslSchedule(mscop.schedule());
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);
   auto root = mscop.schedule();
@@ -844,5 +894,6 @@ string emitCudaKernel(
   return ss.str();
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

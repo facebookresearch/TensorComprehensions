@@ -23,6 +23,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 namespace {
 /*
  * Return the mapping to MappingTypeId, i.e, either the mapping to blocks or
@@ -78,5 +79,6 @@ std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
       launchBounds<mapping::BlockId>(mscop, grid),
       launchBounds<mapping::ThreadId>(mscop, block));
 }
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

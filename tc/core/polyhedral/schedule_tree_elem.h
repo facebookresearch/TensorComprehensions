@@ -31,110 +31,187 @@ namespace polyhedral {
 namespace detail {
 
 struct ScheduleTreeContext : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Context;
-  isl::set context_;
+
+ private:
   ScheduleTreeContext() = delete;
-  ScheduleTreeContext(const ScheduleTreeContext& eb)
-      : ScheduleTree(eb), context_(eb.context_) {}
   explicit ScheduleTreeContext(isl::set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), context_(s) {}
+  ScheduleTreeContext(const ScheduleTreeContext& eb)
+      : ScheduleTree(eb), context_(eb.context_) {}
+
+ public:
   virtual ~ScheduleTreeContext() override {}
+
+  static std::unique_ptr<ScheduleTreeContext> make(
+      isl::set context,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeContext> make(
+      const ScheduleTreeContext* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   bool operator==(const ScheduleTreeContext& other) const;
   bool operator!=(const ScheduleTreeContext& other) const {
     return !(*this == other);
   }
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+ public:
+  isl::set context_;
 };
 
 struct ScheduleTreeDomain : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Domain;
-  isl::union_set domain_;
+
+ private:
   ScheduleTreeDomain() = delete;
-  ScheduleTreeDomain(const ScheduleTreeDomain& eb)
-      : ScheduleTree(eb), domain_(eb.domain_) {}
   explicit ScheduleTreeDomain(isl::union_set us)
       : ScheduleTree(us.get_ctx(), {}, NodeType), domain_(us) {}
+  ScheduleTreeDomain(const ScheduleTreeDomain& eb)
+      : ScheduleTree(eb), domain_(eb.domain_) {}
+
+ public:
   virtual ~ScheduleTreeDomain() override {}
+
+  static std::unique_ptr<ScheduleTreeDomain> make(
+      isl::union_set domain,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeDomain> make(
+      const ScheduleTreeDomain* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   bool operator==(const ScheduleTreeDomain& other) const;
   bool operator!=(const ScheduleTreeDomain& other) const {
     return !(*this == other);
   }
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+ public:
+  isl::union_set domain_;
 };
 
 struct ScheduleTreeExtension : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Extension;
-  isl::union_map extension_;
+
+ private:
   ScheduleTreeExtension() = delete;
-  ScheduleTreeExtension(const ScheduleTreeExtension& eb)
-      : ScheduleTree(eb), extension_(eb.extension_) {}
   explicit ScheduleTreeExtension(isl::union_map m)
       : ScheduleTree(m.get_ctx(), {}, NodeType), extension_(m) {}
+  ScheduleTreeExtension(const ScheduleTreeExtension& eb)
+      : ScheduleTree(eb), extension_(eb.extension_) {}
+
+ public:
   virtual ~ScheduleTreeExtension() override {}
+
+  static std::unique_ptr<ScheduleTreeExtension> make(
+      isl::union_map extension,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeExtension> make(
+      const ScheduleTreeExtension* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   bool operator==(const ScheduleTreeExtension& other) const;
   bool operator!=(const ScheduleTreeExtension& other) const {
     return !(*this == other);
   }
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+ public:
+  isl::union_map extension_;
 };
 
 struct ScheduleTreeFilter : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Filter;
-  isl::union_set filter_;
+
+ private:
   ScheduleTreeFilter() = delete;
-  ScheduleTreeFilter(const ScheduleTreeFilter& eb)
-      : ScheduleTree(eb), filter_(eb.filter_) {}
   explicit ScheduleTreeFilter(isl::union_set s)
       : ScheduleTree(s.get_ctx(), {}, NodeType), filter_(s) {}
+  ScheduleTreeFilter(const ScheduleTreeFilter& eb)
+      : ScheduleTree(eb), filter_(eb.filter_) {}
+
+ public:
   virtual ~ScheduleTreeFilter() override {}
+
   bool operator==(const ScheduleTreeFilter& other) const;
   bool operator!=(const ScheduleTreeFilter& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeFilter> make(
+      isl::union_set filter,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeFilter> make(
+      const ScheduleTreeFilter* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+ public:
+  isl::union_set filter_;
 };
 
 struct ScheduleTreeMapping : public ScheduleTree {
+ public:
   using Mapping = std::unordered_map<
       mapping::MappingId,
       isl::union_pw_aff,
       typename mapping::MappingId::Hash>;
+
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Mapping;
+
+ private:
   ScheduleTreeMapping() = delete;
+  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping);
   ScheduleTreeMapping(const ScheduleTreeMapping& eb)
       : ScheduleTree(eb), mapping(eb.mapping), filter_(eb.filter_) {}
-  ScheduleTreeMapping(isl::ctx ctx, const Mapping& mapping)
-      : ScheduleTree(ctx, {}, NodeType),
-        mapping(mapping),
-        filter_(isl::union_set()) {
-    TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
-    auto domain = mapping.cbegin()->second.domain();
-    for (auto& kvp : mapping) {
-      TC_CHECK(domain.is_equal(kvp.second.domain()));
-    }
-    filter_ = domain.universe();
-    for (auto& kvp : mapping) {
-      auto upa = kvp.second;
-      auto id = kvp.first;
-      // Create mapping filter by equating the
-      // parameter mappedIds[i] to the "i"-th affine function.
-      upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
-      filter_ = filter_.intersect(upa.zero_union_set());
-    }
-  }
+ public:
   virtual ~ScheduleTreeMapping() override {}
+
   bool operator==(const ScheduleTreeMapping& other) const;
   bool operator!=(const ScheduleTreeMapping& other) const {
     return !(*this == other);
   }
-  virtual std::ostream& write(std::ostream& os) const override;
 
+  static std::unique_ptr<ScheduleTreeMapping> make(
+      isl::ctx ctx,
+      const Mapping& mapping,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeMapping> make(
+      const ScheduleTreeMapping* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
+  virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+ public:
   // Mapping from identifiers to affine functions on domain elements.
   const Mapping mapping;
   // Assignment of the affine functions to the identifiers as parameters.
@@ -142,59 +219,104 @@ struct ScheduleTreeMapping : public ScheduleTree {
 };
 
 struct ScheduleTreeSequence : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Sequence;
+
+ private:
   explicit ScheduleTreeSequence(isl::ctx ctx)
       : ScheduleTree(ctx, {}, NodeType) {}
   ScheduleTreeSequence(const ScheduleTreeSequence& eb) : ScheduleTree(eb) {}
+
+ public:
   virtual ~ScheduleTreeSequence() override {}
+
   bool operator==(const ScheduleTreeSequence& other) const;
   bool operator!=(const ScheduleTreeSequence& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeSequence> make(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeSequence> make(
+      const ScheduleTreeSequence* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 struct ScheduleTreeSet : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::Set;
+
+ private:
   explicit ScheduleTreeSet(isl::ctx ctx) : ScheduleTree(ctx, {}, NodeType) {}
   ScheduleTreeSet(const ScheduleTreeSet& eb) : ScheduleTree(eb) {}
+
+ public:
   virtual ~ScheduleTreeSet() override {}
+
   bool operator==(const ScheduleTreeSet& other) const;
   bool operator!=(const ScheduleTreeSet& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeSet> make(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeSet> make(
+      const ScheduleTreeSet* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 struct ScheduleTreeBand : public ScheduleTree {
  private:
   explicit ScheduleTreeBand(isl::ctx ctx) : ScheduleTree(ctx, {}, NodeType) {}
-
- public:
-  static constexpr detail::ScheduleTreeType NodeType =
-      detail::ScheduleTreeType::Band;
-
   ScheduleTreeBand(const ScheduleTreeBand& eb)
       : ScheduleTree(eb),
         permutable_(eb.permutable_),
         mupa_(eb.mupa_),
         coincident_(eb.coincident_),
         unroll_(eb.unroll_) {}
+
+ public:
+  static constexpr detail::ScheduleTreeType NodeType =
+      detail::ScheduleTreeType::Band;
+
   virtual ~ScheduleTreeBand() override {}
+
   bool operator==(const ScheduleTreeBand& other) const;
   bool operator!=(const ScheduleTreeBand& other) const {
     return !(*this == other);
   }
-  virtual std::ostream& write(std::ostream& os) const override;
 
-  // First replace "mupa" by its greatest integer part to ensure that the
+  virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
+
+  // Make a schedule node band from partial schedule.
+  // Replace "mupa" by its greatest integer part to ensure that the
   // schedule is always integral.
-  // The band is not marked permutable, the dimensions are not marked
-  // coincident and are not marked for unrolling.
-  static std::unique_ptr<ScheduleTreeBand> fromMultiUnionPwAff(
-      isl::multi_union_pw_aff mupa);
+  static std::unique_ptr<ScheduleTreeBand> make(
+      isl::multi_union_pw_aff mupa,
+      bool permutable,
+      std::vector<bool> coincident,
+      std::vector<bool> unroll,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeBand> make(
+      const ScheduleTreeBand* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
 
   // Return the number of scheduling dimensions in the band
   size_t nMember() const;
@@ -227,18 +349,37 @@ struct ScheduleTreeBand : public ScheduleTree {
  * underneath the innermost band member mapped to threads.
  */
 struct ScheduleTreeThreadSpecificMarker : public ScheduleTree {
+ public:
   static constexpr detail::ScheduleTreeType NodeType =
       detail::ScheduleTreeType::ThreadSpecificMarker;
+
+ private:
   explicit ScheduleTreeThreadSpecificMarker(isl::ctx ctx)
       : ScheduleTree(ctx, {}, NodeType) {}
+  ScheduleTreeThreadSpecificMarker(const ScheduleTreeThreadSpecificMarker& tree)
+      : ScheduleTree(tree) {}
+
+ public:
   virtual ~ScheduleTreeThreadSpecificMarker() override {}
+
   bool operator==(const ScheduleTreeThreadSpecificMarker& other) const {
     return true;
   }
   bool operator!=(const ScheduleTreeThreadSpecificMarker& other) const {
     return !(*this == other);
   }
+
+  static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
+      isl::ctx ctx,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+  static std::unique_ptr<ScheduleTreeThreadSpecificMarker> make(
+      const ScheduleTreeThreadSpecificMarker* tree,
+      std::vector<ScheduleTreeUPtr>&& children = {});
+
   virtual std::ostream& write(std::ostream& os) const override;
+  virtual ScheduleTreeUPtr clone() const override {
+    return make(this);
+  }
 };
 
 bool elemEquals(

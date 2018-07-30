@@ -37,25 +37,30 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     const std::string& entryPoint,
     const std::vector<const DLConstTensor*>& inputs,
     /* TODO: in the future also pass outputs for stride and alignment info */
-    const typename Backend::MappingOptionsType& options) {
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions) {
   auto parsedTcs = detail::parse(tc);
   TC_CHECK_EQ(parsedTcs.count(entryPoint), 1u)
       << "attempting to access undefined function " << entryPoint;
-  return compile<Backend>(parsedTcs[entryPoint], inputs, options);
+  return detail::compile<Backend>(
+      parsedTcs[entryPoint], inputs, options, compilerOptions);
 }
 
+namespace detail {
 template <typename Backend>
 std::unique_ptr<typename Backend::ExecutorType> compile(
     lang::TreeRef tcDefinition,
     const std::vector<const DLConstTensor*>& inputs,
     /* TODO: in the future also pass outputs for stride and alignment info */
-    const typename Backend::MappingOptionsType& options) {
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions) {
   using CompilationResultType = typename Backend::CompilationResultType;
 
   auto inputsInfo = makeTensorInfoVector(inputs);
-  auto outputsInfo = detail::inferOutputTensorInfo(tcDefinition, inputs);
-  auto halideComponents =
-      tc2halide::translate(isl::with_exceptions::globalIslCtx(), tcDefinition);
+  auto outputsInfo =
+      detail::inferOutputTensorInfo(tcDefinition, inputs, compilerOptions);
+  auto halideComponents = tc2halide::translate(
+      isl::with_exceptions::globalIslCtx(), tcDefinition, compilerOptions);
   detail::checkInputsCompliant(halideComponents, inputs);
 
   auto tcName = lang::Def(tcDefinition).name().name();
@@ -69,4 +74,5 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
       new typename Backend::ExecutorType(
           inputsInfo, outputsInfo, halideComponents, compilationResult));
 }
+} // namespace detail
 } // namespace tc

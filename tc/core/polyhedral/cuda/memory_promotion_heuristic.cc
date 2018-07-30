@@ -33,6 +33,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 namespace {
 
 // Map global<->shared copy bands to threads, starting from the innermost
@@ -329,8 +330,8 @@ bool accessSubscriptsAreUnrolledLoops(
       }
     }
 
-    auto space = isl::space(leaf->ctx_, 0, unrolledDims.size())
-                     .align_params(subdomain.get_space());
+    auto space =
+        subdomain.get_space().add_unnamed_tuple_ui(unrolledDims.size());
     auto unrolledDimsMupa = isl::multi_union_pw_aff(space, unrolledDims);
 
     // It is possible that no loops are unrolled, in which case
@@ -760,5 +761,6 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   }
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

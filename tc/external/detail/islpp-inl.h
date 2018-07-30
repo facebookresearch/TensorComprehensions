@@ -41,9 +41,9 @@ inline isl::aff operator/(isl::aff A, int i) {
   return A.scale_down(isl::val(A.get_ctx(), i));
 }
 
-inline isl::aff operator+(int i, isl::aff A) {
-  isl::ctx ctx = A.get_ctx();
-  return A + isl::val(ctx, i);
+template <typename T>
+inline isl::aff operator+(int i, T A) {
+  return A.add_constant_si(i);
 }
 
 inline isl::aff operator+(isl::aff A, isl::val v) {
@@ -53,10 +53,6 @@ inline isl::aff operator+(isl::aff A, isl::val v) {
 
 inline isl::aff operator+(isl::val v, isl::aff A) {
   return A + v;
-}
-
-inline isl::aff operator+(isl::aff A, isl::aff B) {
-  return A.add(B);
 }
 
 inline isl::aff operator+(isl::aff A, int i) {
@@ -195,20 +191,12 @@ inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-inline isl::set operator&(isl::set S1, isl::set S2) {
-  return S1.intersect(S2);
-}
-
 inline isl::union_set operator&(isl::union_set S1, isl::set S2) {
   return S1.intersect(isl::union_set(S2));
 }
 
 inline isl::union_set operator&(isl::set S1, isl::union_set S2) {
   return S2 & S1;
-}
-
-inline isl::union_set operator&(isl::union_set S1, isl::union_set S2) {
-  return S1.intersect(S2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

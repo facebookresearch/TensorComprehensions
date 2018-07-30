@@ -20,9 +20,11 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
     const MappedScop& mscop,
     const tc::Grid& grid,
     const tc::Block& block);
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

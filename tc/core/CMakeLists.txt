@@ -34,6 +34,7 @@ add_library(
   polyhedral/scop.cc
   polyhedral/separation.cc
   polyhedral/unroll.cc
+  polyhedral/utils.cc
 )
 target_include_directories(tc_core PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
@@ -76,6 +77,7 @@ add_library(
 
   polyhedral/codegen_llvm.cc
   polyhedral/llvm_jit.cc
+  polyhedral/cpu/mapped_scop.cc
 )
 target_include_directories(tc_core_cpu PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
@@ -119,10 +121,10 @@ add_library(
 
   ${TC_CUDA_CROSS_COMPILE_FILES}
 )
-# Unsets CUDA_HOME to compile without SDK
+# Sets NO_CUDA_SDK to compile without SDK
 set_target_properties(tc_core_cuda_no_sdk
                       PROPERTIES COMPILE_FLAGS
-                      "${CMAKE_CXX_FLAGS} -UCUDA_HOME -Wl,--no-undefined")
+                      "${CMAKE_CXX_FLAGS} -DNO_CUDA_SDK")
 target_include_directories(tc_core_cuda_no_sdk PUBLIC ${LLVM_INCLUDE_DIRS})
 target_link_libraries(
   tc_core_cuda_no_sdk

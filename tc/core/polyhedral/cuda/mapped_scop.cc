@@ -43,8 +43,14 @@
 
 #include <glog/logging.h>
 
+using tc::polyhedral::detail::ScheduleTree;
+using tc::polyhedral::detail::ScheduleTreeBand;
+using tc::polyhedral::detail::ScheduleTreeContext;
+using tc::polyhedral::detail::ScheduleTreeSequence;
+
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 namespace {
 
@@ -77,7 +83,7 @@ static void checkMinimum(isl::union_set domain, isl::union_pw_aff_list list) {
 template <typename ExceptionType>
 inline void throwIfHasPattern(
     ScheduleTreeMatcher matcher,
-    const detail::ScheduleTree* root) {
+    const ScheduleTree* root) {
   auto candidates = match(matcher, root);
   if (candidates.size() > 0) {
     std::stringstream ss;
@@ -87,7 +93,7 @@ inline void throwIfHasPattern(
   }
 }
 
-void validate(const detail::ScheduleTree* root) {
+void validate(const ScheduleTree* root) {
   throwIfHasPattern<EmptyFilterException>(
       filter(
           [](isl::union_set uset) { return !uset || uset.is_empty(); }, any()),
@@ -98,7 +104,7 @@ void validate(const detail::ScheduleTree* root) {
       root);
 }
 
-bool anyNonCoincidentMember(const detail::ScheduleTreeBand* band) {
+bool anyNonCoincidentMember(const ScheduleTreeBand* band) {
   return band->nOuterCoincident() < band->nMember();
 }
 
@@ -129,9 +135,7 @@ const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
 // Return a pointer to the updated node (below the inserted filter)
 // for call chaining purposes.
 template <typename MappingTypeId>
-detail::ScheduleTree* MappedScop::map(
-    detail::ScheduleTree* tree,
-    isl::union_pw_aff_list list) {
+ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
   size_t nToMap = list.size();
   const auto& extent = mappingSize<MappingTypeId>(this).view;
   TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
@@ -160,16 +164,14 @@ detail::ScheduleTree* MappedScop::map(
 
   checkMinimum(domain, affList);
 
-  auto mapping = detail::ScheduleTree::makeMapping(idList, affList);
+  auto mapping = ScheduleTree::makeMapping(idList, affList);
   tree = insertNodeAbove(root, tree, std::move(mapping))->child({0});
 
   return tree;
 }
 
-detail::ScheduleTree* MappedScop::mapBlocksForward(
-    detail::ScheduleTree* band,
-    size_t nToMap) {
-  auto bandNode = band->as<detail::ScheduleTreeBand>();
+ScheduleTree* MappedScop::mapBlocksForward(ScheduleTree* band, size_t nToMap) {
+  auto bandNode = band->as<ScheduleTreeBand>();
   TC_CHECK(bandNode) << "expected a band, got " << *band;
 
   auto list = bandNode->mupa_.get_union_pw_aff_list();
@@ -180,7 +182,7 @@ detail::ScheduleTree* MappedScop::mapBlocksForward(
 // Uses as many blockSizes elements as outer coincident dimensions in the
 // outermost band
 void MappedScop::mapToBlocksAndScaleBand(
-    detail::ScheduleTree* band,
+    ScheduleTree* band,
     std::vector<size_t> tileSizes) {
   using namespace tc::polyhedral::detail;
 
@@ -205,16 +207,13 @@ namespace {
  * the remaining thread identifiers starting at "begin" to zero.
  * Add a marker underneath that marks the subtree that is thread specific.
  */
-void fixThreadsBelow(
-    MappedScop& mscop,
-    detail::ScheduleTree* tree,
-    size_t begin) {
+void fixThreadsBelow(MappedScop& mscop, ScheduleTree* tree, size_t begin) {
   size_t end = mscop.numThreads.view.size();
   if (begin == end) {
     return;
   }
 
-  auto band = detail::ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
+  auto band = ScheduleTree::makeEmptyBand(mscop.scop().scheduleRoot());
   auto bandTree = insertNodeBelow(tree, std::move(band));
   mscop.mapThreadsBackward(bandTree);
 }
@@ -226,10 +225,7 @@ void fixThreadsBelow(
  * Anything that depends on an update statement is ordered after
  * the update statements.  Anything else is ordered before.
  */
-bool separatedOut(
-    Scop& scop,
-    detail::ScheduleTree* tree,
-    isl::union_set updates) {
+bool separatedOut(Scop& scop, ScheduleTree* tree, isl::union_set updates) {
   auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
@@ -254,7 +250,7 @@ bool separatedOut(
 
 } // namespace
 
-bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
+bool MappedScop::detectReductions(ScheduleTree* tree) {
   // Do not bother with reductions if block is of size 1 in the x direction.
   if (numThreads.view.size() == 0 || numThreads.view[0] == 1) {
     return false;
@@ -264,7 +260,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   for (auto c : tree->children()) {
     found |= detectReductions(c);
   }
-  auto band = tree->as<detail::ScheduleTreeBand>();
+  auto band = tree->as<ScheduleTreeBand>();
   // Nested reductions are not currently supported.
   if (!band || found) {
     return found;
@@ -314,7 +310,7 @@ bool MappedScop::detectReductions(detail::ScheduleTree* tree) {
   return true;
 }
 
-bool MappedScop::needReductionSeparation(const detail::ScheduleTree* st) {
+bool MappedScop::needReductionSeparation(const ScheduleTree* st) {
   if (reductionBandUpdates_.count(st) != 1) {
     return false;
   }
@@ -323,9 +319,9 @@ bool MappedScop::needReductionSeparation(const detail::ScheduleTree* st) {
 }
 
 isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
-    const detail::ScheduleTree* st) {
+    const ScheduleTree* st) {
   TC_CHECK(reductionBandUpdates_.count(st) == 1);
-  auto reductionBand = st->as<detail::ScheduleTreeBand>();
+  auto reductionBand = st->as<ScheduleTreeBand>();
   TC_CHECK(reductionBand);
 
   auto nMember = reductionBand->nMember();
@@ -337,7 +333,7 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   return reductionBand->memberRange(first, nMappedThreads);
 }
 
-detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
+ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
   auto reduction = st;
   // This function either separates full blocks (if needed) or
   // disables the reduction handling.
@@ -386,23 +382,22 @@ detail::ScheduleTree* MappedScop::separateReduction(detail::ScheduleTree* st) {
   return st->ancestor(root, 2);
 }
 
-detail::ScheduleTree* MappedScop::mapThreadsBackward(
-    detail::ScheduleTree* band) {
-  auto bandNode = band->as<detail::ScheduleTreeBand>();
+ScheduleTree* MappedScop::mapThreadsBackward(ScheduleTree* band) {
+  auto bandNode = band->as<ScheduleTreeBand>();
   TC_CHECK(bandNode);
   auto nMember = bandNode->nMember();
   auto nToMap = std::min(nMember, numThreads.view.size());
   TC_CHECK_LE(nToMap, 3u) << "mapping to too many threads";
 
   auto ctx = band->ctx_;
-  insertNodeBelow(band, detail::ScheduleTree::makeThreadSpecificMarker(ctx));
+  insertNodeBelow(band, ScheduleTree::makeThreadSpecificMarker(ctx));
 
   auto list = bandNode->mupa_.get_union_pw_aff_list().reverse();
   list = list.drop(nToMap, list.size() - nToMap);
   return map<mapping::ThreadId>(band, list);
 }
 
-size_t MappedScop::mapToThreads(detail::ScheduleTree* band) {
+size_t MappedScop::mapToThreads(ScheduleTree* band) {
   using namespace tc::polyhedral::detail;
 
   auto bandNode = band->as<ScheduleTreeBand>();
@@ -473,17 +468,15 @@ namespace {
  * That is, assuming "st" is a sequence node, does the last child
  * need to be protected from the next iteration of the first child?
  */
-bool hasOuterSequentialMember(
-    const detail::ScheduleTree* root,
-    detail::ScheduleTree* st) {
+bool hasOuterSequentialMember(const ScheduleTree* root, ScheduleTree* st) {
   auto ancestors = st->ancestors(root);
   std::reverse(ancestors.begin(), ancestors.end());
   for (auto a : ancestors) {
-    auto band = a->as<detail::ScheduleTreeBand>();
+    auto band = a->as<ScheduleTreeBand>();
     if (band && band->nMember() > band->nOuterCoincident()) {
       return true;
     }
-    if (a->as<detail::ScheduleTreeSequence>()) {
+    if (a->as<ScheduleTreeSequence>()) {
       return false;
     }
   }
@@ -532,7 +525,7 @@ isl::multi_aff constructThreadToWarp(
 } // namespace
 
 isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
-    const detail::ScheduleTree* tree) const {
+    const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numThreads.view.size(); ++i) {
     ids.emplace_back(mapping::ThreadId::makeId(i));
@@ -542,7 +535,7 @@ isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
 }
 
 isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
-    const detail::ScheduleTree* tree) const {
+    const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numBlocks.view.size(); ++i) {
     ids.emplace_back(mapping::BlockId::makeId(i));
@@ -552,8 +545,8 @@ isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
 }
 
 Scop::SyncLevel MappedScop::findBestSync(
-    detail::ScheduleTree* st1,
-    detail::ScheduleTree* st2,
+    ScheduleTree* st1,
+    ScheduleTree* st2,
     isl::multi_union_pw_aff domainToThread,
     isl::multi_union_pw_aff domainToWarp) {
   // Active points in the two schedule trees
@@ -571,9 +564,9 @@ Scop::SyncLevel MappedScop::findBestSync(
 
   TC_CHECK_LE(1u, scop_->scheduleRoot()->children().size());
   auto contextSt = scop_->scheduleRoot()->children()[0];
-  auto contextElem = contextSt->as<detail::ScheduleTreeContext>();
+  auto contextElem = contextSt->as<ScheduleTreeContext>();
   TC_CHECK(nullptr != contextElem);
-  dependences = dependences.intersect_params(contextElem->context_);
+  dependences = dependences.intersect_params(contextElem->context_.params());
 
   if (dependences.is_subset(dependences.eq_at(domainToThread))) {
     return Scop::SyncLevel::None;
@@ -733,8 +726,8 @@ std::vector<std::pair<int, int>> MappedScop::findBestSyncConfigInSeq(
   return solutionWithBestBegining;
 }
 
-void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
-  TC_CHECK(seq->as<detail::ScheduleTreeSequence>());
+void MappedScop::insertBestSyncInSeq(ScheduleTree* seq) {
+  TC_CHECK(seq->as<ScheduleTreeSequence>());
 
   auto children = seq->children();
   auto nChildren = children.size();
@@ -796,7 +789,7 @@ void MappedScop::insertBestSyncInSeq(detail::ScheduleTree* seq) {
 // the next iteration of the first child if there may be such
 // a next iteration that is not already covered by synchronization
 // on an outer node.
-size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
+size_t MappedScop::mapInnermostBandsToThreads(ScheduleTree* st) {
   if (needReductionSeparation(st)) {
     st = separateReduction(st);
   }
@@ -808,7 +801,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
   }
   auto n = nChildren > 0 ? *std::max_element(nInner.begin(), nInner.end()) : 0;
   if (nChildren > 1) {
-    auto needSync = st->as<detail::ScheduleTreeSequence>() && n > 0;
+    auto needSync = st->as<ScheduleTreeSequence>() && n > 0;
     if (n > 0) {
       for (size_t i = 0; i < nChildren; ++i) {
         fixThreadsBelow(*this, children[i], nInner[i]);
@@ -819,7 +812,7 @@ size_t MappedScop::mapInnermostBandsToThreads(detail::ScheduleTree* st) {
     }
   }
 
-  if (auto band = st->as<detail::ScheduleTreeBand>()) {
+  if (auto band = st->as<ScheduleTreeBand>()) {
     if (n == 0) {
       // If children were not mapped to threads, the current band can be mapped.
       // First, map the coincidence and reduction dimension to threads.
@@ -957,8 +950,8 @@ std::tuple<std::string, tc::Grid, tc::Block> MappedScop::codegen(
 // Split out a single reduction tile (in the directions other than
 // the reduction) and insert reduction synchronizations outside this tile.
 // Return a pointer to the split off tile.
-detail::ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
-    detail::ScheduleTree* band) {
+ScheduleTree* MappedScop::splitOutReductionTileAndInsertSyncs(
+    ScheduleTree* band) {
   using namespace polyhedral::detail;
   size_t n = numThreads.view.size();
 
@@ -1103,5 +1096,6 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
   return mappedScop;
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

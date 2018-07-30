@@ -47,10 +47,6 @@
 #error LLVM_VERSION_MAJOR not set
 #endif
 
-#ifdef TAPIR_VERSION_MAJOR
-#include "llvm/Transforms/Tapir/CilkABI.h"
-#endif
-
 using namespace Halide;
 
 namespace tc {
@@ -60,9 +56,6 @@ namespace polyhedral {
 using IteratorMapType = std::unordered_map<std::string, isl::ast_expr>;
 using IteratorMapsType =
     std::unordered_map<isl::id, IteratorMapType, isl::IslIdIslHash>;
-
-using IteratorLLVMValueMapType =
-    std::unordered_map<isl::id, llvm::Value*, isl::IslIdIslHash>;
 
 using StmtSubscriptExprMapType =
     std::unordered_map<isl::id, std::vector<isl::ast_expr>, isl::IslIdIslHash>;
@@ -75,24 +68,6 @@ int64_t toSInt(isl::val v) {
   TC_CHECK(v.is_int());
   static_assert(sizeof(long) <= 8, "long is assumed to fit into 64bits");
   return v.get_num_si();
-}
-
-llvm::Value* getLLVMConstantSignedInt64(int64_t v) {
-  return llvm::ConstantInt::get(llvm::Type::getInt64Ty(llvmCtx), v, true);
-}
-
-int64_t IslExprToSInt(isl::ast_expr e) {
-  auto intExpr = e.as<isl::ast_expr_int>();
-  TC_CHECK(intExpr);
-  return toSInt(intExpr.get_val());
-}
-
-int64_t islIdToInt(isl::ast_expr_id e, isl::set context) {
-  auto space = context.get_space();
-  isl::aff param(isl::aff::param_on_domain_space(space, e.get_id()));
-  auto p = context.sample_point();
-  TC_CHECK(context.is_equal(p));
-  return toSInt(param.eval(p));
 }
 
 int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
@@ -113,74 +88,19 @@ std::vector<int64_t> getTensorSizesWithoutLeadingDim(
   for (int d = 1; d < dims; ++d) {
     Halide::Expr extent = t.parameter().extent_constraint(d);
     TC_CHECK(extent.defined())
-        << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
+        << "Undefined extent on input/output tensor. "
+        << "Forward bounds inference should have set these\n";
     sizes.push_back(getTensorSize(context, extent));
   }
   return sizes;
 }
-
-class IslAstExprInterpeter {
-  isl::set context_;
-
- public:
-  IslAstExprInterpeter(isl::set context) : context_(context){};
-
-  int64_t interpret(isl::ast_expr e) {
-    if (auto intExpr = e.as<isl::ast_expr_int>()) {
-      return IslExprToSInt(intExpr);
-    } else if (auto idExpr = e.as<isl::ast_expr_id>()) {
-      return islIdToInt(idExpr, context_);
-    } else if (auto opExpr = e.as<isl::ast_expr_op>()) {
-      return interpretOp(opExpr);
-    } else {
-      TC_CHECK(false) << "NYI";
-      return 0; // avoid warning
-    }
-  };
-
- private:
-  int64_t interpretOp(isl::ast_expr_op e) {
-    switch (e.get_n_arg()) {
-      case 1:
-        return interpretUnaryOp(e);
-      case 2:
-        return interpretBinaryOp(e);
-      default:
-        TC_CHECK(false) << "NYI: " << e;
-        return 0; // avoid warning
-    }
-  }
-
-  int64_t interpretBinaryOp(isl::ast_expr_op e) {
-    auto left = interpret(e.get_arg(0));
-    auto right = interpret(e.get_arg(1));
-    if (e.as<isl::ast_op_add>()) {
-      return left + right;
-    } else if (e.as<isl::ast_op_sub>()) {
-      return left - right;
-    } else {
-      TC_CHECK(false) << "NYI: " << e;
-      return 0; // avoid warning
-    }
-  }
-
-  int64_t interpretUnaryOp(isl::ast_expr_op e) {
-    auto val = interpret(e.get_arg(0));
-    if (e.as<isl::ast_op_minus>()) {
-      return -val;
-    } else {
-      TC_CHECK(false) << "NYI";
-      return 0; // avoid warning
-    }
-  }
-};
 
 static constexpr int kOptLevel = 3;
 
 class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
  public:
   const IteratorMapType* iteratorMap_;
-  CodeGen_TC(Target t) : CodeGen_X86(t) {}
+  CodeGen_TC(Target t) : CodeGen_X86(t), iteratorMap_(nullptr) {}
 
   using CodeGen_X86::codegen;
   using CodeGen_X86::llvm_type_of;
@@ -217,10 +137,10 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     return std::move(module);
   }
 
-  // Convert an isl AST expression into an llvm::Value.
-  // Only expressions that consist of a pure identifier or
-  // a pure integer constant are currently supported.
-  llvm::Value* getValue(isl::ast_expr expr);
+  Halide::Expr makeHalideExpr(isl::ast_expr expr);
+  llvm::Value* codegen(isl::ast_expr expr) {
+    return codegen(makeHalideExpr(expr));
+  }
 
  protected:
   using CodeGen_X86::visit;
@@ -243,8 +163,17 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
     }
   }
 
+  // The type of Variables in TC come in 2 flavors:
+  // 1. the ones for which we explicitly registered LLVMIR with sym_push
+  //    (i.e. the Halide way).
+  // 2. the ones coming from an isl::ast_build which need to be translated
+  //    through the iteratorMap_,
   void visit(const Halide::Internal::Variable* op) override {
-    value = getValue(iteratorMap_->at(op->name));
+    if ((value = sym_get(op->name, false))) {
+      return;
+    }
+    TC_CHECK(iteratorMap_) << "IteratorMap must be set";
+    value = codegen(iteratorMap_->at(op->name));
 
     // Generate code for type casting if necessary.
     llvm::Type* ty = llvm_type_of(op->type);
@@ -284,9 +213,6 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
 
     llvm::PassManagerBuilder b;
     b.OptLevel = kOptLevel;
-#ifdef TAPIR_VERSION_MAJOR
-    b.tapirTarget = new llvm::CilkABI();
-#endif
     b.Inliner = llvm::createFunctionInliningPass(b.OptLevel, 0, false);
     b.LoopVectorize = true;
     b.SLPVectorize = true;
@@ -312,15 +238,56 @@ class CodeGen_TC : public Halide::Internal::CodeGen_X86 {
   }
 };
 
-llvm::Value* CodeGen_TC::getValue(isl::ast_expr expr) {
+// For now we always generate int32 for induction variables and integer
+// constants. Note that we may soon need to also support int64.
+Halide::Expr CodeGen_TC::makeHalideExpr(isl::ast_expr expr) {
   if (auto idExpr = expr.as<isl::ast_expr_id>()) {
-    return sym_get(idExpr.get_id().get_name());
+    return Halide::Internal::Variable::make(
+        Halide::Int(32), idExpr.get_id().get_name());
   } else if (auto intExpr = expr.as<isl::ast_expr_int>()) {
-    return getLLVMConstantSignedInt64(toSInt(intExpr.get_val()));
-  } else {
-    LOG(FATAL) << "NYI";
-    return nullptr;
+    return Halide::Internal::IntImm::make(
+        Halide::Int(32), toSInt(intExpr.get_val()));
+  } else if (auto op = expr.as<isl::ast_expr_op>()) {
+#define MAKE_UN_OP(ISL_TYPE, HALIDE_TYPE)                    \
+  if (auto ty = op.as<ISL_TYPE>()) {                         \
+    return HALIDE_TYPE::make(makeHalideExpr(op.get_arg(0))); \
   }
+
+#define MAKE_BIN_OP(ISL_TYPE, HALIDE_TYPE)                             \
+  if (auto ty = op.as<ISL_TYPE>()) {                                   \
+    return HALIDE_TYPE::make(                                          \
+        makeHalideExpr(op.get_arg(0)), makeHalideExpr(op.get_arg(1))); \
+  }
+
+    // Minus in Halide is done with a binary operator, this is a special case
+    // for us.
+    if (auto ty = op.as<isl::ast_op_minus>()) {
+      auto a = makeHalideExpr(op.get_arg(0));
+      auto zero = Halide::Internal::make_zero(a.type());
+      return Halide::Internal::Sub::make(zero, a);
+    }
+
+    // clang-format off
+    MAKE_BIN_OP(isl::ast_op_eq, Halide::Internal::EQ);
+    MAKE_BIN_OP(isl::ast_op_le, Halide::Internal::LE);
+    MAKE_BIN_OP(isl::ast_op_lt, Halide::Internal::LT);
+    MAKE_BIN_OP(isl::ast_op_ge, Halide::Internal::GE);
+    MAKE_BIN_OP(isl::ast_op_gt, Halide::Internal::GT);
+    MAKE_BIN_OP(isl::ast_op_and, Halide::Internal::And);
+    MAKE_BIN_OP(isl::ast_op_or, Halide::Internal::Or);
+    MAKE_BIN_OP(isl::ast_op_min, Halide::Internal::Min);
+    MAKE_BIN_OP(isl::ast_op_max, Halide::Internal::Max);
+    MAKE_BIN_OP(isl::ast_op_add, Halide::Internal::Add);
+    MAKE_BIN_OP(isl::ast_op_sub, Halide::Internal::Sub);
+    MAKE_BIN_OP(isl::ast_op_mul, Halide::Internal::Mul);
+    // clang-format on
+
+#undef MAKE_UN_OP
+#undef MAKE_BIN_OP
+  }
+
+  LOG(FATAL) << "NYI: " << expr;
+  return Halide::Internal::IntImm::make(Halide::Int(32), 0);
 }
 
 class LLVMCodegen {
@@ -347,6 +314,13 @@ class LLVMCodegen {
     }
   }
 
+  void collectParams(const std::vector<Halide::Internal::Parameter>& params) {
+    for (const auto& p : params) {
+      args_.emplace_back(halide_cg.llvm_type_of(p.type()));
+      argNames_.emplace_back(p.name());
+    }
+  }
+
  public:
   LLVMCodegen(
       const Scop& scop,
@@ -364,9 +338,12 @@ class LLVMCodegen {
     halide_cg.init_module();
   }
 
-  void createSignature(
+  // This creates a signature of the form:
+  //    input_data_types, output_data_types, parameters
+  llvm::BasicBlock* createSignature(
       const std::vector<Halide::ImageParam>& inputs,
       const std::vector<Halide::OutputImageParam>& outputs,
+      const std::vector<Halide::Internal::Parameter>& params,
       const std::string& fname) {
     auto size = inputs.size() + outputs.size();
     args_.reserve(size);
@@ -374,6 +351,7 @@ class LLVMCodegen {
 
     collectInputs(inputs);
     collectOutputs(outputs);
+    collectParams(params);
 
     auto* functionType =
         llvm::FunctionType::get(llvm::Type::getVoidTy(llvmCtx), args_, false);
@@ -391,67 +369,54 @@ class LLVMCodegen {
       arg.setName(argNames_.at(idx++));
     }
 
-    for (auto it = function->arg_begin(), end = function->arg_end(); it != end;
+    // Only pointer arguments can be NoAlias and NonNull
+    for (auto it = function->arg_begin(),
+              end = function->arg_begin() + inputs.size() + outputs.size();
+         it != end;
          ++it) {
       it->addAttr(llvm::Attribute::NoAlias);
       it->addAttr(llvm::Attribute::NonNull);
     }
+    // Only input arguments are ReadOnly
     for (auto it = function->arg_begin(), end = it + inputs.size(); it != end;
          ++it) {
       it->addAttr(llvm::Attribute::ReadOnly);
     }
 
-    auto entryBB_ = llvm::BasicBlock::Create(llvmCtx, "entry", function);
-    halide_cg.get_builder().SetInsertPoint(entryBB_);
+    return llvm::BasicBlock::Create(llvmCtx, "entry", function);
   }
 
-  void CodeGen(isl::ast_node node) {
-    emitAst(node);
-    halide_cg.get_builder().CreateRetVoid();
-
-    if (llvm::verifyModule(*halide_cg.get_module())) {
-      LOG(ERROR) << str();
-      llvm::verifyModule(*halide_cg.get_module(), &llvm::outs());
-      throw std::runtime_error("LLVM generated module is invalid.");
-    }
-  }
-
-  llvm::BasicBlock* emitAst(isl::ast_node node) {
+  // This is the main entry point to emit pieces of LLVM IR
+  // LLVM IR insertion is stateful, configured by SetInsertPoint
+  // We make this an explicit parameter to avoid implicit conventions
+  // All TC IR builder methods take an explicit insertionPoint.
+  // The invariant in all emit* (except for emitAst) is that:
+  //    TC_CHECK_EQ(halide_cg.get_builder().GetInsertBlock(), insertionPoint);
+  llvm::BasicBlock* emitAst(
+      isl::ast_node node,
+      llvm::BasicBlock* insertionPoint) {
+    halide_cg.get_builder().SetInsertPoint(insertionPoint);
     if (auto forNode = node.as<isl::ast_node_for>()) {
-      return emitFor(forNode);
+      return emitFor(forNode, insertionPoint);
     } else if (auto userNode = node.as<isl::ast_node_user>()) {
-      return emitStmt(userNode);
+      return emitStmt(userNode, insertionPoint);
     } else if (auto blockNode = node.as<isl::ast_node_block>()) {
-      return emitBlock(blockNode);
+      llvm::BasicBlock* curBB = insertionPoint;
+      for (auto child : blockNode.get_children()) {
+        curBB = emitAst(child, curBB);
+      }
+      return curBB;
     } else {
-      if (node.as<isl::ast_node_if>()) {
-        LOG(FATAL) << "NYI if node: " << node << std::endl;
+      if (auto cond = node.as<isl::ast_node_if>()) {
+        return emitIf(cond, insertionPoint);
       } else {
         LOG(FATAL) << "NYI " << node << std::endl;
       }
-      return static_cast<llvm::BasicBlock*>(nullptr); // avoid warning
     }
+    return nullptr;
   }
 
  private:
-  llvm::BasicBlock* emitBlock(isl::ast_node_block node) {
-    auto* function = halide_cg.get_builder().GetInsertBlock()->getParent();
-    auto* currBB = llvm::BasicBlock::Create(llvmCtx, "block_exit", function);
-    halide_cg.get_builder().CreateBr(currBB);
-    halide_cg.get_builder().SetInsertPoint(currBB);
-
-    for (auto child : node.get_children()) {
-      currBB = emitAst(child);
-      halide_cg.get_builder().SetInsertPoint(currBB);
-    }
-
-    auto* exit = llvm::BasicBlock::Create(llvmCtx, "block_exit", function);
-    halide_cg.get_builder().SetInsertPoint(currBB);
-    halide_cg.get_builder().CreateBr(exit);
-    halide_cg.get_builder().SetInsertPoint(exit);
-    return exit;
-  }
-
   llvm::Type* makePtrToArrayType(
       llvm::Type* baseTy,
       const std::vector<int64_t>& sizes) {
@@ -464,29 +429,47 @@ class LLVMCodegen {
     return arrTy->getPointerTo();
   }
 
-  llvm::BasicBlock* emitFor(isl::ast_node_for node) {
-    IteratorLLVMValueMapType iterPHIs;
+  llvm::BasicBlock* emitIf(
+      isl::ast_node_if node,
+      llvm::BasicBlock* insertionPoint) {
+    TC_CHECK_EQ(halide_cg.get_builder().GetInsertBlock(), insertionPoint);
+    auto* function = insertionPoint->getParent();
 
-    auto* incoming = halide_cg.get_builder().GetInsertBlock();
-    auto* function = incoming->getParent();
+    llvm::Value* condVal = halide_cg.codegen(node.get_cond());
+    auto* thenBB = llvm::BasicBlock::Create(llvmCtx, "then", function);
+    // Recursively emit "then" in a new thenBB
+    auto innerBB = emitAst(node.get_then(), thenBB);
+
+    // outer -> thenBB
+    halide_cg.get_builder().SetInsertPoint(insertionPoint);
+    // outer ---------> if_exit
+    // TODO: When we support "else", go to elseBB instead of exit
+    auto* exit = llvm::BasicBlock::Create(llvmCtx, "if_exit", function);
+    halide_cg.get_builder().CreateCondBr(condVal, thenBB, exit);
+
+    //          then -> if_exit
+    halide_cg.get_builder().SetInsertPoint(innerBB);
+    halide_cg.get_builder().CreateBr(exit);
+
+    // Else is often empty in the absence of full tile extraction
+    if (node.has_else()) {
+      LOG(FATAL) << "NYI: else conditional branch";
+      return exit;
+    }
+
+    return exit;
+  }
+
+  llvm::BasicBlock* emitFor(
+      isl::ast_node_for node,
+      llvm::BasicBlock* insertionPoint) {
+    TC_CHECK_EQ(halide_cg.get_builder().GetInsertBlock(), insertionPoint);
+    auto* function = insertionPoint->getParent();
     auto* headerBB = llvm::BasicBlock::Create(llvmCtx, "loop_header", function);
     auto* loopBodyBB = llvm::BasicBlock::Create(llvmCtx, "loop_body", function);
     auto* loopLatchBB =
         llvm::BasicBlock::Create(llvmCtx, "loop_latch", function);
     auto* loopExitBB = llvm::BasicBlock::Create(llvmCtx, "loop_exit", function);
-
-    bool parallel = node.is_coincident();
-    llvm::Value* SyncRegion = nullptr;
-
-#ifdef TAPIR_VERSION_MAJOR
-    if (parallel) {
-      SyncRegion = halide_cg.get_builder().CreateCall(
-          llvm::Intrinsic::getDeclaration(
-              function->getParent(), llvm::Intrinsic::syncregion_start),
-          {},
-          "syncreg");
-    }
-#endif
 
     halide_cg.get_builder().CreateBr(headerBB);
 
@@ -495,86 +478,41 @@ class LLVMCodegen {
 
     // Loop Header
     {
-      auto initVal = IslExprToSInt(node.get_init());
+      auto initVal = halide_cg.codegen(node.get_init());
       halide_cg.get_builder().SetInsertPoint(headerBB);
       phi = halide_cg.get_builder().CreatePHI(
-          llvm::Type::getInt64Ty(llvmCtx), 2, iterator.get_name());
+          initVal->getType(), 2, iterator.get_name());
       halide_cg.sym_push(iterator.get_name(), phi);
-      phi->addIncoming(getLLVMConstantSignedInt64(initVal), incoming);
+      phi->addIncoming(initVal, insertionPoint);
 
-      auto cond_expr = node.get_cond().as<isl::ast_expr_op>();
-      TC_CHECK(cond_expr.as<isl::ast_op_lt>() or cond_expr.as<isl::ast_op_le>())
-          << "I only know how to codegen lt and le";
-      auto condLHS = cond_expr.get_arg(0).as<isl::ast_expr_id>();
-      TC_CHECK(condLHS);
-      TC_CHECK_EQ(condLHS.get_id(), iterator);
-
-      IslAstExprInterpeter i(scop_.context());
-      auto condRHSVal = i.interpret(cond_expr.get_arg(1));
-
-      auto cond = [&]() {
-        auto constant = getLLVMConstantSignedInt64(condRHSVal);
-        if (cond_expr.as<isl::ast_op_lt>()) {
-          return halide_cg.get_builder().CreateICmpSLT(phi, constant);
-        } else if (cond_expr.as<isl::ast_op_le>()) {
-          return halide_cg.get_builder().CreateICmpSLE(phi, constant);
-        } else {
-          TC_CHECK(false) << "NYI";
-          return static_cast<llvm::Value*>(nullptr); // avoid warning
-        }
-      }();
+      auto cond = halide_cg.codegen(node.get_cond());
       halide_cg.get_builder().CreateCondBr(cond, loopBodyBB, loopExitBB);
     }
 
     // Create Body
     {
-      halide_cg.get_builder().SetInsertPoint(loopBodyBB);
-
-#ifdef TAPIR_VERSION_MAJOR
-      if (parallel) {
-        auto* detachedBB =
-            llvm::BasicBlock::Create(llvmCtx, "det.achd", function);
-        halide_cg.get_builder().CreateDetach(
-            detachedBB, loopLatchBB, SyncRegion);
-        halide_cg.get_builder().SetInsertPoint(detachedBB);
-      }
-#endif
-      auto* currentBB = emitAst(node.get_body());
+      auto* currentBB = emitAst(node.get_body(), loopBodyBB);
       halide_cg.get_builder().SetInsertPoint(currentBB);
-
-      if (parallel) {
-#ifdef TAPIR_VERSION_MAJOR
-        halide_cg.get_builder().CreateReattach(loopLatchBB, SyncRegion);
-#endif
-      } else {
-        halide_cg.get_builder().CreateBr(loopLatchBB);
-      }
+      halide_cg.get_builder().CreateBr(loopLatchBB);
     }
 
     // Create Latch
     {
       halide_cg.get_builder().SetInsertPoint(loopLatchBB);
-      auto incVal = IslExprToSInt(node.get_inc());
+      auto incVal = halide_cg.codegen(node.get_inc());
       phi->addIncoming(
-          halide_cg.get_builder().CreateAdd(
-              phi, getLLVMConstantSignedInt64(incVal)),
-          loopLatchBB);
+          halide_cg.get_builder().CreateAdd(phi, incVal), loopLatchBB);
       halide_cg.get_builder().CreateBr(headerBB);
     }
 
-    halide_cg.get_builder().SetInsertPoint(loopExitBB);
     halide_cg.sym_pop(iterator.get_name());
-#ifdef TAPIR_VERSION_MAJOR
-    if (parallel) {
-      auto* syncBB = llvm::BasicBlock::Create(llvmCtx, "synced", function);
-      halide_cg.get_builder().CreateSync(syncBB, SyncRegion);
-      halide_cg.get_builder().SetInsertPoint(syncBB);
-    }
-#endif
-    return halide_cg.get_builder().GetInsertBlock();
+    return loopExitBB;
   }
 
-  llvm::BasicBlock* emitStmt(isl::ast_node_user node) {
+  llvm::BasicBlock* emitStmt(
+      isl::ast_node_user node,
+      llvm::BasicBlock* insertionPoint) {
+    TC_CHECK_EQ(halide_cg.get_builder().GetInsertBlock(), insertionPoint);
     isl::ast_expr_op usrExp = node.get_expr().as<isl::ast_expr_op>();
     auto id = usrExp.get_arg(0).as<isl::ast_expr_id>().get_id();
     auto provide = scop_.halide.statements.at(id);
@@ -586,16 +524,19 @@ class LLVMCodegen {
     const auto& subscripts = stmtSubscripts_.at(id);
     llvm::SmallVector<llvm::Value*, 5> subscriptValues;
 
+    halide_cg.iteratorMap_ = &iteratorMaps_.at(id);
     for (const auto& subscript : subscripts) {
-      subscriptValues.push_back(halide_cg.getValue(subscript));
+      subscriptValues.push_back(halide_cg.codegen(subscript));
     }
 
     auto destAddr = halide_cg.get_builder().CreateInBoundsGEP(
         halide_cg.sym_get(arrayName), subscriptValues);
 
-    halide_cg.iteratorMap_ = &iteratorMaps_.at(id);
     llvm::Value* rhs = halide_cg.codegen(op->values[0]);
     halide_cg.get_builder().CreateStore(rhs, destAddr);
+    // We must return halide_cg.get_builder().GetInsertBlock() because
+    // Halide does not adhere to our conventions and when it emits multiple
+    // blocks things may go haywire.
     return halide_cg.get_builder().GetInsertBlock();
   }
 
@@ -686,8 +627,18 @@ std::unique_ptr<llvm::Module> emitLLVMKernel(
   cg.halide_cg.get_module()->setDataLayout(dataLayout);
   cg.halide_cg.get_module()->setTargetTriple(
       llvm::EngineBuilder().selectTarget()->getTargetTriple().str());
-  cg.createSignature(scop.halide.inputs, scop.halide.outputs, specializedName);
-  cg.CodeGen(islCg.astNode);
+  auto entry = cg.createSignature(
+      scop.halide.inputs,
+      scop.halide.outputs,
+      scop.halide.params,
+      specializedName);
+  auto exit = cg.emitAst(islCg.astNode, entry);
+  cg.halide_cg.get_builder().SetInsertPoint(exit);
+  cg.halide_cg.get_builder().CreateRetVoid();
+
+  TC_CHECK(!llvm::verifyModule(*cg.halide_cg.get_module()))
+      << "LLVM generated module is invalid." << cg.str().c_str();
+
   cg.halide_cg.optimize_module();
   return cg.halide_cg.move_module();
 }

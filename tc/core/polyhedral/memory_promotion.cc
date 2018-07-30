@@ -25,6 +25,7 @@
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
+#include "tc/core/polyhedral/utils.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -409,17 +410,20 @@ namespace {
 // context of the scop.
 isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
-  auto space = scop.domain().get_space().params();
+  auto space = scop.domain().get_space();
   auto nDim = halideParameter.dimensions();
-  space = space.add_named_tuple_id_ui(tensorId, nDim);
+  auto tensorTuple = constructTensorTuple(space, tensorId, nDim);
+  auto tensorSpace = tensorTuple.get_space();
 
-  auto tensorElements = isl::set::universe(space);
-  auto identity = isl::multi_aff::identity(space.range().map_from_set());
+  auto tensorElements = isl::set::universe(tensorSpace);
+  auto identity = isl::multi_aff::identity(tensorSpace.map_from_set());
   for (int i = 0; i < nDim; ++i) {
     auto minAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.min_constraint(i));
     auto extentAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.extent_constraint(i));
+    minAff = minAff.unbind_params_insert_domain(tensorTuple);
+    extentAff = extentAff.unbind_params_insert_domain(tensorTuple);
     auto aff = identity.get_aff(i);
     tensorElements = tensorElements & (minAff <= isl::aff_set(aff)) &
         (isl::aff_set(aff) < (minAff + extentAff));

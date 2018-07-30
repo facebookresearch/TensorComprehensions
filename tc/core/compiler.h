@@ -22,6 +22,7 @@
 #include "tc/core/mapping_options.h"
 #include "tc/core/tensor.h"
 #include "tc/lang/tree.h"
+#include "tc/utils/compiler_options.h"
 
 /**
  * This provides a simple functional-style C++ API with multi-backend
@@ -62,8 +63,9 @@ namespace tc {
 /// "entryPoint", this function compiles a new TcExecutor for the specified
 /// Backend. For now, contiguous output sizes are inferred given input sizes.
 /// If you need another kernel for another entryPoint or other inputs or
-//  other options then just compile another TcExecutor; because atm we fully
-/// JIT specialize on all sizes.
+/// other options then just compile another TcExecutor; because atm we fully
+/// JIT specialize on all sizes.  General compilation options (warnings, debug
+/// info) are provided in "compilerOptions".
 /// \returns a new TcExecutor on which the run method can be called to run
 /// entryPoint
 template <typename Backend>
@@ -72,7 +74,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     const std::string& entryPoint,
     const std::vector<const DLConstTensor*>& inputs,
     /* TODO: in the future also pass outputs for stride and alignment info */
-    const typename Backend::MappingOptionsType& options);
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions = CompilerOptions());
 
 /// Given a TC representation as a TC + TC function name entryPoint and a list
 /// of input tensors that match the definition in the TC function definition
@@ -85,7 +88,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
 std::vector<TensorInfo> inferOutputTensorInfo(
     const std::string& tc,
     const std::string& entryPoint,
-    const std::vector<const DLConstTensor*> inputs);
+    const std::vector<const DLConstTensor*> inputs,
+    const CompilerOptions& compilerOptions = CompilerOptions());
 
 namespace detail {
 /// Given a TC representation, this parses the TC functions into a map of
@@ -105,7 +109,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     lang::TreeRef tcDefinition,
     const std::vector<const DLConstTensor*>& inputs,
     /* TODO: in the future also pass outputs for stride and alignment info */
-    const typename Backend::MappingOptionsType& options);
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions = CompilerOptions());
 
 /// Given a TC representation as a TreeRef and a list of input tensors that
 /// match the definition in the TC function definition (in positional order),
@@ -116,7 +121,8 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
 /// performing output shape validation.
 std::vector<TensorInfo> inferOutputTensorInfo(
     lang::TreeRef tcDefinition,
-    const std::vector<const DLConstTensor*> inputs);
+    const std::vector<const DLConstTensor*> inputs,
+    const CompilerOptions& compilerOptions = CompilerOptions());
 
 } // namespace detail
 } // namespace tc

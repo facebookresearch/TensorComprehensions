@@ -21,6 +21,7 @@
 #include "tc/lang/error_report.h"
 #include "tc/lang/tree.h"
 #include "tc/lang/tree_views.h"
+#include "tc/utils/compiler_options.h"
 
 namespace lang {
 
@@ -170,7 +171,9 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
 /// variable objects.
 /// - checks that input variables are readonly.
 struct Sema {
-  std::unordered_map<TreeRef, TreeRef> expr_to_type;
+  explicit Sema(
+      const tc::CompilerOptions& compilerOptions = tc::CompilerOptions())
+      : compilerOptions(compilerOptions) {}
 
   TreeRef typeOfExpr(TreeRef ref) {
     if (expr_to_type.count(ref) == 0) {
@@ -558,7 +561,7 @@ struct Sema {
           << " is not pre-initialized before calling the TC function,"
           << " consider using the !-suffixed reduction operator " << tk
           << "! instead of " << tk;
-      warn(err);
+      warn(err, compilerOptions);
     }
 
     auto type = TensorType::create(
@@ -707,7 +710,12 @@ struct Sema {
   // allowed
   std::unordered_set<std::string> live_input_names;
 
+  std::unordered_map<TreeRef, TreeRef> expr_to_type;
+
   std::unordered_set<std::string> inputParameters;
   std::unordered_set<std::string> nonTemporaries;
+
+  // TC compilation flow options.
+  tc::CompilerOptions compilerOptions;
 };
 } // namespace lang

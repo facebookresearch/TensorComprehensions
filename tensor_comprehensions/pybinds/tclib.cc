@@ -450,6 +450,25 @@ PYBIND11_MODULE(tclib, m) {
     tc::FLAGS_debug_tuner = debug_tuner;
   });
   m.def("dump_cuda", [](bool dump_cuda) { tc::FLAGS_dump_cuda = dump_cuda; });
+  m.def("dump_ptx", [](bool dump_ptx) { tc::FLAGS_dump_ptx = dump_ptx; });
+  m.def(
+      "cuda_compiler",
+      [](const std::string& cuda_compiler) {
+        tc::FLAGS_cuda_compiler = cuda_compiler;
+      },
+      gflags::DescribeOneFlag(
+          gflags::GetCommandLineFlagInfoOrDie("cuda_compiler"))
+          .c_str());
+  m.def(
+      "llvm_flags",
+      [](const std::string& llvm_flags) { tc::FLAGS_llvm_flags = llvm_flags; },
+      gflags::DescribeOneFlag(gflags::GetCommandLineFlagInfoOrDie("llvm_flags"))
+          .c_str());
+  m.def(
+      "nvcc_flags",
+      [](const std::string& nvcc_flags) { tc::FLAGS_nvcc_flags = nvcc_flags; },
+      gflags::DescribeOneFlag(gflags::GetCommandLineFlagInfoOrDie("nvcc_flags"))
+          .c_str());
 
   // Access the names of the defs in a TC string
   m.def("parse_defs", [](const std::string& tc) {
