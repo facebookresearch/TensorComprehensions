@@ -295,16 +295,16 @@ void addSingletonReferenceGroup(
 
 void addSingletonReferenceGroups(
     TensorGroups& tensorGroups,
-    isl::union_map accesses,
-    isl::union_set domain,
-    isl::union_map schedule,
+    isl::UnionMap<isl::Pair<Statement, Tag>, Tensor> accesses,
+    isl::UnionSet<Statement> domain,
+    isl::UnionMap<Statement, Prefix> schedule,
     AccessType type) {
   // access relations have a shape :: [D -> ref] -> O
   // use currying to isolate the D part before intersecting with the domain
   // Compute initial groups with single reference per group.
   std::unordered_set<isl::id, isl::IslIdIslHash> unapproximatable;
   for (auto a : accesses.get_map_list()) {
-    if (isl::union_map(a.curry()).intersect_domain(domain).is_empty()) {
+    if (a.curry().asUnionMap().intersect_domain(domain).is_empty()) {
       continue;
     }
 
