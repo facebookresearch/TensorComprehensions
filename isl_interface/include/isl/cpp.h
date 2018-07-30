@@ -1657,9 +1657,9 @@ public:
   inline isl::map flatten_range() const;
   inline void foreach_basic_map(const std::function<void(isl::basic_map)> &fn) const;
   static inline isl::map from(isl::pw_multi_aff pma);
+  static inline isl::map from(isl::union_map umap);
   static inline isl::map from_domain(isl::set set);
   static inline isl::map from_range(isl::set set);
-  static inline isl::map from_union_map(isl::union_map umap);
   inline isl::basic_map_list get_basic_map_list() const;
   inline isl::fixed_box get_range_simple_fixed_box_hull() const;
   inline isl::stride_info get_range_stride_info(int pos) const;
@@ -9167,6 +9167,19 @@ isl::map map::from(isl::pw_multi_aff pma)
   return manage(res);
 }
 
+isl::map map::from(isl::union_map umap)
+{
+  if (umap.is_null())
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  auto ctx = umap.get_ctx();
+  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_from_union_map(umap.release());
+  if (!res)
+    throw exception::create_from_last_error(ctx);
+  return manage(res);
+}
+
 isl::map map::from_domain(isl::set set)
 {
   if (set.is_null())
@@ -9188,19 +9201,6 @@ isl::map map::from_range(isl::set set)
   auto ctx = set.get_ctx();
   options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
   auto res = isl_map_from_range(set.release());
-  if (!res)
-    throw exception::create_from_last_error(ctx);
-  return manage(res);
-}
-
-isl::map map::from_union_map(isl::union_map umap)
-{
-  if (umap.is_null())
-    throw isl::exception::create(isl_error_invalid,
-        "NULL input", __FILE__, __LINE__);
-  auto ctx = umap.get_ctx();
-  options_scoped_set_on_error saved_on_error(ctx, ISL_ON_ERROR_CONTINUE);
-  auto res = isl_map_from_union_map(umap.release());
   if (!res)
     throw exception::create_from_last_error(ctx);
   return manage(res);

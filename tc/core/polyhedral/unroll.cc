@@ -55,7 +55,7 @@ isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
   umap = umap.range_product(umap);
   umap = umap.range().unwrap();
   umap = umap.project_out_all_params();
-  auto delta = isl::map::from_union_map(umap).deltas();
+  auto delta = isl::map::from(umap).deltas();
   auto hull = delta.simple_hull();
   auto stride = isl::set(hull).get_stride(0);
   hull = isl::set(hull).polyhedral_hull();

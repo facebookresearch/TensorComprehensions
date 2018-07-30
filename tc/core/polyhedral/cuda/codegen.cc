@@ -726,9 +726,8 @@ void emitMappedTensorAccess(
   auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
   promotion = promotion.set_range_tuple_id(promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
-  auto schedule =
-      isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(
-          context.domain())); // map :: D -> S
+  auto schedule = isl::map::from(promotionInfo.outerSchedule.intersect_domain(
+      context.domain())); // map :: D -> S
 
   TC_CHECK(schedule.is_single_valued())
       << "expected single-valued schedule, got " << schedule;
@@ -864,7 +863,7 @@ string emitCudaKernel(
       auto expr = user.get_expr().as<isl::ast_expr_op>();
       auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
       auto schedule = build.get_schedule();
-      auto scheduleMap = isl::map::from_union_map(schedule);
+      auto scheduleMap = isl::map::from(schedule);
 
       auto nodeId = isl::id(
           node.get_ctx(),
