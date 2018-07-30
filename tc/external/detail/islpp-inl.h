@@ -187,7 +187,8 @@ inline isl::map operator<=(isl::aff_map A, isl::aff B) {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::multi_aff
 ///////////////////////////////////////////////////////////////////////////////
-inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
+template <typename S, typename T>
+inline auto operator/(S left, T right) -> decltype(left.scale_down(right)) {
   return left.scale_down(right);
 }
 
