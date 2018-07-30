@@ -126,9 +126,9 @@ class TensorReferenceGroup {
   }
 
   // Access relations in terms of partial schedule of the scoping point.
-  isl::map scopedWrites() const;
-  isl::map scopedReads() const;
-  isl::map scopedAccesses() const {
+  isl::Map<Prefix, Tensor> scopedWrites() const;
+  isl::Map<Prefix, Tensor> scopedReads() const;
+  isl::Map<Prefix, Tensor> scopedAccesses() const {
     return scopedWrites().unite(scopedReads());
   }
 
@@ -146,7 +146,7 @@ class TensorReferenceGroup {
   isl::map approximateScopedAccesses() const;
 
   isl::multi_aff promotion() const;
-  isl::set promotedFootprint() const;
+  isl::Set<Tensor> promotedFootprint() const;
 
   std::vector<size_t> approximationSizes() const;
 

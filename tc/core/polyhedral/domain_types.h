@@ -3,6 +3,7 @@ namespace polyhedral {
 
 struct Band;
 struct Prefix;
+struct Promoted;
 struct Reduction;
 struct ReductionSchedule;
 struct Statement;

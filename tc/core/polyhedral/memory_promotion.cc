@@ -147,20 +147,20 @@ bool TensorReferenceGroup::isReadOnly() const {
   return result;
 }
 
-isl::set TensorReferenceGroup::promotedFootprint() const {
+isl::Set<Tensor> TensorReferenceGroup::promotedFootprint() const {
   auto space = scopedAccesses().get_space().range();
   auto sizes = approximation.box.get_size();
   if (!sizes.get_space().has_equal_tuples(space)) {
     throw promotion::GroupingError("unexpected dimensionality mismatch");
   }
 
-  isl::set footprint = isl::set::universe(space);
-  auto identity = isl::multi_aff::identity(space.map_from_set());
+  isl::Set<Tensor> footprint = isl::Set<Tensor>::universe(space);
+  auto identity = isl::MultiAff<Tensor, Tensor>::identity(space.map_from_set());
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
     auto aff = identity.get_aff(i);
     auto size = sizes.get_val(i);
-    footprint =
-        footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
+    footprint = footprint & aff.asPwAff().nonneg_set() &
+        (size - aff).asPwAff().pos_set();
   }
   return footprint;
 }
@@ -175,14 +175,14 @@ std::vector<size_t> TensorReferenceGroup::approximationSizes() const {
 }
 
 namespace {
-isl::map referenceScopedAccessesImpl(
+isl::Map<Prefix, Tensor> referenceScopedAccessesImpl(
     const TensorReferenceGroup& group,
     AccessType type) {
   if (group.references.size() == 0) {
     throw promotion::GroupingError("no references in the group");
   }
-  auto accesses =
-      isl::map::empty(group.references.front()->scopedAccess.get_space());
+  auto accesses = isl::Map<Prefix, Tensor>::empty(
+      group.references.front()->scopedAccess.get_space());
 
   for (const auto& ref : group.references) {
     if (ref->type != type) {
@@ -203,11 +203,11 @@ isl::set TensorReferenceGroup::readFootprint() const {
   return referenceScopedAccessesImpl(*this, AccessType::Read).range();
 }
 
-isl::map TensorReferenceGroup::scopedWrites() const {
+isl::Map<Prefix, Tensor> TensorReferenceGroup::scopedWrites() const {
   return referenceScopedAccessesImpl(*this, AccessType::Write);
 }
 
-isl::map TensorReferenceGroup::scopedReads() const {
+isl::Map<Prefix, Tensor> TensorReferenceGroup::scopedReads() const {
   return referenceScopedAccessesImpl(*this, AccessType::Read);
 }
 
@@ -509,7 +509,8 @@ ScheduleTree* insertCopiesUnder(
   // control flow, but we should only write back elements that are actually
   // written to.  In any case, intersect the footprint with the set of existing
   // tensor elements.
-  auto promotedFootprint = group.promotedFootprint().set_tuple_id(groupId);
+  auto promotedFootprint =
+      group.promotedFootprint().set_tuple_id<Promoted>(groupId);
   auto scheduleUniverse =
       isl::set::universe(promotionSpace.domain().unwrap().domain());
   auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
@@ -518,9 +519,10 @@ ScheduleTree* insertCopiesUnder(
   approximatedRead = approximatedRead.product(promotedFootprint);
   auto readExtension =
       extension.intersect_range(approximatedRead).set_range_tuple_id(readId);
-  auto writtenElements =
-      group.scopedWrites().intersect_range(tensorElements).wrap();
-  writtenElements = writtenElements.product(promotedFootprint);
+  auto writtenElements = group.scopedWrites()
+                             .intersect_range(tensorElements)
+                             .wrap()
+                             .product(promotedFootprint);
   auto writeExtension =
       extension.intersect_range(writtenElements).set_range_tuple_id(writeId);
 
