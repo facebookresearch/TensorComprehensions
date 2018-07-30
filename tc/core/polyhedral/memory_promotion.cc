@@ -85,13 +85,13 @@ ScopedFootprint outputRanges(isl::map access) {
 // Access has the shape :: [S -> ref] -> O
 // Extract the reference ID, store it separately and simplify the access.
 std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
-    isl::map originalAccess,
-    isl::map scopedAccess,
+    isl::Map<isl::Pair<Statement, Tag>, Tensor> originalAccess,
+    isl::Map<isl::Pair<Prefix, Tag>, Tensor> scopedTaggedAccess,
     AccessType type) {
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
   auto refId =
-      scopedAccess.get_space().domain().unwrap().get_map_range_tuple_id();
-  scopedAccess = scopedAccess.domain_factor_domain();
+      scopedTaggedAccess.get_space().domain().unwrap().get_map_range_tuple_id();
+  auto scopedAccess = scopedTaggedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
   ref->scopedAccess = scopedAccess;
   ref->type = type;

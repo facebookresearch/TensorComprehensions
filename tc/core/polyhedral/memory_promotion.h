@@ -156,8 +156,8 @@ class TensorReferenceGroup {
       std::unique_ptr<TensorReferenceGroup>&& g1,
       std::unique_ptr<TensorReferenceGroup>&& g2);
   static std::unique_ptr<TensorReferenceGroup> makeSingleton(
-      isl::map originalAccess,
-      isl::map scopedAccess,
+      isl::Map<isl::Pair<Statement, Tag>, Tensor> originalAccess,
+      isl::Map<isl::Pair<Prefix, Tag>, Tensor> scopedAccess,
       AccessType type);
 
  public:
