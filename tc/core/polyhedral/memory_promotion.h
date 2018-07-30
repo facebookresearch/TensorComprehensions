@@ -59,8 +59,8 @@ struct ScopedFootprint {
   }
 
   isl::fixed_box box;
-  isl::multi_val strideValues;
-  isl::multi_aff strideOffsets;
+  isl::MultiVal<Tensor> strideValues;
+  isl::MultiAff<Prefix, Tensor> strideOffsets;
 
   isl::multi_aff lowerBounds() const;
 };

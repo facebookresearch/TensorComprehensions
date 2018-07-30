@@ -61,10 +61,12 @@ isl::map removeRangeStrides(
 // Compute a box approximation of the range of the given relation,
 // including the lower bounds, the box sizes, and the strides.
 // If the range has strides, remove them first.
-ScopedFootprint outputRanges(isl::map access) {
+ScopedFootprint outputRanges(isl::Map<Prefix, Tensor> access) {
   ScopedFootprint footprint;
-  footprint.strideValues = isl::multi_val::zero(access.get_space().range());
-  footprint.strideOffsets = isl::multi_aff::zero(access.get_space());
+  footprint.strideValues =
+      isl::MultiVal<Tensor>::zero(access.get_space().range());
+  footprint.strideOffsets =
+      isl::MultiAff<Prefix, Tensor>::zero(access.get_space());
 
   int nSubscripts = footprint.strideValues.size();
   for (int i = 0; i < nSubscripts; ++i) {
@@ -74,10 +76,10 @@ ScopedFootprint outputRanges(isl::map access) {
         footprint.strideOffsets.set_aff(i, si.get_offset());
   }
 
-  access = removeRangeStrides(
+  auto accessNoStrides = removeRangeStrides(
       access, footprint.strideValues, footprint.strideOffsets);
 
-  footprint.box = access.get_range_simple_fixed_box_hull();
+  footprint.box = accessNoStrides.get_range_simple_fixed_box_hull();
   return footprint;
 }
 } // namespace
@@ -371,12 +373,13 @@ TensorGroups TensorReferenceGroup::accessedWithin(
 // outer schedule dimensions.
 isl::multi_aff TensorReferenceGroup::promotion() const {
   // access space is S -> O
-  isl::map map = scopedAccesses();
+  auto map = scopedAccesses();
   auto accessSpace = map.get_space();
 
   // Construct a projection multi-aff in [S -> O] -> S
   // for further precomposition.
-  auto originalSpaceInserter = isl::multi_aff::domain_map(accessSpace);
+  auto originalSpaceInserter =
+      isl::MultiAff<isl::Pair<Prefix, Tensor>, Prefix>::domain_map(accessSpace);
 
   // Lower bounds and offsets space is S -> O; transform into [S -> O] -> O.
   isl::multi_aff lowerBounds =
