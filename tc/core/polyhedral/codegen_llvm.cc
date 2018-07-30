@@ -573,7 +573,7 @@ isl::ast_node collectIteratorMaps(
   TC_CHECK(user);
   auto expr = user.get_expr().as<isl::ast_expr_op>();
   auto schedule = build.get_schedule();
-  auto scheduleMap = isl::map::from_union_map(schedule);
+  auto scheduleMap = isl::map::from(schedule);
 
   auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
   TC_CHECK_EQ(0u, iteratorMaps.count(stmtId)) << "entry exists: " << stmtId;

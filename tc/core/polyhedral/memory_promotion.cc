@@ -286,7 +286,7 @@ void addSingletonReferenceGroup(
     AccessType type) {
   auto scopedUnionAccess = isl::union_map(access.curry());
   scopedUnionAccess = scopedUnionAccess.apply_domain(schedule);
-  auto scopedAccess = isl::map::from_union_map(scopedUnionAccess);
+  auto scopedAccess = isl::map::from(scopedUnionAccess);
   scopedAccess = scopedAccess.uncurry();
   tensorGroups[targetTensor].push_back(
       TensorReferenceGroup::makeSingleton(access, scopedAccess, type));
