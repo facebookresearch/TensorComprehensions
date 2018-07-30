@@ -81,11 +81,11 @@ class TensorReference {
 
  public:
   // Original access relation in terms of the Scop domain.
-  isl::map originalAccess;
+  isl::Map<Statement, Tensor> originalAccess;
 
   // Access relation in terms of partial schedule at the point where the
   // reference group is introduced in the tree.
-  isl::map scopedAccess;
+  isl::Map<Prefix, Tensor> scopedAccess;
 
   // Access direction (read or write).
   AccessType type;
