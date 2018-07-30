@@ -282,13 +282,12 @@ void joinOverlappingWrites(
 void addSingletonReferenceGroup(
     TensorGroups& tensorGroups,
     isl::id targetTensor,
-    isl::union_map schedule,
-    isl::map access,
+    isl::UnionMap<Statement, Prefix> schedule,
+    isl::Map<isl::Pair<Statement, Tag>, Tensor> access,
     AccessType type) {
-  auto scopedUnionAccess = isl::union_map(access.curry());
-  scopedUnionAccess = scopedUnionAccess.apply_domain(schedule);
-  auto scopedAccess = isl::map::from(scopedUnionAccess);
-  scopedAccess = scopedAccess.uncurry();
+  auto unionAccess = access.curry().asUnionMap();
+  auto scopedUnionAccess = unionAccess.apply_domain(schedule);
+  auto scopedAccess = scopedUnionAccess.toMap().uncurry();
   tensorGroups[targetTensor].push_back(
       TensorReferenceGroup::makeSingleton(access, scopedAccess, type));
 }
