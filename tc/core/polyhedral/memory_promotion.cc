@@ -45,17 +45,19 @@ namespace {
 //   D -> O: o_i = f(D)
 //
 // by subtracting "offsets" and by dividing the result by "strides".
-isl::map removeRangeStrides(
-    isl::map relation,
-    isl::multi_val strides,
-    isl::multi_aff offsets) {
+template <typename Domain, typename Range>
+isl::Map<Domain, Range> removeRangeStrides(
+    isl::Map<Domain, Range> relation,
+    isl::MultiVal<Range> strides,
+    isl::MultiAff<Domain, Range> offsets) {
   TC_CHECK_EQ(strides.size(), offsets.size());
 
   auto space = relation.get_space();
-  auto stridesMA = isl::multi_aff::identity(space.range().map_from_set());
+  auto stridesMA =
+      isl::MultiAff<Range, Range>::identity(space.range().map_from_set());
   stridesMA = stridesMA / strides;
 
-  return relation.sum(isl::map(offsets.neg())).apply_range(isl::map(stridesMA));
+  return relation.sum(offsets.neg().asMap()).apply_range(stridesMA.asMap());
 }
 
 // Compute a box approximation of the range of the given relation,
