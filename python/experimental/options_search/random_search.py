@@ -1,35 +1,31 @@
 import numpy as np
-import ipdb
+#import ipdb
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data
 import torch.nn.functional as F
-import ipdb
 import tensor_comprehensions as tc
 from visdom import Visdom
 
-import my_utils
+import utils
 
-NB_EPOCHS = 10000
+NB_EPOCHS = 1000
 BATCH_SZ = 1
 
 viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example()
+exptuner_config = utils.ExpTunerConfig()
+exptuner_config.set_convolution_tc()
 
-my_utils.computeCat(inp)
-my_utils.set_tc(tc_code, tc_name)
-
-NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
+NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 
 def getRandom():
     opt_v = np.zeros(NB_HYPERPARAMS).astype(int)
     for i in range(opt_v.shape[0]):
-        opt_v[i] = np.random.randint(my_utils.cat_sz[i])
+        opt_v[i] = np.random.randint(exptuner_config.cat_sz[i])
     return opt_v
-
 
 INTER_DISP = 20
 
@@ -43,7 +39,7 @@ for i in range(NB_EPOCHS):
     opts=[]
     for j in range(BATCH_SZ):
         out = getRandom()
-        reward = my_utils.evalTime(out.astype(int), prune=2, curr_best=np.exp(-best))
+        reward = utils.evalTime(out.astype(int), exptuner_config, prune=2, curr_best=np.exp(-best))
         reward = -np.log(reward)
         rewards.append(reward)
         opts.append(out.astype(int))
@@ -51,7 +47,7 @@ for i in range(NB_EPOCHS):
         best = np.max(rewards)
         ind=np.argmax(rewards)
         best_options = opts[ind]
-        my_utils.print_opt(best_options)
+        utils.print_opt(best_options)
     if(i==0):
         running_reward = reward
     running_reward = running_reward * 0.99 + np.mean(rewards) * 0.01
@@ -64,4 +60,4 @@ for i in range(NB_EPOCHS):
 tab_best = np.array(tab_best)
 np.save("randomsearch.npy", tab_best)
 print("Finally, best options are:")
-my_utils.print_opt(best_options)
+utils.print_opt(best_options)

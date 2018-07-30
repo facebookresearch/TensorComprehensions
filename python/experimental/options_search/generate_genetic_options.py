@@ -1,13 +1,12 @@
 import numpy as np
-import ipdb
 import torch
 import tensor_comprehensions as tc
 
-import my_utils
+import utils
 
-tc_code, tc_name, inp, init_input_sz = my_utils.get_default_convolution_example()
-my_utils.computeCat(inp)
-my_utils.set_tc(tc_code, tc_name)
+exptuner_config = utils.ExpTunerConfig()
+exptuner_config.set_convolution_tc()
+tc_code, tc_name, inp = exptuner_config.tc_code, exptuner_config.tc_name, exptuner_config.inp
 #config = tc.autotuner_settings
 #config["pop_size"]=50
 #config["generations"]=1

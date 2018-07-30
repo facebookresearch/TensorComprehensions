@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data
 import torch.nn.functional as F
-import ipdb
+#import ipdb
 from itertools import count
 from collections import namedtuple
 from torch.distributions import Categorical
@@ -13,18 +13,19 @@ from visdom import Visdom
 from collections import deque
 from heapq import heappush, heappop
 
-import my_utils
+import utils
 
-NB_EPOCHS = 10000
+NB_EPOCHS = 1000
 BATCH_SZ = 16
 buff = deque()
 MAXI_BUFF_SZ = 50
 
-(tc_code, tc_name, inp, init_input_sz) = my_utils.get_convolution_example(size_type="input", inp_sz_list=[8,2,28,28,8,1,1])
+exptuner_config = utils.ExpTunerConfig()
+exptuner_config.set_convolution_tc()
 
-my_utils.computeCat(inp)
-my_utils.set_tc(tc_code, tc_name)
-NB_HYPERPARAMS, INIT_INPUT_SZ = my_utils.NB_HYPERPARAMS, my_utils.INIT_INPUT_SZ
+NB_HYPERPARAMS = utils.NB_HYPERPARAMS
+INIT_INPUT_SZ = exptuner_config.INIT_INPUT_SZ
+init_input_sz = exptuner_config.init_input_sz
 
 viz = Visdom()
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
@@ -58,7 +59,7 @@ class FullNetwork(nn.Module):
         super(FullNetwork, self).__init__()
         self.nb_hyperparams = nb_hyperparams
         self.init_input_sz = init_input_sz
-        self.nets = [Predictor(init_input_sz + i, int(my_utils.cat_sz[i])) for i in range(nb_hyperparams)]
+        self.nets = [Predictor(init_input_sz + i, int(exptuner_config.cat_sz[i])) for i in range(nb_hyperparams)]
         self.nets = nn.ModuleList(self.nets)
 
     def select_action(self, x, i, out_sz):
@@ -75,7 +76,7 @@ class FullNetwork(nn.Module):
         actions_prob = []
         values = []
         for i in range(self.nb_hyperparams):
-            sym, action_prob, value = self.select_action(x, i, int(my_utils.cat_sz[i]))
+            sym, action_prob, value = self.select_action(x, i, int(exptuner_config.cat_sz[i]))
             actions_prob.append(action_prob)
             values.append(value)
             x = torch.cat([x, torch.FloatTensor([sym])])
@@ -84,8 +85,6 @@ class FullNetwork(nn.Module):
 net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
 eps = np.finfo(np.float32).eps.item()
-
-#print(my_utils.getAllDivs(inp))
 
 def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
@@ -139,8 +138,8 @@ best_options = np.zeros(NB_HYPERPARAMS).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
     out_actions, out_probs, out_values = net(init_input_sz)
-    #my_utils.print_opt(out_actions.numpy().astype(int))
-    reward = my_utils.evalTime(out_actions.numpy().astype(int), prune=-1, curr_best=np.exp(-best))
+    #utils.print_opt(out_actions.numpy().astype(int))
+    reward = utils.evalTime(out_actions.numpy().astype(int), exptuner_config, prune=-1, curr_best=np.exp(-best))
     #reward=100*reward
     #reward = -((reward)/1000)
     reward = -np.log(reward)
@@ -155,7 +154,7 @@ for i in range(NB_EPOCHS):
     if(best < reward or i==0):
         best=reward
         best_options = out_actions.numpy().astype(int)
-        my_utils.print_opt(best_options)
+        utils.print_opt(best_options)
     if(i==0):
         running_reward = reward
     running_reward = running_reward * 0.99 + reward * 0.01
@@ -170,4 +169,4 @@ for i in range(NB_EPOCHS):
     print("Best in buffer: " + str(-best_in_buffer))
 
 print("Finally, best options are:")
-my_utils.print_opt(best_options)
+utils.print_opt(best_options)

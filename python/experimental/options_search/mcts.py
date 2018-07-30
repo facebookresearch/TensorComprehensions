@@ -1,6 +1,6 @@
 import tensor_comprehensions as tc
 import torch
-import my_utils
+import utils
 import numpy as np
 from tqdm import tqdm
 from visdom import Visdom
@@ -17,7 +17,7 @@ class Node:
         #self.hasSeen = {} #todo
         self.children=[]
         self.parent = father
-        self.stateVector = [0] * my_utils.NB_HYPERPARAMS
+        self.stateVector = [0] * utils.NB_HYPERPARAMS
         if(father != None):
             self.pos = father.pos+1
             #self.hasSeen = {} #todo
@@ -37,12 +37,10 @@ class MCTS:
     def __init__(self):
         self.C = 1 #to tune
 
-        (tc_code, tc_name, inp, _) = my_utils.get_convolution_example(size_type="input", inp_sz_list=[8,2,28,28,8,1,1])
+        self.exptuner_config = utils.ExpTunerConfig()
+        self.exptuner_config.set_convolution_tc()
 
-        my_utils.computeCat(inp)
-        my_utils.set_tc(tc_code, tc_name)
-
-        self.nbActions = my_utils.cat_sz
+        self.nbActions = self.exptuner_config.cat_sz
         self.tree = Node()
 
         self.best_rewards = []
@@ -56,7 +54,7 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 30#2*self.nbActions[node.pos]
+        ttNbIters = 10 #2*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
@@ -76,7 +74,7 @@ class MCTS:
 
     def getLeaf(self, node):
         first=True
-        while(node.pos < my_utils.NB_HYPERPARAMS and (first or node.nbVisits != 0)):
+        while(node.pos < utils.NB_HYPERPARAMS and (first or node.nbVisits != 0)):
             first=False
             pos = node.pos
             if(node.nbChildrenSeen == self.nbActions[pos]):
@@ -86,7 +84,7 @@ class MCTS:
                 self.take_action(node, act)
                 return node.children[-1]
         return node
-    
+
     def getBestChild2(self, node):
         bestIndic = 0.
         bestAction = 0
@@ -140,11 +138,11 @@ class MCTS:
     def randomSampleScoreFrom(self, node):
         pos = node.pos
         optsVector = node.stateVector
-        for i in range(my_utils.NB_HYPERPARAMS - (pos)):
+        for i in range(utils.NB_HYPERPARAMS - (pos)):
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
         #print(optsVector)
-        reward = -np.log(my_utils.evalTime(optsVector))
+        reward = -np.log(utils.evalTime(optsVector, self.exptuner_config))
         self.saveReward(reward, optsVector)
         return reward
 
@@ -172,10 +170,10 @@ mcts = MCTS()
 
 opts = []
 curr_node = mcts.tree
-for i in tqdm(range(my_utils.NB_HYPERPARAMS)):
+for i in range(utils.NB_HYPERPARAMS):
     opts.append(mcts.main_search(curr_node))
     curr_node = mcts.take_action(curr_node, opts[-1])
     print(opts)
 opts = np.array(opts).astype(int)
-print(my_utils.evalTime(opts.tolist()))
-my_utils.print_opt(opts)
+print(utils.evalTime(opts.tolist(), mcts.exptuner_config))
+utils.print_opt(opts)

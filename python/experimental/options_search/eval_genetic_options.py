@@ -1,24 +1,23 @@
 import tensor_comprehensions as tc
 import tensor_comprehensions.tclib as tclib
-import ipdb
+import utils
+
 cache = tc.MappingOptionsCache("genetic_savedopt_conv_default.txt")
-import my_utils
-tc_code, tc_name, inp, init_input_sz = my_utils.get_convolution_example()
-my_utils.computeCat(inp)
-my_utils.set_tc(tc_code, tc_name)
-print("divs : " +str(my_utils.getAllDivs(inp)))
-best_options, = cache.load(tc_code, tc_name, inp, 1)
+
+exptuner_config = utils.ExpTunerConfig()
+exptuner_config.set_convolution_tc()
+tc_code, tc_name, inp = exptuner_config.tc_code, exptuner_config.tc_name, exptuner_config.inp
+
+print("divs : " + str(utils.getAllDivs(inp)))
+tup = cache.load(tc_code, tc_name, inp, 1)
+if(tup == []):
+    exit()
+best_options, = tup
 best_options = best_options.getDict()
-optsVect = my_utils.getRawVectorFromTcOpt(best_options)
-#optsVect = my_utils.catVec_to_optVec(optsVect)
-opts = my_utils.optionsFromVector(optsVect)
+optsVect = utils.getRawVectorFromTcOpt(best_options)
+opts = utils.optionsFromVector(optsVect)
 print(opts)
-tc_prog = tc.compile(tc_code, tc_name, opts, *inp)
-time = my_utils.evalTime(opts, estimator="median")
+
+time = utils.evalTime(opts, exptuner_config, estimator="median")
 print(time)
-tt=0.
-for i in range(20):
-    ct = tc_prog.executor.profile_kernel(inp)
-    if i >= 10:
-        tt+=ct
-print(tt/10.)
+
