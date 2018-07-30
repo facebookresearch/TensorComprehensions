@@ -46,6 +46,11 @@ inline T operator-(T a, T b) {
 }
 
 template <typename T>
+inline auto operator-(isl::val a, T b) -> decltype(b.add_constant(a)) {
+  return b.neg().add_constant(a);
+}
+
+template <typename T>
 inline T operator&(T S1, T S2) {
   return S1.intersect(S2);
 }
