@@ -48,21 +48,21 @@ struct ScopedFootprint {
   isl::val size(size_t pos) const {
     return box.get_size().get_val(pos);
   }
-  isl::aff lowerBound(size_t pos) const {
+  isl::AffOn<Prefix> lowerBound(size_t pos) const {
     return box.get_offset().get_aff(pos);
   }
   isl::val stride(size_t pos) const {
     return strideValues.get_val(pos);
   }
-  isl::aff strideOffset(size_t pos) const {
+  isl::AffOn<Prefix> strideOffset(size_t pos) const {
     return strideOffsets.get_aff(pos);
   }
 
-  isl::fixed_box box;
+  isl::FixedBox<Prefix, Tensor> box;
   isl::MultiVal<Tensor> strideValues;
   isl::MultiAff<Prefix, Tensor> strideOffsets;
 
-  isl::multi_aff lowerBounds() const;
+  isl::MultiAff<Prefix, Tensor> lowerBounds() const;
 };
 
 // Descriptor of tensor reference in a Scop.
