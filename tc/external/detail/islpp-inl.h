@@ -65,8 +65,9 @@ inline auto operator-(T A, int i) -> decltype(A.add_constant_si(i)) {
   return A + (-i);
 }
 
-inline isl::aff operator-(int i, isl::aff A) {
-  return (A + (-i)).neg();
+template <typename T>
+inline auto operator-(int i, T A) -> decltype(A.add_constant_si(i)) {
+  return i + A.neg();
 }
 
 inline isl::set operator>=(isl::aff_set A, isl::val v) {
