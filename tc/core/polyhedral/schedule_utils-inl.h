@@ -118,7 +118,8 @@ foldl(const std::vector<const ScheduleTree*> vec, Func op, T init = T()) {
 
 } // namespace detail
 
-inline isl::multi_union_pw_aff infixScheduleMupa(
+template <typename Schedule>
+inline isl::MultiUnionPwAff<Statement, Schedule> infixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* relativeRoot,
     const detail::ScheduleTree* tree) {
@@ -127,13 +128,15 @@ inline isl::multi_union_pw_aff infixScheduleMupa(
   auto domainElem = root->as<ScheduleTreeDomain>();
   TC_CHECK(domainElem);
   auto domain = domainElem->domain_.universe();
-  auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
-  auto prefix = isl::multi_union_pw_aff(domain, zero);
+  auto zero = isl::MultiVal<Schedule>::zero(
+      domain.get_space().add_unnamed_tuple_ui<Schedule>(0));
+  auto prefix = isl::MultiUnionPwAff<Statement, Schedule>(domain, zero);
   prefix = foldl(
       filterType<ScheduleTreeBand>(tree->ancestors(relativeRoot)),
-      [](const ScheduleTree* st, isl::multi_union_pw_aff pref) {
+      [](const ScheduleTree* st,
+         isl::MultiUnionPwAff<Statement, Schedule> pref) {
         auto mupa = st->as<ScheduleTreeBand>()->mupa_;
-        return pref.flat_range_product(mupa);
+        return pref.template flat_range_product<Schedule>(mupa);
       },
       prefix);
   return prefix;
@@ -143,8 +146,7 @@ template <typename Schedule>
 inline isl::MultiUnionPwAff<Statement, Schedule> prefixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
-  auto prefix = infixScheduleMupa(root, root, tree);
-  return isl::MultiUnionPwAff<Statement, Schedule>(prefix);
+  return infixScheduleMupa<Schedule>(root, root, tree);
 }
 
 template <typename Schedule>

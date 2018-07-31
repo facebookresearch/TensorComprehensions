@@ -72,7 +72,8 @@ isl::UnionMap<Statement, Schedule> prefixSchedule(
 // function on the universe domain of the schedule tree.
 // Note that this function does not take into account
 // any intermediate filter nodes.
-isl::multi_union_pw_aff infixScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> infixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* relativeRoot,
     const detail::ScheduleTree* tree);
