@@ -208,20 +208,6 @@ T foldl(const vector<const ScheduleTree*> vec, Func op, T init = T()) {
   return value;
 }
 
-template <typename... Args>
-ostream& operator<<(ostream& os, const vector<Args...>& v) {
-  os << "[";
-  bool first = true;
-  for (auto const& ve : v) {
-    if (!first) {
-      os << ", ";
-    }
-    os << ve;
-    first = true;
-  }
-  os << "]";
-  return os;
-}
 } // namespace
 
 isl::multi_union_pw_aff infixScheduleMupa(
