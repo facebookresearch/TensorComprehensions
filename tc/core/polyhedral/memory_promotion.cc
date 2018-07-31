@@ -373,7 +373,8 @@ TensorGroups TensorReferenceGroup::accessedWithin(
 // elements of the promoted array get assigned different values of the original
 // array in different outer loop iterations; it's impossible to project out the
 // outer schedule dimensions.
-isl::multi_aff TensorReferenceGroup::promotion() const {
+isl::MultiAff<isl::Pair<Prefix, Tensor>, Tensor>
+TensorReferenceGroup::promotion() const {
   // access space is S -> O
   auto map = scopedAccesses();
   auto accessSpace = map.get_space();
@@ -384,13 +385,13 @@ isl::multi_aff TensorReferenceGroup::promotion() const {
       isl::MultiAff<isl::Pair<Prefix, Tensor>, Prefix>::domain_map(accessSpace);
 
   // Lower bounds and offsets space is S -> O; transform into [S -> O] -> O.
-  isl::multi_aff lowerBounds =
+  auto lowerBounds =
       approximation.lowerBounds().pullback(originalSpaceInserter);
-  isl::multi_aff offsets =
-      approximation.strideOffsets.pullback(originalSpaceInserter);
+  auto offsets = approximation.strideOffsets.pullback(originalSpaceInserter);
 
   // Create promotion starting by identity in [S -> O] -> O.
-  auto original = isl::multi_aff::range_map(accessSpace);
+  auto original =
+      isl::MultiAff<isl::Pair<Prefix, Tensor>, Tensor>::range_map(accessSpace);
   auto promotion =
       (original - offsets) / approximation.strideValues - lowerBounds;
 
