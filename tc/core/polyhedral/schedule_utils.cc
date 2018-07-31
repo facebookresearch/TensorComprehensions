@@ -189,14 +189,6 @@ vector<const ScheduleTree*> collectScheduleTreesPath(
 namespace {
 
 template <typename T>
-vector<T> reversed(const vector<T>& vec) {
-  vector<T> result;
-  result.reserve(vec.size());
-  result.insert(result.begin(), vec.rbegin(), vec.rend());
-  return result;
-}
-
-template <typename T>
 vector<const ScheduleTree*> filterType(const vector<const ScheduleTree*>& vec) {
   vector<const ScheduleTree*> result;
   for (auto e : vec) {
