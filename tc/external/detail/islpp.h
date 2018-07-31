@@ -131,7 +131,6 @@ isl::aff operator/(isl::aff A, int i);
 isl::aff operator+(isl::aff A, isl::val v);
 isl::aff operator+(isl::val v, isl::aff A);
 
-isl::aff operator-(isl::aff A, int i);
 isl::aff operator-(int i, isl::aff A);
 
 // Thin wrapper around aff to disambiguate types for operators and avoid case
