@@ -145,7 +145,7 @@ class TensorReferenceGroup {
   // and relative to the scoping point.
   isl::map approximateScopedAccesses() const;
 
-  isl::multi_aff promotion() const;
+  isl::MultiAff<isl::Pair<Prefix, Tensor>, Tensor> promotion() const;
   isl::Set<Tensor> promotedFootprint() const;
 
   std::vector<size_t> approximationSizes() const;
