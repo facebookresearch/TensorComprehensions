@@ -186,48 +186,5 @@ vector<const ScheduleTree*> collectScheduleTreesPath(
   return res;
 }
 
-namespace {
-
-template <typename T>
-vector<const ScheduleTree*> filterType(const vector<const ScheduleTree*>& vec) {
-  vector<const ScheduleTree*> result;
-  for (auto e : vec) {
-    if (e->as<T>()) {
-      result.push_back(e);
-    }
-  }
-  return result;
-}
-
-template <typename T, typename Func>
-T foldl(const vector<const ScheduleTree*> vec, Func op, T init = T()) {
-  T value = init;
-  for (auto st : vec) {
-    value = op(st, value);
-  }
-  return value;
-}
-
-} // namespace
-
-isl::multi_union_pw_aff infixScheduleMupa(
-    const ScheduleTree* root,
-    const ScheduleTree* relativeRoot,
-    const ScheduleTree* tree) {
-  auto domainElem = root->as<ScheduleTreeDomain>();
-  TC_CHECK(domainElem);
-  auto domain = domainElem->domain_.universe();
-  auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
-  auto prefix = isl::multi_union_pw_aff(domain, zero);
-  prefix = foldl(
-      filterType<ScheduleTreeBand>(tree->ancestors(relativeRoot)),
-      [](const ScheduleTree* st, isl::multi_union_pw_aff pref) {
-        auto mupa = st->as<ScheduleTreeBand>()->mupa_;
-        return pref.flat_range_product(mupa);
-      },
-      prefix);
-  return prefix;
-}
-
 } // namespace polyhedral
 } // namespace tc
