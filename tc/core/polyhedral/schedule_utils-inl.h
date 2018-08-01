@@ -26,6 +26,42 @@ namespace tc {
 namespace polyhedral {
 
 namespace detail {
+inline isl::union_map partialScheduleImpl(
+    const ScheduleTree* root,
+    const ScheduleTree* node,
+    bool useNode) {
+  auto nodes = node->ancestors(root);
+  if (useNode) {
+    nodes.push_back(node);
+  }
+  TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
+  auto domain = root->as<ScheduleTreeDomain>();
+  TC_CHECK(domain);
+  auto schedule = isl::union_map::from_domain(domain->domain_);
+  for (auto anc : nodes) {
+    if (anc->as<ScheduleTreeDomain>()) {
+      TC_CHECK(anc == root);
+    } else {
+      schedule = extendSchedule(anc, schedule);
+    }
+  }
+  return schedule;
+}
+} // namespace detail
+
+inline isl::union_map prefixSchedule(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  return detail::partialScheduleImpl(root, node, false);
+}
+
+inline isl::union_map partialSchedule(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* node) {
+  return detail::partialScheduleImpl(root, node, true);
+}
+
+namespace detail {
 
 template <typename T>
 inline std::vector<const ScheduleTree*> filterType(

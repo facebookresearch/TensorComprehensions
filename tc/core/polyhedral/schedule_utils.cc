@@ -50,42 +50,6 @@ isl::union_map extendSchedule(
 }
 
 namespace {
-isl::union_map partialScheduleImpl(
-    const ScheduleTree* root,
-    const ScheduleTree* node,
-    bool useNode) {
-  auto nodes = node->ancestors(root);
-  if (useNode) {
-    nodes.push_back(node);
-  }
-  TC_CHECK_GT(nodes.size(), 0u) << "root node does not have a prefix schedule";
-  auto domain = root->as<ScheduleTreeDomain>();
-  TC_CHECK(domain);
-  auto schedule = isl::union_map::from_domain(domain->domain_);
-  for (auto anc : nodes) {
-    if (anc->as<ScheduleTreeDomain>()) {
-      TC_CHECK(anc == root);
-    } else {
-      schedule = extendSchedule(anc, schedule);
-    }
-  }
-  return schedule;
-}
-} // namespace
-
-isl::union_map prefixSchedule(
-    const ScheduleTree* root,
-    const ScheduleTree* node) {
-  return partialScheduleImpl(root, node, false);
-}
-
-isl::union_map partialSchedule(
-    const ScheduleTree* root,
-    const ScheduleTree* node) {
-  return partialScheduleImpl(root, node, true);
-}
-
-namespace {
 /*
  * If "node" is any filter, then intersect "domain" with that filter.
  */
