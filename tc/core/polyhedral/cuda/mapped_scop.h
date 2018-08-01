@@ -151,7 +151,7 @@ class MappedScop {
   template <typename MappingTypeId>
   detail::ScheduleTree* map(
       detail::ScheduleTree* tree,
-      isl::union_pw_aff_list list);
+      isl::UnionPwAffListOn<Statement> list);
   // Map "band" to block identifiers and then scale
   // the band members by "tileSizes".
   void mapToBlocksAndScaleBand(
