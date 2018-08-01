@@ -238,14 +238,13 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeFilter(
 
 std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
     const std::vector<mapping::MappingId>& mappedIds,
-    isl::union_pw_aff_list mappedAffs,
+    isl::UnionPwAffListOn<Statement> mappedAffs,
     std::vector<ScheduleTreeUPtr>&& children) {
   TC_CHECK_EQ(mappedIds.size(), static_cast<size_t>(mappedAffs.size()))
       << "expected as many mapped ids as affs";
   ScheduleTreeMapping::Mapping mapping;
   for (size_t i = 0, n = mappedAffs.size(); i < n; ++i) {
-    auto aff = isl::UnionPwAffOn<Statement>(mappedAffs.get_at(i));
-    mapping.emplace(mappedIds.at(i), aff);
+    mapping.emplace(mappedIds.at(i), mappedAffs.get_at(i));
   }
   TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
   TC_CHECK_EQ(mappedIds.size(), mapping.size())
