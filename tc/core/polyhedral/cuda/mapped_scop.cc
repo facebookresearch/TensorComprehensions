@@ -136,7 +136,9 @@ const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
 // Return a pointer to the updated node (below the inserted filter)
 // for call chaining purposes.
 template <typename MappingTypeId>
-ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
+ScheduleTree* MappedScop::map(
+    ScheduleTree* tree,
+    isl::UnionPwAffListOn<Statement> list) {
   size_t nToMap = list.size();
   const auto& extent = mappingSize<MappingTypeId>(this).view;
   TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
@@ -146,7 +148,7 @@ ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
   auto universe = domain.universe();
 
   std::vector<MappingTypeId> idList;
-  auto affList = isl::union_pw_aff_list(list.get_ctx(), 0);
+  auto affList = isl::UnionPwAffListOn<Statement>(list.get_ctx(), 0);
   for (size_t i = 0; i < nToMap; ++i) {
     auto id = MappingTypeId::makeId(i);
     auto upa = list.get_at(i);
@@ -158,8 +160,8 @@ ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
 
   for (size_t i = nToMap; i < extent.size(); ++i) {
     auto id = MappingTypeId::makeId(i);
-    affList = affList.add(
-        isl::union_pw_aff(universe, isl::val::zero(domain.get_ctx())));
+    affList = affList.add(isl::UnionPwAffOn<Statement>(
+        universe, isl::val::zero(domain.get_ctx())));
     idList.emplace_back(id);
   }
 
