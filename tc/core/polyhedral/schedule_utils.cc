@@ -229,11 +229,5 @@ isl::multi_union_pw_aff infixScheduleMupa(
   return prefix;
 }
 
-isl::multi_union_pw_aff prefixScheduleMupa(
-    const ScheduleTree* root,
-    const ScheduleTree* tree) {
-  return infixScheduleMupa(root, root, tree);
-}
-
 } // namespace polyhedral
 } // namespace tc

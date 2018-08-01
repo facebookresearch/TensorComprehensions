@@ -23,6 +23,12 @@
 namespace tc {
 namespace polyhedral {
 
+inline isl::multi_union_pw_aff prefixScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree) {
+  return infixScheduleMupa(root, root, tree);
+}
+
 inline isl::multi_union_pw_aff partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree) {
