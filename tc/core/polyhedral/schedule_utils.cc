@@ -235,13 +235,5 @@ isl::multi_union_pw_aff prefixScheduleMupa(
   return infixScheduleMupa(root, root, tree);
 }
 
-isl::multi_union_pw_aff partialScheduleMupa(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree) {
-  auto prefix = prefixScheduleMupa(root, tree);
-  auto band = tree->as<ScheduleTreeBand>();
-  return band ? prefix.flat_range_product(band->mupa_) : prefix;
-}
-
 } // namespace polyhedral
 } // namespace tc
