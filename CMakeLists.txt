@@ -334,6 +334,16 @@ else()
   message(STATUS "Not building benchmarks, caffe2 or CUDA not available")
 endif()
 
+SET(ISL_CPP_H "${CMAKE_CURRENT_LIST_DIR}/isl_interface/include/isl/cpp.h")
+
 if (WITH_BINDINGS)
   add_subdirectory(isl_interface)
+
+  # generate_isl_cpp_h is the dependency that should be used
+  # by code that depends on the isl C++ bindings.
+  add_custom_target(generate_isl_cpp_h
+    DEPENDS generate_isl_cpp_h_core)
+else()
+  add_custom_target(generate_isl_cpp_h
+    DEPENDS)
 endif()
