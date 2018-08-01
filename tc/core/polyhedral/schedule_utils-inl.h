@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include <vector>
+
 #include "tc/core/check.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
@@ -22,6 +24,53 @@
 
 namespace tc {
 namespace polyhedral {
+
+namespace detail {
+
+template <typename T>
+inline std::vector<const ScheduleTree*> filterType(
+    const std::vector<const ScheduleTree*>& vec) {
+  std::vector<const ScheduleTree*> result;
+  for (auto e : vec) {
+    if (e->as<T>()) {
+      result.push_back(e);
+    }
+  }
+  return result;
+}
+
+template <typename T, typename Func>
+inline T
+foldl(const std::vector<const ScheduleTree*> vec, Func op, T init = T()) {
+  T value = init;
+  for (auto st : vec) {
+    value = op(st, value);
+  }
+  return value;
+}
+
+} // namespace detail
+
+inline isl::multi_union_pw_aff infixScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* relativeRoot,
+    const detail::ScheduleTree* tree) {
+  using namespace polyhedral::detail;
+
+  auto domainElem = root->as<ScheduleTreeDomain>();
+  TC_CHECK(domainElem);
+  auto domain = domainElem->domain_.universe();
+  auto zero = isl::multi_val::zero(domain.get_space().set_from_params());
+  auto prefix = isl::multi_union_pw_aff(domain, zero);
+  prefix = foldl(
+      filterType<ScheduleTreeBand>(tree->ancestors(relativeRoot)),
+      [](const ScheduleTree* st, isl::multi_union_pw_aff pref) {
+        auto mupa = st->as<ScheduleTreeBand>()->mupa_;
+        return pref.flat_range_product(mupa);
+      },
+      prefix);
+  return prefix;
+}
 
 inline isl::multi_union_pw_aff prefixScheduleMupa(
     const detail::ScheduleTree* root,
