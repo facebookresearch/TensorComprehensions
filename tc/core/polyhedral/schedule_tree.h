@@ -302,7 +302,7 @@ struct ScheduleTree {
   template <typename MappingIdType>
   static inline ScheduleTreeUPtr makeMapping(
       const std::vector<MappingIdType>& mappedIds,
-      isl::union_pw_aff_list mappedAffs,
+      isl::UnionPwAffListOn<Statement> mappedAffs,
       std::vector<ScheduleTreeUPtr>&& children = {}) {
     static_assert(
         std::is_base_of<mapping::MappingId, MappingIdType>::value,
@@ -319,7 +319,7 @@ struct ScheduleTree {
   // Internal type-unsafe function to construct mappings.
   static ScheduleTreeUPtr makeMappingUnsafe(
       const std::vector<mapping::MappingId>& mappedIds,
-      isl::union_pw_aff_list mappedAffs,
+      isl::UnionPwAffListOn<Statement> mappedAffs,
       std::vector<ScheduleTreeUPtr>&& children);
 
  public:
