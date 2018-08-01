@@ -23,6 +23,16 @@
 namespace tc {
 namespace polyhedral {
 
+inline isl::multi_union_pw_aff partialScheduleMupa(
+    const detail::ScheduleTree* root,
+    const detail::ScheduleTree* tree) {
+  using namespace polyhedral::detail;
+
+  auto prefix = prefixScheduleMupa(root, tree);
+  auto band = tree->as<ScheduleTreeBand>();
+  return band ? prefix.flat_range_product(band->mupa_) : prefix;
+}
+
 /*
  * Extract a mapping from the domain elements active at "tree"
  * to identifiers "ids", where all branches in "tree"
