@@ -30,6 +30,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/functional.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/scope_guard.h"
 #include "tc/external/isl.h"
@@ -243,7 +244,8 @@ std::unique_ptr<ScheduleTree> ScheduleTree::makeMappingUnsafe(
       << "expected as many mapped ids as affs";
   ScheduleTreeMapping::Mapping mapping;
   for (size_t i = 0, n = mappedAffs.size(); i < n; ++i) {
-    mapping.emplace(mappedIds.at(i), mappedAffs.get_at(i));
+    auto aff = isl::UnionPwAffOn<Statement>(mappedAffs.get_at(i));
+    mapping.emplace(mappedIds.at(i), aff);
   }
   TC_CHECK_GE(mapping.size(), 1u) << "empty mapping";
   TC_CHECK_EQ(mappedIds.size(), mapping.size())
