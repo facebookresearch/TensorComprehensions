@@ -218,7 +218,7 @@ isl::union_map referenceOriginalAccessesImpl(
     throw promotion::GroupingError("no references in the group");
   }
   auto accesses = isl::union_map::empty(
-      group.references.front()->originalAccess.get_space());
+      group.references.front()->originalAccess.get_space().params());
 
   for (const auto& ref : group.references) {
     if (ref->type != type) {
