@@ -150,7 +150,7 @@ ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
     auto id = MappingTypeId::makeId(i);
     auto upa = list.get_at(i);
     TC_CHECK_NE(extent[i], 0u) << "NYI: mapping to 0";
-    upa = upa.mod_val(isl::val(tree->ctx_, extent[i]));
+    upa = upa.mod(isl::val(tree->ctx_, extent[i]));
     affList = affList.add(upa);
     idList.emplace_back(id);
   }

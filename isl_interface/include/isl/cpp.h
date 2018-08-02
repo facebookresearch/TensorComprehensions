@@ -3141,7 +3141,7 @@ public:
   inline bool involves_param(const isl::id &id) const;
   inline isl::val max_val() const;
   inline isl::val min_val() const;
-  inline isl::union_pw_aff mod_val(isl::val f) const;
+  inline isl::union_pw_aff mod(isl::val f) const;
   inline int n_pw_aff() const;
   static inline isl::union_pw_aff param_on_domain(isl::union_set domain, isl::id id);
   inline bool plain_is_equal(const isl::union_pw_aff &upa2) const;
@@ -19147,7 +19147,7 @@ isl::val union_pw_aff::min_val() const
   return manage(res);
 }
 
-isl::union_pw_aff union_pw_aff::mod_val(isl::val f) const
+isl::union_pw_aff union_pw_aff::mod(isl::val f) const
 {
   if (!ptr || f.is_null())
     throw isl::exception::create(isl_error_invalid,
