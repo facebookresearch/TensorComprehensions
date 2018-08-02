@@ -28,27 +28,6 @@ using namespace detail;
 using std::ostream;
 using std::vector;
 
-isl::union_map extendSchedule(
-    const ScheduleTree* node,
-    isl::union_map schedule) {
-  if (auto bandElem = node->as<ScheduleTreeBand>()) {
-    if (bandElem->nMember() > 0) {
-      schedule =
-          schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
-    }
-  } else if (auto filterElem = node->as<ScheduleTreeFilter>()) {
-    schedule = schedule.intersect_domain(filterElem->filter_);
-  } else if (auto extensionElem = node->as<ScheduleTreeExtension>()) {
-    // FIXME: we may need to restrict the range of reversed extension map to
-    // schedule values that correspond to active domain elements at this
-    // point.
-    schedule = schedule.unite(
-        extensionElem->extension_.reverse().intersect_range(schedule.range()));
-  }
-
-  return schedule;
-}
-
 namespace {
 /*
  * If "node" is any filter, then intersect "domain" with that filter.
