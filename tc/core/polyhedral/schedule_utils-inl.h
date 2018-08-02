@@ -25,6 +25,29 @@
 namespace tc {
 namespace polyhedral {
 
+inline isl::union_map extendSchedule(
+    const detail::ScheduleTree* node,
+    isl::union_map schedule) {
+  using namespace polyhedral::detail;
+
+  if (auto bandElem = node->as<ScheduleTreeBand>()) {
+    if (bandElem->nMember() > 0) {
+      schedule =
+          schedule.flat_range_product(isl::union_map::from(bandElem->mupa_));
+    }
+  } else if (auto filterElem = node->as<ScheduleTreeFilter>()) {
+    schedule = schedule.intersect_domain(filterElem->filter_);
+  } else if (auto extensionElem = node->as<ScheduleTreeExtension>()) {
+    // FIXME: we may need to restrict the range of reversed extension map to
+    // schedule values that correspond to active domain elements at this
+    // point.
+    schedule = schedule.unite(
+        extensionElem->extension_.reverse().intersect_range(schedule.range()));
+  }
+
+  return schedule;
+}
+
 namespace detail {
 inline isl::union_map partialScheduleImpl(
     const ScheduleTree* root,
