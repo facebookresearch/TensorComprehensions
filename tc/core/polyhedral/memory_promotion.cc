@@ -451,11 +451,12 @@ isl::Set<Tensor> tensorElementsSet(const Scop& scop, isl::id tensorId) {
  * Note that this function drops the name of the target space of "schedule",
  * but this space is irrelevant for the caller.
  */
-isl::multi_aff dropDummyTensorDimensions(
-    isl::multi_aff schedule,
+template <typename Domain>
+isl::MultiAff<Domain, Domain> dropDummyTensorDimensions(
+    isl::MultiAff<Domain, Domain> schedule,
     const Scop::PromotedDecl& decl) {
   auto list = schedule.get_aff_list();
-  auto space = schedule.get_space().domain();
+  auto domainSpace = schedule.get_space().domain();
 
   auto n = list.size();
   for (int i = n - 1; i >= 0; --i) {
@@ -464,8 +465,8 @@ isl::multi_aff dropDummyTensorDimensions(
     }
   }
 
-  space = space.add_unnamed_tuple_ui(list.size());
-  return isl::multi_aff(space, list);
+  auto space = domainSpace.template add_unnamed_tuple_ui<Domain>(list.size());
+  return isl::MultiAff<Domain, Domain>(space, list);
 }
 
 inline void unrollAllMembers(detail::ScheduleTreeBand* band) {
@@ -489,20 +490,25 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  auto promotion = isl::map(group.promotion()).set_range_tuple_id(groupId);
+  auto promotion =
+      group.promotion().asMap().set_range_tuple_id<Promoted>(groupId);
   auto promotionSpace = promotion.get_space();
 
-  auto identityCopySchedule =
-      isl::multi_aff::identity(promotionSpace.range().map_from_set());
+  auto identityCopySchedule = isl::MultiAff<Promoted, Promoted>::identity(
+      promotionSpace.range().map_from_set());
   // Only iterate over significant tensor dimensions.
   auto decl = scop.promotedDecl(groupId);
   identityCopySchedule = dropDummyTensorDimensions(identityCopySchedule, decl);
-  auto readSpace = promotionSpace.wrap().set_set_tuple_id(readId);
-  auto writeSpace = promotionSpace.wrap().set_set_tuple_id(writeId);
+  auto readSpace = promotionSpace.wrap().set_set_tuple_id<Statement>(readId);
+  auto writeSpace = promotionSpace.wrap().set_set_tuple_id<Statement>(writeId);
   auto readSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
-      isl::multi_aff::wrapped_range_map(readSpace)));
+      isl::MultiAff<
+          isl::NamedPair<Statement, isl::Pair<Prefix, Tensor>, Promoted>,
+          Promoted>::wrapped_range_map(readSpace)));
   auto writeSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
-      isl::multi_aff::wrapped_range_map(writeSpace)));
+      isl::MultiAff<
+          isl::NamedPair<Statement, isl::Pair<Prefix, Tensor>, Promoted>,
+          Promoted>::wrapped_range_map(writeSpace)));
 
   auto readBandNode = ScheduleTree::makeBand(
       isl::MultiUnionPwAff<Statement, Band>(readSchedule));
@@ -524,19 +530,19 @@ ScheduleTree* insertCopiesUnder(
   auto promotedFootprint =
       group.promotedFootprint().set_tuple_id<Promoted>(groupId);
   auto scheduleUniverse =
-      isl::set::universe(promotionSpace.domain().unwrap().domain());
+      isl::Set<Prefix>::universe(promotionSpace.domain().unwrap().domain());
   auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
   auto approximatedRead =
       group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   auto product = approximatedRead.product(promotedFootprint);
   auto readExtension =
-      extension.intersect_range(product).set_range_tuple_id(readId);
+      extension.intersect_range(product).set_range_tuple_id<Statement>(readId);
   auto writtenElements = group.scopedWrites()
                              .intersect_range(tensorElements)
                              .wrap()
                              .product(promotedFootprint);
-  auto writeExtension =
-      extension.intersect_range(writtenElements).set_range_tuple_id(writeId);
+  auto writeExtension = extension.intersect_range(writtenElements)
+                            .set_range_tuple_id<Statement>(writeId);
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),
@@ -557,18 +563,14 @@ ScheduleTree* insertCopiesUnder(
 
   if (reads) {
     insertExtensionBefore(
-        root,
-        tree,
-        tree->child({0}),
-        isl::UnionMap<Prefix, Statement>(readExtension),
-        std::move(readFilterNode));
+        root, tree, tree->child({0}), readExtension, std::move(readFilterNode));
   }
   if (writes) {
     insertExtensionAfter(
         root,
         tree,
         tree->child({0}),
-        isl::UnionMap<Prefix, Statement>(writeExtension),
+        writeExtension,
         std::move(writeFilterNode));
   }
 
