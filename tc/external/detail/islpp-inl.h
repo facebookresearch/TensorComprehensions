@@ -46,7 +46,8 @@ inline T operator+(int i, T A) {
   return A.add_constant_si(i);
 }
 
-inline isl::aff operator+(isl::aff A, isl::val v) {
+template <typename T>
+inline auto operator+(T A, isl::val v) -> decltype(A.add_constant(v)) {
   return A.add_constant(v);
 }
 
