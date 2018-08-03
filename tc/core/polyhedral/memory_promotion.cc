@@ -114,12 +114,15 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::map TensorReferenceGroup::approximateScopedAccesses() const {
+isl::Map<Prefix, Tensor> TensorReferenceGroup::approximateScopedAccesses()
+    const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
-  auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
+  auto accessed =
+      isl::Map<Prefix, Tensor>::universe(space).intersect_domain(scopedDomain);
 
-  auto identity = isl::multi_aff::identity(space.range().map_from_set());
+  auto identity =
+      isl::MultiAff<Tensor, Tensor>::identity(space.range().map_from_set());
   for (size_t i = 0; i < approximation.dim(); ++i) {
     auto offset = approximation.lowerBound(i);
     auto stride = approximation.stride(i);
@@ -128,8 +131,8 @@ isl::map TensorReferenceGroup::approximateScopedAccesses() const {
     auto rhs = identity.get_aff(i);
     auto lowerBound = offset * stride + strideOffset;
     auto upperBound = (offset + size) * stride + strideOffset;
-    auto partial =
-        (isl::aff_map(lowerBound) <= rhs) & (isl::aff_map(upperBound) > rhs);
+    auto partial = lowerBound.asPwAff().lt_map((rhs + 1).asPwAff()) &
+        upperBound.asPwAff().gt_map(rhs.asPwAff());
 
     accessed = accessed & partial;
   }
@@ -525,9 +528,9 @@ ScheduleTree* insertCopiesUnder(
   auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
   auto approximatedRead =
       group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
-  approximatedRead = approximatedRead.product(promotedFootprint);
+  auto product = approximatedRead.product(promotedFootprint);
   auto readExtension =
-      extension.intersect_range(approximatedRead).set_range_tuple_id(readId);
+      extension.intersect_range(product).set_range_tuple_id(readId);
   auto writtenElements = group.scopedWrites()
                              .intersect_range(tensorElements)
                              .wrap()
