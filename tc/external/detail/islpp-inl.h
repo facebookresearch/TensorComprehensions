@@ -47,8 +47,7 @@ inline T operator+(int i, T A) {
 }
 
 inline isl::aff operator+(isl::aff A, isl::val v) {
-  isl::aff T(isl::local_space(A.get_space().domain()), v);
-  return A.add(T);
+  return A.add_constant(v);
 }
 
 inline isl::aff operator+(isl::val v, isl::aff A) {
