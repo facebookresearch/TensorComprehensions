@@ -57,8 +57,8 @@ Size launchBounds(const MappedScop& mscop, Size size) {
 
   for (size_t i = 0; i < size.view.size(); ++i) {
     auto maxVal = max.get_val(i);
-    TC_CHECK(maxVal.is_int()) << maxVal.to_str();
-    TC_CHECK(maxVal.is_nonneg()) << maxVal.to_str();
+    TC_CHECK(maxVal.is_int()) << maxVal;
+    TC_CHECK(maxVal.is_nonneg()) << maxVal;
     // Inclusive range needs + 1 to translate to sizes
     tightened.view[i] = maxVal.get_num_si() + 1;
   }
