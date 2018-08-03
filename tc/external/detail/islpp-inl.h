@@ -20,6 +20,16 @@ namespace isl {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::aff to perform arithmetic and create/combine with sets
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+inline auto operator*(isl::val V, T A) -> decltype(A.scale(V)) {
+  return A.scale(V);
+}
+
+template <typename T>
+inline auto operator*(T A, isl::val V) -> decltype(A.scale(V)) {
+  return V * A;
+}
+
 inline isl::aff operator*(int i, isl::aff A) {
   isl::val V(isl::val(A.get_ctx(), i));
   return A * V;
@@ -27,14 +37,6 @@ inline isl::aff operator*(int i, isl::aff A) {
 
 inline isl::aff operator*(isl::aff A, int i) {
   return i * A;
-}
-
-inline isl::aff operator*(isl::val V, isl::aff A) {
-  return A.scale(V);
-}
-
-inline isl::aff operator*(isl::aff A, isl::val V) {
-  return V * A;
 }
 
 inline isl::aff operator/(isl::aff A, int i) {

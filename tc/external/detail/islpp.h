@@ -123,8 +123,6 @@ inline bool operator!=(isl::val v1, isl::val v2) {
 ///////////////////////////////////////////////////////////////////////////////
 isl::aff operator*(int i, isl::aff A);
 isl::aff operator*(isl::aff A, int i);
-isl::aff operator*(isl::aff A, isl::val V);
-isl::aff operator*(isl::val V, isl::aff A);
 
 isl::aff operator/(isl::aff A, int i);
 
