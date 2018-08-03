@@ -101,6 +101,9 @@ def finish_episode(actions_probs, values, final_rewards):
     ploss = torch.stack([torch.stack(policy_losses[i]).sum() for i in range(BATCH_SZ)]).mean()
     loss = ploss + vloss
     loss.backward(retain_graph=True)
+    for f in net.parameters():
+        print("grad is")
+        print(f.grad)
     optimizer.step()
     return vloss.item(), ploss.item()
 

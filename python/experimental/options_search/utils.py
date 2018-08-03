@@ -9,12 +9,13 @@ import numpy as np
 from enum import IntEnum
 
 NB_HYPERPARAMS = 26
+USE_MAX_SHARED_MEMORY = 0
 
 class ExpTunerConfig:
     def __init__(self, use_max_shared_memory=0):
         self.INIT_INPUT_SZ = -1
         self.USE_MAX_SHARED_MEMORY = use_max_shared_memory
-        self.tc_code = "" 
+        self.tc_code = ""
         self.tc_name = ""
         self.inp = -1
         self.cat_val = -1
@@ -94,11 +95,11 @@ class ExpTunerConfig:
         self.cat_val[MappingOptionsIdx.unrollCopyShared] = \
                 [0,1]
         self.cat_val[MappingOptionsIdx.maxSharedMemory] = \
-                divs2 if USE_MAX_SHARED_MEMORY else [0]
+                divs2 if self.USE_MAX_SHARED_MEMORY else [0]
         self.cat_val[MappingOptionsIdx.useReadOnlyCache] = \
                 [0,1]
         self.cat_val[MappingOptionsIdx.privateDepth] = \
-                [i for i in range(6)]
+                [i for i in range(10)]
 
         for i in range(NB_HYPERPARAMS):
                 self.cat_sz[i] = len(self.cat_val[i])
@@ -110,7 +111,7 @@ class ExpTunerConfig:
 
 class MappingOptionsIdx(IntEnum):
     outerScheduleFusionStrategy   = 0
-    intraScheduleFusionStrategy   = 1
+    intraTileScheduleFusionStrategy   = 1
     fixParametersBeforeScheduling = 2
     nTiledDims                    = 3
     tiling1                       = 4

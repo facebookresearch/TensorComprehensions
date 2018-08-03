@@ -14,10 +14,11 @@ if(tup == []):
     exit()
 best_options, = tup
 best_options = best_options.getDict()
+best_options["privateDepth"]=9
 optsVect = utils.getRawVectorFromTcOpt(best_options)
 opts = utils.optionsFromVector(optsVect)
 print(opts)
 
-time = utils.evalTime(opts, exptuner_config, estimator="median")
+time = utils.evalTime(opts, exptuner_config)#, estimator="median")
 print(time)
 
