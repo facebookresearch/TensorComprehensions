@@ -143,7 +143,7 @@ class TensorReferenceGroup {
 
   // Rectangular overapproximation of the set of tensor elements accessed below
   // and relative to the scoping point.
-  isl::map approximateScopedAccesses() const;
+  isl::Map<Prefix, Tensor> approximateScopedAccesses() const;
 
   isl::MultiAff<isl::Pair<Prefix, Tensor>, Tensor> promotion() const;
   isl::Set<Tensor> promotedFootprint() const;
