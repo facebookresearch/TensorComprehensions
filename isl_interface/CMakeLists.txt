@@ -76,6 +76,7 @@ execute_process(COMMAND
 include_directories(.)
 add_executable(extract_isl_interface
   ${ISL_INTERFACE_DIR}/cpp.cc
+  ${ISL_INTERFACE_DIR}/cpp_conversion.cc
   ${ISL_INTERFACE_DIR}/extract_interface.cc
   ${ISL_INTERFACE_DIR}/generator.cc
   ${ISL_INTERFACE_DIR}/python.cc
