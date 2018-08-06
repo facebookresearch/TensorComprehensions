@@ -71,7 +71,9 @@ struct Scop {
     res->parameterValues = scop.parameterValues;
     res->halide = scop.halide;
     res->body = scop.body;
-    res->dependences = scop.dependences;
+    if (scop.dependences) {
+      res->dependences = scop.dependences;
+    }
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
