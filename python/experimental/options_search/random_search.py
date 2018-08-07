@@ -10,7 +10,7 @@ from visdom import Visdom
 
 import utils
 
-NB_EPOCHS = 1000
+NB_EPOCHS = 2500
 BATCH_SZ = 1
 
 viz = Visdom(server="http://100.97.69.78")
