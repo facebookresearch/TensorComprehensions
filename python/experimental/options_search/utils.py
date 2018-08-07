@@ -146,7 +146,7 @@ def print_opt(options):
 def evalTime(opt, exptuner_config, iters=50, warmup=10, estimator="mean", prune=-1, curr_best=-1):
     tc_code, tc_name, inp = \
         exptuner_config.tc_code, exptuner_config.tc_name, exptuner_config.inp
-    infty = 30000
+    infty = 10000000
     opt = exptuner_config.catVec_to_optVec(opt)
     opt = optionsFromVector(opt)
     try:
