@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from visdom import Visdom
 
-viz = Visdom()
+viz = Visdom(server="100.97.69.78")
 
 class Node:
     def __init__(self, father=None, new_act=0):
@@ -121,6 +121,7 @@ class MCTS:
 
     def saveReward(self, reward, opts):
         INTER_DISP = 20
+        reward = -np.log(1./reward - 1.)
         #print(-reward)
         if(self.curIter == 0):
             self.running_reward = reward
@@ -146,7 +147,8 @@ class MCTS:
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
         #print(optsVector)
-        reward = -np.log(utils.evalTime(optsVector, self.exptuner_config))
+        reward = (utils.evalTime(optsVector, self.exptuner_config))
+        reward = reward = 1./(1. + np.exp(reward))
         self.saveReward(reward, optsVector)
         return reward
 
