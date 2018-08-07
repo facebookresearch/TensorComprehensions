@@ -57,8 +57,9 @@ for i in range(NB_EPOCHS):
     tab_rewards.append(-running_reward)
     tab_best.append(-best)
     if i % INTER_DISP == 0:
-        ipdb.set_trace()
-        viz.histogram(X=np.array(liste_rew) / len(liste_rew), win=win1)
+        #ipdb.set_trace()
+        if(len(liste_rew) > 1):
+            viz.histogram(X=np.array(liste_rew) / len(liste_rew), win=win1)
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
     print(-running_reward)
     print(-best)
