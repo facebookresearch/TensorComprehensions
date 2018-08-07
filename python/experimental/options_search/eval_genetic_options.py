@@ -8,13 +8,13 @@ exptuner_config = utils.ExpTunerConfig()
 exptuner_config.set_convolution_tc()
 tc_code, tc_name, inp = exptuner_config.tc_code, exptuner_config.tc_name, exptuner_config.inp
 
-print("divs : " + str(utils.getAllDivs(inp)))
+#print("divs : " + str(utils.getAllDivs(inp)))
 tup = cache.load(tc_code, tc_name, inp, 1)
 if(tup == []):
     exit()
 best_options, = tup
 best_options = best_options.getDict()
-best_options["privateDepth"]=9
+#best_options["privateDepth"]=9
 optsVect = utils.getRawVectorFromTcOpt(best_options)
 opts = utils.optionsFromVector(optsVect)
 print(opts)
