@@ -14,6 +14,7 @@ exptuner_config.set_convolution_tc()
 NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 
 best=99999999
+nb_iters=0
 
 def getRandom():
     opt_v = np.zeros(NB_HYPERPARAMS).astype(int)
@@ -32,10 +33,15 @@ def my_fun(x):
     time_t = utils.evalTime(y, exptuner_config)
     if(time_t < best):
         best=time_t
+        print("iter " + str(nb_iters))
         utils.print_opt(y)
         print(best)
     return time_t
 
+def counter(x):
+    global nb_iters
+    nb_iters+=1
+
 x0 = getRandom()
-res=minimize(my_fun, x0, method="Powell")
+res=minimize(my_fun, x0, method="Powell", callback=counter)
 print(res)
