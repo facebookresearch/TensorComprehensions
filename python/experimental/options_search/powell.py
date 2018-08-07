@@ -34,6 +34,7 @@ def my_fun(x):
         best=time_t
         utils.print_opt(y)
         print(best)
+    return time_t
 
 x0 = getRandom()
 res=minimize(my_fun, x0, method="Powell")
