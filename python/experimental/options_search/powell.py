@@ -23,7 +23,8 @@ def getRandom():
     return opt_v
 
 def my_fun(x):
-    global best
+    global best, nb_iters
+    nb_iters+=1
     y = x.astype(int)
     for i in range(y.shape[0]):
         if(y[i] < 0):
@@ -38,10 +39,6 @@ def my_fun(x):
         print(best)
     return time_t
 
-def counter(x):
-    global nb_iters
-    nb_iters+=1
-
 x0 = getRandom()
-res=minimize(my_fun, x0, method="Powell", callback=counter)
+res=minimize(my_fun, x0, method="Powell")
 print(res)
