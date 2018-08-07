@@ -1,6 +1,7 @@
 import utils
 from scipy.optimize import minimize
 import numpy as np
+from visdom import Visdom
 
 NB_EPOCHS = 1000
 BATCH_SZ = 1
