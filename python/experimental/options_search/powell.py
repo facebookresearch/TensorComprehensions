@@ -15,6 +15,12 @@ NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 
 best=99999999
 
+def getRandom():
+    opt_v = np.zeros(NB_HYPERPARAMS).astype(int)
+    for i in range(opt_v.shape[0]):
+        opt_v[i] = np.random.randint(exptuner_config.cat_sz[i])
+    return opt_v
+
 def my_fun(x):
     global best
     y = x.astype(int)
@@ -29,6 +35,6 @@ def my_fun(x):
         utils.print_opt(y)
         print(best)
 
-x0 = np.zeros(NB_HYPERPARAMS)#.astype(int)
+x0 = getRandom()
 res=minimize(my_fun, x0, method="Powell")
 print(res)
