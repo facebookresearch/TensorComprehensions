@@ -49,7 +49,7 @@ def my_fun(x):
     best_rewards.append(np.log(best))
     rws.append(-running_reward)
     if nb_iters % INTER_DISP == 0:
-        viz.line(X=np.column_stack((np.arange(nb_iters)), np.arange(nb_iters)), \
+        viz.line(X=np.column_stack((np.arange(nb_iters), np.arange(nb_iters))), \
         Y=np.column_stack((np.array(rws), np.array(best_rewards))), \
         win=win0, opts=dict(legend=["Geometric run", "Best time"]))
     return time_t
