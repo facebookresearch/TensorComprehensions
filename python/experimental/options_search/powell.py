@@ -7,7 +7,7 @@ NB_EPOCHS = 1000
 BATCH_SZ = 1
 INTER_DISP = 20
 
-viz = Visdom(server="100.97.69.78")
+viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 
 exptuner_config = utils.ExpTunerConfig()
