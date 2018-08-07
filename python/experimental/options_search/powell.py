@@ -18,15 +18,17 @@ best=99999999
 def my_fun(x):
     global best
     y = x.astype(int)
+    for i in range(y.shape[0]):
+        if(y[i] < 0):
+            y[i] = 0
+        if(y[i] >= exptuner_config.cat_sz[i]):
+            y[i] = exptuner_config.cat_sz[i]-1
     time_t = utils.evalTime(y, exptuner_config)
     if(time_t < best):
         best=time_t
         utils.print_opt(y)
         print(best)
 
-def printer(x):
-    pass
-
 x0 = np.zeros(NB_HYPERPARAMS)#.astype(int)
-res=minimize(my_fun, x0, method="Powell", callback=printer)
+res=minimize(my_fun, x0, method="Powell")
 print(res)
