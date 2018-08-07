@@ -54,13 +54,14 @@ class MCTS:
     def main_search(self, starting_pos): #, init_inp):
         node = starting_pos
         #node.nbVisits+=1
-        ttNbIters = 10 #2*self.nbActions[node.pos]
+        ttNbIters = 20 #2*self.nbActions[node.pos]
         for _ in range(max(ttNbIters, self.nbActions[node.pos])):
             leaf = self.getLeaf(node)
             val = self.evaluate(leaf)
-            self.backup(leaf, val)
+            for v in val:
+                self.backup(leaf, v)
             #print(node.value / node.nbVisits)
-        _, action = self.getBestChild2(node)
+        _, action = self.getBestChild(node)
         return action
 
     def take_action(self, node, act):
@@ -108,7 +109,10 @@ class MCTS:
         for act in range(self.nbActions[pos]):
             child = node.children[act]
             #indic = np.percentile(child.values, 20) + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
-            indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            #indic = child.value / child.nbVisits + self.C * np.sqrt(2*np.log(node.nbVisits) / child.nbVisits)
+            alpha = np.log(2*node.nbVisits*self.nbActions[pos])
+            nbTopTen = np.sum([(v in node.values[-10:]) for v in child.values])
+            indic = (nbTopTen + alpha + np.sqrt(2*nbTopTen * alpha + alpha**2)) / child.nbVisits
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
@@ -116,7 +120,6 @@ class MCTS:
         return node.children[bestAction], bestAction
 
     def saveReward(self, reward, opts):
-        reward = -np.log(1./reward - 1.)
         INTER_DISP = 20
         #print(-reward)
         if(self.curIter == 0):
@@ -143,17 +146,16 @@ class MCTS:
             a = np.random.randint(self.nbActions[i+pos])
             optsVector[i+(pos)] = a
         #print(optsVector)
-        reward = utils.evalTime(optsVector, self.exptuner_config)
-        reward = 1./(1. + np.exp(reward))
+        reward = -np.log(utils.evalTime(optsVector, self.exptuner_config))
         self.saveReward(reward, optsVector)
         return reward
 
     def evaluate(self, leaf):
-        score = 0
+        scores = []
         nb_iters=5
         for _ in range(nb_iters):
-            score += self.randomSampleScoreFrom(leaf)
-        return score / nb_iters
+            scores += [self.randomSampleScoreFrom(leaf)]
+        return scores
 
     def backup(self, leaf, val):
         #if(val > 10.): #infty
@@ -162,11 +164,15 @@ class MCTS:
         while(node.notRoot()):
             node.nbVisits += 1
             #node.values.append(val)
-            node.value += val
+            node.values += [val]
+            node.values=sorted(node.values)
+            node.values = node.values[-10:]
             node = node.getParent()
         node.nbVisits += 1
-        node.value += val
-        node.values.append(val)
+        node.values += [val]
+        node.values = sorted(node.values)
+        node.values = node.values[-10:]
+        #node.values.append(val)
 
 mcts = MCTS()
 
