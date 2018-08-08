@@ -35,7 +35,7 @@ win2 = viz.histogram(X=np.arange(NB_EPOCHS))
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
-layer_sz = 32
+layer_sz = 64
 
 class Predictor(nn.Module):
     def __init__(self, nb_inputs, nb_actions):
@@ -51,7 +51,7 @@ class Predictor(nn.Module):
         #ipdb.set_trace()
         #x = F.softmax(self.W(x), dim=-1) * x #attention mecanism
         tmp1 = F.relu(self.affine1(x))
-        tmp1 = F.relu(self.affine15(tmp1))
+        #tmp1 = F.relu(self.affine15(tmp1))
         out_action = F.softmax(self.affine2(tmp1), dim=-1)
         out_value = self.affine3(tmp1)
         return out_action, out_value
