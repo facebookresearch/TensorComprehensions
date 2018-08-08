@@ -30,6 +30,8 @@ init_input_sz = exptuner_config.init_input_sz
 viz = Visdom(server="http://100.97.69.78")
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
+win2 = viz.histogram(X=np.arange(NB_EPOCHS))
+
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
@@ -137,6 +139,7 @@ tab_best=[]
 best=-12
 v_losses=[]
 p_losses=[]
+liste_rew=[]
 best_options = np.zeros(NB_HYPERPARAMS).astype(int)
 for i in range(NB_EPOCHS):
     rewards = []
@@ -163,7 +166,10 @@ for i in range(NB_EPOCHS):
     running_reward = running_reward * 0.99 + reward * 0.01
     tab_rewards.append(-(running_reward))
     tab_best.append(-best)
+    liste_rew.append(-reward)
     if i % INTER_DISP == 0:
+        if(len(liste_rew) > 1):
+            viz.histogram(X=np.array(liste_rew).astype(int), win=win2)
         viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
         if(len(v_losses) > 0):
             viz.line(X=np.column_stack((np.arange(len(v_losses)), np.arange(len(v_losses)))), Y=np.column_stack((np.array(v_losses), np.array(p_losses))), win=win1, opts=dict(legend=["Value loss", "Policy loss"]))
