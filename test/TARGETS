@@ -1,0 +1,39 @@
+TEST_FILES = glob(
+    ["*.cc"],
+    excludes = [
+        "test_mapper_llvm.cc",  # separate test defined (needs llvm)
+        "test_lang.cc",  # currently fails due to different output formatting
+    ],
+)
+
+for filename in TEST_FILES:
+    cpp_unittest(
+        name = filename[:-3],
+        srcs = [filename],
+        preprocessor_flags = [
+            "-DTC_DIR=\"tc/\"",
+        ],
+        deps = [
+            ":headers",
+            "//tc/tc:tc_core",
+            "//tc/tc:tc_defs_library",
+        ],
+    )
+
+cpp_library(
+    name = "headers",
+    srcs = [],
+    headers = glob(["*.h"]),
+    propagated_pp_flags = [
+        "-Itc/test",
+    ],
+)
+
+cpp_unittest(
+    name = "test_mapper_llvm",
+    srcs = ["test_mapper_llvm.cc"],
+    deps = [
+        ":headers",
+        "//tc/tc:tc_llvm",
+    ],
+)

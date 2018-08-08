@@ -1,0 +1,24 @@
+BENCHMARK_FILES = glob(
+    ["*.py"],
+)
+
+for filename in BENCHMARK_FILES:
+    python_binary(
+        name = filename[:-3],
+        srcs = [filename],
+        base_module = "tensor_comprehensions.python.examples",
+        cpp_deps = [
+            "//tc/tc:tc_autotuner",
+            "//tc/tc:tc_core",
+        ],
+        main_module = "tensor_comprehensions.python.examples.{}".format(filename[:-3]),
+        par_style = "xar",
+        deps = [
+            "//caffe2:torch",
+            "//tc/tensor_comprehensions:tc_py",
+        ],
+        external_deps = [
+            "numpy",
+            "PyYAML",
+        ],
+    )

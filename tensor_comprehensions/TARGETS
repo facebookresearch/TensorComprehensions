@@ -1,0 +1,13 @@
+python_library(
+    name = "tc_py",
+    srcs = glob(
+        [
+            "**/*.py",
+        ],
+    ),
+    base_module = "tensor_comprehensions",
+    deps = [
+        "//caffe2:torch",
+        "//tc/tensor_comprehensions/pybinds:tclib",
+    ],
+)

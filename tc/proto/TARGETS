@@ -1,0 +1,35 @@
+# filenames with .proto extension
+PROTO_FILES = [
+    "compcache",
+    "mapping_options",
+]
+
+def names_subs(ext):
+    return [ext.format(f) for f in PROTO_FILES]
+
+buck_sh_binary(
+    name = "protobuf.sh",
+    main = "protobuf.sh",
+)
+
+custom_rule(
+    name = "protobuf_gen",
+    srcs = names_subs("{}.proto"),
+    build_script_dep = ":protobuf.sh",
+    output_gen_files =
+        names_subs("{}.pb.cc") +
+        names_subs("{}.pb.h"),
+    tools = [
+        "protobuf",
+    ],
+)
+
+cpp_library(
+    name = "protobuf",
+    srcs = names_subs(":protobuf_gen={}.pb.cc"),
+    headers = names_subs(":protobuf_gen={}.pb.h"),
+    header_namespace = "tc/proto",
+    external_deps = [
+        ("protobuf", None),
+    ],
+)

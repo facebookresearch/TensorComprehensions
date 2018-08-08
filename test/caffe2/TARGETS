@@ -1,0 +1,16 @@
+cpp_library(
+    name = "test_harness",
+    srcs = ["test_harness.cc"],
+    headers = glob(["*.h"]),
+    propagated_pp_flags = [
+        "-Itc/test/caffe2",
+    ],
+    deps = [
+        "//tc/tc:tc_c2",
+        "//tc/tc:tc_lib",
+        "//tc/test/caffe2/cuda:headers",
+    ],
+    external_deps = [
+        ("googletest", None, "gtest_headers"),
+    ],
+)

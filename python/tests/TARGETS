@@ -1,0 +1,18 @@
+python_unittest(
+    name = "test_tc",
+    srcs = ["test_tc.py"],
+    par_style = "xar",
+    strip_libpar = False,
+    tags = [
+        "serialize_test_cases",
+        "run_as_bundle",
+    ],
+    deps = [
+        "//caffe2:torch",
+        "//tc/tensor_comprehensions:tc_py",
+    ],
+    external_deps = [
+        "numpy",
+        "PyYAML",
+    ],
+)

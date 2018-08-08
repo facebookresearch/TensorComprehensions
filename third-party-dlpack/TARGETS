@@ -1,0 +1,5 @@
+cpp_library(
+    name = "dlpack",
+    headers = glob(["third-party/dlpack/**/*.h"]),
+    header_namespace = "dlpack",
+)

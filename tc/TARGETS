@@ -1,0 +1,129 @@
+TC_CUDA_SRC = list(set(glob(["core/**/*cuda*/*.cc"]) + glob([
+    "core/**/*cuda*.cc",
+])))
+
+TC_CUDA_H = list(set(glob(["core/**/*cuda*/*.h"]) + glob([
+    "core/**/*cuda*.h",
+])))
+
+TC_CUDA = TC_CUDA_SRC + TC_CUDA_H
+
+TC_LLVM_SRC = list(set(glob(["core/**/*llvm*/*.cc"]) + glob([
+    "core/**/*llvm*.cc",
+])))
+
+TC_LLVM_H = list(set(glob(["core/**/*llvm*/*.h"]) + glob([
+    "core/**/*llvm*.h",
+])))
+
+TC_LLVM = TC_LLVM_SRC + TC_LLVM_H
+
+TC_CORE_EXCLUDES = TC_CUDA + TC_LLVM
+
+cpp_library(
+    name = "tc_core",
+    srcs = [
+        "version/version.cc",
+    ] + glob(
+        ["core/**/*.cc"],
+        excludes = TC_CORE_EXCLUDES,
+    ) + glob(["external/**/*.cc"]) + glob(["aten/**/*.cc"]) + TC_CUDA_SRC,
+    headers = glob(
+        ["core/**/*.h"],
+        excludes = TC_CORE_EXCLUDES,
+    ) + glob(["external/**/*.h"]) + glob(["aten/**/*.h"]) + TC_CUDA_H,
+    propagated_pp_flags = [
+        "-Itc",
+        "-Itc/tc/version",
+        "-Icaffe2/aten/src",
+        # TODO(ntv): split cuda dependency
+        "-DCUDA_HOME=\"/usr/local/cuda/include\"",
+        "-DCUB_HOME=\"tc/third-party/cub\"",
+    ],
+    deps = [
+        ":tc_lang",
+        "//caffe2/aten:ATen",
+        "//tc:isl",
+        "//tc/tc/proto:protobuf",
+        "//tc/third-party/dlpack/include/dlpack:dlpack",
+    ],
+    external_deps = [
+        ("halide", None, "Halide"),
+        "glog",
+        "gflags",
+    ],
+)
+
+cpp_library(
+    name = "tc_cuda",
+    deps = [":tc_core"],
+    external_deps = [
+        ("cuda", None, "cuda-lazy"),
+        ("cuda", None, "cuda_drive_api-lazy"),
+        #nvrtc-lazy seg fault
+        ("cuda", None, "nvrtc"),
+        ("cuda", None, "nvrtc-builtins"),
+    ],
+)
+
+cpp_library(
+    name = "tc_llvm",
+    srcs = TC_LLVM_SRC,
+    headers = TC_LLVM_H,
+    deps = [":tc_core"],
+    external_deps = [
+        ("llvm", None, "LLVMMCJIT"),
+        ("llvm", None, "LLVMOrcJIT"),
+        ("llvm", None, "clangCodeGen"),
+    ],
+)
+
+cpp_library(
+    name = "tc_lang",
+    srcs = glob(["lang/*.cc"]),
+    headers = glob(["lang/*.h"]),
+    propagated_pp_flags = [
+        "-Itc",
+    ],
+)
+
+cpp_library(
+    name = "tc_lib",
+    deps = [
+        ":tc_autotuner",
+        ":tc_core",
+        ":tc_lang",
+    ],
+)
+
+cpp_library(
+    name = "tc_autotuner",
+    srcs = [
+        "version/version.cc",
+    ] + glob(["autotuner/**/*.cc"]),
+    headers = glob(["autotuner/**/*.h"]),
+    deps = [
+        ":tc_cuda",
+    ],
+)
+
+cpp_library(
+    name = "tc_defs_library",
+    srcs = [],
+    headers = glob(["library/**/*.h"]),
+    deps = [
+        ":tc_core",
+    ],
+)
+
+cpp_library(
+    name = "tc_c2",
+    srcs = glob(["c2/*.cc"]),
+    headers = glob(["c2/*.h"]),
+    link_whole = True,  # in order to preserver register.cc
+    deps = [
+        ":tc_cuda",
+        ":tc_defs_library",
+        "//caffe2/caffe2:caffe2",
+    ],
+)

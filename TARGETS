@@ -1,0 +1,113 @@
+# C files that get included
+ISLPP_C_INCLUDES = [
+    "third-party/islpp/basis_reduction_templ.c",
+    "third-party/islpp/bset_from_bmap.c",
+    "third-party/islpp/bset_to_bmap.c",
+    "third-party/islpp/extract_key.c",
+    "third-party/islpp/imath/gmp_compat.c",
+    "third-party/islpp/imath/imath.c",
+    "third-party/islpp/isl/hmap_templ.c",
+    "third-party/islpp/isl_list_templ.c",
+    "third-party/islpp/isl_map_lexopt_templ.c",
+    "third-party/islpp/isl_multi_align_set.c",
+    "third-party/islpp/isl_multi_align_templ.c",
+    "third-party/islpp/isl_multi_align_union_set.c",
+    "third-party/islpp/isl_multi_apply_set.c",
+    "third-party/islpp/isl_multi_apply_templ.c",
+    "third-party/islpp/isl_multi_apply_union_set.c",
+    "third-party/islpp/isl_multi_cmp.c",
+    "third-party/islpp/isl_multi_coalesce.c",
+    "third-party/islpp/isl_multi_dims.c",
+    "third-party/islpp/isl_multi_explicit_domain.c",
+    "third-party/islpp/isl_multi_floor.c",
+    "third-party/islpp/isl_multi_gist.c",
+    "third-party/islpp/isl_multi_hash.c",
+    "third-party/islpp/isl_multi_intersect.c",
+    "third-party/islpp/isl_multi_no_explicit_domain.c",
+    "third-party/islpp/isl_multi_pw_aff_explicit_domain.c",
+    "third-party/islpp/isl_multi_templ.c",
+    "third-party/islpp/isl_multi_union_pw_aff_explicit_domain.c",
+    "third-party/islpp/isl_power_templ.c",
+    "third-party/islpp/isl_pw_hash.c",
+    "third-party/islpp/isl_pw_templ.c",
+    "third-party/islpp/isl_pw_eval.c",
+    "third-party/islpp/isl_pw_union_opt.c",
+    "third-party/islpp/isl_srcdir.c",
+    "third-party/islpp/isl_tab_lexopt_templ.c",
+    "third-party/islpp/isl_test_cpp-generic.cc",
+    "third-party/islpp/isl_union_eval.c",
+    "third-party/islpp/isl_union_multi.c",
+    "third-party/islpp/isl_union_neg.c",
+    "third-party/islpp/isl_union_single.c",
+    "third-party/islpp/isl_union_templ.c",
+    "third-party/islpp/print_templ.c",
+    "third-party/islpp/print_templ_yaml.c",
+    "third-party/islpp/read_in_string_templ.c",
+    "third-party/islpp/set_from_bmap.c",
+    "third-party/islpp/set_from_map.c",
+    "third-party/islpp/set_list_from_map_list_inl.c",
+    "third-party/islpp/set_to_map.c",
+    "third-party/islpp/uset_from_umap.c",
+    "third-party/islpp/uset_to_umap.c",
+]
+
+cpp_library(
+    name = "isl",
+    srcs = glob(
+        ["third-party/islpp/*.c"],
+        excludes = [
+            # Explicit templates
+            "third-party/islpp/*_templ*.c",
+            # C files we avoid for now
+            # We use GMP, not imath
+            "third-party/islpp/isl_imath.c",
+            "third-party/islpp/isl_int_imath.c",
+            "third-party/islpp/isl_val_imath.c",
+            "third-party/islpp/isl_int_sioimath.c",
+            "third-party/islpp/isl_val_sioimath.c",
+            # Calls undefined functions such as __gmp_allocate_func, skip for now
+            "third-party/islpp/mp_get_memory_functions.c",
+            # Executables
+            "third-party/islpp/flow_cmp.c",
+            "third-party/islpp/schedule_cmp.c",
+            "third-party/islpp/bound.c",
+            "third-party/islpp/cat.c",
+            "third-party/islpp/closure.c",
+            "third-party/islpp/codegen.c",
+            "third-party/islpp/isl_test.c",
+            "third-party/islpp/isl_test_imath.c",
+            "third-party/islpp/isl_test_int.c",
+            "third-party/islpp/pip.c",
+            "third-party/islpp/polyhedron_detect_equalities.c",
+            "third-party/islpp/polyhedron_minimize.c",
+            "third-party/islpp/polyhedron_sample.c",
+            "third-party/islpp/polytope_scan.c",
+            "third-party/islpp/schedule.c",
+        ] + ISLPP_C_INCLUDES,
+    ),
+    headers = glob([
+        # CPP interface
+        "isl_interface/include/isl/cpp.h",
+        # ISL headers
+        "third-party/islpp/*.h",
+        "third-party/islpp/**/*.h",
+        # C includes
+        "third-party/islpp/include/isl/**/*.c",
+        # Explicit templates
+        "third-party/islpp/*_templ*.c",
+    ] + ISLPP_C_INCLUDES),
+    compiler_flags = [
+        "-Wno-implicit-function-declaration",
+        "-Wno-int-conversion",
+        "-Wno-shadow-compatible-local",
+    ],
+    propagated_pp_flags = [
+        "-Itc/third-party/islpp/",
+        "-Itc/third-party/islpp/imath",
+        "-Itc/third-party/islpp/include",
+        "-Itc/isl_interface/include",
+    ],
+    external_deps = [
+        ("gmp", None),
+    ],
+)

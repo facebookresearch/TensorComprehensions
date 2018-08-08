@@ -1,0 +1,19 @@
+TEST_FILES = glob(
+    ["*.cc"],
+)
+
+for filename in TEST_FILES:
+    cpp_unittest(
+        name = filename[:-3],
+        tags = [
+            'serialize_test_cases',
+            'local_only',
+            'run_as_bundle'
+        ],
+        srcs = [filename],
+        deps = [
+            "//tc/tc:tc_c2",
+            "//tc/tc:tc_lib",
+            "//tc/test:headers",
+        ],
+    )

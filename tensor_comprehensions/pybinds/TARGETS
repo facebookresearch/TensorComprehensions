@@ -1,0 +1,14 @@
+cpp_python_extension(
+    name = "tclib",
+    srcs = ["tclib.cc"],
+    base_module = "tensor_comprehensions",
+    deps = [
+        "//caffe2:torch_extension", # for torch.h
+        "//tc/tc:tc_autotuner",
+        "//tc/tc:tc_core",
+    ],
+    external_deps = [
+        ("numpy", None, "cpp"),
+        "pybind11",
+    ],
+)

@@ -1,0 +1,29 @@
+cpp_library(
+    name = "headers",
+    headers = glob(["*.h"]),
+    propagated_pp_flags = [
+        "-Itc/test/caffe2",
+    ],
+)
+
+TEST_FILES = glob(
+    ["*.cc"],
+)
+
+for filename in TEST_FILES:
+    cpp_unittest(
+        name = filename[:-3],
+        tags = [
+            'serialize_test_cases',
+            'local_only',
+            'run_as_bundle'
+        ],
+        srcs = [filename],
+        headers = glob(["*.h"]),
+        deps = [
+            "//tc/tc:tc_c2",
+            "//tc/tc:tc_lib",
+            "//tc/test:headers",
+            "//tc/test/caffe2:test_harness",
+        ],
+    )
