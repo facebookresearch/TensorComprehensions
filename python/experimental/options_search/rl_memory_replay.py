@@ -16,9 +16,9 @@ from heapq import heappush, heappop
 import utils
 
 NB_EPOCHS = 1000
-BATCH_SZ = 16
+BATCH_SZ = 1
 buff = deque()
-MAXI_BUFF_SZ = 50
+MAXI_BUFF_SZ = 1
 
 exptuner_config = utils.ExpTunerConfig()
 exptuner_config.set_convolution_tc()
@@ -35,7 +35,7 @@ win2 = viz.histogram(X=np.arange(NB_EPOCHS))
 
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
-layer_sz = 64
+layer_sz = 32
 
 class Predictor(nn.Module):
     def __init__(self, nb_inputs, nb_actions):
