@@ -179,3 +179,4 @@ for i in range(NB_EPOCHS):
 
 print("Finally, best options are:")
 utils.print_opt(best_options)
+net.save_state_dict('rl_memory_trained_conv_standard.pt')
