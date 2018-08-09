@@ -147,6 +147,7 @@ class MCTS:
             optsVector[i+(pos)] = a
         #print(optsVector)
         reward = utils.evalTime(optsVector, self.exptuner_config)
+        reward = np.log(reward)
         reward = 1./(1. + np.exp(reward))
         self.saveReward(reward, optsVector)
         return reward
