@@ -133,7 +133,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto schedule = scop.scheduleRoot();
     auto schedule2 = ScheduleTree::makeScheduleTree(*schedule); // make a copy
     bandTile(schedule->child({0}), tileSizes, tileOptions);
-    auto scheduleISLPP = fromIslSchedule(toIslSchedule(schedule).reset_user());
+    auto scheduleISLPP = fromIslSchedule(toIslSchedule(schedule));
 
     {
       auto ctx = isl::with_exceptions::globalIslCtx();
@@ -143,7 +143,7 @@ struct PolyhedralMapperTest : public ::testing::Test {
           schedule2->child({0})->as<ScheduleTreeBand>()->mupa_.get_space(),
           tileSizes);
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
-      auto scheduleISL = fromIslSchedule(islNode.get_schedule().reset_user());
+      auto scheduleISL = fromIslSchedule(islNode.get_schedule());
 
       ASSERT_TRUE(*scheduleISL == *scheduleISLPP) << *scheduleISL << "\nVS\n"
                                                   << *scheduleISLPP;

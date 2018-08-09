@@ -251,9 +251,6 @@ struct TC2Isl : public ::testing::Test {
     polyhedral::detail::validateSchedule(scop->scheduleRoot());
     // Just check no crashes
     auto outputs = inferOutputTensorInfo(comps, {in.get()});
-    // Check schedule construction equality
-    auto scheduleHalide = polyhedral::detail::fromIslSchedule(
-        polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());
   }
 };
 
