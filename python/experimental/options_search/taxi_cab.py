@@ -37,6 +37,7 @@ liste_rew=[]
 best_options = -1
 cur_vect = getRandom()
 best=utils.evalTime(cur_vect, exptuner_config)
+best = -np.log(best)
 nbTries=0
 end=False
 while(nbTries < NB_EPOCHS):
