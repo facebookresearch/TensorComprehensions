@@ -42,6 +42,7 @@ nbTries=0
 end=False
 while(nbTries < NB_EPOCHS):
     for i in range(NB_HYPERPARAMS):
+        print("changing coordinate i=" + str(i))
         coor_best = best
         best_of_coor = cur_vect[i]
         for j in range(exptuner_config.cat_sz[i]):
