@@ -61,7 +61,7 @@ class MCTS:
             for v in val:
                 self.backup(leaf, v)
             #print(node.value / node.nbVisits)
-        _, action = self.getBestChild(node)
+        _, action = self.getBestChild2(node)
         return action
 
     def take_action(self, node, act):
@@ -94,7 +94,9 @@ class MCTS:
         for act in range(self.nbActions[pos]):
             child = node.children[act]
             #indic = np.percentile(child.values, 20)
-            indic = child.value / child.nbVisits
+            alpha = np.log(2*node.nbVisits*self.nbActions[pos])
+            nbTopTen = np.sum([(v in node.values[-10:]) for v in child.values])
+            indic = nbTopTen / child.nbVisits
             if(first or indic > bestIndic):
                 bestIndic = indic
                 bestAction = act
