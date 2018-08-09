@@ -66,7 +66,7 @@ while(nbTries < NB_EPOCHS):
                 #ipdb.set_trace()
                 if(len(liste_rew) > 1):
                     viz.histogram(X=np.array(liste_rew).astype(int), win=win1)
-                viz.line(X=np.column_stack((np.arange(i+1), np.arange(i+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
+                viz.line(X=np.column_stack((np.arange(nbTries+1), np.arange(nbTries+1))), Y=np.column_stack((np.array(tab_rewards), np.array(tab_best))), win=win0, opts=dict(legend=["Geometric run", "Best time"]))
 
             print(-running_reward)
             print(-best)
