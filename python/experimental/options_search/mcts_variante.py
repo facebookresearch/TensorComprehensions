@@ -5,7 +5,7 @@ import numpy as np
 from tqdm import tqdm
 from visdom import Visdom
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom(server="http://100.97.69.78", port=8098)
 
 class Node:
     def __init__(self, father=None, new_act=0):
@@ -148,6 +148,7 @@ class MCTS:
             optsVector[i+(pos)] = a
         #print(optsVector)
         reward = (utils.evalTime(optsVector, self.exptuner_config))
+        reward = np.log(reward)
         reward = reward = 1./(1. + np.exp(reward))
         self.saveReward(reward, optsVector)
         return reward
