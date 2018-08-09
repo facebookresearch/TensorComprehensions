@@ -132,7 +132,9 @@ class MCTS:
         #self.rewards.append(-reward)
         self.best_rewards.append(-self.curr_best)
         self.rws.append(-self.running_reward)
+        print(INTER_DISP)
         if self.curIter % INTER_DISP == 0:
+            print("coucou")
             viz.line(X=np.column_stack((np.arange(self.curIter), np.arange(self.curIter))), \
             Y=np.column_stack((np.array(self.rws), np.array(self.best_rewards))), \
             win=self.win0, opts=dict(legend=["Geometric run", "Best time"]))
