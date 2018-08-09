@@ -16,9 +16,9 @@ from heapq import heappush, heappop
 import utils
 
 NB_EPOCHS = 1000
-BATCH_SZ = 1
+BATCH_SZ = 16
 buff = deque()
-MAXI_BUFF_SZ = 1
+MAXI_BUFF_SZ = 50
 
 exptuner_config = utils.ExpTunerConfig()
 exptuner_config.set_convolution_tc()
@@ -92,7 +92,7 @@ def finish_episode(actions_probs, values, final_rewards):
     policy_losses = [[] for i in range(BATCH_SZ)]
     value_losses = [[] for i in range(BATCH_SZ)]
     final_rewards = torch.tensor(list(final_rewards))
-    #final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
+    final_rewards = (final_rewards - final_rewards.mean()) / (final_rewards.std() + eps)
     for batch_id in range(BATCH_SZ):
         for (log_prob, value) in zip(actions_probs[batch_id], values[batch_id]):
             reward = final_rewards[batch_id] - value.item()
