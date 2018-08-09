@@ -116,6 +116,7 @@ class MCTS:
         return node.children[bestAction], bestAction
 
     def saveReward(self, reward, opts):
+        print(self.curIter)
         reward = -np.log(1./reward - 1.)
         INTER_DISP = 20
         #print(-reward)
