@@ -40,6 +40,8 @@ best=utils.evalTime(cur_vect, exptuner_config)
 best = -np.log(best)
 nbTries=0
 end=False
+nbtt = np.sum(exptuner_config.cat_sz)
+print("complete turn = " + str(nbtt)
 while(nbTries < NB_EPOCHS):
     for i in range(NB_HYPERPARAMS):
         print("changing coordinate i=" + str(i))
