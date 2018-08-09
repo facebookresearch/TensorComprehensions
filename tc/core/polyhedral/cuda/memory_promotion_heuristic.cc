@@ -227,7 +227,7 @@ bool promotionImprovesCoalescing(
     auto localAccesses = originalAccesses.intersect_domain(activePoints);
     auto schedule = prefixSchedule(root, marker);
     auto scheduledAccesses = localAccesses.apply_domain(schedule);
-    for (auto access : isl::UnionAsVector<isl::union_map>(scheduledAccesses)) {
+    for (auto access : scheduledAccesses.get_map_list()) {
       auto scheduleSpace = access.get_space().domain();
       auto tensorSpace = access.get_space().range();
       auto elementToNext = makeNextElementMap(tensorSpace, tensorDim - 1);

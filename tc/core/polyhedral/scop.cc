@@ -51,7 +51,7 @@ ScopUPtr Scop::makeScop(
 
   halide2isl::SymbolTable sym = halide2isl::makeSymbolTable(components);
 
-  isl::space paramSpace = halide2isl::makeParamSpace(ctx, sym.params);
+  auto paramSpace = halide2isl::makeParamSpace(ctx, sym.params);
 
   ScopUPtr scop(new Scop());
   scop->halide.params = sym.params;

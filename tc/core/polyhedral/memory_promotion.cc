@@ -218,7 +218,7 @@ isl::union_map referenceOriginalAccessesImpl(
     throw promotion::GroupingError("no references in the group");
   }
   auto accesses = isl::union_map::empty(
-      group.references.front()->originalAccess.get_space());
+      group.references.front()->originalAccess.get_space().params());
 
   for (const auto& ref : group.references) {
     if (ref->type != type) {
@@ -302,7 +302,7 @@ void addSingletonReferenceGroups(
   // use currying to isolate the D part before intersecting with the domain
   // Compute initial groups with single reference per group.
   std::unordered_set<isl::id, isl::IslIdIslHash> unapproximatable;
-  for (auto a : isl::UnionAsVector<isl::union_map>(accesses)) {
+  for (auto a : accesses.get_map_list()) {
     if (isl::union_map(a.curry()).intersect_domain(domain).is_empty()) {
       continue;
     }

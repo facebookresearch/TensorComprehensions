@@ -123,17 +123,10 @@ inline bool operator!=(isl::val v1, isl::val v2) {
 ///////////////////////////////////////////////////////////////////////////////
 isl::aff operator*(int i, isl::aff A);
 isl::aff operator*(isl::aff A, int i);
-isl::aff operator*(isl::aff A, isl::val V);
-isl::aff operator*(isl::val V, isl::aff A);
 
 isl::aff operator/(isl::aff A, int i);
 
-isl::aff operator+(isl::aff A, int i);
-isl::aff operator+(isl::aff A, isl::val v);
 isl::aff operator+(isl::val v, isl::aff A);
-
-isl::aff operator-(isl::aff A, int i);
-isl::aff operator-(int i, isl::aff A);
 
 // Thin wrapper around aff to disambiguate types for operators and avoid case
 // where return type overloading occurs
@@ -179,11 +172,6 @@ isl::map operator>=(isl::aff_map A, isl::aff B);
 isl::map operator<=(isl::aff_map A, isl::aff B);
 isl::map operator>(isl::aff_map A, isl::aff B);
 isl::map operator<(isl::aff_map A, isl::aff B);
-
-///////////////////////////////////////////////////////////////////////////////
-// Operations on isl::multi_aff
-///////////////////////////////////////////////////////////////////////////////
-isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
