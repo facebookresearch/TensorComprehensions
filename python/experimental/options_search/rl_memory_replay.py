@@ -4,7 +4,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data
 import torch.nn.functional as F
-#import ipdb
+import ipdb
 from itertools import count
 from collections import namedtuple
 from torch.distributions import Categorical
@@ -27,7 +27,7 @@ NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 INIT_INPUT_SZ = exptuner_config.INIT_INPUT_SZ
 init_input_sz = exptuner_config.init_input_sz
 
-viz = Visdom(server="http://100.97.69.78")
+viz = Visdom(server="http://100.97.69.78", port=8098)
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win2 = viz.histogram(X=np.arange(NB_EPOCHS))
@@ -179,4 +179,5 @@ for i in range(NB_EPOCHS):
 
 print("Finally, best options are:")
 utils.print_opt(best_options)
-net.save_state_dict('rl_memory_trained_conv_standard.pt')
+ipdb.set_trace()
+torch.save(net.state_dict,'rl_memory_trained_conv_standard.pt')
