@@ -12,6 +12,7 @@ import tensor_comprehensions as tc
 from visdom import Visdom
 from collections import deque
 from heapq import heappush, heappop
+import pickle
 
 import utils
 
@@ -36,6 +37,28 @@ win2 = viz.histogram(X=np.arange(NB_EPOCHS))
 SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 layer_sz = 32
+
+def save_model(network):
+    big_liste=[]
+    for i in range(len(network.nets)):
+        aff1 = network.nets[i].affine1.weight.data.numpy()
+        aff2 = network.nets[i].affine2.weight.data.numpy()
+        aff3 = network.nets[i].affine3.weight.data.numpy()
+        c=[aff1,aff2,aff3]
+        big_liste.append(c)
+    with open('model_bigliste.pickle', 'wb') as handle:
+        pickle.dump(big_liste, handle)
+
+def load_model():
+    with open('model_bigliste.pickle', 'rb') as handle:
+        a = pickle.load(handle)
+
+    net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
+    for i in range(len(net.nets)):
+        net.nets[i].affine1.weight.data = torch.from_numpy(a[i][0])
+        net.nets[i].affine2.weight.data = torch.from_numpy(a[i][1])
+        net.nets[i].affine3.weight.data = torch.from_numpy(a[i][2])
+    return net
 
 class Predictor(nn.Module):
     def __init__(self, nb_inputs, nb_actions):
