@@ -22,7 +22,7 @@ buff = deque()
 MAXI_BUFF_SZ = 50
 
 exptuner_config = utils.ExpTunerConfig()
-exptuner_config.set_convolution_tc()
+exptuner_config.set_convolution_tc(size_type="input", inp_sz_list=[8, 2, 28, 28, 8, 1, 1])
 
 NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 INIT_INPUT_SZ = exptuner_config.INIT_INPUT_SZ
@@ -38,7 +38,7 @@ SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
 
 layer_sz = 32
 
-def save_model(network):
+def save_model(network, filename):
     big_liste=[]
     for i in range(len(network.nets)):
         aff1 = network.nets[i].affine1.weight.data.numpy()
@@ -46,7 +46,7 @@ def save_model(network):
         aff3 = network.nets[i].affine3.weight.data.numpy()
         c=[aff1,aff2,aff3]
         big_liste.append(c)
-    with open('model_bigliste.pickle', 'wb') as handle:
+    with open(filename, 'wb') as handle:
         pickle.dump(big_liste, handle)
 
 def load_model():
@@ -107,7 +107,7 @@ class FullNetwork(nn.Module):
             x = torch.cat([x, torch.FloatTensor([sym])])
         return x[INIT_INPUT_SZ:], actions_prob, values
 
-net = FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
+net = load_model()#FullNetwork(NB_HYPERPARAMS, INIT_INPUT_SZ)
 optimizer = optim.Adam(net.parameters(), lr=0.0001)
 eps = np.finfo(np.float32).eps.item()
 
@@ -202,5 +202,6 @@ for i in range(NB_EPOCHS):
 
 print("Finally, best options are:")
 utils.print_opt(best_options)
-ipdb.set_trace()
-torch.save(net.state_dict,'rl_memory_trained_conv_standard.pt')
+save_model(net, "bigliste_standard.pickle")
+#ipdb.set_trace()
+#torch.save(net.state_dict,'rl_memory_trained_conv_standard.pt')
