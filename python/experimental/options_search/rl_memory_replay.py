@@ -28,6 +28,10 @@ NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 INIT_INPUT_SZ = exptuner_config.INIT_INPUT_SZ
 init_input_sz = exptuner_config.init_input_sz
 
+print(NB_HYPERPARAMS)
+print(init_input_sz)
+print(INIT_INPUT_SZ)
+
 viz = Visdom(server="http://100.97.69.78", port=8098)
 win0 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
 win1 = viz.line(X=np.arange(NB_EPOCHS), Y=np.random.rand(NB_EPOCHS))
