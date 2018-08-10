@@ -22,7 +22,7 @@ buff = deque()
 MAXI_BUFF_SZ = 50
 
 exptuner_config = utils.ExpTunerConfig()
-exptuner_config.set_convolution_tc(size_type="input", inp_sz_list=[8, 2, 28, 28, 8, 1, 1])
+exptuner_config.set_convolution_tc()#size_type="input", inp_sz_list=[8, 2, 28, 28, 8, 1, 1])
 
 NB_HYPERPARAMS = utils.NB_HYPERPARAMS
 INIT_INPUT_SZ = exptuner_config.INIT_INPUT_SZ
