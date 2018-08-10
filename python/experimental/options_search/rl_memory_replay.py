@@ -58,6 +58,8 @@ def load_model():
         net.nets[i].affine1.weight.data = torch.from_numpy(a[i][0])
         net.nets[i].affine2.weight.data = torch.from_numpy(a[i][1])
         net.nets[i].affine3.weight.data = torch.from_numpy(a[i][2])
+
+    ipdb.set_trace()
     return net
 
 class Predictor(nn.Module):
