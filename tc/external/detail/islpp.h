@@ -46,6 +46,11 @@ inline T operator-(T a, T b) {
 }
 
 template <typename T>
+inline auto operator-(isl::val a, T b) -> decltype(b.add_constant(a)) {
+  return b.neg().add_constant(a);
+}
+
+template <typename T>
 inline T operator&(T S1, T S2) {
   return S1.intersect(S2);
 }
@@ -252,6 +257,8 @@ struct UnionAsVector
   }
 };
 
+#include <isl/template_cpp.h>
+
 struct IslIdIslHash {
   size_t operator()(const isl::id& id) const {
     return isl_id_get_hash(id.get());
@@ -272,9 +279,11 @@ inline bool operator!=(const isl::id& id1, const isl::id& id2) {
 ///////////////////////////////////////////////////////////////////////////////
 
 // Given a space and a list of values, this returns the corresponding multi_val.
-template <typename T>
-isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
-  isl::multi_val mv = isl::multi_val::zero(s);
+template <typename Domain, typename T>
+isl::MultiVal<Domain> makeMultiVal(
+    isl::Space<Domain> s,
+    const std::vector<T>& vals) {
+  isl::MultiVal<Domain> mv = isl::MultiVal<Domain>::zero(s);
   TC_CHECK_EQ(vals.size(), static_cast<size_t>(mv.size()));
   for (size_t i = 0; i < vals.size(); ++i) {
     mv = mv.set_val(i, isl::val(s.get_ctx(), vals[i]));
@@ -289,17 +298,17 @@ isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
 // 2. each new parameter dimension p(i) is bounded to be in [0, e(i) - 1]
 // 3. if e (i) == 0 then no constraint is set on the corresponding id(i)
 template <typename IterPair>
-inline isl::set makeParameterContext(
-    isl::space paramSpace,
+inline isl::Set<> makeParameterContext(
+    isl::Space<> paramSpace,
     const IterPair begin,
     const IterPair end) {
   for (auto it = begin; it != end; ++it) {
     paramSpace = paramSpace.add_param(it->first);
   }
-  isl::set res(isl::set::universe(paramSpace));
+  auto res(isl::Set<>::universe(paramSpace));
   for (auto it = begin; it != end; ++it) {
-    isl::aff a(isl::aff::param_on_domain_space(paramSpace, it->first));
-    res = res & (isl::aff_set(a) >= 0) & (isl::aff_set(a) < it->second);
+    auto a(isl::AffOn<>::param_on_domain_space(paramSpace, it->first));
+    res = res & a.asPwAff().nonneg_set() & (it->second - a).asPwAff().pos_set();
   }
   return res;
 }
@@ -308,18 +317,18 @@ inline isl::set makeParameterContext(
 // that ties the space parameter to the values.
 //
 template <typename T>
-inline isl::set makeSpecializationSet(
-    isl::space space,
+inline isl::Set<> makeSpecializationSet(
+    isl::Space<> space,
     const std::unordered_map<std::string, T>& paramValues) {
   auto ctx = space.get_ctx();
   for (auto kvp : paramValues) {
     space = space.add_param(isl::id(ctx, kvp.first));
   }
-  auto set = isl::set::universe(space);
+  auto set = isl::Set<>::universe(space);
   for (auto kvp : paramValues) {
     auto id = isl::id(ctx, kvp.first);
-    isl::aff affParam(isl::aff::param_on_domain_space(space, id));
-    set = set & (isl::aff_set(affParam) == kvp.second);
+    auto affParam(isl::AffOn<>::param_on_domain_space(space, id));
+    set = set & (affParam - kvp.second).asPwAff().zero_set();
   }
   return set;
 }

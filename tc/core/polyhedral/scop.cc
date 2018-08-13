@@ -27,6 +27,7 @@
 #include "tc/core/functional.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -84,7 +85,7 @@ ScopUPtr Scop::makeScop(
   return makeScop(ctx, tc2halide::translate(ctx, treeRef, compilerOptions));
 }
 
-isl::union_set& Scop::domainRef() {
+isl::UnionSet<Statement>& Scop::domainRef() {
   auto dom = scheduleRoot()->as<ScheduleTreeDomain>();
   TC_CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
   // TODO: activate this when the invariant has a chance of working (i.e. we
@@ -97,7 +98,7 @@ isl::union_set& Scop::domainRef() {
   return dom->domain_;
 }
 
-const isl::union_set Scop::domain() const {
+const isl::UnionSet<Statement> Scop::domain() const {
   return const_cast<Scop*>(this)->domainRef();
 }
 
@@ -264,7 +265,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   auto tree = scheduleRoot()->child(pos);
 
   checkFiltersDisjointStatements(scheduleRoot());
-  auto schedule = partialSchedule(root, tree);
+  auto schedule = partialSchedule<Prefix>(root, tree);
 
   auto groupMap = TensorReferenceGroup::accessedWithin(schedule, body);
   for (auto& p : groupMap) {
@@ -299,11 +300,11 @@ namespace {
 
 using namespace tc::polyhedral;
 
-isl::union_map computeDependences(
-    isl::union_map sources,
-    isl::union_map sinks,
+isl::UnionMap<Statement, Statement> computeDependences(
+    isl::UnionMap<Statement, Tensor> sources,
+    isl::UnionMap<Statement, Tensor> sinks,
     isl::schedule schedule) {
-  auto uai = isl::union_access_info(sinks);
+  auto uai = sinks.asUnionAccessInfo();
   uai = uai.set_may_source(sources);
   uai = uai.set_schedule(schedule);
   auto flow = uai.compute_flow();
@@ -368,8 +369,9 @@ void Scop::computeAllDependences() {
   dependences = flowDeps.unite(falseDeps).coalesce();
 }
 
-isl::union_map Scop::activeDependences(detail::ScheduleTree* tree) {
-  auto prefix = prefixScheduleMupa(scheduleRoot(), tree);
+isl::UnionMap<Statement, Statement> Scop::activeDependences(
+    detail::ScheduleTree* tree) {
+  auto prefix = prefixScheduleMupa<Prefix>(scheduleRoot(), tree);
   auto domain = activeDomainPoints(scheduleRoot(), tree);
   auto active = dependences;
   active = active.intersect_domain(domain);
@@ -484,7 +486,7 @@ void Scop::reschedule(
   auto parentTree = tree->ancestor(root, 1);
   auto treePos = tree->positionInParent(parentTree);
   auto domain = activeDomainPoints(root, tree);
-  auto prefix = prefixScheduleMupa(root, tree);
+  auto prefix = prefixScheduleMupa<Prefix>(root, tree);
 
   // Restrict the constraints to domain points reachable from point loops
   // and update the current prefix.
@@ -515,12 +517,12 @@ const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
   return *halide.inputs.begin();
 }
 
-isl::aff Scop::makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e)
-    const {
+isl::AffOn<Statement> Scop::makeIslAffFromStmtExpr(
+    isl::id stmtId,
+    const Halide::Expr& e) const {
   auto domain = halide.domains.at(stmtId);
   auto aff = halide2isl::makeIslAffFromExpr(domain.paramSpace, e);
-  aff = aff.unbind_params_insert_domain(domain.tuple);
-  return aff;
+  return aff.unbind_params_insert_domain(domain.tuple);
 }
 
 } // namespace polyhedral

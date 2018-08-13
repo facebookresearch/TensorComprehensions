@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "tc/core/functional.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
@@ -110,7 +111,9 @@ detail::ScheduleTree* insertTopLevelEmptyBand(detail::ScheduleTree* root);
 // Update the top-level context node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
 // If there is no such node, insert one first.
-void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
+void updateTopLevelContext(
+    detail::ScheduleTree* root,
+    isl::Set<Prefix> context);
 
 // In a tree starting at "root", insert a sequence node with
 // as only child the node identified by "tree".
@@ -174,7 +177,7 @@ void insertExtensionBefore(
     const detail::ScheduleTree* root,
     detail::ScheduleTree* relativeRoot,
     detail::ScheduleTree* tree,
-    isl::union_map extension,
+    isl::UnionMap<Prefix, Statement> extension,
     ScheduleTreeUPtr&& filterNode);
 
 // Insert an extension with the given extension map and extension filter node
@@ -189,7 +192,7 @@ void insertExtensionAfter(
     const detail::ScheduleTree* root,
     detail::ScheduleTree* relativeRoot,
     detail::ScheduleTree* tree,
-    isl::union_map extension,
+    isl::UnionMap<Prefix, Statement> extension,
     ScheduleTreeUPtr&& filterNode);
 
 // Given a sequence node in the schedule tree, insert
@@ -233,29 +236,29 @@ void insertExtensionLabelAfter(
 bool canOrderBefore(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences);
 // Is it possible to order the elements in the given filter
 // after the other active elements without violating
 // any of the given dependences?
 bool canOrderAfter(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences);
 
 // Insert a sequence to ensure that the active domain elements
 // in the given filter are executed before the other active domain elements.
 void orderBefore(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter);
+    isl::UnionSet<Statement> filter);
 // Insert a sequence to ensure that the active domain elements
 // in the given filter are executed after the other active domain elements.
 void orderAfter(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
-    isl::union_set filter);
+    isl::UnionSet<Statement> filter);
 
 } // namespace polyhedral
 } // namespace tc

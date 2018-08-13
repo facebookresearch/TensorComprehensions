@@ -27,6 +27,7 @@
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
@@ -92,7 +93,7 @@ struct Scop {
   // The schedule tree of the scop does not necessarily have
   // a context node.  Call updateTopLevelContext on the schedule tree
   // to introduce or refine such a context node.
-  isl::set context() const {
+  isl::Set<> context() const {
     auto ctx = domain().get_ctx();
     auto context = halide2isl::makeParamContext(ctx, halide.params);
     return context.intersect(makeContext(parameterValues));
@@ -131,7 +132,7 @@ struct Scop {
   // Returns a set that specializes the named scop's subset of
   // parameter space to the integer values passed to the function.
   template <typename T>
-  isl::set makeContext(
+  isl::Set<> makeContext(
       const std::unordered_map<std::string, T>& sizes =
           std::unordered_map<std::string, T>()) const {
     auto s = domain().get_space();
@@ -421,7 +422,9 @@ struct Scop {
   // Return a null isl::aff if the expression is not affine.  Fail if any
   // of the variables does not correspond to a parameter or
   // an instance identifier of the statement.
-  isl::aff makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e) const;
+  isl::AffOn<Statement> makeIslAffFromStmtExpr(
+      isl::id stmtId,
+      const Halide::Expr& e) const;
 
   // Promote a tensor reference group to a storage of a given "kind",
   // inserting the copy
@@ -483,7 +486,8 @@ struct Scop {
   void computeAllDependences();
   // Return the set of dependences that are active
   // at the given position.
-  isl::union_map activeDependences(detail::ScheduleTree* tree);
+  isl::UnionMap<Statement, Statement> activeDependences(
+      detail::ScheduleTree* tree);
 
  public:
   // Halide stuff
@@ -505,17 +509,17 @@ struct Scop {
   // By analogy with generalized functions, the domain is the "support" part
   // of the ScheduleTree "function".
  private:
-  isl::union_set& domainRef();
+  isl::UnionSet<Statement>& domainRef();
 
  public:
-  const isl::union_set domain() const;
+  const isl::UnionSet<Statement> domain() const;
   // The parameter values of a specialized Scop.
   std::unordered_map<std::string, int> parameterValues;
 
   Body body;
 
   // RAW, WAR, and WAW dependences
-  isl::union_map dependences;
+  isl::UnionMap<Statement, Statement> dependences;
 
  private:
   // By analogy with generalized functions, a ScheduleTree is a (piecewise

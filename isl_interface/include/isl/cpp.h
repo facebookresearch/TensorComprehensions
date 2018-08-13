@@ -1705,6 +1705,7 @@ public:
   static inline isl::map universe(isl::space space);
   inline isl::basic_map unshifted_simple_hull() const;
   inline isl::set wrap() const;
+  inline isl::map zip() const;
   typedef isl_map* isl_ptr_t;
 };
 
@@ -9743,6 +9744,18 @@ isl::set map::wrap() const
         "NULL input", __FILE__, __LINE__);
   options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
   auto res = isl_map_wrap(copy());
+  if (!res)
+    throw exception::create_from_last_error(get_ctx());
+  return manage(res);
+}
+
+isl::map map::zip() const
+{
+  if (!ptr)
+    throw isl::exception::create(isl_error_invalid,
+        "NULL input", __FILE__, __LINE__);
+  options_scoped_set_on_error saved_on_error(get_ctx(), ISL_ON_ERROR_CONTINUE);
+  auto res = isl_map_zip(copy());
   if (!res)
     throw exception::create_from_last_error(get_ctx());
   return manage(res);

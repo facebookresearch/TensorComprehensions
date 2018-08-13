@@ -64,7 +64,7 @@ class TestMapper : public ::testing::Test {
   TensorGroups accessedBySubtree(
       const polyhedral::detail::ScheduleTree* tree,
       const Scop& scop) {
-    auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+    auto schedule = partialSchedule<Prefix>(scop.scheduleRoot(), tree);
     return TensorReferenceGroup::accessedWithin(schedule, scop.body);
   }
 };
@@ -309,7 +309,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));
 
-      auto schedule = partialSchedule(
+      auto schedule = partialSchedule<Prefix>(
           scop.scheduleRoot(), scop.scheduleRoot()->child(childPos));
       auto scopedAccess = oneGroup->originalAccesses().apply_domain(schedule);
       TC_CHECK(scopedAccess.is_equal(oneGroup->scopedAccesses()))
@@ -376,7 +376,7 @@ def fun(float(N, M) A) -> (B, C) {
     auto active = activeDomainPoints(scop.scheduleRoot(), t);
     LOG(INFO) << "Active: " << active;
 
-    auto schedule = partialSchedule(scop.scheduleRoot(), t);
+    auto schedule = partialSchedule<Prefix>(scop.scheduleRoot(), t);
     auto scopedAccess = groupsB[0]->originalAccesses().apply_domain(schedule);
     TC_CHECK(scopedAccess.is_equal(groupsB[0]->scopedAccesses()))
         << "expected original accesses " << groupsB[0]->originalAccesses()
