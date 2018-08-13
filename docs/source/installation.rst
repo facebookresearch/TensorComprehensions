@@ -68,12 +68,12 @@ Create a new environment in which TC will be built and install core dependencies
        conda install -y pyyaml mkl-include pytest
        conda install -y -c nicolasvasilache llvm-trunk halide
 
-Then install the PyTorch version that corresponds to your system binaries
+Then install the PyTorch 0.4.0 version that corresponds to your system binaries
 (e.g. cuda 9.0):
 
     .. code-block:: bash
 
-       conda install -y -c pytorch pytorch torchvision cuda90
+       conda install -y -c pytorch pytorch=0.4.0 torchvision cuda90
        conda remove -y cudatoolkit --force
 
     .. note::
@@ -84,6 +84,12 @@ Then install the PyTorch version that corresponds to your system binaries
        libraries and we remove it explicitly. In a near future, the unified
        PyTorch + Caffe2 build system will link everything statically and stop
        pulling the cudatoolkit dependency.
+       
+    .. note::
+       As of PyTorch 0.4.1, the ATen library is no shipped in libATen.so anymore. It is
+       now instead part of libcaffe2.so. In shipping binaries, the PyTorch team opted
+       to use the older GCC 4.9.2 C++ ABI. TC only supports the newer ABI. As a consequence
+       TC must link with the libraries provided by the `pytorch=0.4.0` package.
 
 Activate conda in your current terminal
 """"""""""""""""""""""""""""""""""""""""""""""""""""
