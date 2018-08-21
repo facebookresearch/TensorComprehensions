@@ -29,7 +29,7 @@ After a few generations of `autotuning` on a 2-GPU P100 system, we see results r
 
 ![Autotuning Sample](docs/source/_static/img/autotuning.png)
 
-In C++ a minimal autotuning example resembles the [following](example/example_tensordot.cc):
+In C++ a minimal autotuning example resembles the [following](tc/examples/tensordot.cc):
 ```cpp
 TEST(TensorDot, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
