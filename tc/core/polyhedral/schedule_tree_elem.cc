@@ -129,9 +129,7 @@ std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
 ScheduleTreeMapping::ScheduleTreeMapping(
     isl::ctx ctx,
     const ScheduleTreeMapping::Mapping& mapping)
-    : ScheduleTree(ctx, {}, NodeType),
-      mapping(mapping),
-      filter_(isl::union_set()) {
+    : ScheduleTree(ctx, {}, NodeType), mapping(mapping) {
   TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
 
   auto domain = mapping.cbegin()->second.domain();
