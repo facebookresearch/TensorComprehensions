@@ -395,10 +395,10 @@ conda install -y -c nicolasvasilache llvm-trunk halide
 </pre></div>
 </div>
 </div></blockquote>
-<p>Then install the PyTorch version that corresponds to your system binaries
+<p>Then install the PyTorch 0.4.0 version that corresponds to your system binaries
 (e.g. cuda 9.0):</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -y -c pytorch pytorch torchvision cuda90
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -y -c pytorch <span class="nv">pytorch</span><span class="o">=</span><span class="m">0</span>.4.0 torchvision cuda90
 conda remove -y cudatoolkit --force
 </pre></div>
 </div>
@@ -411,6 +411,13 @@ the toolkit). As a consequence cudatoolkit only contains redundant
 libraries and we remove it explicitly. In a near future, the unified
 PyTorch + Caffe2 build system will link everything statically and stop
 pulling the cudatoolkit dependency.</p>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">As of PyTorch 0.4.1, the ATen library is no shipped in libATen.so anymore. It is
+now instead part of libcaffe2.so. In shipping binaries, the PyTorch team opted
+to use the older GCC 4.9.2 C++ ABI. TC only supports the newer ABI. As a consequence
+TC must link with the libraries provided by the <cite>pytorch=0.4.0</cite> package.</p>
 </div>
 </div></blockquote>
 </div>
