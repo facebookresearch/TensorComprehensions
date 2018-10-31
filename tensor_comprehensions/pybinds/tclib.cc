@@ -30,6 +30,7 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/autotuner/genetic_search.h"
 #include "tc/autotuner/options_cache.h"
+#include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_backend.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -273,6 +274,17 @@ struct TcExecutor {
       return tupleOrTensor(convertToPyObjects(atOutputs));
     }
   }
+
+  size_t profile_kernel(const py::tuple& inputs, const py::tuple& outputs) {
+    auto atInputs = getATenTensors(inputs);
+    auto atOutputs = (outputs.size() > 0)
+        ? getATenTensors(outputs)
+        : tc::aten::prepareOutputs(tc, entryPoint, atInputs);
+    tc::ProfilingInfo profinfo =
+        tc::aten::profile(*executor, atInputs, atOutputs);
+    return profinfo.kernelRuntime.toMicroSeconds();
+  }
+
   std::string tc;
   std::string entryPoint;
   std::unique_ptr<tc::CudaBackend::ExecutorType> executor;
@@ -467,6 +479,11 @@ PYBIND11_MODULE(tclib, m) {
     return res;
   });
 
+  // Get GPU shared memory size
+  m.def("shared_memory_size", []() {
+    return CudaGPUInfo::GPUInfo().SharedMemorySize();
+  });
+
   // Low-level stateful API compile returns an executor on which run and
   // unchecked_run can be called.
   py::class_<TcExecutor>(m, "TcExecutor")
@@ -479,7 +496,13 @@ PYBIND11_MODULE(tclib, m) {
           "unchecked_run",
           &TcExecutor::uncheckedRun,
           py::arg("inputs"),
+          py::arg("outputs") = py::tuple())
+      .def(
+          "profile_kernel",
+          &TcExecutor::profile_kernel,
+          py::arg("inputs"),
           py::arg("outputs") = py::tuple());
+
   m.def(
       "compile",
       [](const std::string& tc,
@@ -652,6 +675,38 @@ PYBIND11_MODULE(tclib, m) {
           },
           "Returns the CudaMappingOptions as a human-readable string")
       .def(
+          "getDict",
+          [](tc::CudaMappingOptions& instance) {
+            py::dict rv;
+            rv["outerScheduleFusionStrategy"] = FusionStrategy_Name(
+                instance.generic.outerScheduleOptions.proto.fusion_strategy());
+            if (instance.generic.proto.has_intra_tile_schedule_options())
+              rv["intraTileScheduleFusionStrategy"] =
+                  FusionStrategy_Name(instance.generic.intraTileScheduleOptions
+                                          .proto.fusion_strategy());
+            rv["fixParametersBeforeScheduling"] =
+                instance.generic.proto.fix_parameters_before_scheduling();
+            if (instance.generic.proto.has_tiling())
+              rv["tile"] = instance.generic.tiling.extractVector();
+            if (instance.generic.proto.has_unroll())
+              rv["unroll"] = instance.generic.proto.unroll();
+            rv["tileImperfectlyNested"] =
+                instance.generic.proto.tile_imperfectly_nested();
+            rv["matchLibraryCalls"] =
+                instance.generic.proto.match_library_calls();
+            rv["mapToThreads"] = instance.block.extractVector();
+            rv["mapToBlocks"] = instance.grid.extractVector();
+            rv["useSharedMemory"] = instance.proto().use_shared_memory();
+            rv["usePrivateMemory"] = instance.proto().use_private_memory();
+            rv["unrollCopyShared"] = instance.proto().unroll_copy_shared();
+            rv["useReadOnlyCache"] = instance.proto().use_readonly_cache();
+            if (instance.proto().has_max_shared_memory())
+              rv["maxSharedMemory"] = instance.proto().max_shared_memory();
+            rv["privateDepth"] = instance.proto().private_depth();
+            return rv;
+          },
+          "Returns a dictionary with the CudaMappingOptions")
+      .def(
           "serialize",
           [](tc::CudaMappingOptions& instance) {
             std::string str = instance.toProtobufSerializedString();
@@ -677,6 +732,10 @@ PYBIND11_MODULE(tclib, m) {
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If an unroll "
           "value is not provided, has no effect")
+      .def(
+          "privateDepth",
+          &tc::CudaMappingOptions::privateDepth,
+          "Specify the private depth")
       .def(
           "useReadOnlyCache",
           &tc::CudaMappingOptions::useReadOnlyCache,
