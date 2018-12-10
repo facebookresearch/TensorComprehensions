@@ -1,11 +1,9 @@
-from setuptools import setup, Extension, distutils, Command, find_packages
+from setuptools import setup, find_packages
 import setuptools.command.install
 import setuptools.command.develop
 import setuptools.command.build_py
 import distutils.command.build
-from shutil import copyfile
 import subprocess, os
-import glob
 
 TOP_DIR = os.path.realpath(os.path.dirname(__file__))
 
