@@ -140,12 +140,6 @@ Run Python smoke checks:
        python -c 'import torch'
        python -c 'import tensor_comprehensions'
 
-Run Python tests:
-
-    .. code-block:: bash
-
-       python ./test_python/test_tc.py -v
-
 At this point, if things work as expected you can venture installing as
 follows (it is always a good idea to record installed files for easy removal):
 
