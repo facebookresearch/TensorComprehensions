@@ -18,6 +18,7 @@
 #include <unordered_set>
 
 #include "tc/core/check.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/external/isl.h"
@@ -54,27 +55,18 @@ bool isSupportedReductionUpdateId(isl::id id, const Scop& scop) {
 
 } // namespace
 
-isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop) {
+isl::UnionSet<Statement> reductionUpdates(
+    isl::UnionSet<Statement> domain,
+    const Scop& scop) {
   domain = scop.body.reductions.intersect_domain(domain).domain();
-  auto update = isl::union_set::empty(domain.get_space());
-  domain.foreach_set([&update, &scop](isl::set set) {
+  auto update = isl::UnionSet<Statement>::empty(domain.get_space());
+  domain.foreach_set([&update, &scop](isl::Set<Statement> set) {
     auto setId = set.get_tuple_id();
     if (isSupportedReductionUpdateId(setId, scop)) {
       update = update.unite(set);
     }
   });
   return update;
-}
-
-bool isSingleReductionWithin(
-    isl::union_set domain,
-    isl::multi_union_pw_aff prefix,
-    const Scop& scop) {
-  auto reductions = scop.body.reductions;
-  reductions = reductions.intersect_domain(domain);
-  auto prefixMap = isl::union_map::from(prefix);
-  auto prefixToReduction = reductions.apply_domain(prefixMap);
-  return prefixToReduction.is_single_valued();
 }
 
 } // namespace polyhedral

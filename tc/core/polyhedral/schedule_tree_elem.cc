@@ -26,6 +26,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/scope_guard.h"
@@ -142,7 +143,8 @@ ScheduleTreeMapping::ScheduleTreeMapping(
     auto id = kvp.first;
     // Create mapping filter by equating the
     // parameter mappedIds[i] to the "i"-th affine function.
-    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
+    upa = upa.sub(
+        isl::UnionPwAffOn<Statement>::param_on_domain(domain.universe(), id));
     filter_ = filter_.intersect(upa.zero_union_set());
   }
 }
@@ -182,7 +184,7 @@ std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
 }
 
 std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
-    isl::multi_union_pw_aff mupa,
+    isl::MultiUnionPwAff<Statement, Band> mupa,
     bool permutable,
     std::vector<bool> coincident,
     std::vector<bool> unroll,
@@ -235,8 +237,8 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   auto list = mupa_.get_union_pw_aff_list();
   auto space = mupa_.get_space().params();
   list = list.drop(pos, n);
-  space = space.add_unnamed_tuple_ui(list.size());
-  mupa_ = isl::multi_union_pw_aff(space, list);
+  auto spaceBand = space.add_unnamed_tuple_ui<Band>(list.size());
+  mupa_ = isl::MultiUnionPwAff<Statement, Band>(spaceBand, list);
 
   std::copy(
       coincident_.begin() + pos + n,
@@ -246,17 +248,6 @@ void ScheduleTreeBand::drop(size_t pos, size_t n) {
   std::copy(unroll_.begin() + pos + n, unroll_.end(), unroll_.begin() + pos);
   unroll_.resize(nBegin - n);
   TC_CHECK_EQ(nBegin - n, nMember());
-}
-
-isl::multi_union_pw_aff ScheduleTreeBand::memberRange(size_t first, size_t n)
-    const {
-  auto list = mupa_.get_union_pw_aff_list();
-  auto space = mupa_.get_space().params().add_unnamed_tuple_ui(n);
-  auto end = first + n;
-  TC_CHECK_LE(end, nMember());
-  list = list.drop(end, nMember() - end);
-  list = list.drop(0, first);
-  return isl::multi_union_pw_aff(space, list);
 }
 
 std::unique_ptr<ScheduleTreeThreadSpecificMarker>

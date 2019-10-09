@@ -19,6 +19,7 @@
 
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 
@@ -46,18 +47,21 @@ std::vector<const detail::ScheduleTree*> collectScheduleTreesPath(
 
 // Given a schedule defined by the ancestors of the given node,
 // extend it to a schedule that also covers the node itself.
-isl::union_map extendSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> extendSchedule(
     const detail::ScheduleTree* node,
-    isl::union_map schedule);
+    isl::UnionMap<Statement, Schedule> schedule);
 
 // Get the partial schedule defined by ancestors of the given node and the node
 // itself.
-isl::union_map partialSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> partialSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
 // Return the schedule defined by the ancestors of the given node.
-isl::union_map prefixSchedule(
+template <typename Schedule>
+isl::UnionMap<Statement, Schedule> prefixSchedule(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
@@ -68,7 +72,8 @@ isl::union_map prefixSchedule(
 // function on the universe domain of the schedule tree.
 // Note that this function does not take into account
 // any intermediate filter nodes.
-isl::multi_union_pw_aff infixScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> infixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* relativeRoot,
     const detail::ScheduleTree* tree);
@@ -78,7 +83,8 @@ isl::multi_union_pw_aff infixScheduleMupa(
 // function on the universe domain of the schedule tree.
 // Note that unlike isl_schedule_node_get_prefix_schedule_multi_union_pw_aff,
 // this function does not take into account any intermediate filter nodes.
-isl::multi_union_pw_aff prefixScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> prefixScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 
@@ -86,7 +92,8 @@ isl::multi_union_pw_aff prefixScheduleMupa(
 // including that of the node itself.
 // Note that this function does not take into account
 // any intermediate filter nodes.
-isl::multi_union_pw_aff partialScheduleMupa(
+template <typename Schedule>
+isl::MultiUnionPwAff<Statement, Schedule> partialScheduleMupa(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree);
 
@@ -94,7 +101,7 @@ isl::multi_union_pw_aff partialScheduleMupa(
 // point is active if it was not filtered away on the path from the
 // root to the node.  The root must be a domain element, otherwise no
 // elements would be considered active.
-isl::union_set activeDomainPoints(
+isl::UnionSet<Statement> activeDomainPoints(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
@@ -102,13 +109,13 @@ isl::union_set activeDomainPoints(
 // point is active if it was not filtered away on the path from the
 // root to the node.  The root must be a domain element, otherwise no
 // elements would be considered active.
-isl::union_set activeDomainPointsBelow(
+isl::UnionSet<Statement> activeDomainPointsBelow(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
 // Collect the outer block/thread identifier mappings
 // into a filter on the active domain elements.
-isl::union_set prefixMappingFilter(
+isl::UnionSet<Statement> prefixMappingFilter(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* node);
 
@@ -116,7 +123,8 @@ isl::union_set prefixMappingFilter(
 // rooted at "root") to identifiers "ids", where all branches in "tree" are
 // assumed to have been mapped to these identifiers.  The result lives in a
 // space of the form "tupleId"["ids"...].
-isl::multi_union_pw_aff extractDomainToIds(
+template <typename MappingType>
+isl::MultiUnionPwAff<Statement, MappingType> extractDomainToIds(
     const detail::ScheduleTree* root,
     const detail::ScheduleTree* tree,
     const std::vector<mapping::MappingId>& ids,
@@ -140,3 +148,5 @@ bool isMappingTo(const detail::ScheduleTree* tree) {
 
 } // namespace polyhedral
 } // namespace tc
+
+#include "tc/core/polyhedral/schedule_utils-inl.h"

@@ -15,6 +15,7 @@
  */
 #pragma once
 
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -24,8 +25,8 @@ namespace polyhedral {
  * dimension "dim" from the parameter space "paramSpace",
  * without any specific names for the indices.
  */
-isl::multi_id
-constructTensorTuple(isl::space paramSpace, isl::id tensorId, size_t dim);
+isl::MultiId<Tensor>
+constructTensorTuple(isl::Space<> paramSpace, isl::id tensorId, size_t dim);
 
 } // namespace polyhedral
 } // namespace tc

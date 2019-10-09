@@ -15,6 +15,8 @@
  */
 #pragma once
 
+#include "tc/core/polyhedral/domain_types.h"
+
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -25,11 +27,14 @@ namespace polyhedral {
  * Return the elements in "domain" that map to partial tiles
  * in this space for fixed values of "prefix".
  */
-isl::union_set partialTargetTiles(
-    isl::union_set domain,
-    isl::multi_union_pw_aff prefix,
-    isl::multi_union_pw_aff pretile,
-    isl::multi_val size);
+template <typename Prefix, typename Pretile>
+isl::UnionSet<Statement> partialTargetTiles(
+    isl::UnionSet<Statement> domain,
+    isl::MultiUnionPwAff<Statement, Prefix> prefix,
+    isl::MultiUnionPwAff<Statement, Pretile> pretile,
+    isl::MultiVal<Pretile> size);
 
 } // namespace polyhedral
 } // namespace tc
+
+#include "tc/core/polyhedral/separation-inl.h"

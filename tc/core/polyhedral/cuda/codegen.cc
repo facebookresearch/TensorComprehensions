@@ -723,8 +723,9 @@ void emitMappedTensorAccess(
   // MA = multi_aff, PMA = pw_multi_aff
   auto access =
       makeMultiAffAccess(tensorId, subscripts, context); // MA :: D -> O
-  auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
-  promotion = promotion.set_range_tuple_id(promotionInfo.groupId);
+  auto prePromotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
+  auto promotion =
+      prePromotion.set_range_tuple_id<Promoted>(promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
   auto schedule = isl::map::from(promotionInfo.outerSchedule.intersect_domain(
       context.domain())); // map :: D -> S

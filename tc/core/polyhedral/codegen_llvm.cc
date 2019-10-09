@@ -70,7 +70,7 @@ int64_t toSInt(isl::val v) {
   return v.get_num_si();
 }
 
-int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
+int64_t getTensorSize(isl::Set<> context, const Halide::Expr& e) {
   // isl will take care of substituting parameter values if they are known and
   // simplifying the expression.
   auto aff = halide2isl::makeIslAffFromExpr(context.get_space(), e);
@@ -81,7 +81,7 @@ int64_t getTensorSize(isl::set context, const Halide::Expr& e) {
 
 std::vector<int64_t> getTensorSizesWithoutLeadingDim(
     const Halide::OutputImageParam& t,
-    isl::set context) {
+    isl::Set<> context) {
   auto dims = t.dimensions();
   std::vector<int64_t> sizes;
   sizes.reserve(dims);

@@ -31,6 +31,7 @@
 #include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/functional.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -88,7 +89,8 @@ ScheduleTree* joinBandsHelper(ScheduleTree* st, bool& moveChildren) {
 
   auto& partialSchedule = eb->mupa_;
   auto& partialScheduleChild = ebChild->mupa_;
-  partialSchedule = partialSchedule.flat_range_product(partialScheduleChild);
+  partialSchedule =
+      partialSchedule.flat_range_product<Band>(partialScheduleChild);
   eb->coincident_.resize(
       eb->coincident_.size() + ebChild->coincident_.size(), false);
   eb->unroll_.insert(
@@ -284,7 +286,9 @@ ScheduleTree* insertTopLevelEmptyBand(ScheduleTree* root) {
   return insertNodeBelow(node, ScheduleTree::makeEmptyBand(root));
 }
 
-void updateTopLevelContext(detail::ScheduleTree* root, isl::set context) {
+void updateTopLevelContext(
+    detail::ScheduleTree* root,
+    isl::Set<Prefix> context) {
   if (!matchOne(tc::polyhedral::domain(tc::polyhedral::context(any())), root)) {
     root->appendChild(
         ScheduleTree::makeContext(context, root->detachChildren()));
@@ -362,19 +366,21 @@ detail::ScheduleTree* insertEmptyExtensionAbove(
  * Construct an extension map for a zero-dimensional statement
  * with the given identifier.
  */
-isl::map labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
-  auto prefix = prefixScheduleMupa(root, tree);
+isl::Map<Prefix, Statement>
+labelExtension(ScheduleTree* root, ScheduleTree* tree, isl::id id) {
+  auto prefix = prefixScheduleMupa<Prefix>(root, tree);
   auto scheduleSpace = prefix.get_space();
-  auto space = scheduleSpace.params().add_named_tuple_id_ui(id, 0);
+  auto space = scheduleSpace.params().add_named_tuple_id_ui<Statement>(id, 0);
   auto extensionSpace = scheduleSpace.map_from_domain_and_range(space);
-  return isl::map::universe(extensionSpace);
+  return isl::Map<Prefix, Statement>::universe(extensionSpace);
 }
 
 /*
  * Construct a filter node for a zero-dimensional extension statement
  * with the given extension map.
  */
-ScheduleTreeUPtr labelFilterFromExtension(isl::map extension) {
+ScheduleTreeUPtr labelFilterFromExtension(
+    isl::Map<Prefix, Statement> extension) {
   return detail::ScheduleTree::makeFilter(extension.range());
 }
 
@@ -391,7 +397,7 @@ void insertExtensionAt(
     ScheduleTree* relativeRoot,
     ScheduleTree* seqNode,
     size_t pos,
-    isl::union_map extension,
+    isl::UnionMap<Prefix, Statement> extension,
     ScheduleTreeUPtr&& filterNode) {
   auto extensionTree = seqNode->ancestor(relativeRoot, 1);
   auto extensionNode = extensionTree->as<detail::ScheduleTreeExtension>();
@@ -410,7 +416,7 @@ void insertExtensionBefore(
     const ScheduleTree* root,
     ScheduleTree* relativeRoot,
     ScheduleTree* tree,
-    isl::union_map extension,
+    isl::UnionMap<Prefix, Statement> extension,
     ScheduleTreeUPtr&& filterNode) {
   size_t pos;
   auto parent = tree->ancestor(relativeRoot, 1);
@@ -439,7 +445,7 @@ void insertExtensionAfter(
     const ScheduleTree* root,
     ScheduleTree* relativeRoot,
     ScheduleTree* tree,
-    isl::union_map extension,
+    isl::UnionMap<Prefix, Statement> extension,
     ScheduleTreeUPtr&& filterNode) {
   size_t pos;
   auto parent = tree->ancestor(relativeRoot, 1);
@@ -501,7 +507,7 @@ namespace {
  * of band node partial schedules.
  * Elements of a sequence that end up with an empty filter are removed.
  */
-void gist(ScheduleTree* tree, isl::union_set context) {
+void gist(ScheduleTree* tree, isl::UnionSet<Statement> context) {
   if (auto bandElem = tree->as<ScheduleTreeBand>()) {
     bandElem->mupa_ = bandElem->mupa_.gist(context);
   } else if (auto filterElem = tree->as<ScheduleTreeMapping>()) {
@@ -531,7 +537,9 @@ void gist(ScheduleTree* tree, isl::union_set context) {
  * Create a filter node with the given filter and single child node,
  * after simplifying the child node in the context of the filter.
  */
-ScheduleTreeUPtr gistedFilter(isl::union_set filter, ScheduleTreeUPtr child) {
+ScheduleTreeUPtr gistedFilter(
+    isl::UnionSet<Statement> filter,
+    ScheduleTreeUPtr child) {
   gist(child.get(), filter);
   return ScheduleTree::makeFilter(filter, std::move(child));
 }
@@ -542,19 +550,20 @@ ScheduleTreeUPtr gistedFilter(isl::union_set filter, ScheduleTreeUPtr child) {
  * without violating any of the (active) "dependences"?
  */
 bool canOrder(
-    isl::union_set first,
-    isl::union_set second,
-    isl::union_map dependences) {
+    isl::UnionSet<Statement> first,
+    isl::UnionSet<Statement> second,
+    isl::UnionMap<Statement, Statement> dependences) {
   if (first.is_empty() || second.is_empty()) {
     return true;
   }
   // Create an ordering schedule function first -> 0; second -> 1.
   auto ctx = dependences.get_ctx();
-  auto space = isl::space(ctx, 0).add_unnamed_tuple_ui(1);
-  auto zero = isl::multi_val::zero(space);
+  auto space = isl::Space<>(ctx, 0).add_unnamed_tuple_ui<isl::Anonymous>(1);
+  auto zero = isl::MultiVal<isl::Anonymous>::zero(space);
   auto one = zero.set_val(0, isl::val::one(ctx));
-  auto order = isl::multi_union_pw_aff(first, zero);
-  order = order.union_add(isl::multi_union_pw_aff(second, one));
+  auto order = isl::MultiUnionPwAff<Statement, isl::Anonymous>(first, zero);
+  order = order.union_add(
+      isl::MultiUnionPwAff<Statement, isl::Anonymous>(second, one));
 
   // Check that this ordering preserves all dependences.
   auto preserved = dependences.lex_lt_at(order).unite(dependences.eq_at(order));
@@ -566,26 +575,29 @@ bool canOrder(
 bool canOrderBefore(
     ScheduleTree* root,
     ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences) {
+  auto active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   return canOrder(filter, other, dependences);
 }
 
 bool canOrderAfter(
     ScheduleTree* root,
     ScheduleTree* tree,
-    isl::union_set filter,
-    isl::union_map dependences) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+    isl::UnionSet<Statement> filter,
+    isl::UnionMap<Statement, Statement> dependences) {
+  auto active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   return canOrder(other, filter, dependences);
 }
 
 void orderBefore(
     ScheduleTree* root,
     ScheduleTree* tree,
-    isl::union_set filter) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+    isl::UnionSet<Statement> filter) {
+  auto active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   auto seq = ScheduleTree::makeSequence(
       gistedFilter(filter, ScheduleTree::makeScheduleTree(*tree)));
   auto parent = tree->ancestor(root, 1);
@@ -594,8 +606,12 @@ void orderBefore(
   parent->insertChild(childPos, std::move(seq));
 }
 
-void orderAfter(ScheduleTree* root, ScheduleTree* tree, isl::union_set filter) {
-  auto other = activeDomainPoints(root, tree).subtract(filter);
+void orderAfter(
+    ScheduleTree* root,
+    ScheduleTree* tree,
+    isl::UnionSet<Statement> filter) {
+  auto active = activeDomainPoints(root, tree);
+  auto other = active.subtract(filter);
   auto seq = ScheduleTree::makeSequence(
       gistedFilter(filter, ScheduleTree::makeScheduleTree(*tree)));
   auto parent = tree->ancestor(root, 1);
