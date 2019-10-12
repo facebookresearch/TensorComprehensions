@@ -16,6 +16,8 @@
 
 #include "tc/autotuner/genetic_search.h"
 
+#include <algorithm>
+#include <numeric>
 #include <random>
 #include <sstream>
 
@@ -74,9 +76,35 @@ void mutate(
   }
 }
 
+double mean(std::vector<double>& v) {
+  if (v.empty()) {
+    throw std::invalid_argument("Cannot compute the mean of an empty vector.");
+  }
+  auto sum = std::accumulate(v.begin(), v.end(), 0.0);
+  return sum / v.size();
+}
+
+double stdv(std::vector<double>& v, double mean) {
+  std::vector<double> diffs(v.size());
+  std::transform(v.begin(), v.end(), diffs.begin(), [mean](double val) {
+    return val - mean;
+  });
+
+  auto squareSum =
+      std::inner_product(diffs.begin(), diffs.end(), diffs.begin(), 0.0);
+  return std::sqrt(squareSum / v.size());
+}
+
+void sigmaScale(std::vector<double>& v) {
+  auto m = mean(v);
+  auto s = stdv(v, m);
+  std::transform(v.begin(), v.end(), v.begin(), [m, s](double val) {
+    return std::max(val - (m - 2 * s), 0.0);
+  });
+}
+
 void normalizeVector(std::vector<double>& v) {
   auto sum = std::accumulate(v.begin(), v.end(), 0.0);
-
   std::transform(
       v.begin(), v.end(), v.begin(), [sum](double v) { return v / sum; });
 }
@@ -92,6 +120,7 @@ std::vector<double> computeNormalizedFitness(
       [](const std::unique_ptr<CandidateConfiguration>& c) {
         return 1.0 / c->runtime.toMicroSeconds();
       });
+  sigmaScale(fitness);
   normalizeVector(fitness);
   return fitness;
 }
@@ -166,6 +195,7 @@ GeneticSearch::GeneticSearch(
       lastBestConf(confs[0]),
       numGenerations(numGenerations),
       maxPopulationSize(populationSize),
+      matingPoolSize(populationSize * 3),
       crossOverRate(crossOverRate),
       mutationRate(mutationRate),
       numberElites(std::min(numElites, populationSize / 2)),
@@ -225,19 +255,40 @@ TuningConfiguration GeneticSearch::crossover(
   return a;
 }
 
+std::vector<TuningConfiguration> GeneticSearch::stochasticUniversalSampling(
+    const std::vector<double>& fitness) const {
+  std::vector<TuningConfiguration> matingPool;
+  matingPool.reserve(matingPoolSize);
+
+  auto r = std::uniform_real_distribution<double>(0, 1.0 / matingPoolSize)(rng);
+  size_t count = 0;
+  size_t i = 0;
+  while (count < matingPoolSize) {
+    while (r <= fitness[i]) {
+      matingPool.push_back(population[i]->configuration);
+      r += 1.0 / matingPoolSize;
+      ++count;
+    }
+    ++i;
+  }
+  return matingPool;
+}
+
 void GeneticSearch::breed() {
-  auto accFitness = computeAccumulatedFitness(population);
+  auto matingPool =
+      stochasticUniversalSampling(computeAccumulatedFitness(population));
+
   Population new_population;
-  new_population.reserve(maxPopulationSize);
-  for (auto& p : population) {
+  new_population.reserve(matingPoolSize);
+  for (size_t c = 0; c < numberElites; ++c) {
     new_population.push_back(
-        make_unique<CandidateConfiguration>(p->configuration));
+        make_unique<CandidateConfiguration>(population.at(c)->configuration));
   }
 
-  auto select = [&]() -> const TuningConfiguration& {
-    auto limit = std::uniform_real_distribution<double>{}(rng);
-    auto lb = std::lower_bound(accFitness.begin(), accFitness.end(), limit);
-    return population.at(std::distance(accFitness.begin(), lb))->configuration;
+  auto select = [&]() -> TuningConfiguration& {
+    auto idx = std::uniform_int_distribution<size_t>{
+        size_t(0), matingPool.size() - 1}(rng);
+    return matingPool.at(idx);
   };
   auto shouldCrossOver = [&]() -> bool {
     /*
