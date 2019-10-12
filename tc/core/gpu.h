@@ -36,4 +36,15 @@ inline size_t querySharedMemorySize() {
 #endif
 }
 
+/// Get the maximum number of registers per block provided by the GPU device
+/// active in the current thread.  The call is forwarded to the GPU driver.
+/// If the thread has no associated GPU, return 0.
+inline size_t queryRegistersPerBlock() {
+#if TC_WITH_CUDA && !defined(NO_CUDA_SDK)
+  return CudaGPUInfo::GPUInfo().RegistersPerBlock();
+#else
+  return 0;
+#endif
+}
+
 } // namespace tc

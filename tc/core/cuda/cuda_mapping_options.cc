@@ -299,6 +299,11 @@ CudaMappingOptions& CudaMappingOptions::sharedDepth(uint32_t depth) {
   return *this;
 }
 
+CudaMappingOptions& CudaMappingOptions::maxPrivateElements(uint64_t nElements) {
+  ownedProto_.set_max_private_elements(nElements);
+  return *this;
+}
+
 CudaMappingOptions& CudaMappingOptions::mapToThreads(
     const std::string& commaSeparatedSizes) {
   auto sizes = parseCommaSeparatedIntegers<uint64_t>(commaSeparatedSizes);

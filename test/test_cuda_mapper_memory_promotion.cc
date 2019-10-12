@@ -539,7 +539,8 @@ TEST_F(MatMulBias, RegisterPromotion) {
                             .tile(32, 32, 32)
                             .privateDepth(5)
                             .useSharedMemory(false)
-                            .usePrivateMemory(true);
+                            .usePrivateMemory(true)
+                            .maxPrivateElements(100);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
   auto declPos = code.find("float _O_0");
@@ -567,7 +568,8 @@ TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
                             .tile(32, 32, 32)
                             .maxSharedMemory(32768)
                             .useSharedMemory(true)
-                            .usePrivateMemory(true);
+                            .usePrivateMemory(true)
+                            .maxPrivateElements(100);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
 
@@ -587,12 +589,33 @@ TEST_F(MatMulBias, RegistersAtRoot) {
                             .usePrivateMemory(false);
 
   auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
-  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot());
+  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot(), 4);
   auto code = emitCode(mscop);
 
   // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads
   // after tiling by 32.
   expectFourOElementsPromoted(code);
+}
+
+TEST_F(MatMulBias, RegistersAtRootNotEnoughAvailable) {
+  // Disable automatic promotion to registers because we are going to call it
+  // manually.  Require sufficient unrolling to actually hit registers.
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
+                            .unroll(512)
+                            .useSharedMemory(false)
+                            .usePrivateMemory(false);
+
+  auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot(), 3);
+  auto code = emitCode(mscop);
+
+  // Not expecting O to be promoted because 4 elements must be promoted and
+  // only 3 were indicated as available in promoteToRegistersBelow.
+  auto oDeclPos = code.find("float _O_0;");
+  EXPECT_TRUE(oDeclPos == std::string::npos)
+      << "not expected O to be promoted to registers";
+
+  expectNoABCPromotion(code);
 }
 
 TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
@@ -605,7 +628,7 @@ TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
                             .usePrivateMemory(false);
 
   auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
-  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot());
+  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot(), 100);
   auto code = emitCode(mscop);
   auto oDeclPos = code.find("float _O_0;");
 
@@ -631,7 +654,7 @@ TEST_F(MatMulBias, RegistersBelowFirstBand) {
       mscop->scop().scheduleRoot(), ScheduleTreeType::Band);
   ASSERT_GT(nodes.size(), 0u);
   auto node = nodes[0];
-  promoteToRegistersBelow(*mscop, node);
+  promoteToRegistersBelow(*mscop, node, 100);
   auto code = emitCode(mscop);
 
   // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads

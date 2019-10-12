@@ -197,6 +197,7 @@ class CudaMappingOptions {
   CudaMappingOptions& useReadOnlyCache(bool b);
   CudaMappingOptions& privateDepth(uint32_t depth);
   CudaMappingOptions& sharedDepth(uint32_t depth);
+  CudaMappingOptions& maxPrivateElements(uint64_t nElements);
   ///@}
 
   /// Static constructors for predefined strategies.

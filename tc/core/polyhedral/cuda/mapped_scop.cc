@@ -1086,7 +1086,14 @@ std::unique_ptr<MappedScop> MappedScop::makeWithOuterBlockInnerThreadStrategy(
 
   // 9. Promote to registers below the loops mapped to threads.
   if (cudaOptions.proto().use_private_memory()) {
-    promoteToRegistersAtDepth(*mappedScop, cudaOptions.proto().private_depth());
+    auto blockSizes = cudaOptions.block.extractVector();
+    auto nThreadsPerBlock = std::accumulate(
+        blockSizes.begin(), blockSizes.end(), 1, std::multiplies<size_t>());
+    auto nElementsPerThread = cudaOptions.proto().has_max_private_elements()
+        ? cudaOptions.proto().max_private_elements()
+        : queryRegistersPerBlock() / nThreadsPerBlock;
+    promoteToRegistersAtDepth(
+        *mappedScop, cudaOptions.proto().private_depth(), nElementsPerThread);
   }
 
   LOG_IF(INFO, FLAGS_debug_tc_mapper)

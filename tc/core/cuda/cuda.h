@@ -98,8 +98,11 @@ struct WithCudaDevice {
 class CudaGPUInfo {
   CudaGPUInfo(
       const std::vector<std::string>& gpuNames,
-      const std::vector<size_t>& sharedMemSizes)
-      : gpuNames_(gpuNames), sharedMemSizes_(sharedMemSizes) {}
+      const std::vector<size_t>& sharedMemSizes,
+      const std::vector<size_t>& registersPerBlock)
+      : gpuNames_(gpuNames),
+        sharedMemSizes_(sharedMemSizes),
+        registersPerBlock_(registersPerBlock) {}
 
  public:
   static CudaGPUInfo& GPUInfo();
@@ -112,9 +115,11 @@ class CudaGPUInfo {
   std::string GetGPUName(int id = -1) const;
   std::string getCudaDeviceStr() const;
   size_t SharedMemorySize() const;
+  size_t RegistersPerBlock() const;
 
   std::vector<std::string> gpuNames_;
   std::vector<size_t> sharedMemSizes_;
+  std::vector<size_t> registersPerBlock_;
 };
 
 struct CudaProfiler {

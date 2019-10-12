@@ -30,7 +30,8 @@ DEFINE_bool(use_nvprof, false, "Start / stop nvprof");
 
 namespace {
 
-std::tuple<std::vector<std::string>, std::vector<size_t>> init() {
+std::tuple<std::vector<std::string>, std::vector<size_t>, std::vector<size_t>>
+init() {
   int deviceCount = 0;
   auto err_id = cudaGetDeviceCount(&deviceCount);
   if (err_id == 35 or err_id == 30) {
@@ -44,14 +45,16 @@ std::tuple<std::vector<std::string>, std::vector<size_t>> init() {
   }
   std::vector<std::string> gpuNames;
   std::vector<size_t> sharedMemSizes;
+  std::vector<size_t> registersPerBlock;
   gpuNames.reserve(deviceCount);
   for (int i = 0; i < deviceCount; ++i) {
     cudaDeviceProp deviceProp;
     TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDeviceProperties(&deviceProp, i));
     gpuNames.emplace_back(deviceProp.name);
     sharedMemSizes.emplace_back(deviceProp.sharedMemPerBlock);
+    registersPerBlock.emplace_back(deviceProp.regsPerBlock);
   }
-  return std::make_tuple(gpuNames, sharedMemSizes);
+  return std::make_tuple(gpuNames, sharedMemSizes, registersPerBlock);
 }
 
 } // namespace
@@ -61,8 +64,8 @@ CudaGPUInfo& CudaGPUInfo::GPUInfo() {
   static thread_local bool inited = false;
   if (!inited) {
     auto infos = init();
-    pInfo = std::unique_ptr<CudaGPUInfo>(
-        new CudaGPUInfo(std::get<0>(infos), std::get<1>(infos)));
+    pInfo = std::unique_ptr<CudaGPUInfo>(new CudaGPUInfo(
+        std::get<0>(infos), std::get<1>(infos), std::get<2>(infos)));
     inited = true;
   }
   return *pInfo;
@@ -101,5 +104,12 @@ size_t CudaGPUInfo::SharedMemorySize() const {
     return 0; // no shared memory if no GPUs
   }
   return sharedMemSizes_.at(CurrentGPUId());
+}
+
+size_t CudaGPUInfo::RegistersPerBlock() const {
+  if (NumberGPUs() == 0) {
+    return 0; // no registers if no GPUs
+  }
+  return registersPerBlock_.at(CurrentGPUId());
 }
 } // namespace tc

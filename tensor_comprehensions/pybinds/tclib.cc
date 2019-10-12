@@ -673,6 +673,11 @@ PYBIND11_MODULE(tclib, m) {
           &tc::CudaMappingOptions::usePrivateMemory,
           "Create thread-local copies of data in private memory")
       .def(
+          "maxPrivateElements",
+          &tc::CudaMappingOptions::maxPrivateElements,
+          "The maximum number of elements per thread for which thread-local "
+          "copies are created")
+      .def(
           "unrollCopyShared",
           &tc::CudaMappingOptions::unrollCopyShared,
           "Also unroll the copies to and from shared memory. If an unroll "
