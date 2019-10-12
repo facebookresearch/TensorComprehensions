@@ -71,6 +71,12 @@ Type translateScalarType(int tcType) {
   }
 }
 
+struct TensorInfo {
+  Type type;
+  vector<string> args;
+  map<string, Interval> bounds;
+};
+
 // Translate the TC def input params to corresponding Halide components.
 // params, inputs will be populated here.
 void translateParam(
@@ -112,20 +118,13 @@ void translateParam(
   (*params)[imageParam.name()] = imageParam.parameter();
 }
 
-void translateOutput(
-    const lang::Param& p,
-    const map<string, Function>& funcs,
-    vector<Function>* outputs) {
-  outputs->push_back(funcs.at(p.ident().name()));
-}
-
 Expr translateExpr(
     const lang::TreeRef& expr,
     const map<string, Parameter>& params,
-    const map<string, Function>& funcs,
+    const map<string, TensorInfo>& tensors,
     const map<string, Expr>& lets) {
   auto t = [&](int idx) {
-    return translateExpr(expr->tree(idx), params, funcs, lets);
+    return translateExpr(expr->tree(idx), params, tensors, lets);
   };
   switch (expr->kind()) {
     case lang::TK_IDENT: {
@@ -139,17 +138,18 @@ Expr translateExpr(
       auto a = lang::Access(expr);
       string tensorName = a.name().name();
       auto paramIt = params.find(tensorName);
-      auto funcIt = funcs.find(tensorName);
+      auto tensorIt = tensors.find(tensorName);
       vector<Expr> args;
       for (auto e : a.arguments()) {
-        args.push_back(translateExpr(e, params, funcs, lets));
+        args.push_back(translateExpr(e, params, tensors, lets));
       }
       if (paramIt != params.end()) {
         // Accessing an input tensor
         return Call::make(paramIt->second, args);
-      } else if (funcIt != funcs.end()) {
+      } else if (tensorIt != tensors.end()) {
         // Call to a Func
-        return Call::make(funcIt->second, args);
+        return Call::make(
+            tensorIt->second.type, tensorName, args, Call::Halide);
       } else {
         LOG(FATAL) << "Access to unknown symbol: " << a << '\n';
         return Expr();
@@ -203,7 +203,7 @@ Expr translateExpr(
       auto b = lang::BuiltIn(expr);
       vector<Expr> exprs;
       for (auto a : b.arguments()) {
-        exprs.push_back(translateExpr(a, params, funcs, lets));
+        exprs.push_back(translateExpr(a, params, tensors, lets));
       }
       auto output_type = translateScalarType(b.type()->kind());
       return Call::make(output_type, b.name(), exprs, Call::PureExtern);
@@ -220,7 +220,7 @@ Expr translateExpr(
     }
     case lang::TK_CAST: {
       auto c = lang::Cast(expr);
-      auto v = translateExpr(c.value(), params, funcs, lets);
+      auto v = translateExpr(c.value(), params, tensors, lets);
       return cast(translateScalarType(c.type()->kind()), v);
     }
     default:
@@ -229,7 +229,7 @@ Expr translateExpr(
   }
 }
 
-vector<const Variable*> unboundVariables(const vector<Var>& lhs, Expr rhs) {
+vector<const Variable*> unboundVariables(const vector<Expr>& lhs, Expr rhs) {
   class FindUnboundVariables : public IRVisitor {
     using IRVisitor::visit;
 
@@ -254,9 +254,9 @@ vector<const Variable*> unboundVariables(const vector<Var>& lhs, Expr rhs) {
     set<string> visited;
 
    public:
-    FindUnboundVariables(const vector<Var>& lhs) {
+    FindUnboundVariables(const vector<Expr>& lhs) {
       for (auto v : lhs) {
-        bound.push(v.name());
+        bound.push(v.as<Variable>()->name);
       }
     }
     vector<const Variable*> result;
@@ -265,11 +265,9 @@ vector<const Variable*> unboundVariables(const vector<Var>& lhs, Expr rhs) {
   return finder.result;
 }
 
-typedef map<Function, map<string, Interval>, Function::Compare> FunctionBounds;
-
 void forwardBoundsInference(
     const std::vector<Expr>& exprs,
-    const FunctionBounds& bounds,
+    const map<string, TensorInfo>& tensors,
     const lang::TreeRef& comprehension,
     const tc::CompilerOptions& compilerOptions,
     Scope<Interval>* solution) {
@@ -288,13 +286,11 @@ void forwardBoundsInference(
 
       // Create inequalities that assert this is not an out-of-bounds access.
       if (op->call_type == Call::Halide) {
-        TC_CHECK(op->func.defined())
-            << "Expected a Call of type Halide to have an associated Function\n";
-        const auto& it = bounds.find(Function(op->func));
-        if (it != bounds.end()) {
-          const map<string, Interval>& b = it->second;
+        const auto& tensorInfo = tensors.find(op->name);
+        if (tensorInfo != tensors.end()) {
+          const map<string, Interval>& b = tensorInfo->second.bounds;
           for (size_t i = 0; i < op->args.size(); i++) {
-            const string& dim = Function(op->func).args()[i];
+            const string& dim = tensorInfo->second.args[i];
             const auto& it = b.find(dim);
             if (it != b.end()) {
               Interval interval = it->second;
@@ -332,9 +328,9 @@ void forwardBoundsInference(
    public:
     vector<Expr> result;
     set<string> freeVars;
-    const FunctionBounds& bounds;
-    CreateConstraints(const FunctionBounds& b) : bounds(b) {}
-  } constraints(bounds);
+    const map<string, TensorInfo>& tensors;
+    CreateConstraints(const map<string, TensorInfo>& t) : tensors(t) {}
+  } constraints(tensors);
   for (auto& expr : exprs) {
     expr.accept(&constraints);
   }
@@ -501,36 +497,24 @@ Expr reductionUpdate(Expr e) {
   return Call::make(e.type(), kReductionUpdate, {e}, Call::Intrinsic);
 }
 
-// Translate a single TC comprehension/statement to Halide components: funcs,
-// bounds, reductions.
+// Translate a single TC comprehension/statement to a Halide Stmt
 //
 // Note that the function definitions created by translateComprehension may
 // contain kReductionUpdate intrinsics.  These may have to be removed
 // in order to be able to apply internal Halide analysis passes on them.
-void translateComprehension(
+Stmt translateComprehension(
     const lang::Comprehension& comprehension,
     const map<string, Parameter>& params,
     const tc::CompilerOptions& compilerOptions,
-    map<string, Function>* funcs,
-    FunctionBounds* bounds) {
-  Function f;
-  auto it = funcs->find(comprehension.ident().name());
-  if (it != funcs->end()) {
-    f = it->second;
-  } else {
-    f = Function(comprehension.ident().name());
-    (*funcs)[comprehension.ident().name()] = f;
-  }
-  // Function is the internal Halide IR type for a pipeline
-  // stage. Func is the front-end class that wraps it. Here it's
-  // convenient to use both.
-  Func func(f);
+    map<string, TensorInfo>* tensors) {
+  TensorInfo info;
 
-  vector<Var> lhs;
-  vector<Expr> lhs_as_exprs;
+  auto tensorName = comprehension.ident().name();
+
+  vector<Expr> lhs;
   for (lang::Ident id : comprehension.indices()) {
     lhs.push_back(Var(id.name()));
-    lhs_as_exprs.push_back(lhs.back());
+    info.args.push_back(id.name());
   }
 
   // we currently inline all of the let bindings generated in where clauses
@@ -540,66 +524,50 @@ void translateComprehension(
   for (auto wc : comprehension.whereClauses()) {
     if (wc->kind() == lang::TK_LET) {
       auto let = lang::Let(wc);
-      lets[let.name().name()] = translateExpr(let.rhs(), params, *funcs, lets);
+      lets[let.name().name()] =
+          translateExpr(let.rhs(), params, *tensors, lets);
     }
   }
 
-  Expr rhs = translateExpr(comprehension.rhs(), params, *funcs, lets);
+  Expr rhs = translateExpr(comprehension.rhs(), params, *tensors, lets);
+
+  info.type = rhs.type();
 
   std::vector<Expr> all_exprs;
   for (auto wc : comprehension.whereClauses()) {
     if (wc->kind() == lang::TK_EXISTS) {
       all_exprs.push_back(
-          translateExpr(lang::Exists(wc).exp(), params, *funcs, lets));
+          translateExpr(lang::Exists(wc).exp(), params, *tensors, lets));
     }
   }
-
-  // Halide doesn't have first-class reductions. We map reductions to recursion.
-  bool added_implicit_initialization = false;
-
-  auto setupIdentity = [&](const Expr& identity, bool zero) {
-    if (!f.has_pure_definition()) {
-      added_implicit_initialization = true;
-      func(lhs) = (zero) ? identity
-                         : undef(rhs.type()); // undef causes the original value
-                                              // to remain in input arrays
-    }
-  };
 
   // Each reduction operator has two variants
   // (1) +=, TK_PLUS_EQ which updates the tensor inplace using its existing
   // values (2) +=!, TK_PLUS_EQ_B which first sets the tensor to the identity
   // for the reduction and then applies the reduction.
-  bool should_zero = false;
+  Expr currentVal = Call::make(rhs.type(), tensorName, lhs, Call::Halide);
+  Expr identity;
   switch (comprehension.assignment()->kind()) {
     case lang::TK_PLUS_EQ_B:
-      should_zero = true; // fallthrough
-    case lang::TK_PLUS_EQ:
-      setupIdentity(make_zero(rhs.type()), should_zero);
-      rhs = func(lhs) + rhs;
+      identity = make_zero(rhs.type());
+    case lang::TK_PLUS_EQ: // fallthrough
+      rhs = currentVal + rhs;
       break;
-
     case lang::TK_TIMES_EQ_B:
-      should_zero = true; // fallthrough
-    case lang::TK_TIMES_EQ:
-      setupIdentity(make_one(rhs.type()), should_zero);
-      rhs = func(lhs) * rhs;
+      identity = make_one(rhs.type());
+    case lang::TK_TIMES_EQ: // fallthrough
+      rhs = currentVal * rhs;
       break;
-
     case lang::TK_MIN_EQ_B:
-      should_zero = true; // fallthrough
-    case lang::TK_MIN_EQ:
-      setupIdentity(rhs.type().max(), should_zero);
-      rhs = min(func(lhs), rhs);
+      identity = rhs.type().max();
+    case lang::TK_MIN_EQ: // fallthrough
+      rhs = min(currentVal, rhs);
       break;
-
     case lang::TK_MAX_EQ_B:
-      should_zero = true; // fallthrough
-    case lang::TK_MAX_EQ:
-      setupIdentity(rhs.type().min(), should_zero);
-      rhs = max(func(lhs), rhs);
+      identity = rhs.type().min();
+    case lang::TK_MAX_EQ: // fallthrough
+      rhs = max(currentVal, rhs);
       break;
-
     case '=':
       break;
     default:
@@ -654,8 +622,8 @@ void translateComprehension(
       continue;
     auto constraint = lang::RangeConstraint(constraint_);
     Interval i;
-    i.min = translateExpr(constraint.start(), params, *funcs, lets);
-    i.max = translateExpr(constraint.end(), params, *funcs, lets) - 1;
+    i.min = translateExpr(constraint.start(), params, *tensors, lets);
+    i.max = translateExpr(constraint.end(), params, *tensors, lets) - 1;
 
     // TODO: In the future we'll want to make any non-trivial bounds
     // into hidden scalar parameters, and just pass variables to the
@@ -671,7 +639,7 @@ void translateComprehension(
   // Infer the rest
   all_exprs.push_back(rhs);
   forwardBoundsInference(
-      all_exprs, *bounds, comprehension, compilerOptions, &solution);
+      all_exprs, *tensors, comprehension, compilerOptions, &solution);
 
   // TODO: What if subsequent updates have incompatible bounds
   // (e.g. an in-place stencil)?. The .bound directive will use the
@@ -680,16 +648,16 @@ void translateComprehension(
   // Does a tensor have a single bound, or can its bounds shrink over
   // time? Solve for a single bound for now.
 
-  for (Var v : lhs) {
-    if (!solution.contains(v.name())) {
+  for (lang::Ident id : comprehension.indices()) {
+    if (!solution.contains(id.name())) {
       throw lang::ErrorReport(comprehension)
-          << "Free variable " << v
+          << "Free variable " << id.name()
           << " was not solved in range inference. May not be used right-hand side";
     }
     // TODO: We're enforcing a single bound across all comprehensions
     // for now. We should really check later ones are equal to earlier
     // ones instead of just clobbering.
-    (*bounds)[f][v.name()] = solution.get(v.name());
+    info.bounds[id.name()] = solution.get(id.name());
   }
 
   // Free variables that appear on the rhs but not the lhs are
@@ -714,7 +682,7 @@ void translateComprehension(
       Expr v_min = bound.min;
       Expr v_extent = simplify(bound.max - bound.min + 1);
       rVars.push_back({v->name, v_min, v_extent});
-      (*bounds)[f][v->name] = bound;
+      info.bounds[v->name] = bound;
     }
     ReductionDomain domain(rVars);
     for (auto v : unbound) {
@@ -724,182 +692,90 @@ void translateComprehension(
     rdom = RDom(domain);
   }
 
-  Stage stage{func(lhs) = rhs};
+  // Now construct the Stmt
+  Stmt stmt = Provide::make(tensorName, {rhs}, lhs);
 
-  // Use the simplest possible Halide schedule, but reorder the loop
-  // indices to match TC convention.
-  vector<VarOrRVar> loop_nest;
+  // Wrap the reduction loops
   if (rdom.defined()) {
     for (int i = 0; i < rdom.dimensions(); i++) {
-      loop_nest.push_back(rdom[i]);
+      stmt = For::make(
+          rdom[i].name(),
+          rdom[i].min(),
+          rdom[i].extent(),
+          ForType::Serial,
+          DeviceAPI::None,
+          stmt);
     }
   }
-  while (!lhs.empty()) {
-    loop_nest.push_back(lhs.back());
-    lhs.pop_back();
+
+  // Add an initialization if needed
+  Stmt init;
+  if (identity.defined()) {
+    init = Provide::make(tensorName, {identity}, lhs);
   }
 
-  if (added_implicit_initialization) {
-    // Also reorder reduction initializations to the TC convention
-    vector<Var> funcArgs = func.args();
-    loop_nest.clear();
-    while (!funcArgs.empty()) {
-      loop_nest.push_back(funcArgs.back());
-      funcArgs.pop_back();
+  // Wrap the rest of the loops
+  for (auto id = info.args.rbegin(); id != info.args.rend(); id++) {
+    Interval in = info.bounds[*id];
+    Expr extent = simplify(in.max - in.min + 1);
+    stmt =
+        For::make(*id, in.min, extent, ForType::Serial, DeviceAPI::None, stmt);
+    if (init.defined()) {
+      init = For::make(
+          *id, in.min, extent, ForType::Serial, DeviceAPI::None, init);
     }
-    func.reorder(loop_nest);
   }
 
-  func.compute_root();
-  stage.reorder(loop_nest);
+  if (init.defined()) {
+    stmt = Block::make(init, stmt);
+  }
+
+  auto existingInfo = tensors->find(tensorName);
+
+  // Record information about this tensor for later stages of
+  // translation to refer to.
+  if (existingInfo == tensors->end()) {
+    tensors->emplace(tensorName, std::move(info));
+  } else {
+    // Clobber the bounds information with the possibly-updated
+    // constraints.
+    existingInfo->second.bounds = info.bounds;
+  }
+
+  return stmt;
 }
 
 // Translate a semantically checked TC def to HalideComponents struct.
 HalideComponents translateDef(
     const lang::Def& def,
     const tc::CompilerOptions& compilerOptions) {
-  map<string, Function> funcs;
   HalideComponents components;
   components.def = def;
-  FunctionBounds bounds;
+
+  map<string, TensorInfo> tensors;
 
   for (auto p : def.params()) {
     translateParam(p, &components.params, &components.inputs);
   }
+
   for (auto c : def.statements()) {
-    translateComprehension(
-        c, components.params, compilerOptions, &funcs, &bounds);
+    Stmt next =
+        translateComprehension(c, components.params, compilerOptions, &tensors);
+    if (!components.stmt.defined()) {
+      components.stmt = next;
+    } else {
+      components.stmt = Block::make(components.stmt, next);
+    }
   }
-  vector<Function> outputs;
+
+  // Populate the output bounds
   for (auto p : def.returns()) {
-    translateOutput(p, funcs, &outputs);
-  }
-
-  // Now apply an extremely simplified version of Halide lowering
-
-  // Compute an environment
-  map<string, Function> env;
-  for (auto f : outputs) {
-    populate_environment(f, env);
-  }
-
-  // Finalize all the LoopLevels
-  for (auto& iter : env) {
-    iter.second.lock_loop_levels();
-  }
-
-  // Compute a realization order. This is a topological order on the
-  // pipeline of groups of Funcs. For our purposes, each group has a
-  // single Func in it. The Halide scheduling directive compute_with,
-  // (which does general loop fusion) can create groups with multiple
-  // Funcs in it, but we don't use it here.
-  vector<string> order;
-  vector<vector<string>> fused_groups;
-  std::tie(order, fused_groups) = realization_order(outputs, env);
-
-  // Create loop nests
-  bool any_memoized = false;
-  // This part of lowering requires a target, but it will never be
-  // used in the pipelines we construct here, so just make a host target.
-  Target target("host");
-  Stmt s = schedule_functions(outputs, fused_groups, env, target, any_memoized);
-  // we insert these to allow for inplace mutation of in/out tensors
-  s = remove_undef(s);
-  // Apply forward bounds inference results. This replaces the usual Halide
-  // bounds inference.
-  for (auto p : bounds) {
-    const Function& f = p.first;
-    for (auto b : p.second) {
-      const string& var = b.first;
-      const Interval& bound = b.second;
-      for (size_t i = 0; i <= f.updates().size(); i++) {
-        // Halide lowers function loop bounds as follows:
-        string qualified_var_name =
-            f.name() + ".s" + std::to_string(i) + "." + var;
-        s = LetStmt::make(qualified_var_name + ".min", bound.min, s);
-        s = LetStmt::make(qualified_var_name + ".max", bound.max, s);
-      }
-    }
-  }
-
-  // Collect the arguments (inputs and outputs)
-  s = uniquify_variable_names(s);
-  s = simplify(s);
-
-  // Trim ProducerConsumer annotations. TC doesn't use them.
-  class RemoveProducerConsumer : public IRMutator2 {
-    using IRMutator2::visit;
-    Stmt visit(const ProducerConsumer* op) {
-      return mutate(op->body);
-    }
-  } removeProducerConsumer;
-
-  s = removeProducerConsumer.mutate(s);
-
-  // Rename all loop variables to be valid C identifiers, to ease
-  // conversion to isl.
-  class RenameVariables : public IRMutator2 {
-    using IRMutator2::visit;
-
-    map<string, string> new_names;
-
-    Expr visit(const Variable* op) override {
-      auto it = new_names.find(op->name);
-      if (it != new_names.end()) {
-        return Variable::make(
-            op->type, it->second, op->image, op->param, op->reduction_domain);
-      } else {
-        return op;
-      }
-    }
-
-    Stmt visit(const For* op) override {
-      string sanitized = replace_all(op->name, ".", "_");
-      Expr min = mutate(op->min);
-      Expr extent = mutate(op->extent);
-      new_names[op->name] = sanitized;
-      Stmt body = mutate(op->body);
-      return For::make(
-          sanitized,
-          std::move(min),
-          std::move(extent),
-          op->for_type,
-          op->device_api,
-          std::move(body));
-    }
-  } renameVariables;
-
-  s = renameVariables.mutate(s);
-
-  // We don't handle Let nodes after this point
-  class SubstituteAllLets : public IRMutator2 {
-    Scope<Expr> scope;
-    Stmt visit(const LetStmt* op) override {
-      ScopedBinding<Expr> bind(scope, op->name, mutate(op->value));
-      return mutate(op->body);
-    }
-    Expr visit(const Let* op) override {
-      ScopedBinding<Expr> bind(scope, op->name, mutate(op->value));
-      return mutate(op->body);
-    }
-    Expr visit(const Variable* op) override {
-      if (scope.contains(op->name)) {
-        return scope.get(op->name);
-      } else {
-        return op;
-      }
-    }
-  };
-  s = SubstituteAllLets().mutate(s);
-
-  components.stmt = s;
-
-  for (Function f : outputs) {
-    OutputImageParam o = Func(f).output_buffers()[0];
-    // Apply forward bounds inference results to the output buffers.
-    const auto& b = bounds[f];
+    // TODO: unify bounds and tensors map?
+    const auto& t = tensors[p.ident().name()];
+    ImageParam o(t.type, t.args.size(), p.ident().name());
     for (int i = 0; i < o.dimensions(); i++) {
-      const Interval& bound = b.at(f.args()[i]);
+      string arg = t.args[i];
+      const Interval& bound = t.bounds.at(arg);
       o.dim(i).set_bounds(bound.min, simplify(bound.max - bound.min + 1));
     }
     components.outputs.push_back(o);
