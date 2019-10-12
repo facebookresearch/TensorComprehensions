@@ -336,21 +336,17 @@ vector<const ScheduleTree*> ScheduleTree::collectDFSPreorder(
   return functional::Filter(filterType, collectDFSPreorder(tree));
 }
 
-bool ScheduleTree::operator==(const ScheduleTree& other) const {
-  // ctx_ cmp ?
-  if (type_ != other.type_) {
+bool ScheduleTree::treeEquals(const ScheduleTree* other) const {
+  if (!nodeEquals(other)) {
     return false;
   }
-  if (children_.size() != other.children_.size()) {
+  if (numChildren() != other->numChildren()) {
     return false;
   }
-  if (!elemEquals(this, &other, type_)) {
-    return false;
-  }
-  TC_CHECK(!other.as<ScheduleTreeSet>())
+  TC_CHECK(!other->as<ScheduleTreeSet>())
       << "NYI: ScheduleTreeType::Set comparison";
-  for (size_t i = 0; i < children_.size(); ++i) {
-    if (*children_[i] != *other.children_[i]) {
+  for (size_t i = 0, e = numChildren(); i < e; ++i) {
+    if (!child({i})->treeEquals(other->child({i}))) {
       return false;
     }
   }

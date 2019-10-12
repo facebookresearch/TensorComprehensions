@@ -156,11 +156,6 @@ struct ScheduleTree {
  public:
   virtual ~ScheduleTree();
 
-  bool operator==(const ScheduleTree& other) const;
-  bool operator!=(const ScheduleTree& other) const {
-    return !(*this == other);
-  }
-
   // Swap a tree with with the given tree.
   void swapChild(size_t pos, ScheduleTreeUPtr& swappee) {
     TC_CHECK_GE(pos, 0u) << "position out of children bounds";
@@ -468,6 +463,15 @@ struct ScheduleTree {
   // Clone the current node.
   // Note that this function does _not_ clone the child trees.
   virtual ScheduleTreeUPtr clone() const = 0;
+
+  // Compare the current node to the "other" node.
+  // Note that this function does _not_ compare the child trees,
+  // use treeEquals() instead to compare entire trees.
+  virtual bool nodeEquals(const ScheduleTree* other) const = 0;
+
+  // Comapre the subtree rooted at the current node to the subtree
+  // rooted at "other".
+  bool treeEquals(const ScheduleTree* other) const;
 
   //
   // Data members

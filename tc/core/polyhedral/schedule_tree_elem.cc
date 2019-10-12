@@ -279,21 +279,26 @@ ScheduleTreeThreadSpecificMarker::make(
   return res;
 }
 
-bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
-  if (permutable_ != other.permutable_) {
+bool ScheduleTreeBand::nodeEquals(const ScheduleTreeBand* otherBand) const {
+  if (!otherBand) {
     return false;
   }
-  if (coincident_.size() != other.coincident_.size()) {
+  if (permutable_ != otherBand->permutable_) {
     return false;
   }
-  if (unroll_.size() != other.unroll_.size()) {
+  if (coincident_.size() != otherBand->coincident_.size()) {
+    return false;
+  }
+  if (unroll_.size() != otherBand->unroll_.size()) {
     return false;
   }
   if (!std::equal(
-          coincident_.begin(), coincident_.end(), other.coincident_.begin())) {
+          coincident_.begin(),
+          coincident_.end(),
+          otherBand->coincident_.begin())) {
     return false;
   }
-  if (!std::equal(unroll_.begin(), unroll_.end(), other.unroll_.begin())) {
+  if (!std::equal(unroll_.begin(), unroll_.end(), otherBand->unroll_.begin())) {
     return false;
   }
 
@@ -303,13 +308,13 @@ bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
   // .domain() returns a zero-dimensional union set (in purely parameter space)
   // if there is no explicit domain.
   bool mupaIs0D = nMember() == 0;
-  bool otherMupaIs0D = other.nMember() == 0;
+  bool otherMupaIs0D = otherBand->nMember() == 0;
   if (mupaIs0D ^ otherMupaIs0D) {
     return false;
   }
   if (mupaIs0D && otherMupaIs0D) {
     auto d1 = mupa_.domain();
-    auto d2 = other.mupa_.domain();
+    auto d2 = otherBand->mupa_.domain();
     auto res = d1.is_equal(d2);
     if (!res) {
       LOG_IF(INFO, FLAGS_debug_tc_mapper)
@@ -320,7 +325,7 @@ bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
     }
   } else {
     auto m1 = isl::union_map::from(mupa_);
-    auto m2 = isl::union_map::from(other.mupa_);
+    auto m2 = isl::union_map::from(otherBand->mupa_);
     {
       auto res = m1.is_equal(m2);
       if (!res) {
@@ -335,74 +340,60 @@ bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
   return true;
 }
 
-bool ScheduleTreeContext::operator==(const ScheduleTreeContext& other) const {
-  auto res = context_.is_equal(other.context_);
-  return res;
+bool ScheduleTreeContext::nodeEquals(const ScheduleTreeContext* other) const {
+  return other && context_.is_equal(other->context_);
 }
 
-bool ScheduleTreeDomain::operator==(const ScheduleTreeDomain& other) const {
-  auto res = domain_.is_equal(other.domain_);
+bool ScheduleTreeDomain::nodeEquals(const ScheduleTreeDomain* other) const {
+  if (!other) {
+    return false;
+  }
+  auto res = domain_.is_equal(other->domain_);
   if (!res) {
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
         << "ScheduleTreeDomain difference: " << domain_ << " VS "
-        << other.domain_ << "\n";
+        << other->domain_ << "\n";
   }
   return res;
 }
 
-bool ScheduleTreeExtension::operator==(
-    const ScheduleTreeExtension& other) const {
-  auto res = extension_.is_equal(other.extension_);
-  return res;
+bool ScheduleTreeExtension::nodeEquals(
+    const ScheduleTreeExtension* other) const {
+  return other && extension_.is_equal(other->extension_);
 }
 
-bool ScheduleTreeFilter::operator==(const ScheduleTreeFilter& other) const {
-  auto res = filter_.is_equal(other.filter_);
-  return res;
+bool ScheduleTreeFilter::nodeEquals(const ScheduleTreeFilter* other) const {
+  return other && filter_.is_equal(other->filter_);
 }
 
-bool ScheduleTreeMapping::operator==(const ScheduleTreeMapping& other) const {
-  auto res = filter_.is_equal(other.filter_);
-  return res;
+bool ScheduleTreeMapping::nodeEquals(const ScheduleTreeMapping* other) const {
+  if (mapping.size() != other->mapping.size()) {
+    return false;
+  }
+  for (const auto& kvp : mapping) {
+    if (other->mapping.count(kvp.first) == 0) {
+      return false;
+    }
+    if (!other->mapping.at(kvp.first).plain_is_equal(kvp.second)) {
+      return false;
+    }
+  }
+  return filter_.is_equal(other->filter_);
 }
 
-bool ScheduleTreeSequence::operator==(const ScheduleTreeSequence& other) const {
+bool ScheduleTreeSequence::nodeEquals(const ScheduleTreeSequence* other) const {
   return true;
 }
 
-bool ScheduleTreeSet::operator==(const ScheduleTreeSet& other) const {
+bool ScheduleTreeSet::nodeEquals(const ScheduleTreeSet* other) const {
   return true;
 }
 
-bool elemEquals(
-    const ScheduleTree* e1,
-    const ScheduleTree* e2,
-    detail::ScheduleTreeType type) {
-#define ELEM_EQUALS_CASE(CLASS)                                              \
-  else if (type == CLASS::NodeType) {                                        \
-    return *static_cast<const CLASS*>(e1) == *static_cast<const CLASS*>(e2); \
-  }
-
-  if (type == detail::ScheduleTreeType::None) {
-    LOG(FATAL) << "Hit Error node!";
-  }
-  ELEM_EQUALS_CASE(ScheduleTreeBand)
-  ELEM_EQUALS_CASE(ScheduleTreeContext)
-  ELEM_EQUALS_CASE(ScheduleTreeDomain)
-  ELEM_EQUALS_CASE(ScheduleTreeExtension)
-  ELEM_EQUALS_CASE(ScheduleTreeFilter)
-  ELEM_EQUALS_CASE(ScheduleTreeMapping)
-  ELEM_EQUALS_CASE(ScheduleTreeSequence)
-  ELEM_EQUALS_CASE(ScheduleTreeSet)
-  else {
-    LOG(FATAL) << "NYI: ScheduleTree::operator== for type: "
-               << static_cast<int>(type);
-  }
-
-#undef ELEM_EQUALS_CASE
-
-  return false;
+bool ScheduleTreeThreadSpecificMarker::nodeEquals(
+    const ScheduleTreeThreadSpecificMarker* other) const {
+  return true;
 }
+
 } // namespace detail
 } // namespace polyhedral
 } // namespace tc

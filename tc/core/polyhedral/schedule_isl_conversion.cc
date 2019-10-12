@@ -311,7 +311,7 @@ std::unique_ptr<ScheduleTree> fromIslSchedule(isl::schedule schedule) {
 // Note that the children of set and sequence nodes are always filters, so
 // they cannot be replaced by empty trees.
 bool validateSchedule(const ScheduleTree* st) {
-  return *st == *fromIslSchedule(toIslSchedule(st));
+  return st->treeEquals(fromIslSchedule(toIslSchedule(st)).get());
 }
 
 bool validateSchedule(isl::schedule sc) {
