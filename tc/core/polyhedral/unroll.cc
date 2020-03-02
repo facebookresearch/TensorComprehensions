@@ -16,8 +16,8 @@
 
 #include "tc/core/polyhedral/unroll.h"
 
-#include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 
 namespace tc {
 namespace polyhedral {
@@ -55,7 +55,7 @@ isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
   umap = umap.range_product(umap);
   umap = umap.range().unwrap();
   umap = umap.project_out_all_params();
-  auto delta = isl::map::from_union_map(umap).deltas();
+  auto delta = isl::map::from(umap).deltas();
   auto hull = delta.simple_hull();
   auto stride = isl::set(hull).get_stride(0);
   hull = isl::set(hull).polyhedral_hull();
@@ -82,7 +82,7 @@ isl::val relativeRange(isl::union_map fixed, isl::union_pw_aff f) {
  * inner band members and the bound on the descendants.
  */
 isl::val boundInstancesAndMarkUnroll(
-    detail::ScheduleTreeElemBand* band,
+    detail::ScheduleTreeBand* band,
     isl::union_map prefix,
     isl::val unrollFactor,
     isl::val bound) {
@@ -93,11 +93,15 @@ isl::val boundInstancesAndMarkUnroll(
   auto partial = band->mupa_;
   auto n = band->nMember();
 
+  auto list = partial.get_union_pw_aff_list();
+  auto space = partial.get_space().params();
   for (int i = n - 1; i >= 0; --i) {
     auto member = partial.get_union_pw_aff(i);
     auto outerMap = prefix;
     if (i > 0) {
-      auto outer = partial.drop_dims(isl::dim_type::set, i, n - i);
+      list = list.drop(i, 1);
+      auto outerSpace = space.add_unnamed_tuple_ui(list.size());
+      auto outer = isl::multi_union_pw_aff(outerSpace, list);
       outerMap = outerMap.flat_range_product(isl::union_map::from(outer));
     }
     bound = bound.mul(relativeRange(outerMap, member));
@@ -163,7 +167,7 @@ isl::val boundInstancesAndMarkUnroll(
     isl::val unrollFactor) {
   auto bound = boundChildrenInstancesAndMarkUnroll(st, prefix, unrollFactor);
 
-  if (auto band = st->elemAs<detail::ScheduleTreeElemBand>()) {
+  if (auto band = st->as<detail::ScheduleTreeBand>()) {
     bound = boundInstancesAndMarkUnroll(band, prefix, unrollFactor, bound);
   }
 
@@ -181,6 +185,7 @@ void markUnroll(
 
   auto unrollVal = isl::val(st->ctx_, unroll);
   auto prefix = prefixSchedule(root, st);
+  prefix = prefix.intersect_domain(prefixMappingFilter(root, st));
   boundInstancesAndMarkUnroll(st, prefix, unrollVal);
 }
 } // namespace polyhedral

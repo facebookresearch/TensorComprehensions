@@ -69,8 +69,11 @@ caffe2::Tensor<typename Caffe2Backend::Context> GetNamedTensor(
     caffe2::Workspace& ws,
     const std::string& name) {
   // Resolved dynamically
-  return caffe2::Tensor<typename Caffe2Backend::Context>(
-      ws.GetBlob(name)->Get<typename Caffe2Backend::Tensor>());
+  auto& t = ws.GetBlob(name)->Get<typename Caffe2Backend::Tensor>();
+  caffe2::Tensor<typename Caffe2Backend::Context> res;
+  res.ResizeLike(t);
+  res.ShareData(t);
+  return res;
 }
 
 // helper functions to construct an ATen tensor from a caffe2 tensor

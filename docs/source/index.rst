@@ -36,30 +36,18 @@ Machine Learning.
    :caption: PyTorch Integration
 
    framework/pytorch_integration/getting_started
+   framework/pytorch_integration/python_api
    framework/pytorch_integration/writing_layers
-   framework/pytorch_integration/autotuning_layers
    framework/pytorch_integration/autograd_with_tc
-   framework/pytorch_integration/note_about_performance
    framework/pytorch_integration/debugging
    framework/pytorch_integration/frequently_asked_questions
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Caffe2 Integration
-
-   framework/caffe2_integration/integration_with_example
-   framework/caffe2_integration/installation_caffe2_integration
 
 .. toctree::
    :maxdepth: 1
    :caption: Installation
 
    installation
-   installation_docker_image
-   installation_conda_dep
-   installation_conda
-   installation_non_conda
-
+   installation_colab_research
 
 .. toctree::
    :maxdepth: 1
@@ -72,9 +60,3 @@ Machine Learning.
    :caption: Support
 
    contacts
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials Reference
-
-   tutorials/index

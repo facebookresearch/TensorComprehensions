@@ -3,9 +3,6 @@ __pycache__/
 *~
 build/*
 docs/build/*
-tc/proto/*.py
-tc/proto/*.cc
-tc/proto/*.h
 third-party/*_cache
 third-party/llvm_sources*
 third-party-install/*
@@ -17,8 +14,6 @@ conda
 */.nfs*
 tensor_comprehensions.egg-info/
 tensor_comprehensions/version.py
-tensor_comprehensions/*.proto
-tensor_comprehensions/*_pb2.py
 slurm-*
 examples/results*
 *.pyc

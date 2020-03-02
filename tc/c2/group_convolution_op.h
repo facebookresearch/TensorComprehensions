@@ -19,6 +19,7 @@
 #include <vector>
 
 #include "tc/c2/tc_op.h"
+#include "tc/core/check.h"
 #include "tc/library/group_convolution.h"
 
 namespace caffe2 {
@@ -35,7 +36,7 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
       caffe2::Workspace* ws)
       : TcOp<T, Context, Engine>(operator_def, ws),
         group_(OperatorBase::GetSingleArgument<int>("group", -1)) {
-    CHECK_EQ(-1, group_)
+    TC_CHECK_EQ(-1, group_)
         << "Caffe2 implements group convolution as a dilated convolution. "
         << "Someone (not us) needs to reshape.";
 
@@ -65,7 +66,7 @@ class TcGroupConvolutionOp : public TcOp<T, Context, Engine> {
       padR = OperatorBase::GetSingleArgument<int>("pad_r", 0);
     }
 
-    CHECK(padT == 0 && padL == 0 && padB == 0 && padR == 0)
+    TC_CHECK(padT == 0 && padL == 0 && padB == 0 && padR == 0)
         << "NYI: padding larger than 0";
 
     this->tc_ = tc::makeGroupConvolution2DTc(strideH, strideW);

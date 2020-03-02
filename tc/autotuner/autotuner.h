@@ -67,9 +67,6 @@ class TuningHarness {
   /// TODO: we should detect when we come from python and exit properly in C++.
   void stopAfterCurrentIteration();
 
-  /// Under lock, returns the best mapping options found so far
-  const MappingOptionsType& bestMappingOptions() const;
-
  private:
   /// Traverse one iteration of candidates in parallel and evaluate their
   /// runtimes
@@ -92,7 +89,6 @@ class TuningHarness {
   /// This way it is easy to implement multi-threaded termination by just
   /// taking an atomic counter and pushing/popping the queues under lock until
   /// we have evaluated searchStrategy->population.size() compilation results.
-  mutable std::mutex bestTimeMutex_;
   std::mutex executorsMutex_;
   std::atomic_bool stopRequested_;
   std::atomic_size_t currentCompilationJob_;
@@ -111,10 +107,6 @@ class TuningHarness {
   /// tuning (future work).
   const std::unordered_map<size_t, std::vector<const DLConstTensor*>> inputs_;
   std::unordered_map<size_t, std::vector<const DLTensor*>> outputs_;
-
-  // results
-  Duration bestTime_;
-  MappingOptionsType bestMappingOptions_;
 
   // backing options cache
   std::shared_ptr<OptionsCache<Backend>> optionsCache_;
@@ -164,12 +156,15 @@ class Autotuner {
       const std::unordered_map<size_t, std::vector<const DLConstTensor*>>&
           inputs,
       std::unordered_map<size_t, std::vector<const DLTensor*>>& outputs,
-      const MappingOptionsType& baseMapping,
-      const std::string& cacheFileName = "",
+      const std::vector<MappingOptionsType>& baseMapping,
+      size_t topK = 1,
       const TuningParameterFixer& fixedParams = TuningParameterFixer());
 
- private:
-  std::shared_ptr<OptionsCache<Backend>> optionsCache_;
+ public:
+  /// This is accessed by multiple threads in the tuning harness.
+  /// Even though manipulations are threadsafe, you want to be sure tuning
+  /// has finished before accessing the optionsCache.
+  std::shared_ptr<OptionsCache<Backend>> optionsCache;
 };
 
 /// Helper functions that need specializing for various backends.

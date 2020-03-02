@@ -30,6 +30,11 @@
 
 namespace tc {
 namespace polyhedral {
+namespace detail {
+class ScheduleTree;
+} // namespace detail
+
+namespace cuda {
 
 // Scop associated with fixed block and grid dimensions.
 //
@@ -72,9 +77,16 @@ class MappedScop {
  public:
   static inline std::unique_ptr<MappedScop> makeOneBlockOneThread(
       std::unique_ptr<Scop>&& scop) {
-    return std::unique_ptr<MappedScop>(new MappedScop(
+    auto mscop = std::unique_ptr<MappedScop>(new MappedScop(
         std::move(scop), ::tc::Grid{1, 1, 1}, ::tc::Block{1, 1, 1}, 1, false));
+    auto band = mscop->scop_->obtainOuterBand();
+    mscop->mapBlocksForward(band, 0);
+    mscop->mapThreadsBackward(band);
+    return mscop;
   }
+  // The MappedScop returned by this method does not satisfy the invariant
+  // of having a mapping to blocks and threads.  It is up to the caller
+  // to insert these mappings.
   static inline std::unique_ptr<MappedScop> makeMappedScop(
       std::unique_ptr<Scop>&& scop,
       ::tc::Grid grid,
@@ -144,9 +156,15 @@ class MappedScop {
   void mapToBlocksAndScaleBand(
       detail::ScheduleTree* band,
       std::vector<size_t> tileSizes);
-  // Look for innermost reduction band members.
+  // Look for innermost reduction bands.
   // Store them in reductionBandUpdates_.
   // Return true if any were found.
+  // A band is considered to be a reduction band if it only involves
+  // instances of a single reduction update statement (modulo other
+  // statements that can be moved out of the way) and if the outer
+  // coincident members in the band, together with the prefix schedule,
+  // determine individual reductions.  In particular, each instance
+  // of this combined outer schedule only writes to a single tensor element.
   bool detectReductions(detail::ScheduleTree* band);
   // Does separateReduction need to be called on this node?
   bool needReductionSeparation(const detail::ScheduleTree* st);
@@ -185,6 +203,20 @@ class MappedScop {
       std::vector<std::vector<int>> bestSync,
       size_t nChildren,
       bool hasOuterSequentialMember);
+
+  // Extract a mapping from the domain elements active at "tree"
+  // to the thread identifiers, where all branches in "tree"
+  // are assumed to have been mapped to thread identifiers.
+  // The result lives in a space of the form block[x, ...].
+  isl::multi_union_pw_aff threadMappingSchedule(
+      const detail::ScheduleTree* tree) const;
+
+  // Extract a mapping from the domain elements active at "tree"
+  // to the block identifiers, where all branches in "tree"
+  // are assumed to have been mapped to block identifiers.
+  // The result lives in a space of the form grid[x, ...].
+  isl::multi_union_pw_aff blockMappingSchedule(
+      const detail::ScheduleTree* tree) const;
 
  private:
   // Insert the optimal combination of synchronizations in the sequence
@@ -229,5 +261,7 @@ class MappedScop {
   // about the detected reduction.
   std::map<const detail::ScheduleTree*, Reduction> reductionBandUpdates_;
 };
+
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

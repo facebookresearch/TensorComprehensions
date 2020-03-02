@@ -22,14 +22,17 @@
 #include <unordered_map>
 #include <vector>
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/halide2isl.h"
 #include "tc/core/mapping_options.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
 #include "tc/core/tensor.h"
 #include "tc/external/isl.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace polyhedral {
@@ -37,8 +40,6 @@ namespace polyhedral {
 // Reduction dims must be properly ordered
 using ReductionDimSet = std::set<std::string>;
 class TensorReferenceGroup;
-
-class MappedScop;
 
 struct Scop {
  private:
@@ -54,20 +55,25 @@ struct Scop {
   // Halide IR is constructed and made a member by setting halideComponents.
   // These operations are grouped and scheduled in a halide::Stmt which becomes
   // the unit from which the scop is constructed.
-  static std::unique_ptr<Scop> makeScop(isl::ctx ctx, const std::string& tc);
+  static std::unique_ptr<Scop> makeScop(
+      isl::ctx ctx,
+      const std::string& tc,
+      const CompilerOptions& compilerOptions = CompilerOptions());
 
   static std::unique_ptr<Scop> makeScop(
       isl::ctx ctx,
-      const lang::TreeRef& treeRef);
+      const lang::TreeRef& treeRef,
+      const CompilerOptions& compilerOptions = CompilerOptions());
 
   // Clone a Scop
   static std::unique_ptr<Scop> makeScop(const Scop& scop) {
     auto res = std::unique_ptr<Scop>(new Scop());
     res->parameterValues = scop.parameterValues;
     res->halide = scop.halide;
-    res->reads = scop.reads;
-    res->writes = scop.writes;
-    res->dependences = scop.dependences;
+    res->body = scop.body;
+    if (scop.dependences) {
+      res->dependences = scop.dependences;
+    }
     res->scheduleTreeUPtr =
         detail::ScheduleTree::makeScheduleTree(*scop.scheduleTreeUPtr);
     res->treeSyncUpdateMap = scop.treeSyncUpdateMap;
@@ -121,8 +127,7 @@ struct Scop {
   void specializeToContext() {
     auto globalParameterContext = context();
     domainRef() = domain().intersect_params(globalParameterContext);
-    reads = reads.intersect_params(globalParameterContext);
-    writes = writes.intersect_params(globalParameterContext);
+    body.specialize(globalParameterContext);
   }
 
   // Returns a set that specializes the named scop's subset of
@@ -131,7 +136,7 @@ struct Scop {
   isl::set makeContext(
       const std::unordered_map<std::string, T>& sizes =
           std::unordered_map<std::string, T>()) const {
-    auto s = domain().get_space().params();
+    auto s = domain().get_space();
     return makeSpecializationSet(s, sizes);
   }
 
@@ -239,7 +244,7 @@ struct Scop {
         return makeSyncId();
         break;
       default:
-        CHECK(level != SyncLevel::None);
+        TC_CHECK(level != SyncLevel::None);
         return isl::id();
     }
   }
@@ -292,8 +297,8 @@ struct Scop {
         domain().get_ctx(), std::string("red_update") + std::to_string(uid));
     auto reductionInitId = isl::id(
         domain().get_ctx(), std::string("red_init") + std::to_string(uid));
-    CHECK_EQ(0u, treeSyncUpdateMap.count(treeSyncId));
-    CHECK_EQ(0u, defaultReductionInitMap.count(treeSyncId));
+    TC_CHECK_EQ(0u, treeSyncUpdateMap.count(treeSyncId));
+    TC_CHECK_EQ(0u, defaultReductionInitMap.count(treeSyncId));
 
     treeSyncUpdateMap.emplace(treeSyncId, updateId);
     defaultReductionInitMap.emplace(treeSyncId, reductionInitId);
@@ -319,7 +324,7 @@ struct Scop {
         return treeSyncUpdateMap.at(p.first);
       }
     }
-    CHECK(false) << "not found";
+    TC_CHECK(false) << "not found";
     return id;
   }
 
@@ -334,7 +339,7 @@ struct Scop {
 
   size_t reductionUpdatePos(isl::id id) const {
     size_t pos = 0;
-    CHECK(isReductionUpdate(id));
+    TC_CHECK(isReductionUpdate(id));
     for (const auto& kvp : treeSyncUpdateMap) {
       if (id == kvp.second) {
         return pos;
@@ -393,6 +398,10 @@ struct Scop {
   static std::unique_ptr<Scop> makeScheduled(
       const Scop& scop,
       const SchedulerOptionsView& schedulerOptions);
+  // Return the outermost band in the schedule tree with the given root.
+  // If there is no single outermost band, then insert a (permutable)
+  // zero-dimensional band and return that.
+  detail::ScheduleTree* obtainOuterBand();
   // Tile the outermost band.
   // Splits the band into tile loop band and point loop band where point loops
   // have fixed trip counts specified in "tiling", and returns a pointer to the
@@ -410,15 +419,11 @@ struct Scop {
   const Halide::OutputImageParam& findArgument(isl::id id) const;
 
   // Make an affine function from a Halide Expr that is defined
-  // over the instance set of the statement with identifier "stmtId" and
-  // with parameters specified by "paramSpace".  Return a
-  // null isl::aff if the expression is not affine.  Fail if any
+  // over the instance set of the statement with identifier "stmtId".
+  // Return a null isl::aff if the expression is not affine.  Fail if any
   // of the variables does not correspond to a parameter or
   // an instance identifier of the statement.
-  isl::aff makeIslAffFromStmtExpr(
-      isl::id stmtId,
-      isl::space paramSpace,
-      const Halide::Expr& e) const;
+  isl::aff makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e) const;
 
   // Promote a tensor reference group to a storage of a given "kind",
   // inserting the copy
@@ -461,6 +466,10 @@ struct Scop {
   //
   void insertSyncsAroundCopies(detail::ScheduleTree* tree);
 
+  // Given a sequence node, insert synchronizations before its first child node
+  // and after its last child node.
+  void insertSyncsAroundSeqChildren(detail::ScheduleTree* tree);
+
  private:
   // Compute a schedule satisfying the given schedule constraints and
   // taking into account the scheduler options.
@@ -485,11 +494,10 @@ struct Scop {
     std::vector<std::string> idx, reductionIdx;
     std::vector<Halide::ImageParam> inputs;
     std::vector<Halide::OutputImageParam> outputs;
-    std::vector<halide2isl::Reduction> reductions;
     std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
         statements;
     std::unordered_map<const Halide::Internal::IRNode*, isl::id> accesses;
-    halide2isl::IteratorMap iterators;
+    halide2isl::IterationDomainMap domains;
   } halide;
 
   // Polyhedral IR
@@ -506,8 +514,7 @@ struct Scop {
   // The parameter values of a specialized Scop.
   std::unordered_map<std::string, int> parameterValues;
 
-  isl::union_map reads;
-  isl::union_map writes;
+  Body body;
 
   // RAW, WAR, and WAW dependences
   isl::union_map dependences;
@@ -518,7 +525,7 @@ struct Scop {
   // The support is originally an isl::union_set corresponding to the union of
   // the iteration domains of the statements in the Scop.
   // The support must be the unique root node of the ScheduleTree and be of
-  // type: ScheduleTreeElemDomain.
+  // type: ScheduleTreeDomain.
   std::unique_ptr<detail::ScheduleTree> scheduleTreeUPtr;
 
  public:

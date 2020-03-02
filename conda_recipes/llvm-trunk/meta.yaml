@@ -1,0 +1,33 @@
+package:
+  name: llvm-trunk
+  version: "{{ environ.get('LLVM_TRUNK_BUILD_VERSION') }}"
+
+source:
+  path: "{{ environ.get('LLVM_TRUNK_SOURCE_DIR') }}"
+
+requirements:
+  build:
+    - cmake
+  run:
+    - cmake
+
+build:
+  number: {{ environ.get('LLVM_TRUNK_BUILD_NUMBER') }}
+  skip: True   # [win]
+
+test:
+  commands:
+    - $PREFIX/bin/llvm-config --libs
+    - $PREFIX/bin/llc -version
+    - test -f $PREFIX/include/llvm/Pass.h
+    - test -f $PREFIX/lib/libLLVMCore.a
+
+    - $PREFIX/bin/clang --version
+    - $PREFIX/bin/clang++ --version
+    - $PREFIX/bin/clang-check --version
+    - test -f $PREFIX/include/clang/Lex/Lexer.h
+    - test -f $PREFIX/lib/libclangBasic.a
+
+extra:
+  recipe-maintainers:
+    - nicolasvasilache

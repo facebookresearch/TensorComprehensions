@@ -1,3 +1,17 @@
+/* Copyright (c) 2017-present, Facebook, Inc.
+/*
+/* Licensed under the Apache License, Version 2.0 (the "License");
+/* you may not use this file except in compliance with the License.
+/* You may obtain a copy of the License at
+/*
+/*     http://www.apache.org/licenses/LICENSE-2.0
+/*
+/* Unless required by applicable law or agreed to in writing, software
+/* distributed under the License is distributed on an "AS IS" BASIS,
+/* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+/* See the License for the specific language governing permissions and
+/* limitations under the License.
+/* #############################################################################
 syntax = "proto2";
 
 package tc;
@@ -70,6 +84,10 @@ message CudaMappingOptionsProto {
   optional uint64 max_shared_memory = 7;
   // Use the readonly cache (i.e. emit __ldg loads)
   required bool use_readonly_cache = 8;
+  // Depth of promotion to private memory, ignored if use_private_memory is false.
+  optional uint32 private_depth = 9;
+  // Depth of promotion to shared memory, ignored if use_shared_memory is false.
+  optional uint32 shared_depth = 10;
 }
 
 message CpuMappingOptionsProto {

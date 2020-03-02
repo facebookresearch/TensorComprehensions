@@ -26,7 +26,7 @@
 
 #include <isl/cpp.h>
 
-#include "tc/core/islpp_wrap.h"
+#include "tc/core/check.h"
 
 namespace isl {
 
@@ -36,8 +36,18 @@ namespace isl {
 //
 
 template <typename T>
+inline T operator+(T a, T b) {
+  return a.add(b);
+}
+
+template <typename T>
 inline T operator-(T a, T b) {
   return a.sub(b);
+}
+
+template <typename T>
+inline T operator&(T S1, T S2) {
+  return S1.intersect(S2);
 }
 
 inline isl::val operator*(isl::val l, isl::val r) {
@@ -50,10 +60,6 @@ inline isl::val operator*(isl::val v, long i) {
 
 inline isl::val operator*(long i, isl::val v) {
   return v * i;
-}
-
-inline isl::val operator+(isl::val l, isl::val r) {
-  return l.add(r);
 }
 
 inline isl::val operator+(isl::val v, long i) {
@@ -117,19 +123,10 @@ inline bool operator!=(isl::val v1, isl::val v2) {
 ///////////////////////////////////////////////////////////////////////////////
 isl::aff operator*(int i, isl::aff A);
 isl::aff operator*(isl::aff A, int i);
-isl::aff operator*(isl::aff A, isl::val V);
-isl::aff operator*(isl::val V, isl::aff A);
 
 isl::aff operator/(isl::aff A, int i);
 
-isl::aff operator+(int i, isl::aff A);
-isl::aff operator+(isl::aff A, isl::aff B);
-isl::aff operator+(isl::aff A, int i);
-isl::aff operator+(isl::aff A, isl::val v);
 isl::aff operator+(isl::val v, isl::aff A);
-
-isl::aff operator-(isl::aff A, int i);
-isl::aff operator-(int i, isl::aff A);
 
 // Thin wrapper around aff to disambiguate types for operators and avoid case
 // where return type overloading occurs
@@ -177,17 +174,10 @@ isl::map operator>(isl::aff_map A, isl::aff B);
 isl::map operator<(isl::aff_map A, isl::aff B);
 
 ///////////////////////////////////////////////////////////////////////////////
-// Operations on isl::multi_aff
-///////////////////////////////////////////////////////////////////////////////
-isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right);
-
-///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-isl::set operator&(isl::set S1, isl::set S2);
 isl::union_set operator&(isl::union_set S1, isl::set S2);
 isl::union_set operator&(isl::set S1, isl::union_set S2);
-isl::union_set operator&(isl::union_set S1, isl::union_set S2);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::point
@@ -280,11 +270,12 @@ inline bool operator!=(const isl::id& id1, const isl::id& id2) {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
+
 // Given a space and a list of values, this returns the corresponding multi_val.
 template <typename T>
 isl::multi_val makeMultiVal(isl::space s, const std::vector<T>& vals) {
   isl::multi_val mv = isl::multi_val::zero(s);
-  CHECK_EQ(vals.size(), s.dim(isl::dim_type::set));
+  TC_CHECK_EQ(vals.size(), static_cast<size_t>(mv.size()));
   for (size_t i = 0; i < vals.size(); ++i) {
     mv = mv.set_val(i, isl::val(s.get_ctx(), vals[i]));
   }
@@ -367,7 +358,7 @@ struct ListIter {
     pos_++;
   }
   E operator*() {
-    return list_.get(pos_);
+    return list_.get_at(pos_);
   }
 
  private:
@@ -376,13 +367,13 @@ struct ListIter {
 };
 
 template <typename L>
-auto begin(L& list) -> ListIter<decltype(list.get(0)), L> {
-  return ListIter<decltype(list.get(0)), L>(list, 0);
+auto begin(L& list) -> ListIter<decltype(list.get_at(0)), L> {
+  return ListIter<decltype(list.get_at(0)), L>(list, 0);
 }
 
 template <typename L>
-auto end(L& list) -> ListIter<decltype(list.get(0)), L> {
-  return ListIter<decltype(list.get(0)), L>(list, list.n());
+auto end(L& list) -> ListIter<decltype(list.get_at(0)), L> {
+  return ListIter<decltype(list.get_at(0)), L>(list, list.size());
 }
 
 } // namespace detail

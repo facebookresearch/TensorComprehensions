@@ -26,6 +26,9 @@
 
 #include <llvm/ADT/Optional.h>
 
+#include "tc/core/check.h"
+#include "tc/core/compiler.h"
+#include "tc/core/functional.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/math.h"
 #include "tc/core/utils/time.h"
@@ -162,12 +165,10 @@ void OptionsCache<Backend>::storeCacheToFile(
     std::lock_guard<std::mutex> lock(mutex);
     std::fstream serialized(
         filename, std::ios::binary | std::ios::trunc | std::ios::out);
-    if (!serialized.is_open()) {
-      LOG(ERROR) << "Failed to open the output stream for dumping protobuf: "
-                 << filename;
-    } else {
-      proto.SerializePartialToOstream(&serialized);
-    }
+    TC_CHECK(serialized.is_open(), std::invalid_argument)
+        << "Failed to open the output stream for dumping protobuf: "
+        << filename;
+    proto.SerializePartialToOstream(&serialized);
   }
 }
 
@@ -235,8 +236,8 @@ std::vector<OptionsWithMedianAndRuntimes<Backend>> sortedOptions(
 } // namespace detail
 
 template <typename Backend>
-std::vector<typename Backend::MappingOptionsType>
-OptionsCache<Backend>::getTopKOptions(
+std::vector<std::pair<typename Backend::MappingOptionsType, Duration>>
+OptionsCache<Backend>::getTopKEntries(
     const lang::CanonicalTcString& tc,
     const std::vector<TensorInfo>& inputs,
     const std::vector<TensorInfo>& outputs,
@@ -249,13 +250,30 @@ OptionsCache<Backend>::getTopKOptions(
   if (sorted.size() == 0u) {
     return {};
   }
-  std::vector<typename Backend::MappingOptionsType> res;
-  res.reserve(K);
+  std::vector<std::pair<typename Backend::MappingOptionsType, Duration>> res;
+  res.reserve(std::min(K, sorted.size()));
   for (size_t i = 0; i < std::min(K, sorted.size()); ++i) {
-    res.push_back(sorted[i].mappingOptions);
+    res.push_back(std::make_pair(sorted[i].mappingOptions, sorted[i].median));
   }
   ++numberSuccessfulRetrievals;
   return res;
+}
+
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType>
+OptionsCache<Backend>::getTopKOptions(
+    const lang::CanonicalTcString& tc,
+    const std::vector<TensorInfo>& inputs,
+    const std::vector<TensorInfo>& outputs,
+    const std::string& backendStr,
+    size_t K) const {
+  auto vBest = getTopKEntries(tc, inputs, outputs, backendStr, K);
+  using ReturnType = typename Backend::MappingOptionsType;
+  using ValueType = typename decltype(vBest)::value_type;
+  std::function<ReturnType(ValueType)> map = [](ValueType in) {
+    return in.first;
+  };
+  return tc::functional::Map(map, vBest);
 }
 
 template <typename Backend>
@@ -307,7 +325,7 @@ template <typename Backend>
 void OptionsCache<Backend>::fromProtobuf(
     const typename Backend::OptionsCacheProtoType& proto) {
   std::lock_guard<std::mutex> lock(mutex);
-  CHECK_EQ(proto.keys().size(), proto.values().size());
+  TC_CHECK_EQ(proto.keys().size(), proto.values().size());
   for (int i = 0; i < proto.keys().size(); ++i) {
     OptionsCacheKey key(OptionsCacheKey::fromProtobuf(proto.keys().Get(i)));
     OptionsCacheValue<Backend> value(
@@ -316,9 +334,37 @@ void OptionsCache<Backend>::fromProtobuf(
   }
 }
 
-} // namespace autotune
-
-inline std::string makeOptionsFilename(const std::string& fn) {
-  return fn + ".options";
+template <typename Backend>
+std::vector<typename Backend::MappingOptionsType> loadTopKFromCacheFile(
+    const std::string& tc,
+    const std::string& entryPoint,
+    const std::string& cacheFilename,
+    const std::vector<const DLConstTensor*>& inputs,
+    size_t count) {
+  OptionsCache<Backend> optionsCache;
+  optionsCache.loadCacheFromFile(cacheFilename);
+  auto outputs = tc::inferOutputTensorInfo(tc, entryPoint, inputs);
+  return optionsCache.getTopKOptions(
+      lang::canonicalTc(tc::detail::parse(tc).at(entryPoint)),
+      tc::makeTensorInfoVector(inputs),
+      outputs,
+      Backend::backendString(),
+      count);
 }
+
+template <typename Backend>
+void appendTopKToCacheFile(
+    const OptionsCache<Backend>& cache,
+    const std::string& cacheFilename,
+    uint32_t count) {
+  OptionsCache<Backend> copy(cache);
+  copy.pruneKeepTopK(count);
+  auto proto = copy.toProtobuf();
+  OptionsCache<Backend> optionsCache;
+  optionsCache.loadCacheFromFile(cacheFilename);
+  optionsCache.fromProtobuf(proto);
+  optionsCache.storeCacheToFile(cacheFilename);
+}
+
+} // namespace autotune
 } // namespace tc

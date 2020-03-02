@@ -26,6 +26,7 @@
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
 #include "tc/lang/tc_format.h"
+#include "tc/tc_config.h"
 
 using namespace lang;
 
@@ -34,7 +35,7 @@ using namespace lang;
 #endif
 
 const std::string expected_file_path =
-    std::string(TC_DIR) + "/tc/lang/test_expected/";
+    std::string(TC_STRINGIFY(TC_DIR)) + "/tc/lang/test_expected/";
 
 static inline void barf(const char* fmt, ...) {
   char msg[2048];

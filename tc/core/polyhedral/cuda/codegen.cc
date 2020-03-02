@@ -20,9 +20,10 @@
 #include <unordered_map>
 #include <utility>
 
+#include "tc/core/check.h"
+#include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/flags.h"
-#include "tc/core/islpp_wrap.h"
-#include "tc/core/libraries.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/codegen.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
@@ -30,13 +31,50 @@
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
+#include "tc/core/polyhedral/scop.h"
 
 using namespace std;
 
+using tc::polyhedral::detail::ScheduleTreeContext;
+using tc::polyhedral::detail::ScheduleTreeDomain;
+using tc::polyhedral::detail::toIslSchedule;
+
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 namespace {
+
+static std::string halideTypeString(const Halide::Type& t) {
+  if (t.is_bool()) {
+    return "bool";
+  } else if (t.is_int() && t.bits() == 8) {
+    return "char";
+  } else if (t.is_int() && t.bits() == 16) {
+    return "short";
+  } else if (t.is_int() && t.bits() == 32) {
+    return "int";
+  } else if (t.is_int() && t.bits() == 64) {
+    return "long";
+  } else if (t.is_uint() && t.bits() == 8) {
+    return "unsigned char";
+  } else if (t.is_uint() && t.bits() == 16) {
+    return "unsigned short";
+  } else if (t.is_uint() && t.bits() == 32) {
+    return "unsigned int";
+  } else if (t.is_uint() && t.bits() == 64) {
+    return "unsigned long";
+  } else if (t.is_float() && t.bits() == 16) {
+    return "half";
+  } else if (t.is_float() && t.bits() == 32) {
+    return "float";
+  } else if (t.is_float() && t.bits() == 64) {
+    return "double";
+  }
+  std::stringstream ss;
+  ss << t;
+  return ss.str();
+}
 
 struct WS {
   static thread_local int n;
@@ -101,7 +139,7 @@ vector<string> emitParams(const Scop& scop) {
   // Halide params. One of these two vectors will be empty.
   for (auto p : scop.halide.params) {
     stringstream ss;
-    ss << p.type() << " " << p.name();
+    ss << halideTypeString(p.type()) << " " << p.name();
     res.push_back(ss.str());
   }
   return res;
@@ -112,7 +150,7 @@ string emitTypedTensorName(
     Halide::OutputImageParam t,
     bool constInput = false) {
   stringstream ss;
-  ss << (constInput ? "const " : "") << t.type() << "* "
+  ss << (constInput ? "const " : "") << halideTypeString(t.type()) << "* "
      << makePointerName(t.name());
   return ss.str();
 }
@@ -153,7 +191,7 @@ void emitKernelSignature(
     stringstream& ss,
     const std::string& specializedName,
     const Scop& scop) {
-  CHECK_NE(specializedName, "") << "name not provided";
+  TC_CHECK_NE(specializedName, "") << "name not provided";
   ss << "__global__ void " << specializedName << "(";
   emitArgs(ss, scop);
   ss << ") {" << endl;
@@ -189,16 +227,16 @@ void emitTensorView(
   for (int i = 1; i < p.dimensions(); ++i) { // Skip the outermost dimension
     Halide::Expr extent = p.parameter().extent_constraint(i);
     extent = Halide::Internal::substitute(paramValues, extent);
-    CHECK(extent.defined())
+    TC_CHECK(extent.defined())
         << "Undefined extent on input/output tensor. Forward bounds inference should have set these\n";
     ssViewType << "[" << extent << "]";
   }
   ss << ws.tab();
-  ss << (constInput ? "const " : "") << p.type() << " (*" << p.name() << ")"
-     << ssViewType.str();
+  ss << (constInput ? "const " : "") << halideTypeString(p.type()) << " (*"
+     << p.name() << ")" << ssViewType.str();
   ss << " = ";
-  ss << "reinterpret_cast<" << (constInput ? "const " : "") << p.type()
-     << " (*)" << ssViewType.str() << ">";
+  ss << "reinterpret_cast<" << (constInput ? "const " : "")
+     << halideTypeString(p.type()) << " (*)" << ssViewType.str() << ">";
   ss << "(" << makePointerName(p.name()) << ")";
   ss << ";";
   ss << endl;
@@ -249,8 +287,8 @@ void AstPrinter::emitIf(isl::ast_node_if node) {
 
 void emitReductionOpName(const Halide::Expr& e, const CodegenContext& context) {
   auto call = e.as<Halide::Internal::Call>();
-  CHECK(call);
-  CHECK(call->is_intrinsic(tc2halide::kReductionUpdate));
+  TC_CHECK(call);
+  TC_CHECK(call->is_intrinsic(tc2halide::kReductionUpdate));
   context.ss << "__tc::ReductionOp::";
   if (call->args[0].as<Halide::Internal::Add>()) {
     context.ss << "Sum";
@@ -261,7 +299,7 @@ void emitReductionOpName(const Halide::Expr& e, const CodegenContext& context) {
   } else if (call->args[0].as<Halide::Internal::Max>()) {
     context.ss << "Max";
   } else {
-    CHECK(false) << "unsupported reduction type: " << e << "\n";
+    TC_CHECK(false) << "unsupported reduction type: " << e << "\n";
   }
 }
 
@@ -271,7 +309,7 @@ void emitTreeSyncCall(
     isl::id id,
     isl::id reductionUpdateNodeId,
     const CodegenStatementContext& context) {
-  CHECK_EQ(1u, context.scop().treeSyncUpdateMap.count(id));
+  TC_CHECK_EQ(1u, context.scop().treeSyncUpdateMap.count(id));
   isl::id updateId = context.scop().treeSyncUpdateMap.at(id);
 
   // Halide reduction.
@@ -312,14 +350,14 @@ void emitTreeSyncCall(
 }
 
 void emitUserStmt(isl::id stmtId, const CodegenStatementContext& context) {
-  CHECK(context.scop().halide.statements.count(stmtId))
+  TC_CHECK(context.scop().halide.statements.count(stmtId))
       << "No stmt with id " << stmtId << "\n";
   auto provide = context.scop().halide.statements.at(stmtId);
   auto op = provide.as<Halide::Internal::Provide>();
-  CHECK(op) << "Expected a Provide node: " << provide << '\n';
+  TC_CHECK(op) << "Expected a Provide node: " << provide << '\n';
   detail::emitMappedTensorAccess(op->name, op, op->args, context);
   context.ss << " = ";
-  CHECK(op->values.size() == 1)
+  TC_CHECK(op->values.size() == 1)
       << "Multi-valued Provide: " << Halide::Internal::Stmt(provide) << "\n";
   detail::emitHalideExpr(op->values[0], context);
   context.ss << ";" << endl;
@@ -356,7 +394,7 @@ void emitReductionInit(
                      .as<Halide::Internal::Provide>();
   context.ss << makeReductionTmpName(updateId, context.scop()) << " = ";
   auto call = provide->values[0].as<Halide::Internal::Call>();
-  CHECK(call && call->is_intrinsic(tc2halide::kReductionUpdate));
+  TC_CHECK(call && call->is_intrinsic(tc2halide::kReductionUpdate));
   auto assoc = prove_associativity(provide->name, provide->args, call->args);
   if (!assoc.associative()) {
     std::stringstream ss;
@@ -367,7 +405,7 @@ void emitReductionInit(
     throw codegen::NotAssociativeError(ss.str());
   }
   auto statementContext = CodegenStatementContext(context, stmtId);
-  CHECK_EQ(assoc.pattern.identities.size(), 1u);
+  TC_CHECK_EQ(assoc.pattern.identities.size(), 1u);
   detail::emitHalideExpr(assoc.pattern.identities[0], statementContext);
   context.ss << ";" << endl;
 }
@@ -397,9 +435,48 @@ struct LdgWrapper {
 };
 
 template <typename AFF>
+isl::ast_expr buildAccess(AFF access, const CodegenStatementContext& context) {
+  return context.build().access_from(access);
+}
+
+void emitAccess(isl::ast_expr access, const CodegenStatementContext& context) {
+  context.ss << access.to_C_str();
+}
+
+template <typename AFF>
 void emitAccess(AFF access, const CodegenStatementContext& context) {
-  LdgWrapper ldgWrapper(context, access.get_tuple_id(isl::dim_type::out));
-  context.ss << context.build().access_from(access).to_C_str();
+  emitAccess(buildAccess(access, context), context);
+}
+
+// Check that the given expression is an access with constant index expressions
+void checkConstantAccess(isl::ast_expr expr) {
+  auto op = expr.as<isl::ast_expr_op>();
+  auto access = op.as<isl::ast_op_access>();
+  TC_CHECK(access);
+  for (int i = 1; i < access.get_n_arg(); ++i) {
+    auto arg = access.get_arg(i);
+    TC_CHECK(arg.as<isl::ast_expr_int>())
+        << "expected constant subscript, got " << arg.to_C_str();
+  }
+}
+
+// Print an access to a(n array of) register(s), checking that
+// the index expressions are constant.
+void emitRegisterAccess(
+    isl::pw_multi_aff access,
+    const CodegenStatementContext& context) {
+  auto expr = buildAccess(access, context);
+  checkConstantAccess(expr);
+  emitAccess(expr, context);
+}
+
+// Print an access to global memory, wrapping the access in an "__ldg()"
+// call if the accessed tensor is known to be read-only.
+void emitGlobalAccess(
+    isl::multi_pw_aff access,
+    const CodegenStatementContext& context) {
+  LdgWrapper ldgWrapper(context, access.get_range_tuple_id());
+  emitAccess(access, context);
 }
 } // namespace
 
@@ -414,9 +491,9 @@ void emitCopyStmt(const CodegenStatementContext& context) {
   if (isRead) {
     emitAccess(isl::multi_pw_aff(promoted), context);
     context.ss << " = ";
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
   } else {
-    emitAccess(isl::multi_pw_aff(original), context);
+    emitGlobalAccess(isl::multi_pw_aff(original), context);
     context.ss << " = ";
     emitAccess(isl::multi_pw_aff(promoted), context);
   }
@@ -428,7 +505,7 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
   auto stmtId = usrExp.get_arg(0).as<isl::ast_expr_id>().get_id();
   auto nodeId = node.get_annotation();
   auto statementContext = CodegenStatementContext(context_, nodeId);
-  CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1u)
+  TC_CHECK_EQ(context_.nodeInfoMap.count(nodeId), 1u)
       << "no info for node " << nodeId;
 
   WS ws;
@@ -454,7 +531,7 @@ void AstPrinter::emitStmt(isl::ast_node_user node) {
     emitCopyStmt(statementContext);
   } else { // regular statement
     auto mappedStmtId = statementContext.statementId();
-    CHECK_EQ(stmtId, mappedStmtId)
+    TC_CHECK_EQ(stmtId, mappedStmtId)
         << "statement ids in expr (" << stmtId << ") and in iteratorMaps ("
         << mappedStmtId << ") do not match";
     emitUserStmt(stmtId, statementContext);
@@ -471,7 +548,7 @@ void AstPrinter::emitAst(isl::ast_node node) {
       emitAst(child);
     }
   } else if (node.as<isl::ast_node_mark>()) {
-    CHECK(false) << "mark";
+    TC_CHECK(false) << "mark";
     // emitAst(node.mark_get_node());
   } else if (auto userNode = node.as<isl::ast_node_user>()) {
     emitStmt(userNode);
@@ -489,7 +566,7 @@ isl::pw_aff makeAffFromMappedExpr(
     const CodegenStatementContext& context) {
   // We only expect this to be called on encountering a free
   // variable. Compound expressions should be emitted as Halide.
-  CHECK(expr.as<Halide::Internal::Variable>());
+  TC_CHECK(expr.as<Halide::Internal::Variable>());
   auto aff = context.makeIslAffFromExpr(expr);
   auto pwaff = isl::pw_aff(aff).pullback(context.iteratorMap());
   return pwaff;
@@ -501,8 +578,8 @@ isl::space findDomainSpaceById(const CodegenStatementContext& context) {
       return d.get_space();
     }
   }
-  CHECK(false) << "could not find domain for " << context.statementId()
-               << " in " << context.scop().domain();
+  TC_CHECK(false) << "could not find domain for " << context.statementId()
+                  << " in " << context.scop().domain();
   return isl::space();
 }
 
@@ -510,11 +587,12 @@ isl::multi_aff makeMultiAffAccess(
     isl::id tensorId,
     const std::vector<Halide::Expr>& subscripts,
     const CodegenStatementContext& context) {
-  CHECK_NE(subscripts.size(), 0u) << "cannot build subscript aff for a scalar";
+  TC_CHECK_NE(subscripts.size(), 0u)
+      << "cannot build subscript aff for a scalar";
 
   auto domainSpace = findDomainSpaceById(context);
-  auto tensorSpace = domainSpace.params().named_set_from_params_id(
-      tensorId, subscripts.size());
+  auto tensorSpace =
+      domainSpace.params().add_named_tuple_id_ui(tensorId, subscripts.size());
   auto space = domainSpace.map_from_domain_and_range(tensorSpace);
 
   auto ma = isl::multi_aff::zero(space);
@@ -526,11 +604,10 @@ isl::multi_aff makeMultiAffAccess(
 
 namespace {
 bool is_identifier_or_nonnegative_integer(isl::ast_expr expr) {
-  if (isl_ast_expr_get_type(expr.get()) == isl_ast_expr_id)
-    return true;
-  if (isl_ast_expr_get_type(expr.get()) != isl_ast_expr_int)
-    return false;
-  return isl::manage(isl_ast_expr_get_val(expr.get())).is_nonneg();
+  if (auto intExpr = expr.as<isl::ast_expr_int>()) {
+    return intExpr.get_val().is_nonneg();
+  }
+  return !expr.as<isl::ast_expr_id>().is_null();
 }
 } // namespace
 
@@ -541,8 +618,7 @@ void emitHalideExpr(
   class EmitHalide : public Halide::Internal::IRPrinter {
     using Halide::Internal::IRPrinter::visit;
     void visit(const Halide::Internal::Variable* op) {
-      auto pwAff = tc::polyhedral::detail::makeAffFromMappedExpr(
-          Halide::Expr(op), context);
+      auto pwAff = detail::makeAffFromMappedExpr(Halide::Expr(op), context);
       auto expr = context.build().expr_from(pwAff);
       auto s = expr.to_C_str();
       if (!is_identifier_or_nonnegative_integer(expr)) {
@@ -556,13 +632,27 @@ void emitHalideExpr(
       } else if (
           op->call_type == Halide::Internal::Call::CallType::Halide ||
           op->call_type == Halide::Internal::Call::CallType::Image) {
-        tc::polyhedral::detail::emitMappedTensorAccess(
-            op->name, op, op->args, context);
+        detail::emitMappedTensorAccess(op->name, op, op->args, context);
       } else if (op->is_intrinsic(tc2halide::kReductionUpdate)) {
         op->args[0].accept(this);
       } else {
         IRPrinter::visit(op);
       }
+    }
+    void visit(const Halide::Internal::IntImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::UIntImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::FloatImm* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")" << op->value;
+    }
+    void visit(const Halide::Internal::Cast* op) {
+      context.ss << "(" << halideTypeString(op->type) << ")";
+      context.ss << "(";
+      op->value.accept(this);
+      context.ss << ")";
     }
     // TODO: handle casts
     const CodegenStatementContext& context;
@@ -596,7 +686,7 @@ void emitMappedTensorAccess(
     return;
   }
 
-  CHECK_EQ(context.scop().halide.accesses.count(node), 1u)
+  TC_CHECK_EQ(context.scop().halide.accesses.count(node), 1u)
       << "attempting to generate code for tensor " << name
       << " reference not present in Scop" << node;
   auto refId = context.scop().halide.accesses.at(node);
@@ -604,7 +694,7 @@ void emitMappedTensorAccess(
   Scop::PromotionInfo promotionInfo;
   for (auto pi : context.activePromotions()) {
     if (pi.group->referenceIds().count(refId)) {
-      CHECK(!promotionInfo.groupId)
+      TC_CHECK(!promotionInfo.groupId)
           << "reference " << refId
           << " belongs to two groups: " << promotionInfo.groupId << " and "
           << pi.groupId;
@@ -625,7 +715,8 @@ void emitMappedTensorAccess(
     return;
   }
 
-  auto tensorId = context.scop().promotedDecl(promotionInfo.groupId).tensorId;
+  auto decl = context.scop().promotedDecl(promotionInfo.groupId);
+  auto tensorId = decl.tensorId;
 
   // Here and below in comments: D = domain, O = original tensor, P = promoted
   // tensor, S = partial schedule, A = AST loops;
@@ -633,13 +724,12 @@ void emitMappedTensorAccess(
   auto access =
       makeMultiAffAccess(tensorId, subscripts, context); // MA :: D -> O
   auto promotion = promotionInfo.group->promotion(); // MA :: [S -> O] -> P
-  promotion = promotion.set_tuple_id(isl::dim_type::out, promotionInfo.groupId);
+  promotion = promotion.set_range_tuple_id(promotionInfo.groupId);
   auto iteratorMap = context.iteratorMap(); // PMA :: A -> D
-  auto schedule =
-      isl::map::from_union_map(promotionInfo.outerSchedule.intersect_domain(
-          context.domain())); // map :: D -> S
+  auto schedule = isl::map::from(promotionInfo.outerSchedule.intersect_domain(
+      context.domain())); // map :: D -> S
 
-  CHECK(schedule.is_single_valued())
+  TC_CHECK(schedule.is_single_valued())
       << "expected single-valued schedule, got " << schedule;
   // PMA :: A -> S
   auto astToSchedule = isl::pw_multi_aff(schedule).pullback(iteratorMap);
@@ -651,7 +741,11 @@ void emitMappedTensorAccess(
   auto astToPromoted =
       isl::pw_multi_aff(promotion).pullback(astToScheduledOriginal);
 
-  emitAccess(astToPromoted, context);
+  if (decl.kind == Scop::PromotedDecl::Kind::Register) {
+    emitRegisterAccess(astToPromoted, context);
+  } else {
+    emitAccess(astToPromoted, context);
+  }
 }
 
 } // namespace detail
@@ -675,7 +769,7 @@ void emitTmpDecl(stringstream& ss, const Scop& scop) {
     auto updateId = kvp.second;
     auto provide =
         scop.halide.statements.at(updateId).as<Halide::Internal::Provide>();
-    ss << provide->values[0].type() << " "
+    ss << halideTypeString(provide->values[0].type()) << " "
        << makeReductionTmpName(updateId, scop) << ";" << endl;
   }
 }
@@ -700,7 +794,7 @@ void emitPromotedArrayViewsHalide(stringstream& ss, const Scop& scop) {
     if (p.second.kind == Scop::PromotedDecl::Kind::SharedMem) {
       ss << "__shared__ ";
     }
-    ss << t << " " << viewName;
+    ss << halideTypeString(t) << " " << viewName;
     for (auto s : p.second.sizes) {
       ss << "[" << s << "]";
     }
@@ -725,8 +819,8 @@ std::unordered_set<isl::id, isl::IslIdIslHash> gatherReadOnlySet(
 
   const auto& scop = mscop.scop();
 
-  auto read = scop.reads.universe().range();
-  auto written = scop.writes.universe().range();
+  auto read = scop.body.reads.universe().range();
+  auto written = scop.body.writes.universe().range();
   auto readOnly = read.subtract(written);
   for (auto s : readOnly.get_set_list()) {
     readOnlySet.emplace(s.get_tuple_id());
@@ -740,9 +834,8 @@ string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& mscop) {
   // Expecting a schedule with domain root and context first child.
-  CHECK(mscop.schedule()->elemAs<detail::ScheduleTreeElemDomain>());
-  CHECK(
-      mscop.schedule()->child({0})->elemAs<detail::ScheduleTreeElemContext>());
+  TC_CHECK(mscop.schedule()->as<ScheduleTreeDomain>());
+  TC_CHECK(mscop.schedule()->child({0})->as<ScheduleTreeContext>());
   const auto& scop = mscop.scop();
 
   // Make a map of the specialized scalar parameter values
@@ -766,16 +859,16 @@ string emitCudaKernel(
            isl::ast_build build,
            NodeInfoMapType* nodeInfoMap) -> isl::ast_node {
       auto user = node.as<isl::ast_node_user>();
-      CHECK(user);
+      TC_CHECK(user);
       auto expr = user.get_expr().as<isl::ast_expr_op>();
       auto stmtId = expr.get_arg(0).as<isl::ast_expr_id>().get_id();
       auto schedule = build.get_schedule();
-      auto scheduleMap = isl::map::from_union_map(schedule);
+      auto scheduleMap = isl::map::from(schedule);
 
       auto nodeId = isl::id(
           node.get_ctx(),
           std::string(kAstNodeIdPrefix) + std::to_string(nAstNodes()++));
-      CHECK_EQ(0u, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
+      TC_CHECK_EQ(0u, nodeInfoMap->count(nodeId)) << "entry exists: " << nodeId;
 
       auto& nodeInfo = (*nodeInfoMap)[nodeId];
       nodeInfo.iteratorMap = isl::pw_multi_aff(scheduleMap.reverse());
@@ -786,7 +879,7 @@ string emitCudaKernel(
     return collectIteratorMaps(n, b, &nodeInfoMap);
   };
 
-  auto schedule = detail::toIslSchedule(mscop.schedule());
+  auto schedule = toIslSchedule(mscop.schedule());
   auto astBuild = isl::ast_build(schedule.get_ctx());
   astBuild = astBuild.set_at_each_domain(collect);
   auto root = mscop.schedule();
@@ -800,5 +893,6 @@ string emitCudaKernel(
   return ss.str();
 }
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

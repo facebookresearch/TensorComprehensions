@@ -32,6 +32,7 @@
 #include "tc/lang/error_report.h"
 #include "tc/library/copy.h"
 #include "tc/library/matmul.h"
+#include "tc/utils/compiler_options.h"
 
 using namespace std;
 
@@ -60,8 +61,8 @@ dtype {
 struct GenericHalideCoreTest : public ::testing::Test {
   void CheckC(const std::string& tc, const std::vector<std::string>& expected) {
     auto curPos = std::string::npos;
-    auto halide =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
+    auto halide = tc2halide::translate(
+        isl::with_exceptions::globalIslCtx(), tc, CompilerOptions());
     auto res = tc::halideCodegenC(halide.stmt);
     for (const auto& e : expected) {
       auto newPos = res.find(e);
@@ -243,16 +244,13 @@ struct TC2Isl : public ::testing::Test {
     DLConstTensorUPtr in = makeDLConstTensor(ti);
 
     // Must reuse the same ctx or memleaks ensue!
-    tc2halide::HalideComponents comps =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
+    tc2halide::HalideComponents comps = tc2halide::translate(
+        isl::with_exceptions::globalIslCtx(), tc, CompilerOptions());
     auto scop =
         polyhedral::Scop::makeScop(isl::with_exceptions::globalIslCtx(), comps);
     polyhedral::detail::validateSchedule(scop->scheduleRoot());
     // Just check no crashes
     auto outputs = inferOutputTensorInfo(comps, {in.get()});
-    // Check schedule construction equality
-    auto scheduleHalide = polyhedral::detail::fromIslSchedule(
-        polyhedral::detail::toIslSchedule(scop->scheduleRoot()).reset_user());
   }
 };
 

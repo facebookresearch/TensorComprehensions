@@ -28,7 +28,8 @@ namespace tc {
 namespace detail {
 template <typename DLTensorType>
 uint64_t getDLTensorAlignment(const DLTensorType* t) {
-  return (reinterpret_cast<std::uintptr_t>(t->data) + t->byte_offset) % 256;
+  return (reinterpret_cast<std::uintptr_t>(t->data) + t->byte_offset) %
+      TensorInfo::kAlignment;
 }
 
 std::vector<int64_t> toIntVector(const int64_t* ptr, size_t ndim) {

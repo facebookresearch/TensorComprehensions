@@ -26,6 +26,7 @@
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 
 struct CodegenContext;
 struct CodegenStatementContext;
@@ -114,7 +115,7 @@ struct CodegenStatementContext : CodegenContext {
     return this->nodeInfoMap.at(astNodeId).build;
   }
   isl::id statementId() const {
-    return this->iteratorMap().get_tuple_id(isl::dim_type::out);
+    return this->iteratorMap().get_range_tuple_id();
   }
   isl::set domain() const {
     return isl::map::from(this->iteratorMap()).range();
@@ -136,8 +137,7 @@ struct CodegenStatementContext : CodegenContext {
   // of the variables does not correspond to a parameter or
   // an instance identifier of the statement.
   isl::aff makeIslAffFromExpr(const Halide::Expr& e) const {
-    auto space = iteratorMap().get_space().params();
-    return scop().makeIslAffFromStmtExpr(statementId(), space, e);
+    return scop().makeIslAffFromStmtExpr(statementId(), e);
   }
 
   isl::id astNodeId;
@@ -147,5 +147,6 @@ std::string emitCudaKernel(
     const std::string& specializedName,
     const MappedScop& scop);
 
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

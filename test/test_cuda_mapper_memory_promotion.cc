@@ -17,17 +17,20 @@
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/memory_promotion.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/polyhedral/scop.h"
 
 using namespace std;
 
 using namespace tc;
 using namespace tc::polyhedral;
+using namespace tc::polyhedral::cuda;
 
 namespace {
 int npoints(isl::set s) {
@@ -44,11 +47,25 @@ class TestMapper : public ::testing::Test {
       const CudaMappingOptions& mappingOptions,
       std::unordered_map<std::string, size_t> problemSizes) {
     auto ctx = isl::with_exceptions::globalIslCtx();
-    auto scop = Scop::makeScop(ctx, tc);
+    auto scop = Scop::makeScop(ctx, tc, CompilerOptions());
     scop = Scop::makeSpecializedScop(*scop, problemSizes);
     scop->specializeToContext();
     return MappedScop::makeWithOuterBlockInnerThreadStrategy(
         std::move(scop), mappingOptions);
+  }
+
+  // This mimics behavior of the old TensorReferenceGroup::accessedBySubtree.
+  // In particular, it takes the partial schedule until "tree" inclusive,
+  // intersecting its domain with all (mapping) filter ancestors and computes
+  // accessed tensor reference groups within that schedule.
+  // If the schedule happens to contain the block/thread mapping filter, the
+  // groups are per-block/thread.  Otherwise, they include all blocks/threads,
+  // which is questionable, but corresponds to what the test currently checks.
+  TensorGroups accessedBySubtree(
+      const polyhedral::detail::ScheduleTree* tree,
+      const Scop& scop) {
+    auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+    return TensorReferenceGroup::accessedWithin(schedule, scop.body);
   }
 };
 
@@ -97,9 +114,9 @@ def fun(float(N,M,K,L) A, float(N,M,K,L) B) -> (C) {
 };
 
 TEST_F(Sum4D, CodeOuterBand) {
-  auto declarations = {"__shared__ float32 _A_0[16][16][16][16];",
-                       "__shared__ float32 _B_0[16][16][16][16];",
-                       "__shared__ float32 _C_0[16][16][16][16];"};
+  auto declarations = {"__shared__ float _A_0[16][16][16][16];",
+                       "__shared__ float _B_0[16][16][16][16];",
+                       "__shared__ float _C_0[16][16][16][16];"};
 
   auto copyA =
       "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7];";
@@ -145,9 +162,9 @@ TEST_F(Sum4D, CodeOuterBand) {
  * promoteEverythingAt does not call mapCopiesToThreads.
  */
 TEST_F(Sum4D, CodeAboveThreadMapping) {
-  auto declarations = {"__shared__ float32 _A_0[16][16][16][16];",
-                       "__shared__ float32 _B_0[16][16][16][16];",
-                       "__shared__ float32 _C_0[16][16][16][16];"};
+  auto declarations = {"__shared__ float _A_0[16][16][16][16];",
+                       "__shared__ float _B_0[16][16][16][16];",
+                       "__shared__ float _C_0[16][16][16][16];"};
   auto copyA =
       "_A_0[c4][c5][c6][c7] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][c3 + c7]";
   auto copyB =
@@ -188,9 +205,9 @@ TEST_F(Sum4D, CodeAboveThreadMapping) {
 }
 
 TEST_F(Sum4D, CodeInnerBand) {
-  auto declarations = {"__shared__ float32 _C_0[1][1][1][1];",
-                       "__shared__ float32 _A_0[1][1][1][1];",
-                       "__shared__ float32 _B_0[1][1][1][1];"};
+  auto declarations = {"__shared__ float _C_0[1][1][1][1];",
+                       "__shared__ float _A_0[1][1][1][1];",
+                       "__shared__ float _B_0[1][1][1][1];"};
   auto copyA =
       "_A_0[0][0][0][0] = A[16 * b0 + c4][16 * b1 + c5][c2 + c6][t0 + c3];";
   auto copyB =
@@ -252,16 +269,13 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
     // Must force domain intersection for overapproximation to work
     scop.specializeToContext();
     auto ctx = scop.domain().get_ctx();
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child(childPos), scop);
+    auto groups = accessedBySubtree(scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
     EXPECT_EQ(groups.size(), 3u);
 
-    USING_MAPPING_SHORT_NAMES(BX, BY, BZ, TX, TY, TZ);
-    isl::space blockSpace = isl::space(ctx, 0);
-    isl::set blockZero =
-        isl::makeSpecializationSet<int>(blockSpace, {{BX, 0}, {BY, 0}});
+    isl::space tileSpace = isl::space(ctx, 0).add_unnamed_tuple_ui(2);
+    auto tileZero = isl::set::from(isl::multi_aff::zero(tileSpace));
 
     // Must have groups for these tensors, in arbitrary order.
     unordered_set<string> names{"A", "B", "C"};
@@ -290,8 +304,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       EXPECT_EQ(
           oneGroup->approximation.size(1),
           isl::val(ctx, std::min(tile2, problemSize2)));
-      auto footprint =
-          oneGroup->approximateFootprint().intersect_params(blockZero);
+      auto footprint = tileZero.apply(oneGroup->approximateScopedAccesses());
       size_t np = npoints(footprint);
       EXPECT_EQ(
           np, std::min(tile1, problemSize1) * std::min(tile2, problemSize2));
@@ -299,7 +312,7 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
       auto schedule = partialSchedule(
           scop.scheduleRoot(), scop.scheduleRoot()->child(childPos));
       auto scopedAccess = oneGroup->originalAccesses().apply_domain(schedule);
-      CHECK(scopedAccess.is_equal(oneGroup->scopedAccesses()))
+      TC_CHECK(scopedAccess.is_equal(oneGroup->scopedAccesses()))
           << "expected original accesses " << oneGroup->originalAccesses()
           << " to be equal to scoped accesses " << oneGroup->scopedAccesses()
           << " after applying the partial schedule " << schedule;
@@ -332,8 +345,7 @@ def fun(float(N, M) A) -> (B, C) {
     // Must force domain intersection for overapproximation to work
     scop.specializeToContext();
     auto ctx = scop.domain().get_ctx();
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child(childPos), scop);
+    auto groups = accessedBySubtree(scop.scheduleRoot()->child(childPos), scop);
     LOG(INFO) << "Groups:\n" << groups;
 
     ASSERT_EQ(groups.size(), 3u);
@@ -366,7 +378,7 @@ def fun(float(N, M) A) -> (B, C) {
 
     auto schedule = partialSchedule(scop.scheduleRoot(), t);
     auto scopedAccess = groupsB[0]->originalAccesses().apply_domain(schedule);
-    CHECK(scopedAccess.is_equal(groupsB[0]->scopedAccesses()))
+    TC_CHECK(scopedAccess.is_equal(groupsB[0]->scopedAccesses()))
         << "expected original accesses " << groupsB[0]->originalAccesses()
         << " to be equal to scoped accesses " << groupsB[0]->scopedAccesses()
         << " after applying the partial schedule " << schedule;
@@ -381,7 +393,7 @@ def fun(float(N, M) A) -> (B, C) {
       size_t maxSharedMemory) {
     auto mscop = prepareScop(
         tc, {{"N", problemSize1}, {"M", problemSize2}}, {tileSize1, tileSize2});
-    promoteGreedilyAtDepth(*mscop, depth, maxSharedMemory, false);
+    promoteToSharedAtDepth(*mscop, depth, maxSharedMemory, false);
     return mscop;
   }
 };
@@ -426,19 +438,19 @@ TEST_F(MapperMemoryPromotionRAW, fitAtOuterDepths) {
       << "expected one reference group to be promoted";
 }
 
-TEST_F(MapperMemoryPromotionRAW, throwIfCopiesBelowThreads) {
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 3, 8192),
-      promotion::PromotionBelowThreadsException);
+TEST_F(MapperMemoryPromotionRAW, noSharedPromotionBelowThreads) {
+  auto mscop1 = makeWithSharedGreedy(42, 40, 64, 64, 3, 8192);
+  EXPECT_EQ(mscop1->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 
-  EXPECT_THROW(
-      makeWithSharedGreedy(42, 40, 64, 64, 4, 8192),
-      promotion::PromotionBelowThreadsException);
+  auto mscop2 = makeWithSharedGreedy(42, 40, 64, 64, 4, 8192);
+  EXPECT_EQ(mscop2->scop().promotedDecls().size(), 0u)
+      << "expected no promotion below threads";
 }
 
 class MatMulBias : public TestMapper {
- public:
-  std::string emitCode(
+ protected:
+  std::unique_ptr<MappedScop> prepare(
       const std::unordered_map<std::string, size_t>& parameters,
       const CudaMappingOptions& mappingOptions) {
     std::string tc = R"TC(
@@ -448,19 +460,89 @@ def fun(float(N,K) A, float(K,M) B, float(N,M) C) -> (O) {
 }
 )TC";
 
-    auto mscop = makeMappedScop(tc, mappingOptions, parameters);
+    return makeMappedScop(tc, mappingOptions, parameters);
+  }
+
+  std::string emitCode(const std::unique_ptr<MappedScop>& mscop) {
     return std::get<0>(mscop->codegen("fun"));
+  }
+
+  std::string emitCode(
+      const std::unordered_map<std::string, size_t>& parameters,
+      const CudaMappingOptions& mappingOptions) {
+    return emitCode(prepare(parameters, mappingOptions));
+  }
+
+  void expectNoABCPromotion(const std::string& code) {
+    auto aDeclPos = code.find("  float _A_0");
+    auto bDeclPos = code.find("  float _B_0");
+    auto cDeclPos = code.find("  float _C_0");
+    EXPECT_TRUE(aDeclPos == std::string::npos)
+        << "tensor A promoted to register but has elements accessed "
+        << "by multiple threads";
+    EXPECT_TRUE(bDeclPos == std::string::npos)
+        << "tensor B promoted to register but has elements accessed "
+        << "by multiple threads";
+    EXPECT_TRUE(cDeclPos == std::string::npos)
+        << "tensor C promoted to register but has no reuse";
+  }
+
+  void expectFourOElementsPromoted(const std::string& code) {
+    auto oDeclPos = code.find("float _O_0[4][1];");
+    EXPECT_TRUE(oDeclPos != std::string::npos)
+        << "expected O to be promoted to registers";
+
+    expectNoABCPromotion(code);
+
+    auto preCopySyncPos = code.find("__syncthreads()", oDeclPos);
+    auto o00Pos = code.find("_O_0[0][0]");
+    auto o10Pos = code.find("_O_0[1][0]");
+    auto o20Pos = code.find("_O_0[2][0]");
+    auto o30Pos = code.find("_O_0[3][0]");
+    auto postCopySyncPos = code.find("__syncthreads()", o30Pos);
+
+    EXPECT_TRUE(o00Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o10Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o20Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+    EXPECT_TRUE(o30Pos != std::string::npos)
+        << "expected constant subscripts in _O_0";
+
+    EXPECT_TRUE(preCopySyncPos != std::string::npos)
+        << "expected synchronization to be inserted";
+    EXPECT_TRUE(postCopySyncPos != std::string::npos)
+        << "expected synchronization to be inserted";
+
+    EXPECT_TRUE(
+        preCopySyncPos < o00Pos && preCopySyncPos < o10Pos &&
+        preCopySyncPos < o20Pos && preCopySyncPos < o30Pos)
+        << "expected synchronization before copies to registers";
+
+    o00Pos = code.find("_O_0[0][0]", postCopySyncPos);
+    o10Pos = code.find("_O_0[1][0]", postCopySyncPos);
+    o20Pos = code.find("_O_0[2][0]", postCopySyncPos);
+    o30Pos = code.find("_O_0[3][0]", postCopySyncPos);
+    EXPECT_TRUE(
+        o00Pos == std::string::npos && o10Pos == std::string::npos &&
+        o20Pos == std::string::npos && o20Pos == std::string::npos)
+        << "expected synchronization after copies from registers";
   }
 };
 
 TEST_F(MatMulBias, RegisterPromotion) {
+  // Scheduled code has three loops, tile all, the top band gets mapped to 2
+  // blocks, the bottom band gets mapped to 2 threads, test promotion before
+  // thread-mapped loops, that is at depth 3 + 2 = 5.
   auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
                             .tile(32, 32, 32)
+                            .privateDepth(5)
                             .useSharedMemory(false)
                             .usePrivateMemory(true);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
-  auto declPos = code.find("float32 _O_0");
+  auto declPos = code.find("float _O_0");
   auto copyToPos =
       code.find("_O_0[0][0] = O[32 * b0 + c3][t0 + 32 * b1]", declPos + 1);
   auto copyFromPos =
@@ -468,8 +550,6 @@ TEST_F(MatMulBias, RegisterPromotion) {
 
   auto originalAccPos =
       code.find("O[32 * b0 + c3][t0 + 32 * b1]", copyToPos + 1);
-  auto cDeclPos = code.find("float32 _C_0");
-  auto aDeclPos = code.find("float32 _A_0");
 
   EXPECT_TRUE(declPos != std::string::npos) << "no declaration of the register";
   EXPECT_TRUE(copyToPos != std::string::npos) << "expected copy to register";
@@ -478,10 +558,8 @@ TEST_F(MatMulBias, RegisterPromotion) {
 
   EXPECT_NE(originalAccPos, copyFromPos)
       << "global array reference is used in main computation";
-  EXPECT_TRUE(cDeclPos == std::string::npos)
-      << "tensor C promoted to register but has no reuse";
-  EXPECT_TRUE(aDeclPos == std::string::npos)
-      << "tensor A promoted to register but has elements accessed by multiple threads";
+
+  expectNoABCPromotion(code);
 }
 
 TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
@@ -492,16 +570,73 @@ TEST_F(MatMulBias, RegisterPromotionSharedPreference) {
                             .usePrivateMemory(true);
 
   auto code = emitCode({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
-  auto declPos = code.find("float32 _O_0[1][1]");
-  auto cDeclPos = code.find("float32 _C_0[1][1]");
-  auto aDeclPos = code.find("float32 _A_0[1][1]");
 
+  auto declPos = code.find("float _O_0[1][1]");
   EXPECT_TRUE(declPos == std::string::npos)
       << "not expected promotion to register because promoted to shared";
-  EXPECT_TRUE(cDeclPos == std::string::npos)
-      << "tensor C promoted to register but has no reuse";
-  EXPECT_TRUE(aDeclPos == std::string::npos)
-      << "tensor A promoted to register but has elements accessed by multiple threads";
+
+  expectNoABCPromotion(code);
+}
+
+TEST_F(MatMulBias, RegistersAtRoot) {
+  // Disable automatic promotion to registers because we are going to call it
+  // manually.  Require sufficient unrolling to actually hit registers.
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
+                            .unroll(512)
+                            .useSharedMemory(false)
+                            .usePrivateMemory(false);
+
+  auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot());
+  auto code = emitCode(mscop);
+
+  // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads
+  // after tiling by 32.
+  expectFourOElementsPromoted(code);
+}
+
+TEST_F(MatMulBias, RegistersAtRootNotEnoughUnroll) {
+  // Disable automatic promotion to registers because we are going to call it
+  // manually.  Require no unrolling so as to make promotion to registers
+  // invalid.
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
+                            .unroll(1)
+                            .useSharedMemory(false)
+                            .usePrivateMemory(false);
+
+  auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+  promoteToRegistersBelow(*mscop, mscop->scop().scheduleRoot());
+  auto code = emitCode(mscop);
+  auto oDeclPos = code.find("float _O_0;");
+
+  EXPECT_TRUE(oDeclPos == std::string::npos)
+      << "not expected O to be promoted to registers";
+
+  expectNoABCPromotion(code);
+}
+
+TEST_F(MatMulBias, RegistersBelowFirstBand) {
+  using namespace polyhedral::detail;
+
+  // Disable automatic promotion to registers because we are going to call it
+  // manually.  Use a large unroll size to unroll all loops below the first
+  // band and actually hit registers.
+  auto mappingOptions = CudaMappingOptions::makeNaiveMappingOptions()
+                            .unroll(512)
+                            .useSharedMemory(false)
+                            .usePrivateMemory(false);
+  auto mscop = prepare({{"N", 42}, {"M", 56}, {"K", 37}}, mappingOptions);
+
+  auto nodes = ScheduleTree::collectDFSPreorder(
+      mscop->scop().scheduleRoot(), ScheduleTreeType::Band);
+  ASSERT_GT(nodes.size(), 0u);
+  auto node = nodes[0];
+  promoteToRegistersBelow(*mscop, node);
+  auto code = emitCode(mscop);
+
+  // Expecting 4 elements because we map the loop i in O[i][j] to 8 threads
+  // after tiling by 32.
+  expectFourOElementsPromoted(code);
 }
 
 class Strided : public TestMapper {
@@ -520,8 +655,8 @@ class Strided : public TestMapper {
     auto& scop = mscop->scop();
     auto ctx = scop.domain().get_ctx();
 
-    auto groups = TensorReferenceGroup::accessedBySubtree(
-        scop.scheduleRoot()->child({0, 0, 0}), scop);
+    auto groups =
+        accessedBySubtree(scop.scheduleRoot()->child({0, 0, 0}), scop);
     EXPECT_EQ(groups.size(), 2u) << "expected groups for both tensors";
 
     for (const auto& g : groups) {

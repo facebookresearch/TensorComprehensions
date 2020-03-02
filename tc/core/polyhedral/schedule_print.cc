@@ -19,6 +19,7 @@
 #include <glog/logging.h>
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/external/isl.h"
@@ -86,26 +87,6 @@ ostream_joiner make_ostream_joiner(std::ostream& os, const char* delimiter) {
 
 } // namespace
 
-std::ostream& operator<<(std::ostream& os, isl::ast_loop_type lt) {
-  WS w;
-  os << "type(";
-  if (lt == isl::ast_loop_type::error) {
-    os << "error";
-  } else if (lt == isl::ast_loop_type::_default) {
-    os << "default";
-  } else if (lt == isl::ast_loop_type::atomic) {
-    os << "atomic";
-  } else if (lt == isl::ast_loop_type::unroll) {
-    os << "unroll";
-  } else if (lt == isl::ast_loop_type::separate) {
-    os << "separate";
-  } else {
-    LOG(FATAL) << "NYI: print type: " << static_cast<int>(lt);
-  }
-  os << ")";
-  return os;
-}
-
 std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
   WS w;
   os << w.tab() << "type(";
@@ -121,7 +102,7 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
     os << "extension";
   } else if (nt == detail::ScheduleTreeType::Filter) {
     os << "filter";
-  } else if (nt == detail::ScheduleTreeType::MappingFilter) {
+  } else if (nt == detail::ScheduleTreeType::Mapping) {
     os << "mapping_filter";
   } else if (nt == detail::ScheduleTreeType::Sequence) {
     os << "sequence";
@@ -136,12 +117,7 @@ std::ostream& operator<<(std::ostream& os, detail::ScheduleTreeType nt) {
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, const ScheduleTreeElemBase& st) {
-  st.write(os);
-  return os;
-}
-
-std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
+std::ostream& ScheduleTreeBand::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "band(n(" << coincident_.size() << ") permutable(";
   os << permutable_ << ") coincident(";
@@ -165,13 +141,13 @@ std::ostream& ScheduleTreeElemBand::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemContext::write(std::ostream& os) const {
+std::ostream& ScheduleTreeContext::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "context(" << context_ << ")";
   return os;
 }
 
-std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
+std::ostream& ScheduleTreeDomain::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "domain(";
   for (const auto& u : domain_.get_set_list()) {
@@ -182,13 +158,18 @@ std::ostream& ScheduleTreeElemDomain::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemExtension::write(std::ostream& os) const {
+std::ostream& ScheduleTreeExtension::write(std::ostream& os) const {
   WS w;
-  os << w.tab() << "extension(" << extension_ << ")";
+  os << w.tab() << "extension(";
+  for (const auto& e : extension_.get_map_list()) {
+    WS w2;
+    os << std::endl << w2.tab() << e;
+  }
+  os << ")";
   return os;
 }
 
-std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
+std::ostream& ScheduleTreeFilter::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "filter(";
   for (const auto& u : filter_.get_set_list()) {
@@ -199,7 +180,7 @@ std::ostream& ScheduleTreeElemFilter::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
+std::ostream& ScheduleTreeMapping::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "mapping_filter(ids(";
   for (auto& kvp : mapping) {
@@ -214,20 +195,19 @@ std::ostream& ScheduleTreeElemMappingFilter::write(std::ostream& os) const {
   return os;
 }
 
-std::ostream& ScheduleTreeElemSequence::write(std::ostream& os) const {
+std::ostream& ScheduleTreeSequence::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "sequence()";
   return os;
 }
 
-std::ostream& ScheduleTreeElemSet::write(std::ostream& os) const {
+std::ostream& ScheduleTreeSet::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "set()";
   return os;
 }
 
-std::ostream& ScheduleTreeElemThreadSpecificMarker::write(
-    std::ostream& os) const {
+std::ostream& ScheduleTreeThreadSpecificMarker::write(std::ostream& os) const {
   WS w;
   os << w.tab() << "thread_specific()";
   return os;
@@ -247,8 +227,8 @@ std::ostream& operator<<(
 }
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& st) {
-  CHECK(st.elem_.get());
-  os << *st.elem_ << "\n";
+  st.write(os);
+  os << "\n";
   os << st.children_;
 
   return os;

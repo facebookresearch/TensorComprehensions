@@ -13,6 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -20,6 +24,7 @@
 #include <cuda_runtime.h>
 #include <nvrtc.h>
 
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_rtc.h"
 #include "tc/core/flags.h"
@@ -47,23 +52,32 @@ void CudaRTCFunction::clear() {
   }
 }
 
-std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
-    const std::string& name,
-    const std::string& source) {
-  std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
-  res->specializedName = name;
-  res->cleared_ = false;
-
-  if (FLAGS_debug_tc_mapper) {
-    LOG(INFO) << "NVRTC function source:\n" << source;
+void checkOrCreateContext() {
+  static thread_local bool created = false;
+  if (!created) {
+    created = true;
+    CUcontext ctx;
+    TC_CUDA_DRIVERAPI_ENFORCE(cuCtxGetCurrent(&ctx));
+    if (!ctx) {
+      TC_CUDA_RUNTIMEAPI_ENFORCE(cudaDeviceSynchronize());
+    }
   }
-  // Actually do the compiling.
-  nvrtcProgram prog;
-  TC_NVRTC_CHECK(
-      nvrtcCreateProgram(&prog, source.c_str(), nullptr, 0, nullptr, nullptr));
+}
 
-  // Get the architecture of the current device.
-  int device, minor, major;
+namespace {
+static void checkedSystemCall(
+    const std::string& cmd,
+    const std::vector<std::string>& args) {
+  std::stringstream command;
+  command << cmd << " ";
+  for (const auto& s : args) {
+    command << s << " ";
+  }
+  TC_CHECK_EQ(std::system(command.str().c_str()), 0) << command.str();
+}
+
+static std::tuple<int, int, int> getCudaArchitecture() {
+  int device, major, minor;
   CUdevice deviceHandle;
   TC_CUDA_RUNTIMEAPI_ENFORCE(cudaGetDevice(&device));
   TC_CUDA_DRIVERAPI_ENFORCE(cuDeviceGet(&deviceHandle, device));
@@ -71,6 +85,135 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
       &major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, deviceHandle));
   TC_CUDA_DRIVERAPI_ENFORCE(cuDeviceGetAttribute(
       &minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, deviceHandle));
+  return std::tuple<int, int, int>(device, major, minor);
+}
+
+static std::string llvmCompile(
+    const std::string& name,
+    const std::string& source) {
+  int device, major, minor;
+  std::tie(device, major, minor) = getCudaArchitecture();
+
+  std::string pat("/tmp/cudaXXXXXX");
+  std::vector<char> ifn(pat.begin(), pat.end());
+  TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
+  std::string inputFileName(ifn.begin(), ifn.end());
+  // cstdio's std::remove to delete files
+  tc::ScopeGuard sgi([&]() { std::remove(inputFileName.c_str()); });
+  {
+    std::ofstream ostream(inputFileName, std::ios::binary);
+    ostream << source;
+  }
+
+  std::string arch = "sm_" + std::to_string(major) + std::to_string(minor);
+  std::string outputClangFile = inputFileName + "-clang.ll";
+  std::string outputLinkFile = inputFileName + "-link.ll";
+  std::string outputOptFile = inputFileName + "-opt.ll";
+  std::string outputPtxFile = inputFileName + ".s";
+  tc::ScopeGuard sgo([&]() {
+    // cstdio's std::remove to delete files
+    std::remove(outputClangFile.c_str());
+    std::remove(outputLinkFile.c_str());
+    std::remove(outputOptFile.c_str());
+    std::remove(outputPtxFile.c_str());
+  });
+
+  // Compile
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/clang++",
+      {"-x cuda " + inputFileName,
+       "--cuda-device-only",
+       std::string("--cuda-gpu-arch=") + arch,
+       std::string("--cuda-path=") + TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUB_INCLUDE_DIR),
+       tc::FLAGS_llvm_flags,
+       "-nocudalib",
+       "-S",
+       "-emit-llvm",
+       "-o " + outputClangFile});
+
+  // Link libdevice before opt
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llvm-link ",
+      {outputClangFile,
+       std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) +
+           "/nvvm/libdevice/libdevice.*.bc",
+       "-S",
+       "-o " + outputLinkFile});
+
+  // Opt
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/opt",
+      {"-internalize",
+       std::string("-internalize-public-api-list=") + name,
+       "-nvvm-reflect",
+       "-O3",
+       outputLinkFile,
+       "-S",
+       std::string("-o ") + outputOptFile});
+
+  // Ptx
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_LLVM_BIN_DIR)) + "/llc",
+      {std::string("-mcpu=") + arch,
+       outputOptFile,
+       std::string("-o ") + outputPtxFile});
+
+  std::ifstream stream(outputPtxFile);
+  return std::string(
+      (std::istreambuf_iterator<char>(stream)),
+      std::istreambuf_iterator<char>());
+}
+
+static std::string nvccCompile(
+    const std::string& name,
+    const std::string& source) {
+  int device, major, minor;
+  std::tie(device, major, minor) = getCudaArchitecture();
+
+  std::string pat("/tmp/cudaXXXXXX");
+  std::vector<char> ifn(pat.begin(), pat.end());
+  TC_CHECK_GE(mkstemp(ifn.data()), 0); // string.c_str is const char*
+  std::string inputFileName(ifn.begin(), ifn.end());
+  // cstdio's std::remove to delete files
+  tc::ScopeGuard sgi([&]() { std::remove(inputFileName.c_str()); });
+  {
+    std::ofstream ostream(inputFileName, std::ios::binary);
+    ostream << source;
+  }
+
+  std::string arch = "sm_" + std::to_string(major) + std::to_string(minor);
+  std::string outputPtxFile = inputFileName + ".ptx";
+  // cstdio's std::remove to delete files
+  tc::ScopeGuard sgo([&]() { std::remove(outputPtxFile.c_str()); });
+
+  checkedSystemCall(
+      std::string(TC_STRINGIFY(TC_CUDA_TOOLKIT_ROOT_DIR)) + "/bin/nvcc",
+      {"-x cu",
+       inputFileName,
+       std::string("--gpu-architecture=") + arch,
+       "--ptx",
+       std::string("-I") + TC_STRINGIFY(TC_CUDA_INCLUDE_DIR),
+       std::string("-I") + TC_STRINGIFY(TC_CUB_INCLUDE_DIR),
+       tc::FLAGS_nvcc_flags,
+       std::string("-o ") + outputPtxFile});
+
+  std::ifstream stream(outputPtxFile);
+  return std::string(
+      (std::istreambuf_iterator<char>(stream)),
+      std::istreambuf_iterator<char>());
+}
+
+static std::string nvrtcCompile(
+    const std::string& name,
+    const std::string& source) {
+  int device, major, minor;
+  std::tie(device, major, minor) = getCudaArchitecture();
+
+  nvrtcProgram prog;
+  TC_NVRTC_CHECK(
+      nvrtcCreateProgram(&prog, source.c_str(), nullptr, 0, nullptr, nullptr));
 
   std::stringstream arch_param;
   arch_param << "--gpu-architecture=compute_" << major << minor;
@@ -78,8 +221,10 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
 
   // Compile the program.
   const char* nvrtc_debug_opts[] = {"-G", "-lineinfo"};
-  std::string cudaHome = std::string("-I ") + std::string(CUDA_HOME);
-  std::string cubHome = std::string("-I ") + std::string(CUB_HOME);
+  std::string cudaHome =
+      std::string("-I ") + std::string(TC_STRINGIFY(TC_CUDA_INCLUDE_DIR));
+  std::string cubHome =
+      std::string("-I ") + std::string(TC_STRINGIFY(TC_CUB_INCLUDE_DIR));
   std::vector<const char*> nvrtcts = {arch.c_str(),
                                       "--use_fast_math",
                                       "-std=c++11",
@@ -110,14 +255,37 @@ std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
   }
   size_t ptx_size;
   TC_NVRTC_CHECK(nvrtcGetPTXSize(prog, &ptx_size));
-  res->nvrtc_ptx = std::vector<char>(ptx_size);
-  TC_NVRTC_CHECK(nvrtcGetPTX(prog, res->nvrtc_ptx.data()));
+  std::vector<char> res(ptx_size);
+  TC_NVRTC_CHECK(nvrtcGetPTX(prog, res.data()));
   TC_NVRTC_CHECK(nvrtcDestroyProgram(&prog));
+  return std::string(res.begin(), res.end());
+}
+} // namespace
+
+std::unique_ptr<CudaRTCFunction> CudaRTCFunction::Compile(
+    const std::string& name,
+    const std::string& source) {
+  std::unique_ptr<CudaRTCFunction> res(new CudaRTCFunction());
+  res->specializedName = name;
+  res->cleared_ = false;
+  if (FLAGS_debug_tc_mapper) {
+    LOG(INFO) << "NVRTC function source:\n" << source;
+  }
+  if (FLAGS_cuda_compiler == "nvrtc") {
+    res->ptx = nvrtcCompile(name, source);
+  } else if (FLAGS_cuda_compiler == "llvm") {
+    res->ptx = llvmCompile(name, source);
+  } else if (FLAGS_cuda_compiler == "nvcc") {
+    res->ptx = nvccCompile(name, source);
+  } else {
+    CHECK(false) << "Unknown CUDA compiler: " << FLAGS_cuda_compiler;
+  }
   if (FLAGS_dump_ptx) {
-    LOG(INFO) << "PTX:\n" << std::string(res->nvrtc_ptx.data());
+    LOG(INFO) << "PTX:\n" << res->ptx;
   }
   return res;
 }
+
 namespace {
 
 template <typename T>
@@ -142,8 +310,18 @@ Duration CudaRTCFunction::Launch(
   if (perGpuModule_.count(dev) == 0) {
     CUmodule module;
     CUfunction function;
-    TC_CUDA_DRIVERAPI_ENFORCE(
-        cuModuleLoadDataEx(&module, nvrtc_ptx.data(), 0, 0, 0));
+    // Checking that a CUDA context exists for the current thread is necessary
+    // when benchmarking the backward of a PyTorch gradient operator:
+    // the backward is called on a different thread whose context may not have
+    // been initialized explicitly.
+    // This call to cudaDeviceSynchronize implicitly creates a new context if
+    // one is not bound to the current CPU.
+    checkOrCreateContext();
+    auto res = cuModuleLoadData(&module, ptx.c_str());
+    if (res != CUDA_SUCCESS) {
+      LOG(ERROR) << "Invalid PTX: " << ptx;
+    }
+    TC_CUDA_DRIVERAPI_ENFORCE(res);
     perGpuModule_.emplace(dev, module);
     TC_CUDA_DRIVERAPI_ENFORCE(
         cuModuleGetFunction(&function, module, specializedName.c_str()));
@@ -152,7 +330,8 @@ Duration CudaRTCFunction::Launch(
 
   constexpr size_t kNumMaxParameters = 100;
   std::array<void*, kNumMaxParameters> args_voidp{0};
-  CHECK_GE(kNumMaxParameters, params.size() + outputs.size() + inputs.size());
+  TC_CHECK_GE(
+      kNumMaxParameters, params.size() + outputs.size() + inputs.size());
   int ind = 0;
   for (auto& p : params) {
     args_voidp[ind++] = &p;

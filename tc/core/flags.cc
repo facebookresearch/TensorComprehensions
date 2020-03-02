@@ -38,6 +38,20 @@ DEFINE_bool(
 DEFINE_bool(dump_cuda, false, "Print the generated source");
 DEFINE_bool(dump_ptx, false, "Dump the generated PTX");
 
+// PTX generation
+DEFINE_string(
+    cuda_compiler,
+    "nvrtc",
+    "which compiler to use to emit ptx: nvrtc, llvm, nvcc (default [nvrtc])");
+DEFINE_string(
+    llvm_flags,
+    "-std=c++11 -O3 -ffast-math",
+    "compiler flags to set when llvm is used");
+DEFINE_string(
+    nvcc_flags,
+    "-std=c++11 -ptx --use_fast_math",
+    "compiler flags to set when nvcc is used");
+
 // CPU codegen options
 DEFINE_bool(llvm_dump_before_opt, false, "Print IR before optimization");
 DEFINE_bool(llvm_dump_after_opt, false, "Print IR after optimization");
@@ -80,7 +94,7 @@ DEFINE_uint32(
     tuner_gen_number_elites,
     10,
     "The number of best candidates that are preserved intact between generations");
-DEFINE_uint32(tuner_threads, 1, "Number of CPU threads to use when autotuning");
+DEFINE_uint32(tuner_threads, 8, "Number of CPU threads to use when autotuning");
 DEFINE_string(
     tuner_devices,
     "0",

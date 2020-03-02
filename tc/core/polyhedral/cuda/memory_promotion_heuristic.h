@@ -22,22 +22,29 @@
 
 namespace tc {
 namespace polyhedral {
-class MappedScop;
 class Scop;
+
+namespace detail {
+class ScheduleTree;
+}
+
+namespace cuda {
+class MappedScop;
 
 // In the given mapped scop "mscop",
 // promote to shared memory at "depth" until "sharedMemorySize" is used.
 // Map copies between global and shared memory to threads and unroll those
 // copies if "unrollCopies" is set, using the options in "mscop".
-// "threadIdxXScheduleDepthState" contains the schedule depth at which the
-// computation was mapped to thread x and is used to check whether the global
-// memory is accessed in a coalesced way.
-void promoteGreedilyAtDepth(
+void promoteToSharedAtDepth(
     MappedScop& scop,
     std::size_t depth,
     std::size_t sharedMemorySize,
     bool unrollCopies);
 
-void promoteToRegistersBelowThreads(Scop& scop, std::size_t nRegisters);
+void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope);
+
+void promoteToRegistersAtDepth(MappedScop& scop, std::size_t depth);
+
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

@@ -14,7 +14,7 @@ add_executable(test_basic test_basic.cc)
 add_test(test_basic test_basic)
 target_link_libraries(test_basic ${GOOGLE_LIBRARIES} ${ISL_LIBRARIES} ${ATEN_LIBRARIES} pthread)
 if (WITH_BINDINGS)
-  add_dependencies(test_basic generate_isl)
+  add_dependencies(test_basic generate_isl_cpp_h)
 endif()
 
 ################################################################################
@@ -31,6 +31,9 @@ foreach(i ${CORE_TEST_FILES})
   add_test(${i} ${i})
   target_link_libraries(${i} ${GTEST_LIBRARIES} tc_core pthread)
 endforeach()
+
+add_executable(test_check test_check.cc)
+target_link_libraries(test_check ${GTEST_LIBRARIES} tc_core)
 
 ################################################################################
 # CPP cuda_mapper crosscompile tests
@@ -59,19 +62,6 @@ target_link_libraries(
   -lLLVM
 
   tc_core_cpu tc_lang tc_aten pthread)
-
-if (WITH_TAPIR)
-  add_executable(test_mapper_tapir test_mapper_tapir.cc)
-  add_test(test_mapper_tapir test_mapper_tapir)
-  target_link_libraries(
-    test_mapper_tapir
-
-    ${GTEST_LIBRARIES}
-    ${ATEN_LIBRARIES}
-    -lLLVM
-
-    tc_core_cpu tc_lang tc_aten pthread)
-endif()
 
 ################################################################################
 # Lang tests

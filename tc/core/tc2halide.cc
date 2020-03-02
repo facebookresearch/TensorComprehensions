@@ -15,10 +15,12 @@
  */
 #include <glog/logging.h>
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/tc2halide.h"
 #include "tc/lang/parser.h"
 #include "tc/lang/sema.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc2halide {
 
@@ -52,10 +54,17 @@ Type translateScalarType(int tcType) {
       return Int(32);
     case lang::TK_INT64:
       return Int(64);
+    case lang::TK_FLOAT16:
+      return Float(16);
+    case lang::TK_FLOAT32:
+      return Float(32);
+    case lang::TK_FLOAT64:
+      return Float(64);
     case lang::TK_FLOAT:
       return Float(32);
     case lang::TK_DOUBLE:
       return Float(64);
+
     default:
       LOG(FATAL) << "Unhandled TC scalar type: " << tcType << '\n';
       return Type();
@@ -91,7 +100,7 @@ void translateParam(
       }
       dims.push_back(Variable::make(Int(32), p.name(), p));
     } else {
-      CHECK(d_->kind() == lang::TK_CONST);
+      TC_CHECK(d_->kind() == lang::TK_CONST);
       int32_t value = lang::Const(d_).value();
       dims.push_back(Expr(value));
     }
@@ -262,7 +271,7 @@ void forwardBoundsInference(
     const std::vector<Expr>& exprs,
     const FunctionBounds& bounds,
     const lang::TreeRef& comprehension,
-    bool throwWarnings,
+    const tc::CompilerOptions& compilerOptions,
     Scope<Interval>* solution) {
   class CreateConstraints : public IRVisitor {
     using IRVisitor::visit;
@@ -279,7 +288,7 @@ void forwardBoundsInference(
 
       // Create inequalities that assert this is not an out-of-bounds access.
       if (op->call_type == Call::Halide) {
-        CHECK(op->func.defined())
+        TC_CHECK(op->func.defined())
             << "Expected a Call of type Halide to have an associated Function\n";
         const auto& it = bounds.find(Function(op->func));
         if (it != bounds.end()) {
@@ -289,7 +298,7 @@ void forwardBoundsInference(
             const auto& it = b.find(dim);
             if (it != b.end()) {
               Interval interval = it->second;
-              CHECK(interval.is_bounded())
+              TC_CHECK(interval.is_bounded())
                   << "Expected explicit constraints on every dimension of every Func\n";
               result.push_back(op->args[i] >= interval.min);
               result.push_back(op->args[i] <= interval.max);
@@ -297,10 +306,10 @@ void forwardBoundsInference(
           }
         }
       } else if (op->call_type == Call::Image) {
-        CHECK(op->param.defined())
+        TC_CHECK(op->param.defined())
             << "Expected a Call of type Image to have an associated Parameter\n";
         for (size_t i = 0; i < op->args.size(); i++) {
-          CHECK(
+          TC_CHECK(
               op->param.min_constraint(i).defined() &&
               op->param.extent_constraint(i).defined())
               << "Expected explicit constraints on every dimension of every input\n";
@@ -480,10 +489,10 @@ void forwardBoundsInference(
     lang::ErrorReport err(comprehension);
     err << "Required precondition will not be checked at runtime: "
         << remaining;
-    if (throwWarnings) {
+    if (compilerOptions.throwWarnings) {
       throw err;
     } else {
-      warn(err);
+      warn(err, compilerOptions);
     }
   }
 }
@@ -501,7 +510,7 @@ Expr reductionUpdate(Expr e) {
 void translateComprehension(
     const lang::Comprehension& comprehension,
     const map<string, Parameter>& params,
-    bool throwWarnings,
+    const tc::CompilerOptions& compilerOptions,
     map<string, Function>* funcs,
     FunctionBounds* bounds) {
   Function f;
@@ -662,7 +671,7 @@ void translateComprehension(
   // Infer the rest
   all_exprs.push_back(rhs);
   forwardBoundsInference(
-      all_exprs, *bounds, comprehension, throwWarnings, &solution);
+      all_exprs, *bounds, comprehension, compilerOptions, &solution);
 
   // TODO: What if subsequent updates have incompatible bounds
   // (e.g. an in-place stencil)?. The .bound directive will use the
@@ -746,7 +755,9 @@ void translateComprehension(
 }
 
 // Translate a semantically checked TC def to HalideComponents struct.
-HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
+HalideComponents translateDef(
+    const lang::Def& def,
+    const tc::CompilerOptions& compilerOptions) {
   map<string, Function> funcs;
   HalideComponents components;
   components.def = def;
@@ -757,7 +768,7 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
   }
   for (auto c : def.statements()) {
     translateComprehension(
-        c, components.params, throwWarnings, &funcs, &bounds);
+        c, components.params, compilerOptions, &funcs, &bounds);
   }
   vector<Function> outputs;
   for (auto p : def.returns()) {
@@ -898,19 +909,24 @@ HalideComponents translateDef(const lang::Def& def, bool throwWarnings) {
 }
 } // namespace
 
-HalideComponents
-translate(isl::ctx ctx, const lang::TreeRef& treeRef, bool throwWarnings) {
+HalideComponents translate(
+    isl::ctx ctx,
+    const lang::TreeRef& treeRef,
+    const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << treeRef;
   return translateDef(
-      lang::Def(lang::Sema().checkFunction(treeRef)), throwWarnings);
+      lang::Def(lang::Sema(compilerOptions).checkFunction(treeRef)),
+      compilerOptions);
 }
 
 // NOTE: there is no guarantee here that the tc string has only one def. It
 // could have many defs. Only first def will be converted in that case.
-HalideComponents
-translate(isl::ctx ctx, const std::string& tc, bool throwWarnings) {
+HalideComponents translate(
+    isl::ctx ctx,
+    const std::string& tc,
+    const tc::CompilerOptions& compilerOptions = tc::CompilerOptions()) {
   LOG_IF(INFO, tc::FLAGS_debug_halide) << tc;
-  return translate(ctx, lang::Parser(tc).parseFunction(), throwWarnings);
+  return translate(ctx, lang::Parser(tc).parseFunction(), compilerOptions);
 }
 
 } // namespace tc2halide

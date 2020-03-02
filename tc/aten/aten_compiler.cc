@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "tc/aten/aten.h"
+#include "tc/core/check.h"
 #include "tc/core/compiler.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/tensor.h"
@@ -32,7 +33,7 @@ std::vector<tc::DLTensorUPtr> inferOutputTensorInfo(
     const std::vector<at::Tensor>& inputs) {
   auto parsedTcs = tc::detail::parse(tc);
   if (parsedTcs.count(entryPoint) != 1u) {
-    CHECK_GE(parsedTcs.size(), 1u)
+    TC_CHECK_GE(parsedTcs.size(), 1u)
         << "No TC was parsed, should have thrown earlier";
     throw lang::ErrorReport(parsedTcs.begin()->second)
         << "\nattempting to access undefined entryPoint: " << entryPoint;
@@ -51,7 +52,7 @@ std::vector<at::Tensor> prepareOutputs(
   if (outTensorInfo.size() == 0) {
     return outputs;
   }
-  CHECK_GE(inputs.size(), 1u)
+  TC_CHECK_GE(inputs.size(), 1u)
       << "NYI: Need >= 1 input tensors to determine "
       << "backend and prepare ATen outputs. Add an overload with just an ATen "
       << "backend";

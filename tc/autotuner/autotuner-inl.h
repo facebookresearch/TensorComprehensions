@@ -15,18 +15,21 @@
  */
 #include <atomic>
 #include <chrono>
+#include <functional>
 #include <numeric>
 #include <thread>
 
 #include <glog/stl_logging.h>
 
 #include "tc/autotuner/utils.h"
+#include "tc/core/check.h"
 #include "tc/core/compiler.h"
 #include "tc/core/flags.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tensor.h"
 #include "tc/core/utils/math.h"
 #include "tc/lang/canonicalize.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc {
 namespace autotune {
@@ -47,8 +50,6 @@ TuningHarness<Backend>::TuningHarness(
       baseMapping_(baseMapping),
       inputs_(inputs),
       outputs_(outputs),
-      bestTime_(Duration::max()),
-      bestMappingOptions_(baseMapping),
       optionsCache_(optionsCache) {}
 
 template <typename Backend>
@@ -66,13 +67,6 @@ void TuningHarness<Backend>::stopAfterCurrentIteration() {
   stopRequested_ = true;
 }
 
-template <typename Backend>
-const typename Backend::MappingOptionsType&
-TuningHarness<Backend>::bestMappingOptions() const {
-  std::lock_guard<std::mutex> lock(bestTimeMutex_);
-  return bestMappingOptions_;
-}
-
 #define LOG_LINE_BY_LINE(GSTREAM, ISTREAM)               \
   for (std::string line; std::getline(ISTREAM, line);) { \
     LOG(GSTREAM) << line;                                \
@@ -81,6 +75,9 @@ TuningHarness<Backend>::bestMappingOptions() const {
 template <typename Backend>
 template <typename SearchStrategy>
 void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
+  CompilerOptions supressWarningsOptions;
+  supressWarningsOptions.emitWarnings = false;
+
   // Atomically fetch and add the next job until there are no jobs left
   while (true) {
     auto current = currentCompilationJob_.fetch_add(1);
@@ -99,8 +96,8 @@ void TuningHarness<Backend>::doCompile(SearchStrategy& searchStrategy) {
           LOG(INFO) << "[COMPILE] Start compilation @:" << current;
           LOG_LINE_BY_LINE(INFO, ssInfo);
         }
-        pExecutor =
-            tc::compile<Backend>(tcTree_, inputs_.begin()->second, options);
+        pExecutor = tc::detail::compile<Backend>(
+            tcTree_, inputs_.begin()->second, options, supressWarningsOptions);
         LOG_IF(INFO, FLAGS_debug_tuner) << "[COMPILE] Done compilation";
       } catch (const std::exception& e) {
         LOG(WARNING) << "[TUNER][COMPILE] failed compilation: " << e.what();
@@ -127,9 +124,9 @@ void TuningHarness<Backend>::doEvaluate(
     size_t populationSize,
     Printer& printer) {
   typename Backend::WithDevice wd(device);
-  CHECK_EQ(inputs_.count(device), 1u);
+  TC_CHECK_EQ(inputs_.count(device), 1u);
   auto& inputs = inputs_.at(device);
-  CHECK_EQ(outputs_.count(device), 1u);
+  TC_CHECK_EQ(outputs_.count(device), 1u);
   auto& outputs = outputs_.at(device);
 
   while (true) {
@@ -158,7 +155,7 @@ void TuningHarness<Backend>::doEvaluate(
     if (!pExecutor.get()) {
       // If I popped an empty executor then compilation didn't go as
       // planned, skip it.
-      CHECK(pConf->invalid);
+      TC_CHECK(pConf->invalid);
       continue;
     }
 
@@ -179,11 +176,14 @@ void TuningHarness<Backend>::doEvaluate(
 
     std::vector<Duration> runtimes{Duration::max()};
     try {
-      Duration bestTimeSoFar(Duration::max());
-      {
-        std::lock_guard<std::mutex> lock(bestTimeMutex_);
-        bestTimeSoFar = bestTime_;
-      }
+      auto vBest = optionsCache_->getTopKEntries(
+          lang::canonicalTc(tcTree_),
+          makeTensorInfoVector(inputs),
+          makeTensorInfoVector(outputs),
+          Backend::backendString(),
+          1);
+      Duration bestTimeSoFar =
+          (vBest.size() > 0) ? vBest[0].second : Duration::max();
       auto prune = detail::skipExecutionOrWarmup<Backend>(
           *pExecutor, outputs, inputs, bestTimeSoFar);
       if (prune) {
@@ -233,15 +233,6 @@ void TuningHarness<Backend>::doEvaluate(
         Backend::backendString(),
         options,
         prof);
-
-    // Save best time under lock
-    {
-      std::lock_guard<std::mutex> lock(bestTimeMutex_);
-      if (prof < bestTime_) {
-        bestTime_ = prof;
-        bestMappingOptions_ = options;
-      }
-    }
   } // end while
 }
 
@@ -252,8 +243,8 @@ void TuningHarness<Backend>::runOneIteration(
     size_t iteration) {
   // Define tensors per device once globally
   auto devices = detail::parseDevices<Backend>(FLAGS_tuner_devices);
-  CHECK(executors_.empty());
-  CHECK(configurations_.empty());
+  TC_CHECK(executors_.empty());
+  TC_CHECK(configurations_.empty());
 
   {
     // Initialize for this round
@@ -309,7 +300,14 @@ void TuningHarness<Backend>::runOneIteration(
     LOG(INFO) << "[TUNER][ITERATION LOG] best option so far:";
     std::stringstream ssInfo;
     typename Backend::MappingOptionsCppPrinter infoPrinter(ssInfo);
-    infoPrinter << bestMappingOptions();
+    auto vBest = optionsCache_->getTopKOptions(
+        lang::canonicalTc(tcTree_),
+        makeTensorInfoVector(inputs_.begin()->second),
+        makeTensorInfoVector(outputs_.begin()->second),
+        Backend::backendString(),
+        1);
+    TC_CHECK_GT(vBest.size(), 0u);
+    infoPrinter << vBest[0];
     LOG_LINE_BY_LINE(INFO, ssInfo);
   }
   searchStrategy.updateParameters();
@@ -319,45 +317,6 @@ void TuningHarness<Backend>::runOneIteration(
 namespace {
 volatile std::sig_atomic_t sigint_ = 0;
 volatile std::sig_atomic_t sigterm_ = 0;
-
-template <typename Backend>
-std::vector<typename Backend::MappingOptionsType> loadThroughCache(
-    lang::TreeRef tree,
-    std::shared_ptr<OptionsCache<Backend>> optionsCache,
-    const std::string& cacheFileName,
-    const std::vector<const DLConstTensor*>& inputs,
-    const size_t numCandidates) {
-  LOG_IF(INFO, FLAGS_debug_tuner)
-      << "Loading proto from: " << tc::makeOptionsFilename(cacheFileName)
-      << std::endl;
-  if (!cacheFileName.empty()) {
-    optionsCache->loadCacheFromFile(tc::makeOptionsFilename(cacheFileName));
-  }
-  auto outputs = tc::detail::inferOutputTensorInfo(tree, inputs);
-  return optionsCache->getTopKOptions(
-      canonicalTc(tree),
-      makeTensorInfoVector(inputs),
-      outputs,
-      Backend::backendString(),
-      numCandidates);
-}
-
-template <typename Backend>
-void storeTopKInCache(
-    const std::shared_ptr<OptionsCache<Backend>>& optionsCache,
-    const std::string& cacheFilename) {
-  if (cacheFilename.empty()) {
-    LOG_IF(INFO, FLAGS_debug_tuner)
-        << "No filepath provided, not saving cache" << std::endl;
-  } else {
-    LOG_IF(INFO, FLAGS_debug_tuner)
-        << "Dumping cache to " << tc::makeOptionsFilename(cacheFilename)
-        << std::endl;
-    OptionsCache<Backend> cache(*optionsCache);
-    cache.pruneKeepTopK(tc::FLAGS_tuner_save_best_candidates_count);
-    cache.storeCacheToFile(tc::makeOptionsFilename(cacheFilename));
-  }
-}
 
 void removeDuplicates(std::vector<size_t>& v) {
   std::sort(v.begin(), v.end());
@@ -384,7 +343,7 @@ std::vector<size_t> inputDivisorsAndPowers2(
 }
 
 size_t largestDim(const std::vector<const DLConstTensor*>& inputs) {
-  CHECK_GE(inputs.size(), 1u);
+  TC_CHECK_GE(inputs.size(), 1u);
   auto maxElement = std::max_element(
       inputs.begin(),
       inputs.end(),
@@ -394,28 +353,67 @@ size_t largestDim(const std::vector<const DLConstTensor*>& inputs) {
   return (*maxElement)->ndim;
 }
 
-// Creates well-chosen parameter sizes to match the input shapes.
-void setupTuningParameters(
+// Creates well-chosen generic parameter sizes to match the input shapes.
+template <typename MappingOptionsType>
+inline std::pair<TuningConfiguration, std::vector<size_t>>
+setupGenericTuningParametersAndGetRange(
     const std::vector<const DLConstTensor*>& inputs,
-    TuningConfiguration& configuration) {
-  CHECK_GE(inputs.size(), 1u);
+    const std::vector<MappingOptionsType>& baseMappings) {
+  TC_CHECK_GE(inputs.size(), 1u);
   auto range = inputDivisorsAndPowers2(inputs);
   // 0 is a valid tiling annotation and signals no tiling of that dimension
   // 0 is not a valid block / grid annotation
   auto nTilesDim = largestDim(inputs) + 1;
   auto tileRange = range;
   tileRange.push_back(0);
+
+  TuningConfiguration configuration;
   configuration.tilingParams.setRange(nTilesDim, tileRange);
-  configuration.blockParams.setRange(range, "b");
-  configuration.gridParams.setRange(range, "g");
   configuration.unrollFactor =
       RangeParameter(powers2(FLAGS_tuner_max_unroll_size), "unroll");
+
+  return {configuration, range};
+}
+
+// Creates well-chosen parameter sizes to match the input shapes.
+inline TuningConfiguration setupTuningParameters(
+    const std::vector<const DLConstTensor*>& inputs,
+    const std::vector<CudaMappingOptions>& baseMappings) {
+  std::vector<size_t> range;
+  TuningConfiguration configuration;
+  std::tie(configuration, range) =
+      setupGenericTuningParametersAndGetRange(inputs, baseMappings);
+  auto blockRange = range;
+  auto gridRange = range;
+
+  for (const auto& baseMapping : baseMappings) {
+    blockRange =
+        mergeVectors(std::move(blockRange), baseMapping.block.extractVector());
+    gridRange =
+        mergeVectors(std::move(gridRange), baseMapping.grid.extractVector());
+  }
+
+  configuration.blockParams.setRange(blockRange, "b");
+  configuration.gridParams.setRange(gridRange, "g");
+  configuration.privateDepth =
+      RangeParameter({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "pdepth");
+  configuration.sharedDepth =
+      RangeParameter({0, 1, 2, 3, 4, 5, 6, 7}, "sdepth");
+
+  return configuration;
+}
+
+// Creates well-chosen parameter sizes to match the input shapes.
+inline TuningConfiguration setupTuningParameters(
+    const std::vector<const DLConstTensor*>& inputs,
+    const std::vector<CpuMappingOptions>& baseMappings) {
+  return setupGenericTuningParametersAndGetRange(inputs, baseMappings).first;
 }
 } // namespace
 
 template <typename Backend, typename SearchStrategy>
 Autotuner<Backend, SearchStrategy>::Autotuner()
-    : optionsCache_(new OptionsCache<Backend>()) {}
+    : optionsCache(new OptionsCache<Backend>()) {}
 
 template <typename Backend, typename SearchStrategy>
 std::vector<typename Backend::MappingOptionsType>
@@ -424,41 +422,26 @@ Autotuner<Backend, SearchStrategy>::tune(
     const std::string& tcEntryPoint,
     const std::unordered_map<size_t, std::vector<const DLConstTensor*>>& inputs,
     std::unordered_map<size_t, std::vector<const DLTensor*>>& outputs,
-    const typename Backend::MappingOptionsType& baseMapping,
-    const std::string& cacheFileName,
+    const std::vector<typename Backend::MappingOptionsType>& baseMappings,
+    size_t topK,
     const TuningParameterFixer& fixedParams) {
   std::map<std::string, lang::TreeRef> tcEntryPointMap(tc::detail::parse(tc));
-  CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
+  TC_CHECK_EQ(tcEntryPointMap.count(tcEntryPoint), 1u)
       << "Error looking up " << tcEntryPoint;
 
   // Initialize a model configuration
-  TuningConfiguration modelConfiguration;
-  CHECK_GE(inputs.size(), 1u);
-  setupTuningParameters(inputs.begin()->second, modelConfiguration);
+  TC_CHECK_GE(inputs.size(), 1u);
+  auto modelConfiguration =
+      setupTuningParameters(inputs.begin()->second, baseMappings);
   modelConfiguration.fixParameters(fixedParams);
 
-  // Build starting points from baseMapping + whatever we recover from cache
-  std::vector<typename Backend::MappingOptionsType> startingPoints{baseMapping};
-  auto restoredCandidates = loadThroughCache<Backend>(
-      tcEntryPointMap.at(tcEntryPoint),
-      optionsCache_,
-      cacheFileName,
-      inputs.begin()->second,
-      FLAGS_tuner_gen_restore_number);
-  if (restoredCandidates.size() > 0) {
-    startingPoints.reserve(1 + restoredCandidates.size());
-    std::move(
-        restoredCandidates.begin(),
-        restoredCandidates.end(),
-        std::back_inserter(startingPoints));
-  }
-
   // Create initial configs based on options + model configuration
+  const std::vector<typename Backend::MappingOptionsType> options{baseMappings};
   std::vector<TuningConfiguration> configs;
-  configs.reserve(startingPoints.size());
+  configs.reserve(options.size());
   std::transform(
-      startingPoints.begin(),
-      startingPoints.end(),
+      options.begin(),
+      options.end(),
       std::back_inserter(configs),
       [this, &fixedParams, &modelConfiguration](
           const typename Backend::MappingOptionsType& options) {
@@ -483,9 +466,9 @@ Autotuner<Backend, SearchStrategy>::tune(
       tcEntryPointMap.at(tcEntryPoint),
       inputs,
       outputs,
-      baseMapping,
+      options[0],
       fixedParams,
-      optionsCache_);
+      optionsCache);
 
   // Setup handlers
   sigterm_ = 0;
@@ -504,10 +487,6 @@ Autotuner<Backend, SearchStrategy>::tune(
     try {
       tuningHarness.run(searchStrategy);
     } catch (const std::exception& e) {
-      std::cerr << "Exception during autotuning: " << e.what()
-                << "\n dumping cache to "
-                << tc::makeOptionsFilename(cacheFileName) << std::endl;
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
       tuningHarnessThreadEx = std::current_exception();
     }
     tuningHarnessFinished = true;
@@ -516,11 +495,10 @@ Autotuner<Backend, SearchStrategy>::tune(
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (sigint_) {
       tuningHarness.stopAfterCurrentIteration();
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
+      break;
     }
     if (sigterm_) {
       std::cerr << "Autotuning aborted." << std::endl;
-      storeTopKInCache<Backend>(optionsCache_, cacheFileName);
       std::abort();
     }
   }
@@ -531,9 +509,12 @@ Autotuner<Backend, SearchStrategy>::tune(
     std::rethrow_exception(tuningHarnessThreadEx);
   }
 
-  storeTopKInCache<Backend>(optionsCache_, cacheFileName);
-
-  return {tuningHarness.bestMappingOptions()};
+  return optionsCache->getTopKOptions(
+      lang::canonicalTc(tcEntryPointMap.at(tcEntryPoint)),
+      makeTensorInfoVector(inputs.begin()->second),
+      makeTensorInfoVector(outputs.begin()->second),
+      Backend::backendString(),
+      topK);
 }
 } // namespace autotune
 } // namespace tc

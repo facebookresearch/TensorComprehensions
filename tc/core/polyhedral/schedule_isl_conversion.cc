@@ -21,6 +21,7 @@
 
 #include "tc/external/isl.h"
 
+#include "tc/core/check.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/external/isl.h"
@@ -30,24 +31,6 @@ using namespace std;
 namespace tc {
 namespace polyhedral {
 namespace detail {
-
-// static constexpr std::initializer_list need both definition and declaration
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemExtension::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSequence::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemSet::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemDomain::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemMappingFilter::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemBand::NodeDerivedTypes;
-constexpr std::initializer_list<detail::ScheduleTreeType>
-    ScheduleTreeElemContext::NodeDerivedTypes;
 
 namespace {
 
@@ -65,11 +48,11 @@ isl::schedule_node insertBranch(
     const std::vector<size_t>& pos) {
   auto filters = isl::union_set_list(node.get_ctx(), st->numChildren());
   for (size_t i = 0; i < pos.size(); ++i) {
-    auto filter = st->child({pos[i]})->elemAsBase<ScheduleTreeElemFilter>();
-    CHECK(filter);
+    auto filter = st->child({pos[i]})->as<ScheduleTreeFilter>();
+    TC_CHECK(filter);
     filters = filters.add(filter->filter_);
   }
-  if (st->elemAs<ScheduleTreeElemSet>()) {
+  if (st->as<ScheduleTreeSet>()) {
     node = node.insert_set(filters);
   } else {
     node = node.insert_sequence(filters);
@@ -100,10 +83,10 @@ std::vector<size_t> findCorePositions(
     const ScheduleTree* st,
     isl::union_set domain) {
   std::vector<size_t> positions;
-  CHECK(st->elemAs<ScheduleTreeElemSequence>());
+  TC_CHECK(st->as<ScheduleTreeSequence>());
   for (size_t i = 0; i < st->numChildren(); ++i) {
-    auto filter = st->child({i})->elemAsBase<ScheduleTreeElemFilter>();
-    CHECK(filter);
+    auto filter = st->child({i})->as<ScheduleTreeFilter>();
+    TC_CHECK(filter);
     if (!filter->filter_.intersect(domain).is_empty()) {
       positions.emplace_back(i);
     }
@@ -120,8 +103,8 @@ std::vector<size_t> findCorePositions(
 isl::schedule_node graftFromFilterSubtree(
     const ScheduleTree* st,
     isl::union_map extension) {
-  auto filter = st->elemAsBase<ScheduleTreeElemFilter>();
-  CHECK(filter);
+  auto filter = st->as<ScheduleTreeFilter>();
+  TC_CHECK(filter);
   auto filterExtension = extension.intersect_range(filter->filter_);
   auto extensionNode = isl::schedule_node::from_extension(filterExtension);
   return extendChild(extensionNode, st);
@@ -145,10 +128,10 @@ isl::schedule_node insertExtension(
   auto domain = node.get_universe_domain();
   auto child = st->child({0});
   auto corePos = findCorePositions(child, domain);
-  CHECK(!corePos.empty());
+  TC_CHECK(!corePos.empty());
   node = insertBranch(node, child, corePos);
 
-  auto extension = st->elemAs<ScheduleTreeElemExtension>()->extension_;
+  auto extension = st->as<ScheduleTreeExtension>()->extension_;
   for (size_t i = 0; i < corePos.size() - 1; ++i) {
     auto depth0 = node.get_tree_depth();
     node = node.child(i).child(0);
@@ -179,7 +162,7 @@ isl::schedule_node insertExtension(
  * some extra functionality in isl.
  */
 isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
-  if (auto band = st->elemAs<ScheduleTreeElemBand>()) {
+  if (auto band = st->as<ScheduleTreeBand>()) {
     node = node.insert_partial_schedule(band->mupa_);
     auto bandNode = node.as<isl::schedule_node_band>();
     bandNode = bandNode.set_permutable(band->permutable_);
@@ -188,22 +171,21 @@ isl::schedule_node insert(isl::schedule_node node, const ScheduleTree* st) {
     }
     for (size_t i = 0; i < band->unroll_.size(); ++i) {
       if (band->unroll_[i]) {
-        bandNode =
-            bandNode.member_set_ast_loop_type(i, isl::ast_loop_type::unroll);
+        bandNode = bandNode.member_set_ast_loop_unroll(i);
       }
     }
     node = bandNode;
-  } else if (auto context = st->elemAs<ScheduleTreeElemContext>()) {
+  } else if (auto context = st->as<ScheduleTreeContext>()) {
     node = node.insert_context(context->context_);
-  } else if (auto filter = st->elemAsBase<ScheduleTreeElemFilter>()) {
+  } else if (auto filter = st->as<ScheduleTreeFilter>()) {
     node = node.insert_filter(filter->filter_);
-  } else if (
-      st->elemAs<ScheduleTreeElemSet>() ||
-      st->elemAs<ScheduleTreeElemSequence>()) {
+  } else if (auto filter = st->as<ScheduleTreeMapping>()) {
+    node = node.insert_filter(filter->filter_);
+  } else if (st->as<ScheduleTreeSet>() || st->as<ScheduleTreeSequence>()) {
     return insertBranch(node, st);
-  } else if (st->elemAs<ScheduleTreeElemExtension>()) {
+  } else if (st->as<ScheduleTreeExtension>()) {
     return insertExtension(node, st);
-  } else if (st->elemAs<ScheduleTreeElemThreadSpecificMarker>()) {
+  } else if (st->as<ScheduleTreeThreadSpecificMarker>()) {
     return insertChild(node, st);
   } else {
     LOG(FATAL) << "NYI: insert type: " << *st;
@@ -243,14 +225,64 @@ isl::schedule_node extendChild(
  * then recursively add nodes corresponding to the descendants of "root".
  */
 isl::schedule toIslSchedule(const ScheduleTree* root) {
-  auto domain = root->elemAs<ScheduleTreeElemDomain>();
-  CHECK(domain) << "Root node should be domain node" << *root;
+  auto domain = root->as<ScheduleTreeDomain>();
+  TC_CHECK(domain) << "Root node should be domain node" << *root;
   auto node = isl::schedule_node::from_domain(domain->domain_);
   node = extendChild(node, root);
   return node.get_schedule();
 }
 
 namespace {
+
+std::unique_ptr<ScheduleTreeBand> fromIslScheduleNodeBand(
+    isl::schedule_node_band b) {
+  auto n = b.n_member();
+  std::vector<bool> coincident(n, false);
+  std::vector<bool> unroll(n, false);
+  for (size_t i = 0; i < n; ++i) {
+    coincident[i] = b.member_get_coincident(i);
+  }
+  return ScheduleTreeBand::make(
+      b.get_partial_schedule(), b.get_permutable(), coincident, unroll);
+}
+
+std::unique_ptr<ScheduleTree> elemFromIslScheduleNode(isl::schedule_node node) {
+  auto ctx = node.get_ctx();
+  if (auto band = node.as<isl::schedule_node_band>()) {
+    return fromIslScheduleNodeBand(band);
+  } else if (auto context = node.as<isl::schedule_node_context>()) {
+    auto c = context.get_context();
+    return ScheduleTreeContext::make(c);
+  } else if (auto domain = node.as<isl::schedule_node_domain>()) {
+    auto c = domain.get_domain();
+    return ScheduleTreeDomain::make(c);
+  } else if (auto expansion = node.as<isl::schedule_node_expansion>()) {
+    LOG(FATAL) << "expansion nodes not supported";
+    return nullptr;
+  } else if (auto extension = node.as<isl::schedule_node_extension>()) {
+    auto e = extension.get_extension();
+    return ScheduleTreeExtension::make(e);
+  } else if (auto filter = node.as<isl::schedule_node_filter>()) {
+    auto f = filter.get_filter();
+    return ScheduleTreeFilter::make(f);
+  } else if (auto guard = node.as<isl::schedule_node_guard>()) {
+    LOG(FATAL) << "guard nodes not supported";
+    return nullptr;
+  } else if (auto mark = node.as<isl::schedule_node_mark>()) {
+    LOG(FATAL) << "mark nodes not supported";
+    return nullptr;
+  } else if (node.isa<isl::schedule_node_leaf>()) {
+    LOG(FATAL) << "ScheduleTree::make called on explicit leaf";
+    return nullptr;
+  } else if (node.isa<isl::schedule_node_sequence>()) {
+    return ScheduleTreeSequence::make(ctx);
+  } else if (node.isa<isl::schedule_node_set>()) {
+    return ScheduleTreeSet::make(ctx);
+  }
+  LOG(FATAL) << "NYI: ScheduleTree from type: "
+             << isl_schedule_node_get_type(node.get());
+  return nullptr;
+}
 
 /*
  * Create a ScheduleTree of the isl schedule subtree at "node".
@@ -260,9 +292,7 @@ namespace {
  * if this single child node is a leaf.
  */
 std::unique_ptr<ScheduleTree> fromIslScheduleNode(isl::schedule_node node) {
-  unique_ptr<ScheduleTree> res(new ScheduleTree(node.get_ctx()));
-  res->elem_ = ScheduleTreeElemBase::make(node);
-  res->type_ = res->elem_->type();
+  auto res = elemFromIslScheduleNode(node);
   auto n = node.n_children();
   if (n == 1 && node.child(0).isa<isl::schedule_node_leaf>()) {
     return res;

@@ -22,6 +22,7 @@
 
 #include <Halide.h>
 
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
 #include "tc/external/isl.h"
@@ -53,11 +54,25 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 
 // Make an affine function over a space from a Halide Expr. Returns a
 // null isl::aff if the expression is not affine. Fails if Variable
-// does not correspond to a parameter or set dimension of the space.
+// does not correspond to a parameter of the space.
+// Note that the input space can be either a parameter space or
+// a set space, but the expression can only reference
+// the parameters in the space.
 isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
 
-typedef std::unordered_map<isl::id, std::vector<std::string>, isl::IslIdIslHash>
-    IteratorMap;
+// Iteration domain information associated to a statement identifier.
+struct IterationDomain {
+  // All parameters active at the point where the iteration domain
+  // was created, including those corresponding to outer loop iterators.
+  isl::space paramSpace;
+  // The identifier tuple corresponding to the iteration domain.
+  // The identifiers in the tuple are the outer loop iterators,
+  // from outermost to innermost.
+  isl::multi_id tuple;
+};
+
+typedef std::unordered_map<isl::id, IterationDomain, isl::IslIdIslHash>
+    IterationDomainMap;
 typedef std::unordered_map<isl::id, Halide::Internal::Stmt, isl::IslIdIslHash>
     StatementMap;
 typedef std::unordered_map<const Halide::Internal::IRNode*, isl::id> AccessMap;
@@ -68,10 +83,8 @@ struct ScheduleTreeAndAccesses {
   /// for each leaf node is captured below.
   tc::polyhedral::ScheduleTreeUPtr tree;
 
-  /// Union maps describing the reads and writes done. Uses the ids in
-  /// the schedule tree to denote the containing Stmt, and tags each
-  /// access with a unique reference id of the form __tc_ref_N.
-  isl::union_map reads, writes;
+  /// Information extracted from the bodies of the statements.
+  tc::polyhedral::Body body;
 
   /// The correspondence between from Call and Provide nodes and the
   /// reference ids in the reads and writes maps.
@@ -81,9 +94,9 @@ struct ScheduleTreeAndAccesses {
   /// refered to above.
   StatementMap statements;
 
-  /// The correspondence between statement ids and the outer loop iterators
+  /// The correspondence between statement ids and the iteration domain
   /// of the corresponding leaf Stmt.
-  IteratorMap iterators;
+  IterationDomainMap domains;
 };
 
 /// Make a schedule tree from a Halide Stmt, along with auxiliary data
@@ -91,18 +104,6 @@ struct ScheduleTreeAndAccesses {
 ScheduleTreeAndAccesses makeScheduleTree(
     isl::space paramSpace,
     const Halide::Internal::Stmt& s);
-
-/// Enumerate all reductions in a statement, by looking for the
-/// ReductionInit and ReductionUpdate markers inserted during lowering
-/// (see tc2halide.h).
-/// Each reduction object stores a reference to
-/// the update statement, and a list of reduction dimensions
-/// in the domain of the update statement.
-struct Reduction {
-  Halide::Internal::Stmt update;
-  std::vector<size_t> dims;
-};
-std::vector<Reduction> findReductions(const Halide::Internal::Stmt& s);
 
 } // namespace halide2isl
 } // namespace tc

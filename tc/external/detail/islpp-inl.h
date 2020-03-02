@@ -20,6 +20,16 @@ namespace isl {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::aff to perform arithmetic and create/combine with sets
 ///////////////////////////////////////////////////////////////////////////////
+template <typename T>
+inline auto operator*(isl::val V, T A) -> decltype(A.scale(V)) {
+  return A.scale(V);
+}
+
+template <typename T>
+inline auto operator*(T A, isl::val V) -> decltype(A.scale(V)) {
+  return V * A;
+}
+
 inline isl::aff operator*(int i, isl::aff A) {
   isl::val V(isl::val(A.get_ctx(), i));
   return A * V;
@@ -29,46 +39,37 @@ inline isl::aff operator*(isl::aff A, int i) {
   return i * A;
 }
 
-inline isl::aff operator*(isl::val V, isl::aff A) {
-  return A.scale(V);
-}
-
-inline isl::aff operator*(isl::aff A, isl::val V) {
-  return V * A;
-}
-
 inline isl::aff operator/(isl::aff A, int i) {
   return A.scale_down(isl::val(A.get_ctx(), i));
 }
 
-inline isl::aff operator+(int i, isl::aff A) {
-  isl::ctx ctx = A.get_ctx();
-  return A + isl::val(ctx, i);
+template <typename T>
+inline T operator+(int i, T A) {
+  return A.add_constant_si(i);
 }
 
-inline isl::aff operator+(isl::aff A, isl::val v) {
-  isl::aff T(isl::local_space(A.get_space().domain()), v);
-  return A.add(T);
+template <typename T>
+inline auto operator+(T A, isl::val v) -> decltype(A.add_constant(v)) {
+  return A.add_constant(v);
 }
 
 inline isl::aff operator+(isl::val v, isl::aff A) {
   return A + v;
 }
 
-inline isl::aff operator+(isl::aff A, isl::aff B) {
-  return A.add(B);
-}
-
-inline isl::aff operator+(isl::aff A, int i) {
+template <typename T>
+inline auto operator+(T A, int i) -> decltype(A.add_constant_si(i)) {
   return i + A;
 }
 
-inline isl::aff operator-(isl::aff A, int i) {
+template <typename T>
+inline auto operator-(T A, int i) -> decltype(A.add_constant_si(i)) {
   return A + (-i);
 }
 
-inline isl::aff operator-(int i, isl::aff A) {
-  return (A + (-i)).neg();
+template <typename T>
+inline auto operator-(int i, T A) -> decltype(A.add_constant_si(i)) {
+  return i + A.neg();
 }
 
 inline isl::set operator>=(isl::aff_set A, isl::val v) {
@@ -188,27 +189,20 @@ inline isl::map operator<=(isl::aff_map A, isl::aff B) {
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::multi_aff
 ///////////////////////////////////////////////////////////////////////////////
-inline isl::multi_aff operator/(isl::multi_aff left, isl::multi_val right) {
+template <typename S, typename T>
+inline auto operator/(S left, T right) -> decltype(left.scale_down(right)) {
   return left.scale_down(right);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Operations on isl::set and isl::union_set
 ///////////////////////////////////////////////////////////////////////////////
-inline isl::set operator&(isl::set S1, isl::set S2) {
-  return S1.intersect(S2);
-}
-
 inline isl::union_set operator&(isl::union_set S1, isl::set S2) {
   return S1.intersect(isl::union_set(S2));
 }
 
 inline isl::union_set operator&(isl::set S1, isl::union_set S2) {
   return S2 & S1;
-}
-
-inline isl::union_set operator&(isl::union_set S1, isl::union_set S2) {
-  return S1.intersect(S2);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

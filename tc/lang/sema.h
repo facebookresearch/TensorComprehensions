@@ -21,6 +21,7 @@
 #include "tc/lang/error_report.h"
 #include "tc/lang/tree.h"
 #include "tc/lang/tree_views.h"
+#include "tc/utils/compiler_options.h"
 
 namespace lang {
 
@@ -46,12 +47,22 @@ struct TypeInfo {
       TYPE_INFO_OPTION(TK_INT16, Int, 16)
       TYPE_INFO_OPTION(TK_INT32, Int, 32)
       TYPE_INFO_OPTION(TK_INT64, Int, 64)
+      TYPE_INFO_OPTION(TK_FLOAT16, Float, 16)
+      TYPE_INFO_OPTION(TK_FLOAT32, Float, 32)
+      TYPE_INFO_OPTION(TK_FLOAT64, Float, 64)
       TYPE_INFO_OPTION(TK_FLOAT, Float, 32)
       TYPE_INFO_OPTION(TK_DOUBLE, Float, 64)
+
 #undef TYPE_INFO_OPTION
       default:
         throw ErrorReport(scalar_type)
             << "Unhandled TC scalar type: " << scalar_type;
+    }
+
+    if (code_ == Code::Float && bits_ == 16) {
+      throw ErrorReport(scalar_type)
+          << "Half precision floating point not supported "
+          << "until we can make NVRTC include system headers";
     }
   }
   int toScalarToken() const {
@@ -82,12 +93,15 @@ struct TypeInfo {
         }
       case Float:
         switch (bits()) {
+          case 16:
+            return TK_FLOAT16;
           case 32:
             return TK_FLOAT;
           case 64:
             return TK_DOUBLE;
         }
     }
+
     throw std::runtime_error("Unknown type info?");
   }
   Code code() const {
@@ -157,7 +171,9 @@ static inline TreeRef match_types(TreeRef a, TreeRef b) {
 /// variable objects.
 /// - checks that input variables are readonly.
 struct Sema {
-  std::unordered_map<TreeRef, TreeRef> expr_to_type;
+  explicit Sema(
+      const tc::CompilerOptions& compilerOptions = tc::CompilerOptions())
+      : compilerOptions(compilerOptions) {}
 
   TreeRef typeOfExpr(TreeRef ref) {
     if (expr_to_type.count(ref) == 0) {
@@ -545,7 +561,7 @@ struct Sema {
           << " is not pre-initialized before calling the TC function,"
           << " consider using the !-suffixed reduction operator " << tk
           << "! instead of " << tk;
-      warn(err);
+      warn(err, compilerOptions);
     }
 
     auto type = TensorType::create(
@@ -694,7 +710,12 @@ struct Sema {
   // allowed
   std::unordered_set<std::string> live_input_names;
 
+  std::unordered_map<TreeRef, TreeRef> expr_to_type;
+
   std::unordered_set<std::string> inputParameters;
   std::unordered_set<std::string> nonTemporaries;
+
+  // TC compilation flow options.
+  tc::CompilerOptions compilerOptions;
 };
 } // namespace lang

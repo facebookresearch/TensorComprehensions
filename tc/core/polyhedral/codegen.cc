@@ -19,6 +19,7 @@
 #include <sstream>
 
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 
 namespace tc {
 namespace polyhedral {
@@ -30,7 +31,7 @@ isl::id_list Codegen::makeLoopIterators(
       detail::ScheduleTree::collect(root, detail::ScheduleTreeType::Band);
   size_t n = 0;
   for (auto const& node : bands) {
-    auto bandElem = node->elemAs<detail::ScheduleTreeElemBand>();
+    auto bandElem = node->as<detail::ScheduleTreeBand>();
     auto depth = node->scheduleDepth(root) + bandElem->nMember();
     if (depth > n) {
       n = depth;

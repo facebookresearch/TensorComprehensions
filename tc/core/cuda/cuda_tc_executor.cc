@@ -15,6 +15,7 @@
  */
 #include "tc/core/cuda/cuda_tc_executor.h"
 
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options_cpp_printer.h"
 #include "tc/core/halide_utils.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
@@ -85,7 +86,7 @@ CudaCompilationResult CudaBackend::compileWithTcMapper(
 
   // Now we can build stuff
   auto mappedScop =
-      polyhedral::MappedScop::makeWithOuterBlockInnerThreadStrategy(
+      polyhedral::cuda::MappedScop::makeWithOuterBlockInnerThreadStrategy(
           std::move(scop), options);
   LOG_IF(INFO, FLAGS_debug_tc_mapper) << "Mapped schedule:" << std::endl
                                       << *(mappedScop->schedule());
@@ -111,9 +112,9 @@ void CudaTcExecutor::uncheckedRun(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs,
     typename CudaBackend::RuntimeInformation info) const {
-  CHECK(rtcFun_) << "No rtcFun_ attached, cannot launch";
-  CHECK_NE(grid_.view[0], 0u) << "Grid dims are not set up";
-  CHECK_NE(block_.view[0], 0u) << "Block dims are not set up";
+  TC_CHECK(rtcFun_) << "No rtcFun_ attached, cannot launch";
+  TC_CHECK_NE(grid_.view[0], 0u) << "Grid dims are not set up";
+  TC_CHECK_NE(block_.view[0], 0u) << "Block dims are not set up";
   rtcFun_->Launch(
       grid_.view.extractDefaultedArray(),
       block_.view.extractDefaultedArray(),
@@ -128,10 +129,10 @@ ProfilingInfo CudaTcExecutor::profileUnchecked(
     const std::vector<const void*>& inputs,
     const std::vector<void*>& outputs) const {
   auto start = std::chrono::system_clock::now();
-  CHECK(rtcFun_) << "No rtcFun_ attached, cannot launch";
+  TC_CHECK(rtcFun_) << "No rtcFun_ attached, cannot launch";
   cudaStream_t stream = 0;
-  CHECK_NE(grid_.view[0], 0u) << "Grid dims are not set up";
-  CHECK_NE(block_.view[0], 0u) << "Block dims are not set up";
+  TC_CHECK_NE(grid_.view[0], 0u) << "Grid dims are not set up";
+  TC_CHECK_NE(block_.view[0], 0u) << "Block dims are not set up";
   Duration kernelRuntime(rtcFun_->Launch(
       grid_.view.extractDefaultedArray(),
       block_.view.extractDefaultedArray(),

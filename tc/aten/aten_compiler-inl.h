@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "tc/aten/aten.h"
+#include "tc/core/check.h"
 #include "tc/core/compiler.h"
 #include "tc/core/tc_executor.h"
 #include "tc/core/tensor.h"
@@ -31,10 +32,11 @@ std::unique_ptr<typename Backend::ExecutorType> compile(
     const std::string& tc,
     const std::string& entryPoint,
     const std::vector<at::Tensor>& inputs,
-    const typename Backend::MappingOptionsType& options) {
+    const typename Backend::MappingOptionsType& options,
+    const CompilerOptions& compilerOptions) {
   auto inputDLTensors = makeDLConstTensors(inputs);
   return tc::compile<Backend>(
-      tc, entryPoint, extractRawPtrs(inputDLTensors), options);
+      tc, entryPoint, extractRawPtrs(inputDLTensors), options, compilerOptions);
 }
 
 template <typename Executor>
@@ -71,7 +73,7 @@ void uncheckedRun(
     const Executor& executor,
     const std::vector<at::Tensor>& inputs,
     std::vector<at::Tensor>& outputs) {
-  CHECK_GE(outputs.size(), 1u);
+  TC_CHECK_GE(outputs.size(), 1u);
   std::vector<const void*> rawInputs(inputs.size(), nullptr);
   std::vector<void*> rawOutputs(outputs.size(), nullptr);
   for (size_t i = 0; i < inputs.size(); ++i) {

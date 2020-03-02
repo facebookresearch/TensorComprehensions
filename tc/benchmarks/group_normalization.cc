@@ -98,15 +98,11 @@ std::vector<at::Tensor> GroupNormalization::runGroupNormalization(
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
     bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix +
-            std::string("/group_normalization_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix +
-            std::string("/group_normalization_best") + suffix,
         tc::TC_GroupNormalization,
         tc::TC_GroupNormalization_NAME,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
 
   auto pExecutorMoments = tc::aten::compile<tc::CudaBackend>(
@@ -160,15 +156,11 @@ std::vector<at::Tensor> GroupNormalization::runGroupNormalizationSingleKernel(
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
     bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix +
-            std::string("/group_normalization_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix +
-            std::string("/group_normalization_best") + suffix,
         tc::TC_GroupNormalization,
         tc::TC_GroupNormalizationSingleKernel_NAME,
         inputs,
         options);
-    CHECK_GE(bestOptions.size(), 1u);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   return Check(
       tc::TC_GroupNormalization,

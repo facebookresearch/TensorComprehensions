@@ -25,11 +25,11 @@
 #include <gtest/gtest.h>
 
 #include "tc/core/constants.h"
+#include "tc/core/cuda/cuda_libraries.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/libraries.h"
+#include "tc/core/functional.h"
 #include "tc/core/polyhedral/cuda/codegen.h"
 #include "tc/core/polyhedral/cuda/mapped_scop.h"
-#include "tc/core/polyhedral/functional.h"
 #include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
@@ -44,13 +44,14 @@ using namespace std;
 
 using namespace tc;
 using namespace tc::polyhedral;
+using namespace tc::polyhedral::cuda;
 using namespace tc::polyhedral::detail;
 
 struct PolyhedralMapperTest : public ::testing::Test {
   std::unique_ptr<Scop> Prepare(std::string tc) {
     auto ctx = isl::with_exceptions::globalIslCtx();
     // Build the SCoP corresponding to the Tc
-    return Scop::makeScop(ctx, tc);
+    return Scop::makeScop(ctx, tc, CompilerOptions());
   }
 
   std::unique_ptr<Scop> PrepareAndJoinBands(std::string tc) {
@@ -132,19 +133,17 @@ struct PolyhedralMapperTest : public ::testing::Test {
     auto schedule = scop.scheduleRoot();
     auto schedule2 = ScheduleTree::makeScheduleTree(*schedule); // make a copy
     bandTile(schedule->child({0}), tileSizes, tileOptions);
-    auto scheduleISLPP = fromIslSchedule(toIslSchedule(schedule).reset_user());
+    auto scheduleISLPP = fromIslSchedule(toIslSchedule(schedule));
 
     {
       auto ctx = isl::with_exceptions::globalIslCtx();
       applyTileOptions(ctx, tileOptions);
       auto islNode = toIslSchedule(schedule2.get()).get_root().child(0);
       auto mv = isl::makeMultiVal(
-          schedule2->child({0})
-              ->elemAs<ScheduleTreeElemBand>()
-              ->mupa_.get_space(),
+          schedule2->child({0})->as<ScheduleTreeBand>()->mupa_.get_space(),
           tileSizes);
       islNode = islNode.as<isl::schedule_node_band>().tile(mv);
-      auto scheduleISL = fromIslSchedule(islNode.get_schedule().reset_user());
+      auto scheduleISL = fromIslSchedule(islNode.get_schedule());
 
       ASSERT_TRUE(*scheduleISL == *scheduleISLPP) << *scheduleISL << "\nVS\n"
                                                   << *scheduleISLPP;
@@ -367,9 +366,9 @@ def fun(float(N, M) A, float(N, M) B) -> (C) {
   std::string expected(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*C)[M] = reinterpret_cast<float32 (*)[M]>(pC);
-  const float32 (*A)[M] = reinterpret_cast<const float32 (*)[M]>(pA);
-  const float32 (*B)[M] = reinterpret_cast<const float32 (*)[M]>(pB);
+  float (*C)[M] = reinterpret_cast<float (*)[M]>(pC);
+  const float (*A)[M] = reinterpret_cast<const float (*)[M]>(pA);
+  const float (*B)[M] = reinterpret_cast<const float (*)[M]>(pB);
   for (int c1 = 16 * b1; c1 < M; c1 += 4096) {
     if (M >= t0 + c1 + 1) {
       C[(t1 + 16 * b0)][(t0 + c1)] = (A[(t1 + 16 * b0)][(t0 + c1)] + B[(t1 + 16 * b0)][(t0 + c1)]);
@@ -402,16 +401,16 @@ def fun(float(N, N, N, N) A, float(N, N) B, float(N, N) C, float(N, N) D)
   std::string expected(
       R"RES(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O1)[N] = reinterpret_cast<float32 (*)[N]>(pO1);
-  float32 (*O2)[N] = reinterpret_cast<float32 (*)[N]>(pO2);
-  float32 (*O3)[N] = reinterpret_cast<float32 (*)[N]>(pO3);
-  const float32 (*A)[N][N][N] = reinterpret_cast<const float32 (*)[N][N][N]>(pA);
-  const float32 (*B)[N] = reinterpret_cast<const float32 (*)[N]>(pB);
-  const float32 (*C)[N] = reinterpret_cast<const float32 (*)[N]>(pC);
-  const float32 (*D)[N] = reinterpret_cast<const float32 (*)[N]>(pD);
+  float (*O1)[N] = reinterpret_cast<float (*)[N]>(pO1);
+  float (*O2)[N] = reinterpret_cast<float (*)[N]>(pO2);
+  float (*O3)[N] = reinterpret_cast<float (*)[N]>(pO3);
+  const float (*A)[N][N][N] = reinterpret_cast<const float (*)[N][N][N]>(pA);
+  const float (*B)[N] = reinterpret_cast<const float (*)[N]>(pB);
+  const float (*C)[N] = reinterpret_cast<const float (*)[N]>(pC);
+  const float (*D)[N] = reinterpret_cast<const float (*)[N]>(pD);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
-      O1[c0][c1] = 0.000000f;
+      O1[c0][c1] = (float)0.000000;
     }
   }
   for (int c0 = 0; c0 < N; c0 += 1) {
@@ -451,14 +450,14 @@ def fun(float(N, N) A) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected(
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA) {
+      R"RES(__global__ void kernel_anon(int N, float* pO, const float* pA) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[N] = reinterpret_cast<float32 (*)[N]>(pO);
-  const float32 (*A)[N] = reinterpret_cast<const float32 (*)[N]>(pA);
+  float (*O)[N] = reinterpret_cast<float (*)[N]>(pO);
+  const float (*A)[N] = reinterpret_cast<const float (*)[N]>(pA);
   for (int c0 = 0; c0 < N; c0 += 1) {
     for (int c1 = 0; c1 < N; c1 += 1) {
-      O[c0][c1] = (((A[c0][c1] + float32(c0)) + float32(c1)) + float32(N));
+      O[c0][c1] = (((A[c0][c1] + (float)(c0)) + (float)(c1)) + (float)(N));
     }
   }
 }
@@ -480,13 +479,13 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
   auto res = std::get<0>(mscop->codegen(specializedName));
 
   string expected =
-      R"RES(__global__ void kernel_anon(int32 N, float32* pO, const float32* pA, const float32* pB, const float32* pC) {
+      R"RES(__global__ void kernel_anon(int N, float* pO, const float* pA, const float* pB, const float* pC) {
   int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[512] = reinterpret_cast<float32 (*)[512]>(pO);
-  const float32 (*A)[512] = reinterpret_cast<const float32 (*)[512]>(pA);
-  const float32 (*B)[512] = reinterpret_cast<const float32 (*)[512]>(pB);
-  const float32 (*C) = reinterpret_cast<const float32 (*)>(pC);
+  float (*O)[512] = reinterpret_cast<float (*)[512]>(pO);
+  const float (*A)[512] = reinterpret_cast<const float (*)[512]>(pA);
+  const float (*B)[512] = reinterpret_cast<const float (*)[512]>(pB);
+  const float (*C) = reinterpret_cast<const float (*)>(pC);
   for (int c0 = 0; c0 <= 511; c0 += 1) {
     for (int c1 = 0; c1 <= 511; c1 += 1) {
       O[c0][c1] = (nextafter(C[c0], exp(A[c0][c1])) + log(B[c1][c0]));
@@ -501,13 +500,13 @@ def fun(float(N, N) A, float(N, N) B, float(N) C) -> (O)
 constexpr auto kExpectedMatmul_64_64_64 =
     R"CUDA(int b0 = blockIdx.x; int b1 = blockIdx.y; int b2 = blockIdx.z;
   int t0 = threadIdx.x; int t1 = threadIdx.y; int t2 = threadIdx.z;
-  float32 (*O)[64] = reinterpret_cast<float32 (*)[64]>(pO);
-  const float32 (*A)[64] = reinterpret_cast<const float32 (*)[64]>(pA);
-  const float32 (*B)[64] = reinterpret_cast<const float32 (*)[64]>(pB);
+  float (*O)[64] = reinterpret_cast<float (*)[64]>(pO);
+  const float (*A)[64] = reinterpret_cast<const float (*)[64]>(pA);
+  const float (*B)[64] = reinterpret_cast<const float (*)[64]>(pB);
   for (int c0 = 0; c0 <= 63; c0 += 16) {
     for (int c1 = 0; c1 <= 63; c1 += 16) {
       for (int c2 = t1; c2 <= 15; c2 += 8) {
-        O[(c0 + c2)][(t0 + c1)] = 0.000000f;
+        O[(c0 + c2)][(t0 + c1)] = (float)0.000000;
         for (int c4 = 0; c4 <= 63; c4 += 1) {
           O[(c0 + c2)][(t0 + c1)] = (O[(c0 + c2)][(t0 + c1)] + (A[(c0 + c2)][c4]*B[c4][(t0 + c1)]));
         }
@@ -535,11 +534,7 @@ TEST_F(PolyhedralMapperTest, Match1) {
 
   auto mscop = TileAndMapThreads(std::move(scop), {16, 16}, {32ul, 8ul});
   auto f = match(
-      band(sequence(
-          filter([](isl::union_set f) {
-            return f.get_space().dim(isl::dim_type::param) == 3;
-          }),
-          filter())),
+      band(sequence(filter([](isl::union_set f) { return true; }), filter())),
       schedule);
   EXPECT_EQ(1u, f.size());
 }
@@ -757,9 +752,9 @@ def fun(float(N, M) A, float(N, M) B) -> (C,D) {
   auto tiledBand =
       ScheduleTree::makeScheduleTree(*scop->tileOuterBand(tiling.view));
 
-  ASSERT_TRUE(maxMinOuterBand->elemAs<ScheduleTreeElemBand>());
-  ASSERT_TRUE(maxMaxOuterBand->elemAs<ScheduleTreeElemBand>());
-  ASSERT_TRUE(tiledBand->elemAs<ScheduleTreeElemBand>());
+  ASSERT_TRUE(maxMinOuterBand->as<ScheduleTreeBand>());
+  ASSERT_TRUE(maxMaxOuterBand->as<ScheduleTreeBand>());
+  ASSERT_TRUE(tiledBand->as<ScheduleTreeBand>());
 
   auto maxMinStructure = // expected structure when rescheduling with MinFuse
       band( // tile band
@@ -1099,7 +1094,7 @@ def fun(float(N) I) -> (O) {
  * Check that isolating the update statements does not introduce
  * an empty mapping filter.
  */
-TEST_F(PolyhedralMapperTest, EmptyMappingFilter) {
+TEST_F(PolyhedralMapperTest, EmptyMapping) {
   constexpr static auto tc = R"TC(
   def var_2D_1D(float(N, K) I, float(N) mean) -> (var)
   {
@@ -1124,7 +1119,7 @@ def fun(float(N) a) -> (b) { b(i) = a(i % 3) where i in 0:N }
 )TC";
   // This triggers tc2halide conversion and should not throw.
   auto scop = Prepare(tc);
-  for (auto r : scop->reads.wrap().get_set_list()) {
+  for (auto r : scop->body.reads.wrap().get_set_list()) {
     auto read = r.unwrap();
     // skip irrelevant reads, if any
     if (read.range().get_tuple_name() != std::string("a")) {
@@ -1142,13 +1137,28 @@ def local_sparse_convolution(float(N, C, H, W) I, float(O, KC, KH, KW) W1) -> (O
 )TC";
   // This triggers tc2halide conversion and should not throw.
   auto scop = Prepare(tc);
-  for (auto r : scop->reads.range().get_set_list()) {
+  for (auto r : scop->body.reads.range().get_set_list()) {
     // skip irrelevant reads, if any
     if (r.get_tuple_name() != std::string("I")) {
       continue;
     }
     EXPECT_TRUE(r.plain_is_universe());
   }
+}
+
+/*
+ * Check that a TC with a single instance gets mapped properly.
+ * tightenLaunchBounds (called during codegen) will complain
+ * if it is not.
+ */
+TEST_F(PolyhedralMapperTest, SingleInstance) {
+  string tc = R"TC(
+def f(float(N) I) -> (a)
+{
+    a = 0
+}
+)TC";
+  codegenMapped(tc, DefaultOptions());
 }
 
 int main(int argc, char** argv) {

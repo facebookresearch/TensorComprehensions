@@ -20,8 +20,9 @@
 #include <unordered_set>
 #include <vector>
 
+#include "tc/core/check.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
-#include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/core/utils/vararg.h"
 #include "tc/external/isl.h"
 
@@ -35,6 +36,23 @@ namespace detail {
 // ScheduleTree, convertible to and from isl::schedule.
 //
 struct ScheduleTree;
+struct ScheduleTreeSet;
+struct ScheduleTreeSequence;
+struct ScheduleTreeMapping;
+
+enum class ScheduleTreeType {
+  None,
+  Band,
+  Context,
+  Domain,
+  Extension,
+  Filter,
+  Sequence,
+  Set,
+  Mapping,
+  ThreadSpecificMarker,
+  Any,
+};
 
 } // namespace detail
 
@@ -108,6 +126,9 @@ namespace detail {
 
 std::ostream& operator<<(std::ostream& os, const ScheduleTree& tree);
 
+template <typename T>
+void flattenSequenceOrSet(ScheduleTree* tree);
+
 struct ScheduleTree {
   friend std::ostream& tc::polyhedral::detail::operator<<(
       std::ostream&,
@@ -115,18 +136,25 @@ struct ScheduleTree {
 
  private:
   ScheduleTree() = delete;
+
+ protected:
   ScheduleTree(
       isl::ctx ctx,
       std::vector<ScheduleTreeUPtr>&& children,
-      detail::ScheduleTreeType type,
-      std::unique_ptr<ScheduleTreeElemBase>&& elem)
-      : ctx_(ctx), type_(type), elem_(std::move(elem)) {
+      detail::ScheduleTreeType type)
+      : ctx_(ctx), type_(type) {
     appendChildren(std::move(children));
   }
+
+  // Copy constructor for internal use only.
+  // Note that this does not account for a specific subclass of ScheduleTree.
+  // All callers should use makeScheduleTree(const ScheduleTree&) instead,
+  // which dispatches the copying to subclasses as well as keeps the memory
+  // management scheme consistent.
   ScheduleTree(const ScheduleTree& st);
 
  public:
-  explicit ScheduleTree(isl::ctx ctx);
+  virtual ~ScheduleTree();
 
   bool operator==(const ScheduleTree& other) const;
   bool operator!=(const ScheduleTree& other) const {
@@ -135,9 +163,9 @@ struct ScheduleTree {
 
   // Swap a tree with with the given tree.
   void swapChild(size_t pos, ScheduleTreeUPtr& swappee) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LE(pos, children_.size()) << "position out of children bounds";
-    CHECK(swappee.get()) << "Cannot swap in a null tree";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LE(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK(swappee.get()) << "Cannot swap in a null tree";
     std::swap(children_[pos], swappee);
   }
 
@@ -150,10 +178,10 @@ struct ScheduleTree {
 
   // Manipulators for the list of children.
   void insertChildren(size_t pos, std::vector<ScheduleTreeUPtr>&& children) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LE(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LE(pos, children_.size()) << "position out of children bounds";
     for (const auto& c : children) {
-      CHECK(c.get()) << "inserting null or moved-from child";
+      TC_CHECK(c.get()) << "inserting null or moved-from child";
     }
 
     children_.insert(
@@ -177,8 +205,8 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr detachChild(size_t pos) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LT(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr child = std::move(children_[pos]);
     children_.erase(children_.begin() + pos);
@@ -199,8 +227,8 @@ struct ScheduleTree {
   }
 
   ScheduleTreeUPtr replaceChild(size_t pos, ScheduleTreeUPtr&& child) {
-    CHECK_GE(pos, 0u) << "position out of children bounds";
-    CHECK_LT(pos, children_.size()) << "position out of children bounds";
+    TC_CHECK_GE(pos, 0u) << "position out of children bounds";
+    TC_CHECK_LT(pos, children_.size()) << "position out of children bounds";
 
     ScheduleTreeUPtr oldChild = std::move(children_[pos]);
     children_[pos] = std::move(child);
@@ -242,7 +270,7 @@ struct ScheduleTree {
 
   inline size_t positionInParent(const ScheduleTree* parent) const {
     auto p = positionRelativeTo(parent);
-    CHECK_EQ(1u, p.size()) << *parent << " is not the parent of " << *this;
+    TC_CHECK_EQ(1u, p.size()) << *parent << " is not the parent of " << *this;
     return p[0];
   }
 
@@ -271,11 +299,29 @@ struct ScheduleTree {
       std::vector<ScheduleTreeUPtr>&& children = {});
 
   template <typename MappingIdType>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       const std::vector<MappingIdType>& mappedIds,
       isl::union_pw_aff_list mappedAffs,
-      std::vector<ScheduleTreeUPtr>&& children = {});
+      std::vector<ScheduleTreeUPtr>&& children = {}) {
+    static_assert(
+        std::is_base_of<mapping::MappingId, MappingIdType>::value,
+        "can only map to ids that are subclasses of MappingId");
+    std::vector<mapping::MappingId> ids;
+    ids.reserve(mappedIds.size());
+    for (const auto& id : mappedIds) {
+      ids.push_back(id);
+    }
+    return makeMappingUnsafe(ids, mappedAffs, std::move(children));
+  }
 
+ private:
+  // Internal type-unsafe function to construct mappings.
+  static ScheduleTreeUPtr makeMappingUnsafe(
+      const std::vector<mapping::MappingId>& mappedIds,
+      isl::union_pw_aff_list mappedAffs,
+      std::vector<ScheduleTreeUPtr>&& children);
+
+ public:
   static ScheduleTreeUPtr makeExtension(
       isl::union_map extension,
       std::vector<ScheduleTreeUPtr>&& children = {});
@@ -311,12 +357,12 @@ struct ScheduleTree {
   }
 
   template <typename MappingIdType, typename... Args>
-  static inline ScheduleTreeUPtr makeMappingFilter(
+  static inline ScheduleTreeUPtr makeMapping(
       isl::union_set filter,
       const std::unordered_set<MappingIdType, typename MappingIdType::Hash>&
           mappingIds,
       Args&&... args) {
-    return makeMappingFilter(
+    return makeMapping(
         filter,
         mappingIds,
         vectorFromArgs<ScheduleTreeUPtr>(std::forward<Args>(args)...));
@@ -333,43 +379,21 @@ struct ScheduleTree {
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSet(Args&&... args) {
-    return fromList<ScheduleTreeElemSet>(
-        detail::ScheduleTreeType::Set, std::forward<Args>(args)...);
+    return fromList<ScheduleTreeSet>(std::forward<Args>(args)...);
   }
 
   template <typename... Args>
   static ScheduleTreeUPtr makeSequence(Args&&... args) {
-    return fromList<ScheduleTreeElemSequence>(
-        detail::ScheduleTreeType::Sequence, std::forward<Args>(args)...);
-  }
-
-  // Flatten nested nodes of the same type.
-  void flattenSequenceOrSet() {
-    // This should be enforced by the type system...
-    CHECK(
-        type_ == detail::ScheduleTreeType::Sequence ||
-        type_ == detail::ScheduleTreeType::Set);
-
-    // Iterate over the changing list of children. If a child has the same list
-    // type as a parent, replace it with grandchildren and traverse them too.
-    for (size_t i = 0; i < children_.size(); ++i) {
-      if (children_[i]->type_ != type_) {
-        continue;
-      }
-      auto grandChildren = children_[i]->detachChildren();
-      detachChild(i);
-      insertChildren(i, std::move(grandChildren));
-      --i;
-    }
+    return fromList<ScheduleTreeSequence>(std::forward<Args>(args)...);
   }
 
   // disallow empty lists in syntax
   template <typename T, typename Arg, typename... Args>
-  static ScheduleTreeUPtr
-  fromList(detail::ScheduleTreeType type, Arg&& arg, Args&&... args) {
+  static ScheduleTreeUPtr fromList(Arg&& arg, Args&&... args) {
     static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Can only construct elements derived from ScheduleTreeElemBase");
+        std::is_same<ScheduleTreeSet, T>::value ||
+            std::is_same<ScheduleTreeSequence, T>::value,
+        "Can only construct Set or Sequence elements");
     static_assert(
         std::is_same<
             typename std::remove_reference<Arg>::type,
@@ -377,25 +401,15 @@ struct ScheduleTree {
         "Arguments must be rvalue references to ScheduleTreeUPtr");
 
     auto ctx = arg->ctx_;
-    std::vector<ScheduleTreeUPtr> children =
-        vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...);
-
-    auto res = ScheduleTreeUPtr(new ScheduleTree(
-        ctx,
-        std::move(children),
-        type,
-        std::unique_ptr<ScheduleTreeElemBase>(new T)));
-
-    if (type == detail::ScheduleTreeType::Sequence ||
-        type == detail::ScheduleTreeType::Set) {
-      res->flattenSequenceOrSet();
-    }
+    auto res = T::make(ctx);
+    flattenSequenceOrSet(res.get());
+    res->appendChildren(
+        vectorFromArgs(std::forward<Arg>(arg), std::forward<Args>(args)...));
     return res;
   }
 
-  static ScheduleTreeUPtr makeScheduleTree(const ScheduleTree& tree) {
-    return ScheduleTreeUPtr(new ScheduleTree(tree));
-  }
+  // Make a (deep) copy of "tree".
+  static ScheduleTreeUPtr makeScheduleTree(const ScheduleTree& tree);
 
   // Collect the nodes of "tree" in some arbitrary order.
   template <typename T>
@@ -428,53 +442,32 @@ struct ScheduleTree {
       const ScheduleTree* tree,
       detail::ScheduleTreeType type);
 
-  // View elem_ as the specified type.
+  // View this tree node as the specified type.
   // Returns nullptr if this is not the proper type.
   // Inline impl for now, does not justify an extra -inl.h file
   template <typename T>
-  T* elemAs() {
+  T* as() {
     const ScheduleTree* t = this;
-    return const_cast<T*>(t->elemAs<const T>());
+    return const_cast<T*>(t->as<const T>());
   }
   template <typename T>
-  const T* elemAs() const {
+  const T* as() const {
     static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Must call with a class derived from ScheduleTreeElemBase");
+        std::is_base_of<ScheduleTree, T>::value,
+        "Must call with a class derived from ScheduleTree");
     if (type_ != T::NodeType) {
       return nullptr;
     }
-    return static_cast<const T*>(
-        const_cast<const ScheduleTreeElemBase*>(elem_.get()));
+    return static_cast<const T*>(this);
   }
 
-  // View elem_ as the specified type.
-  // Returns nullptr if neither this type, **nor any of the derived types**,
-  // are T.
-  // Inline impl for now, does not justify an extra -inl.h file
-  template <typename T>
-  T* elemAsBase() {
-    const ScheduleTree* t = this;
-    return const_cast<T*>(t->elemAsBase<const T>());
-  }
-  template <typename T>
-  const T* elemAsBase() const {
-    static_assert(
-        std::is_base_of<ScheduleTreeElemBase, T>::value,
-        "Must call with a class derived from ScheduleTreeElemBase");
-    // These T::NodeDerivedTypes are ugly, let's see if we can improve in the
-    // future but if we want dynamic typing and to avoid enumerations at each
-    // call site, which I claim we absolutely do, then we are not left with
-    // many options.
-    if (type_ != T::NodeType &&
-        std::find(
-            T::NodeDerivedTypes.begin(), T::NodeDerivedTypes.end(), type_) ==
-            T::NodeDerivedTypes.end()) {
-      return nullptr;
-    }
-    return static_cast<const T*>(
-        const_cast<const ScheduleTreeElemBase*>(elem_.get()));
-  }
+  // Write the textual representation of the node to "os".
+  // Note that this function does _not_ output the child trees.
+  virtual std::ostream& write(std::ostream& os) const = 0;
+
+  // Clone the current node.
+  // Note that this function does _not_ clone the child trees.
+  virtual ScheduleTreeUPtr clone() const = 0;
 
   //
   // Data members
@@ -486,12 +479,30 @@ struct ScheduleTree {
   std::vector<ScheduleTreeUPtr> children_{};
 
  public:
-  detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
-  std::unique_ptr<ScheduleTreeElemBase> elem_{nullptr};
+  const detail::ScheduleTreeType type_{detail::ScheduleTreeType::None};
 };
+
+// Flatten nested nodes of the same type.
+template <typename T>
+inline void flattenSequenceOrSet(T* tree) {
+  static_assert(
+      std::is_same<ScheduleTreeSet, T>::value ||
+          std::is_same<ScheduleTreeSequence, T>::value,
+      "Only Sequence or Set node can be flattened");
+
+  // Iterate over the changing list of children. If a child has the same list
+  // type as a parent, replace it with grandchildren and traverse them too.
+  for (size_t i = 0; i < tree->numChildren(); ++i) {
+    if (tree->child({i})->type_ != tree->type_) {
+      continue;
+    }
+    auto grandChildren = tree->child({i})->detachChildren();
+    tree->detachChild(i);
+    tree->insertChildren(i, std::move(grandChildren));
+    --i;
+  }
+}
 
 } // namespace detail
 } // namespace polyhedral
 } // namespace tc
-
-#include "tc/core/polyhedral/schedule_tree-inl.h"

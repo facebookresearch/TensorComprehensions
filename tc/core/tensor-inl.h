@@ -18,9 +18,9 @@
 #include <algorithm>
 #include <sstream>
 
-#include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 
+#include "tc/core/check.h"
 #include "tc/proto/compcache.pb.h"
 
 namespace tc {
@@ -215,7 +215,7 @@ inline std::vector<const DLConstTensor*> extractRawPtrs(
 
 inline std::string toString(const DLDataType& t) {
   if (t.lanes != 1) {
-    CHECK(false) << "NYI: toString for >1 lanes";
+    TC_CHECK(false) << "NYI: toString for >1 lanes";
   }
   switch (t.code) {
     case DLDataTypeCode::kDLFloat:
@@ -247,7 +247,8 @@ inline std::string toString(const DLDataType& t) {
       }
       break;
   }
-  CHECK(false) << "NYI: toString for type: " << t.code << ", bits: " << t.bits;
+  TC_CHECK(false) << "NYI: toString for type: " << t.code
+                  << ", bits: " << t.bits;
   return "";
 }
 

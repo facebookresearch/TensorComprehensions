@@ -1,258 +1,211 @@
-Writing PyTorch layers with TC
-==============================
+Writing TC operations
+=====================
 
-In order to write a new layer with TC, you need to follow the steps below:
+.. automodule:: tensor_comprehensions
 
-1. Define your TC language and pass it to :code:`tc.define`
-2. Create input torch tensors
-3. Run the layer and get output
+This document focuses on writing TC operations using the high-level API.
+For examples of using the low-level API, see the Python API documentation.
 
-In the third step, when the TC is run on give set of inputs, TC backend will first
-compile the language on given tensor sizes, runs the layer and returns the output.
-If the layer has already been run at least once, in the next runs, TC backend
-will skip the compilation and will run the layer directly.
+To create a CUDA kernel implementing an operation backed by TC, one should:
+
+1. Create a callable TC object by calling :func:`define`
+2. Create input PyTorch Tensors
+3. Call the TC object with the input PyTorch Tensors
+
+When running, the backend ensures the TC is compiled and memoized for the
+given input tensor sizes (see the documentation for :func:`define` for more details).
+Calling the object returned by :func:`define` executes the
+corresponding operation and returns a list of outputs.
+If the operation has already been compiled, in the following runs, the TC
+backend will reuse the memoized compilation result and run the operation
+directly.
 
 Example
 -------
 
-An example demonstrating each step above is:
+The following example demonstrates the steps above.
+We use the :func:`make_naive_options_factory` builder function to provide
+naive :class:`~tclib.MappingOptions`.  Naive options result in poor performance.
+At this time, there is no notion of a default :class:`~tclib.MappingOptions`.
+Instead one should use the autotuner to perform an evolutionary search
+starting from an initial :class:`~tclib.MappingOptions` object and return a better
+:class:`~tclib.MappingOptions` object for a given TC function and sizes (more on this
+below).
 
-.. code-block:: python
+    .. code-block:: python
 
-    import tensor_comprehensions as tc
-    import torch
-    MATMUL_LANG = """
-    def matmul(float(M, K) A, float(K, N) B) -> (C) {
-        C(m, n) +=! A(m, r_k) * B(r_k, n)
-    }
-    """
-    # the `name` should match the definition name in the `lang`
-    matmul = tc.define(MATMUL_LANG, name="matmul")
-    mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-    out = matmul(mat1, mat2)
-
-Below is a complete documentation of each API call:
-
-.. automodule:: tensor_comprehensions
-
-tc.define
----------
-
-.. autofunction:: define
-
-.. autoclass:: TcUnit
-   :members: __call__
-
-.. _must_pass_options:
-
-Specifying CudaMappingOptions
---------------------------
-
-TC is transformed into :code:`CUDA` kernel by using the :code:`Options` which
-is used to run the layer and hence also determines the performance of the kernel
-generated. Therefore, it is important to use good :code:`Options` for running a
-kernel. You can read more about mapping options here - :ref:`tc_mapping_options`.
-
-There are two ways to set the :code:`Options`:
-
-* **Autotuning**: You can autotune the kernel the kernel on certain input tensor sizes, cache the options and use them to run the layer. See :ref:`pytorch_autotune_layers` for how to autotune kernels.
-
-* **Default Mapping**: We provide various default options that can be chosen to closely represent the kernel. The defaults provided are:
-
-  * :code:`pointwise`: if kernel resembles a pointwise operation
-  * :code:`mlp`: if kernel resembles an Linear layer operation
-  * :code:`conv`: if kernel resembles a convolution operation
-  * :code:`group_conv`: if kernel resembles a group convolution operation
-  * :code:`naive`: if none of the above, then chose naive default
-
-An example for how to pass options:
-
-.. code-block:: python
-
-    import tensor_comprehensions as tc
-    import torch
-    lang = """
-    def matmul(float(M, K) A, float(K, N) B) -> (C) {
-        C(m, n) +=! A(m, r_k) * B(r_k, n)
-    }
-    """
-    matmul = tc.define(lang, name="matmul")
-    mat1, mat2 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-    out = matmul(mat1, mat2, options=tc.CudaMappingOptions("mlp"))
-
-.. note::
-
-    If the mapping options are not passed by user, the :code:`naive` mapping
-    options will be chosen as default and the kernel performance might be very bad.
-    Hence, we strongly recommend user to use either of two ways above for specifying
-    kernel mapping options.
-
-Reduction Operators
--------------------
-
-Reduction operators may be suffixed with :code:`!` (for example :code:`+=!`) to
-indicate that the tensor to which values are accumulated should first be initialized
-with the identity of the reduction operator (e.g., :code:`0` for :code:`+`).
-Otherwise, values are accumulated directly to the output or temporary tensor passed to the kernel.
+        import torch
+        import tensor_comprehensions as tc
+        T = tc.define(
+            """
+            def add(float(N) A, float(N) B) -> (C) { C(i) = A(i) + B(i) }
+            def sub(float(N) A, float(N) B) -> (C) { C(i) = A(i) - B(i) }
+            """,
+            tc.make_naive_options_factory())
+        A, B = torch.randn(100, device='cuda'), torch.randn(100, device='cuda')
+        C = T.add(A, B)
+        tc.assert_almost_equal(C, torch.add(A, B), A, B)
+        D = T.sub(A, B)
+        tc.assert_almost_equal(D, (A - B), A, B)
 
 
-Different input sizes for same TC
----------------------------------
+Specifying MappingOptions
+-------------------------
 
-If you have a TC definition that would like to use to run on different combinations
-of input sizes, you need to define TC once. An example:
+There are three ways to construct :class:`~tclib.MappingOptions` when defining a TC:
 
-.. code-block:: python
+* **Naive MappingOptions**:
 
-    import tensor_comprehensions as tc
-    import torch
-    lang = """
-    def matmul(float(M, K) A, float(K, N) B) -> (C) {
-        C(m, n) +=! A(m, r_k) * B(r_k, n)
-    }
-    """
-    matmul = tc.define(lang, name="matmul")
-    mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-    out1 = matmul(mat1, mat2)
+  * :code:`naive`: this is provided to create a basic GPU mapping strategy with
+    3-D tiling by 32x32x32, mapping to 256x256 blocks 32x8 threads. This
+    should by no means be considered a good baseline but just a point to
+    get started using TC. Once a correct TC is written, we recommend either
+    using options loaded from a :class:`~tclib.MappingOptionsCache` or resulting from
+    a tuning run. One can also modify a :class:`~tclib.MappingOptions` object
+    programmatically (see the API documentation).
 
-    # different input sizes
-    mat3, mat4 = torch.randn(100, 400).cuda(), torch.randn(400, 500).cuda()
-    out2 = matmul(mat3, mat4)
+* **Loading from MappingOptionsCache**: a :class:`~tclib.MappingOptionsCache` provides
+  a simple interface to load the best options from a previous tuning run.
 
-Whenever the input tensor sizes change, TC backend will re-compile the definition
-with input sizes again. If the input tensor sizes do not change, the compilation
-happens only once and then you can keep running the layer.
-
-Multiple TC definitions in language
------------------------------------
-
-Let's say you want to define all of your TCs in one string and later use that string
-for running different operations defined in the string. You an do so easily. You
-can define a :code:`lang` variable that holds the TC definition for all your operations.
-Every time you want to run a different operation, you can make a :code:`tc.define` call
-on the :code:`lang` variable, specify the :code:`name` corresponding to the operation
-definition and get the TC layer for it. Below is an example for how to do this:
-
-.. code-block:: python
-
-    import tensor_comprehensions as tc
-    import torch
-    lang = """
-    def matmul(float(M, K) A, float(K, N) B) -> (C) {
-        C(m, n) +=! A(m, r_k) * B(r_k, n)
-    }
-    def abs(float(M, N) A) -> (O1) {
-        O1(m, n) = fabs(A(m, n))
-    }
-    """
-    matmul = tc.define(lang, name="matmul")
-    mat1, mat2 = torch.randn(3, 4).cuda(), torch.randn(4, 5).cuda()
-    out = matmul(mat1, mat2)
-
-    abs = tc.define(lang, name="abs")
-    A = torch.randn(3, 4).cuda()
-    out = abs(A)
-
-.. note::
-
-    We are working on better ways to leverage using multiple TC in one language
-    nicely. This current behavior will likely change in near future.
+* **Autotuning**: A kernel can be autotuned for fixed input tensor sizes.
+  Optionally the best performing options can be cached to a file and reused to
+  compile and run a TC operation.
 
 
-Writing layers with scalars
----------------------------
+Loading from cache
+------------------
 
-If you have an operation that requires a constant scalar value for bounds inference,
-for example, kernel or stride in case of convolution operation, we need to pass
-the TC with the substituted scalar value because right now, we don't support using
-scalars for bound inference. The substitution can be done in two ways and users can
-adopt whatever feels more convenient.
+Loading the best options from a previously serialized :class:`~tclib.MappingOptionsCache`
+can be achieved by making a factory function with
+:func:`make_load_from_cache_options_factory` and passing it as an argument to the
+:func:`define` function:
 
-* **Option 1**: Pass a constants dictionary to the :code:`tc.define` call. An example for how to do this easily is below:
+    .. code-block:: python
 
-.. warning::
+        group_normalization="""..."""
+        N, G, D, H, W = 32, 32, 4, 56, 56
+        T = tc.define(
+            group_normalization,
+            tc.make_load_from_cache_options_factory('some_file_path'))
+        I, gamma, beta = (
+            torch.randn(N, G, D, H, W, device='cuda'),
+            torch.randn(G, D, device='cuda'),
+            torch.randn(G, D, device='cuda'))
+        Sum, SumSq, O = T.group_normalization(I, gamma, beta)
 
-    This particular way of using scalar is a stop-gap solution while we work on
-    finding better way of handling scalars for bounds inference. This solution
-    will likely be changed in ~1 month timespan.
+One can also use the low-level :class:`~tclib.MappingOptionsCache`.
 
-.. code-block:: python
+Autotuning
+----------
 
-    import tensor_comprehensions as tc
-    import torch
-    lang = """
-    def avgpool(float(B, C, H, W) input) -> (output) {{
-        output(b, c, h, w) +=! input(b, c, h * {sH} + r_kh, w * {sW} + r_kw) / ({kH} * {kW})
-            where r_kh in 0:{kH}, r_kw in 0:{kW}
-    }}
-    """
-    avgpool = tc.define(lang, name="avgpool", constants={"sH":1, "sW":1, "kH":2, "kW":2})
-    inp = torch.ones(32, 3, 10, 10).cuda()
-    out = avgpool(inp)
+Tuning can be achieved by making a factory function with
+:func:`make_autotuned_options_factory` and passing it as an argument to the
+:func:`define` function.
 
-.. note::
+    .. code-block:: python
 
-    In python, the formatting of strings requires usage of :code:`{{...}}`. Hence
-    the above example uses these brackets. You only need to do this if your TC
-    consists of scalars.
+        group_normalization="""..."""
+        N, G, D, H, W = 32, 32, 4, 56, 56
+        T = tc.define(
+            group_normalization,
+            tc.make_autotuned_options_factory(
+                starting_options='naive',
+                tuner_config=tuner_config))
+        I, gamma, beta = (
+            torch.randn(N, G, D, H, W, device='cuda'),
+            torch.randn(G, D, device='cuda'),
+            torch.randn(G, D, device='cuda'))
+        Sum, SumSq, O = T.group_normalization(I, gamma, beta)
 
+    .. note::
 
-* **Option 2**: Format the string using python regex. An example below:
+       A tuning run can be aborted by sending the SIGINT signal (Ctrl+C). In
+       that case, the compilation and evaluation jobs currently in flight will
+       be flushed, but no new compilation job will be created. Once the jobs in
+       flight are flushed, saving to cache occurs (if requested) and the best
+       :class:`~tclib.MappingOptions` found so far will be returned.
 
-.. code-block:: python
+Tuning behavior can be modified by defining the TC with an optional
+:class:`~tclib.TunerConfig` parameter constructed as such:
+:code:`tuner_config=tc.TunerConfig().threads(5).generations(3).pop_size(5)`.
 
-    import tensor_comprehensions as tc
-    import torch
-    import re
-    LANG="""
-    def avgpool(float(B, C, H, W) input) -> (output) {
-        output(b, c, h, w) +=! input(b, c, h * <sH> + r_kh, w * <sW> + r_kw) / (<kH> * <kW>)
-            where r_kh in 0:<kH>, r_kw in 0:<kW>
-    }
-    """
-    sH, sW, kH, kW = 1, 1, 2, 2
-    LANG = re.sub('<sh>', str(sH), LANG)
-    LANG = re.sub('<sw>', str(sW), LANG)
-    LANG = re.sub('<kH>', str(kH), LANG)
-    LANG = re.sub('<kW>', str(kW), LANG)
-    avgpool = tc.define(LANG, name="avgpool")
-    inp = torch.ones(1, 1, 4, 4).cuda()
-    out = avgpool(inp)
+    .. note::
+
+       By providing a fixed filename and calling short tuning runs over
+       multiple executions with load_from_cache=True and store_to_cache=True,
+       one can effectively reinforce the tuning process over time without
+       paying a longer startup cost.
+
+Fixed TC, varying input sizes
+-----------------------------
+
+A TC definition can be reused but will trigger recompilation for different size
+combinations. While we recommend tuning independently for each TC and input size
+variation, the best options found for a particular TC and input size
+combination may transfer well to another input size (especially if
+sizes are close and the kernels exhibit the same type of bottlenecs;
+i.e. memory-bound, latency-bound, instruction-issue-bound,
+compute-bound).
+
+Pseudo-templating
+-----------------
+
+The TC mapper requires statically affine tensor indexing functions.
+Without getting into deeper details, the dependence analysis process is
+significantly simplified and can be represented exactly.
+As a consequence, tensor subscripts should avoid multiplications
+between an unknown parametric quantity and an index variable.
+In practice this may require writing different TC versions for different stride
+and kernel sizes. A simple workaround would be for TC language to provide a
+templating mechanism.
+A much simpler way to achieve the same effect is to dynamically perform string
+substitutions based on runtime values by formatting the TC string with python
+regular expressions:
+
+    .. code-block:: python
+
+        import re
+        import torch
+        import tensor_comprehensions as tc
+        tc_str="""
+        def avgpool(float(B, C, H, W) input) -> (output) {
+            output(b, c, h, w) +=! input(b, c, h * <sH> + r_kh, w * <sW> + r_kw) / (<kH> * <kW>)
+                where r_kh in 0:<kH>, r_kw in 0:<kW>
+        }
+        """
+        tc_str = re.sub('<sh>', '1', tc_str)
+        tc_str = re.sub('<sw>', '1', tc_str)
+        tc_str = re.sub('<kH>', '2', tc_str)
+        tc_str = re.sub('<kW>', '3', tc_str)
+        T = tc.define(tc_str, tc.make_naive_options_factory())
+        out = T.avgpool(torch.ones(1, 1, 4, 4, device='cuda')
 
 Built-in Functions
 ------------------
 
-TC allows using some CUDA built-in functions as well when defining the TC language.
-During the execution, CUDA API will be called for those built-in functions. For example,
-let's say we want to use :code:`fmax` CUDA function in our TC language. An example
-for how this would be done is below:
+TC allows using CUDA built-in functions as well when defining the TC operations.
+During execution, the CUDA API will be called for those built-in
+functions. For example, assume one wants to use :code:`fmax` CUDA function in TC:
 
-.. code-block:: python
+    .. code-block:: python
 
-    import tensor_comprehensions as tc
-    import torch
-    LANG = """
-    def relu(float(B,M) I) -> (O1){
-      O1(b, m) = fmax(I(b, m), 0)
-    }
-    """
-    relu = tc.define(LANG, name="relu")
-    inp = torch.randn(100, 128).cuda()
-    out = relu(inp)
+        import torch
+        import tensor_comprehensions as tc
+        tc_str = """
+        def relu(float(B,M) I) -> (O) {
+            O(b, m) = fmax(I(b, m), 0)
+        }
+        """
+        T = tc.define(tc_str, tc.make_naive_options_factory())
+        O = T.relu(torch.randn(100, 128, device='cuda'))
 
-TC only supports a subset of built-in CUDA functions. You can find the documentation
-for these functions at the official CUDA documentation `here <http://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE>`_.
-The functions supported in TC are:
+TC only supports a subset of built-in CUDA functions.
+Built-in functions supported in TC are listed in `this file <https://github.com/facebookresearch/TensorComprehensions/blob/master/tc/core/cuda/cuda_libraries.h#L67>`_.
+Documentation
+for these functions is available as part of the official `CUDA documentation <http://docs.nvidia.com/cuda/cuda-math-api/group__CUDA__MATH__SINGLE.html#group__CUDA__MATH__SINGLE>`_.
 
-:code:`acos`, :code:`acosh`, :code:`asin`, :code:`asinh`, :code:`atan2`, :code:`atan`,
-:code:`atanh`, :code:`cbrt`, :code:`ceil`, :code:`copysign`, :code:`cos`, :code:`cosh`,
-:code:`cospi`, :code:`cyl_bessel_i0`, :code:`cyl_bessel_i1`, :code:`erfc`, :code:`erfcinv`,
-:code:`erfcx`, :code:`erf`, :code:`erfinv`, :code:`exp10`, :code:`exp2`, :code:`exp`,
-:code:`expm1`, :code:`fabs`, :code:`fdim`, :code:`fdivide`, :code:`floor`, :code:`fma`,
-:code:`fmax`, :code:`fmin`, :code:`fmod`, :code:`hypot`, :code:`j0`, :code:`j1`,
-:code:`lgamma`, :code:`log10`, :code:`log1p`, :code:`log2`, :code:`logb`, :code:`log`,
-:code:`nextafter`, :code:`normf`, :code:`norm3d`, :code:`norm4d`, :code:`normcdf`,
-:code:`normcdfinv`, :code:`pow`, :code:`rcbrt`, :code:`remainder`, :code:`rhypot`,
-:code:`rnorm3d`, :code:`rnorm4d`, :code:`round`, :code:`rsqrt`, :code:`sin`,
-:code:`sinh`, :code:`sinpi`, :code:`sqrt`, :code:`tan`, :code:`tanh`, :code:`tgamma`,
-:code:`trunc`, :code:`y0`, :code:`y1`
+
+More examples
+-------------
+You can find more examples in our `unit tests <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/tests/test_tc.py>`_.
+We also provide more elaborate examples on how to `compute argmin <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/examples/min_distance.py#L151>`_ as well as a simple TC + PyTorch `python overhead benchmark <https://github.com/facebookresearch/TensorComprehensions/blob/master/python/benchmarks/python_overhead.py>`_.

@@ -20,9 +20,12 @@
 #include <string>
 #include <unordered_map>
 
+#include "tc/core/check.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
+#include "tc/core/polyhedral/utils.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -45,7 +48,7 @@ isl::map removeRangeStrides(
     isl::map relation,
     isl::multi_val strides,
     isl::multi_aff offsets) {
-  CHECK_EQ(strides.size(), offsets.size());
+  TC_CHECK_EQ(strides.size(), offsets.size());
 
   auto space = relation.get_space();
   auto stridesMA = isl::multi_aff::identity(space.range().map_from_set());
@@ -76,14 +79,6 @@ ScopedFootprint outputRanges(isl::map access) {
   footprint.box = access.get_range_simple_fixed_box_hull();
   return footprint;
 }
-
-// Given a set space, construct a map space with the input as domain and
-// a range of the given size.
-isl::space add_range(isl::space space, unsigned dim) {
-  auto range = space.params().unnamed_set_from_params(dim);
-  return space.map_from_domain_and_range(range);
-}
-
 } // namespace
 
 // Access has the shape :: [S -> ref] -> O
@@ -93,8 +88,8 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
     isl::map scopedAccess,
     AccessType type) {
   auto ref = std::unique_ptr<TensorReference>(new TensorReference);
-  auto refId = scopedAccess.get_space().domain().unwrap().get_tuple_id(
-      isl::dim_type::out);
+  auto refId =
+      scopedAccess.get_space().domain().unwrap().get_map_range_tuple_id();
   scopedAccess = scopedAccess.domain_factor_domain();
   ref->originalAccess = originalAccess.domain_factor_domain();
   ref->scopedAccess = scopedAccess;
@@ -114,18 +109,18 @@ std::unique_ptr<TensorReferenceGroup> TensorReferenceGroup::makeSingleton(
   return group;
 }
 
-isl::set TensorReferenceGroup::approximateFootprint() const {
+isl::map TensorReferenceGroup::approximateScopedAccesses() const {
   auto scopedDomain = scopedAccesses().domain();
   auto space = approximation.box.get_space();
   auto accessed = isl::map::universe(space).intersect_domain(scopedDomain);
-  auto lspace = isl::local_space(accessed.get_space().range());
 
+  auto identity = isl::multi_aff::identity(space.range().map_from_set());
   for (size_t i = 0; i < approximation.dim(); ++i) {
     auto offset = approximation.lowerBound(i);
     auto stride = approximation.stride(i);
     auto strideOffset = approximation.strideOffset(i);
     auto size = approximation.size(i);
-    auto rhs = isl::aff(lspace, isl::dim_type::set, i);
+    auto rhs = identity.get_aff(i);
     auto lowerBound = offset * stride + strideOffset;
     auto upperBound = (offset + size) * stride + strideOffset;
     auto partial =
@@ -133,7 +128,7 @@ isl::set TensorReferenceGroup::approximateFootprint() const {
 
     accessed = accessed & partial;
   }
-  return accessed.range();
+  return accessed;
 }
 
 isl::multi_aff ScopedFootprint::lowerBounds() const {
@@ -159,9 +154,9 @@ isl::set TensorReferenceGroup::promotedFootprint() const {
   }
 
   isl::set footprint = isl::set::universe(space);
-  auto lspace = isl::local_space(space);
+  auto identity = isl::multi_aff::identity(space.map_from_set());
   for (size_t i = 0, e = sizes.size(); i < e; ++i) {
-    auto aff = isl::aff(lspace, isl::dim_type::out, i);
+    auto aff = identity.get_aff(i);
     auto size = sizes.get_val(i);
     footprint =
         footprint & (isl::aff_set(aff) >= 0) & (isl::aff_set(aff) < size);
@@ -223,7 +218,7 @@ isl::union_map referenceOriginalAccessesImpl(
     throw promotion::GroupingError("no references in the group");
   }
   auto accesses = isl::union_map::empty(
-      group.references.front()->originalAccess.get_space());
+      group.references.front()->originalAccess.get_space().params());
 
   for (const auto& ref : group.references) {
     if (ref->type != type) {
@@ -270,8 +265,8 @@ void joinOverlappingWrites(
       if (g1->isReadOnly() && g2->isReadOnly()) {
         continue;
       }
-      if (g1->approximateFootprint()
-              .intersect(g2->approximateFootprint())
+      if (g1->approximateScopedAccesses()
+              .intersect(g2->approximateScopedAccesses())
               .is_empty()) {
         continue;
       }
@@ -291,7 +286,7 @@ void addSingletonReferenceGroup(
     AccessType type) {
   auto scopedUnionAccess = isl::union_map(access.curry());
   scopedUnionAccess = scopedUnionAccess.apply_domain(schedule);
-  auto scopedAccess = isl::map::from_union_map(scopedUnionAccess);
+  auto scopedAccess = isl::map::from(scopedUnionAccess);
   scopedAccess = scopedAccess.uncurry();
   tensorGroups[targetTensor].push_back(
       TensorReferenceGroup::makeSingleton(access, scopedAccess, type));
@@ -307,12 +302,12 @@ void addSingletonReferenceGroups(
   // use currying to isolate the D part before intersecting with the domain
   // Compute initial groups with single reference per group.
   std::unordered_set<isl::id, isl::IslIdIslHash> unapproximatable;
-  for (auto a : isl::UnionAsVector<isl::union_map>(accesses)) {
+  for (auto a : accesses.get_map_list()) {
     if (isl::union_map(a.curry()).intersect_domain(domain).is_empty()) {
       continue;
     }
 
-    auto tensorId = a.get_tuple_id(isl::dim_type::out);
+    auto tensorId = a.get_range_tuple_id();
     if (unapproximatable.count(tensorId) != 0) {
       continue;
     }
@@ -325,17 +320,37 @@ void addSingletonReferenceGroups(
 }
 } // namespace
 
-TensorGroups TensorReferenceGroup::accessedBySubtree(
-    const ScheduleTree* tree,
-    const Scop& scop) {
+// Compute tensor reference groups encapsulating all tensor accesses within
+// "outerSchedule".  Only statement instances present in the domain of
+// "outerSchedule" are considered.  In particular, if this domain is
+// intersected with block and/or thread mapping, the reference groups are
+// computed inside one block and/or thread, even if "outerSchedule" does not
+// include band members mapped to blocks and/or threads.
+//
+// Tensor reference descriptors (TensorReference) contain information about
+// tensor elements accessed through the given reference within "outerSchedule".
+// Several references form a group (TensorReferenceGroup) if the same elements
+// may be accessed through these references, and at least one of the accesses
+// writes to the element.  A group stores a rectangular overapproximation of
+// the set of accessed tensor elements (access footprint).  This
+// overappoximation can be used to create copies of the given tensor elements
+// in another memory space, i.e., to perform memory promotion.  If the domain
+// of "outerSchedule" included thread or block mapping, then the
+// overappoximation is computed per-block or per-thread.
+//
+// Returns a map between tensor ids and vectors of unique pointers to
+// TensorReferenceGroup, with each group potentially containing multiple
+// references.
+TensorGroups TensorReferenceGroup::accessedWithin(
+    isl::union_map outerSchedule,
+    const Body& body) {
   TensorGroups tensorGroups;
-  auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
-  auto schedule = partialSchedule(scop.scheduleRoot(), tree);
+  auto domain = outerSchedule.domain();
 
   addSingletonReferenceGroups(
-      tensorGroups, scop.writes, domain, schedule, AccessType::Write);
+      tensorGroups, body.writes, domain, outerSchedule, AccessType::Write);
   addSingletonReferenceGroups(
-      tensorGroups, scop.reads, domain, schedule, AccessType::Read);
+      tensorGroups, body.reads, domain, outerSchedule, AccessType::Read);
 
   // For each tensor, join groups whose footprints overlap and at least one
   // access is a write.  Do not join between tensors because no aliasing.
@@ -395,17 +410,21 @@ namespace {
 // context of the scop.
 isl::set tensorElementsSet(const Scop& scop, isl::id tensorId) {
   auto halideParameter = scop.findArgument(tensorId).parameter();
-  auto space = scop.domain().get_space().params();
+  auto space = scop.domain().get_space();
   auto nDim = halideParameter.dimensions();
-  space = space.named_set_from_params_id(tensorId, nDim);
+  auto tensorTuple = constructTensorTuple(space, tensorId, nDim);
+  auto tensorSpace = tensorTuple.get_space();
 
-  auto tensorElements = isl::set::universe(space);
+  auto tensorElements = isl::set::universe(tensorSpace);
+  auto identity = isl::multi_aff::identity(tensorSpace.map_from_set());
   for (int i = 0; i < nDim; ++i) {
     auto minAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.min_constraint(i));
     auto extentAff = halide2isl::makeIslAffFromExpr(
         space, halideParameter.extent_constraint(i));
-    auto aff = isl::aff(isl::local_space(space), isl::dim_type::set, i);
+    minAff = minAff.unbind_params_insert_domain(tensorTuple);
+    extentAff = extentAff.unbind_params_insert_domain(tensorTuple);
+    auto aff = identity.get_aff(i);
     tensorElements = tensorElements & (minAff <= isl::aff_set(aff)) &
         (isl::aff_set(aff) < (minAff + extentAff));
   }
@@ -427,16 +446,21 @@ isl::multi_aff dropDummyTensorDimensions(
   auto list = schedule.get_aff_list();
   auto space = schedule.get_space().domain();
 
-  auto n = list.n();
+  auto n = list.size();
   for (int i = n - 1; i >= 0; --i) {
     if (decl.sizes[i] == 1) {
       list = list.drop(i, 1);
     }
   }
 
-  space = add_range(space, list.n());
+  space = space.add_unnamed_tuple_ui(list.size());
   return isl::multi_aff(space, list);
 }
+
+inline void unrollAllMembers(detail::ScheduleTreeBand* band) {
+  band->unroll_ = std::vector<bool>(band->nMember(), true);
+}
+
 } // namespace
 
 ScheduleTree* insertCopiesUnder(
@@ -444,7 +468,8 @@ ScheduleTree* insertCopiesUnder(
     ScheduleTree* tree,
     const TensorReferenceGroup& group,
     isl::id tensorId,
-    isl::id groupId) {
+    isl::id groupId,
+    bool unrollAllCopies) {
   const ScheduleTree* root = scop.scheduleRoot();
   auto ctx = root->ctx_;
   isl::id readId = isl::id(ctx, std::string(kReadIdName));
@@ -453,27 +478,28 @@ ScheduleTree* insertCopiesUnder(
   // Take the set of all tensor elements.
   auto tensorElements = tensorElementsSet(scop, tensorId);
 
-  if (groupId.is_null()) {
-    throw promotion::GroupingError("expected group id");
-  }
-  auto promotion =
-      isl::map(group.promotion()).set_tuple_id(isl::dim_type::out, groupId);
+  auto promotion = isl::map(group.promotion()).set_range_tuple_id(groupId);
   auto promotionSpace = promotion.get_space();
 
   auto identityCopySchedule =
       isl::multi_aff::identity(promotionSpace.range().map_from_set());
-  identityCopySchedule =
-      identityCopySchedule.pullback(isl::multi_aff::range_map(promotionSpace));
   // Only iterate over significant tensor dimensions.
   auto decl = scop.promotedDecl(groupId);
   identityCopySchedule = dropDummyTensorDimensions(identityCopySchedule, decl);
-  auto readSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, readId));
-  auto writeSchedule = isl::multi_union_pw_aff(
-      identityCopySchedule.set_tuple_id(isl::dim_type::in, writeId));
+  auto readSpace = promotionSpace.wrap().set_set_tuple_id(readId);
+  auto writeSpace = promotionSpace.wrap().set_set_tuple_id(writeId);
+  auto readSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(readSpace)));
+  auto writeSchedule = isl::multi_union_pw_aff(identityCopySchedule.pullback(
+      isl::multi_aff::wrapped_range_map(writeSpace)));
 
   auto readBandNode = ScheduleTree::makeBand(readSchedule);
   auto writeBandNode = ScheduleTree::makeBand(writeSchedule);
+
+  if (unrollAllCopies) {
+    unrollAllMembers(readBandNode->as<detail::ScheduleTreeBand>());
+    unrollAllMembers(writeBandNode->as<detail::ScheduleTreeBand>());
+  }
 
   auto extension =
       promotion.wrap().identity().domain_factor_domain().domain_factor_domain();
@@ -485,19 +511,17 @@ ScheduleTree* insertCopiesUnder(
   auto promotedFootprint = group.promotedFootprint().set_tuple_id(groupId);
   auto scheduleUniverse =
       isl::set::universe(promotionSpace.domain().unwrap().domain());
-  auto arrayId =
-      promotionSpace.domain().unwrap().get_tuple_id(isl::dim_type::out);
-  auto approximatedRead = scheduleUniverse.product(
-      group.approximateFootprint().set_tuple_id(arrayId).intersect(
-          tensorElements));
+  auto arrayId = promotionSpace.domain().unwrap().get_map_range_tuple_id();
+  auto approximatedRead =
+      group.approximateScopedAccesses().intersect_range(tensorElements).wrap();
   approximatedRead = approximatedRead.product(promotedFootprint);
-  auto readExtension = extension.intersect_range(approximatedRead)
-                           .set_tuple_id(isl::dim_type::out, readId);
+  auto readExtension =
+      extension.intersect_range(approximatedRead).set_range_tuple_id(readId);
   auto writtenElements =
       group.scopedWrites().intersect_range(tensorElements).wrap();
   writtenElements = writtenElements.product(promotedFootprint);
-  auto writeExtension = extension.intersect_range(writtenElements)
-                            .set_tuple_id(isl::dim_type::out, writeId);
+  auto writeExtension =
+      extension.intersect_range(writtenElements).set_range_tuple_id(writeId);
 
   auto readFilterNode = ScheduleTree::makeFilter(
       isl::set::universe(readExtension.get_space().range()),

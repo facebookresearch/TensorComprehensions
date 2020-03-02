@@ -27,13 +27,15 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_search.h"
+#include "tc/autotuner/options_cache.h"
+#include "tc/core/check.h"
 #include "tc/core/cpu/cpu_mapping_options.h"
 #include "tc/core/cpu/cpu_tc_executor.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
+#include "tc/core/tensor.h"
 
-DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
 DEFINE_bool(
     use_best_options,
     false,
@@ -118,8 +120,8 @@ def group_normalization(
   tc::aten::ATenAutotuner<Backend, tc::autotune::GeneticSearch>
       geneticAutotuneATen(tc);
   auto bestOption = geneticAutotuneATen.tune(
-      "group_normalization", {I, gamma, beta}, baseOptions, FLAGS_proto_path);
-  CHECK_GT(bestOption.size(), 0u);
+      "group_normalization", {I, gamma, beta}, {baseOptions});
+  TC_CHECK_GT(bestOption.size(), 0u);
 
   // 5. Compile and run the TC with the best option.
   // Outputs get allocated; could also be pre-allocated and passed.
@@ -141,12 +143,10 @@ TEST(GroupNormalizationGPU, SimpleAutotune) {
   Short run: from build dir, run with:
     ./tc/examples/group_normalization --tuner_threads=10 \
     --tuner_gen_pop_size=10 --tuner_gen_generations=3 \
-    --tuner_gen_number_elites=4 \
-    --proto_path="/tmp/group_normalization"
+    --tuner_gen_number_elites=4
 
   Long run: from build dir, run with:
-    ./tc/examples/group_normalization --tuner_threads=10 \
-    --proto_path="/tmp/group_normalization"
+    ./tc/examples/group_normalization --tuner_threads=10
 */
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);

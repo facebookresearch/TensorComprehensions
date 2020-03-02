@@ -23,14 +23,18 @@
 #include <unordered_set>
 #include <vector>
 
+#include "tc/core/check.h"
+#include "tc/core/functional.h"
 #include "tc/core/halide2isl.h"
-#include "tc/core/polyhedral/functional.h"
+#include "tc/core/polyhedral/body.h"
 #include "tc/core/polyhedral/memory_promotion.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
+#include "tc/core/polyhedral/schedule_utils.h"
 #include "tc/core/scope_guard.h"
 #include "tc/core/tc2halide.h"
+#include "tc/utils/compiler_options.h"
 
 using namespace std;
 
@@ -43,11 +47,11 @@ using ScopUPtr = std::unique_ptr<Scop>;
 ScopUPtr Scop::makeScop(
     isl::ctx ctx,
     const tc2halide::HalideComponents& components) {
-  CHECK(components.stmt.defined());
+  TC_CHECK(components.stmt.defined());
 
   halide2isl::SymbolTable sym = halide2isl::makeSymbolTable(components);
 
-  isl::space paramSpace = halide2isl::makeParamSpace(ctx, sym.params);
+  auto paramSpace = halide2isl::makeParamSpace(ctx, sym.params);
 
   ScopUPtr scop(new Scop());
   scop->halide.params = sym.params;
@@ -58,34 +62,38 @@ ScopUPtr Scop::makeScop(
 
   auto tree = halide2isl::makeScheduleTree(paramSpace, components.stmt);
   scop->scheduleTreeUPtr = std::move(tree.tree);
-  scop->reads = tree.reads;
-  scop->writes = tree.writes;
+  scop->body = tree.body;
   scop->halide.statements = std::move(tree.statements);
   scop->halide.accesses = std::move(tree.accesses);
-  scop->halide.reductions = halide2isl::findReductions(components.stmt);
-  scop->halide.iterators = std::move(tree.iterators);
+  scop->halide.domains = std::move(tree.domains);
 
   return scop;
 }
 
-ScopUPtr Scop::makeScop(isl::ctx ctx, const string& tc) {
-  return makeScop(ctx, tc2halide::translate(ctx, tc));
+ScopUPtr Scop::makeScop(
+    isl::ctx ctx,
+    const string& tc,
+    const CompilerOptions& compilerOptions) {
+  return makeScop(ctx, tc2halide::translate(ctx, tc, compilerOptions));
 }
 
-ScopUPtr Scop::makeScop(isl::ctx ctx, const lang::TreeRef& treeRef) {
-  return makeScop(ctx, tc2halide::translate(ctx, treeRef));
+ScopUPtr Scop::makeScop(
+    isl::ctx ctx,
+    const lang::TreeRef& treeRef,
+    const CompilerOptions& compilerOptions) {
+  return makeScop(ctx, tc2halide::translate(ctx, treeRef, compilerOptions));
 }
 
 isl::union_set& Scop::domainRef() {
-  auto dom = scheduleRoot()->elemAs<ScheduleTreeElemDomain>();
-  CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
+  auto dom = scheduleRoot()->as<ScheduleTreeDomain>();
+  TC_CHECK(dom) << "root is not a domain in: " << *scheduleRoot();
   // TODO: activate this when the invariant has a chance of working (i.e. we
   // don't use a Context node for specifying parameter values that iterate in
   // spacetime).
   // TODO: find a proper place for the invariant.
   // auto noCont =
-  //   scheduleRoot()->child({0})->elemAs<ScheduleTreeElemContext>();
-  // CHECK(!noCont) << "root is not a domain in: " << *scheduleRoot();
+  //   scheduleRoot()->child({0})->as<ScheduleTreeContext>();
+  // TC_CHECK(!noCont) << "root is not a domain in: " << *scheduleRoot();
   return dom->domain_;
 }
 
@@ -95,17 +103,18 @@ const isl::union_set Scop::domain() const {
 
 std::ostream& operator<<(std::ostream& os, const Scop& s) {
   os << "domain: " << s.domain() << "\n";
-  os << "reads: " << s.reads << "\n";
-  os << "writes: " << s.writes << "\n";
+  os << s.body;
   os << "schedule: " << *s.scheduleRoot() << "\n";
   os << "idx: { ";
   for (auto i : s.halide.idx) {
     os << i << ", ";
   }
+  os << "}, ";
   os << "reductionIdx: { ";
   for (auto i : s.halide.reductionIdx) {
     os << i << ", ";
   }
+  os << "}, ";
   os << "params: {";
   for (auto p : s.halide.params) {
     os << p.type() << " " << p.name() << ", ";
@@ -138,8 +147,8 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
        ScheduleTree::collect(root, detail::ScheduleTreeType::Sequence)) {
     isl::union_set alreadyVisitedStmts;
     for (auto child : node->children()) {
-      auto filterNode = child->elemAsBase<ScheduleTreeElemFilter>();
-      CHECK(filterNode) << "expected children of seqence to be filters";
+      auto filterNode = child->as<ScheduleTreeFilter>();
+      TC_CHECK(filterNode) << "expected children of sequence to be filters";
       auto filter = filterNode->filter_.universe();
       if (!alreadyVisitedStmts.get()) {
         alreadyVisitedStmts = filter;
@@ -149,7 +158,7 @@ void checkFiltersDisjointStatements(const ScheduleTree* root) {
         // but only to a part of it.  Possible solution -- introduce "scope"
         // mark nodes into the schedule tree that will contain information
         // about the promotion and process these marks when generating the AST.
-        CHECK(alreadyVisitedStmts.intersect(filter).is_empty())
+        TC_CHECK(alreadyVisitedStmts.intersect(filter).is_empty())
             << "filters are expected to be disjoint as stmt level";
         alreadyVisitedStmts = alreadyVisitedStmts.unite(filter);
       }
@@ -189,7 +198,13 @@ void Scop::promoteGroup(
     sizes.back() += 1;
   }
   promotedDecls_[groupId] = PromotedDecl{tensorId, sizes, kind};
-  insertCopiesUnder(*this, tree, *gr, tensorId, groupId);
+  insertCopiesUnder(
+      *this,
+      tree,
+      *gr,
+      tensorId,
+      groupId,
+      kind == PromotedDecl::Kind::Register);
 
   // FIXME: we can now store a unique pointer...
   auto group = std::shared_ptr<TensorReferenceGroup>(std::move(gr));
@@ -199,23 +214,21 @@ void Scop::promoteGroup(
 
 void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
   // Return immediately if nothing was inserted
-  auto extensionNode =
-      tree->child({0})->elemAs<detail::ScheduleTreeElemExtension>();
+  auto extensionNode = tree->child({0})->as<detail::ScheduleTreeExtension>();
   if (!extensionNode) {
     return;
   }
 
   // Insert syncs before and after copies (FIXME: this is excessive)
   auto seqNode = tree->child({0, 0});
-  CHECK(seqNode->elemAs<detail::ScheduleTreeElemSequence>())
+  TC_CHECK(seqNode->as<detail::ScheduleTreeSequence>())
       << "unexpected tree structure";
 
   int foundMainComputations = 0;
   std::string lastTupleName = "";
   for (size_t i = 0; i < seqNode->numChildren(); ++i) {
-    auto filterNode =
-        seqNode->child({i})->elemAs<detail::ScheduleTreeElemFilter>();
-    CHECK(filterNode) << "expected filters below sequence";
+    auto filterNode = seqNode->child({i})->as<detail::ScheduleTreeFilter>();
+    TC_CHECK(filterNode) << "expected filters below sequence";
     auto filters = isl::UnionAsVector<isl::union_set>(filterNode->filter_);
     bool isCopyFilter = filters.size() == 1 && filters[0].has_tuple_name() &&
         (filters[0].get_tuple_name() == kReadIdName ||
@@ -227,7 +240,7 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
     if (!isCopyFilter) {
       ++foundMainComputations;
     }
-    CHECK_LT(foundMainComputations, 2)
+    TC_CHECK_LT(foundMainComputations, 2)
         << "copies are interleaved with computation" << *seqNode;
     if (filters[0].get_tuple_name() != lastTupleName) {
       lastTupleName = filters[0].get_tuple_name();
@@ -235,6 +248,13 @@ void Scop::insertSyncsAroundCopies(ScheduleTree* tree) {
       ++i;
     }
   }
+  insertSyncsAroundSeqChildren(seqNode);
+}
+
+void Scop::insertSyncsAroundSeqChildren(detail::ScheduleTree* seqNode) {
+  TC_CHECK(seqNode->as<detail::ScheduleTreeSequence>())
+      << "expected sequence node, got\n"
+      << *seqNode;
   insertSync(seqNode, 0);
   insertSync(seqNode, seqNode->numChildren());
 }
@@ -246,7 +266,7 @@ void Scop::promoteEverythingAt(std::vector<size_t> pos) {
   checkFiltersDisjointStatements(scheduleRoot());
   auto schedule = partialSchedule(root, tree);
 
-  auto groupMap = TensorReferenceGroup::accessedBySubtree(tree, *this);
+  auto groupMap = TensorReferenceGroup::accessedWithin(schedule, body);
   for (auto& p : groupMap) {
     for (auto& gr : p.second) {
       promoteGroup(
@@ -269,7 +289,7 @@ std::vector<long> Scop::getParameterValues() const {
   std::vector<long> paramValues;
   for (auto const& param : halide.params) {
     auto name = param.name();
-    CHECK(parameterValues.count(name) == 1);
+    TC_CHECK(parameterValues.count(name) == 1);
     paramValues.push_back(parameterValues.at(name));
   }
   return paramValues;
@@ -306,7 +326,7 @@ isl::schedule_constraints makeScheduleConstraints(
   auto root = scop.scheduleRoot();
   if (root->numChildren() > 0) {
     if (auto contextNode =
-            root->child({0})->elemAs<detail::ScheduleTreeElemContext>()) {
+            root->child({0})->as<detail::ScheduleTreeContext>()) {
       constraints = constraints.set_context(contextNode->context_);
     }
   }
@@ -314,12 +334,6 @@ isl::schedule_constraints makeScheduleConstraints(
   // Set up "add_schedule_constraints" and "merge_callback"
   // depending on the scheduler options.
   isl_schedule_constraints* sc = constraints.release();
-  {
-    if (schedulerOptions.proto.positive_orthant()) {
-      sc = isl_schedule_constraints_set_custom_constraint_callback(
-          sc, callbacks::AddPositiveCoefficientConstraints, nullptr);
-    }
-  }
   {
     auto fusionStrategy = schedulerOptions.proto.fusion_strategy();
     if (fusionStrategy == FusionStrategy::Max) {
@@ -343,8 +357,8 @@ isl::schedule_constraints makeScheduleConstraints(
 
 void Scop::computeAllDependences() {
   auto schedule = toIslSchedule(scheduleRoot());
-  auto allReads = reads.domain_factor_domain();
-  auto allWrites = writes.domain_factor_domain();
+  auto allReads = body.reads.domain_factor_domain();
+  auto allWrites = body.writes.domain_factor_domain();
   // RAW
   auto flowDeps = computeDependences(allWrites, allReads, schedule);
   // WAR and WAW
@@ -372,6 +386,7 @@ std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
   auto wasSerializingSccs = isl_options_get_schedule_serialize_sccs(ctx.get());
   auto wasUnit =
       isl_options_get_schedule_unit_max_var_coefficient_sum(ctx.get());
+  auto wasNonNeg = isl_options_get_schedule_nonneg_var_coefficient(ctx.get());
   isl_options_set_schedule_whole_component(ctx.get(), 0);
   if (schedulerOptions.proto.fusion_strategy() == FusionStrategy::Min) {
     isl_options_set_schedule_serialize_sccs(ctx.get(), 1);
@@ -379,10 +394,14 @@ std::unique_ptr<detail::ScheduleTree> Scop::computeSchedule(
   if (!schedulerOptions.proto.allow_skewing()) {
     isl_options_set_schedule_unit_max_var_coefficient_sum(ctx.get(), 1);
   }
+  if (schedulerOptions.proto.positive_orthant()) {
+    isl_options_set_schedule_nonneg_var_coefficient(ctx.get(), 1);
+  }
   tc::ScopeGuard islOptionsResetter([&]() {
     isl_options_set_schedule_whole_component(ctx.get(), usedWholeComponent);
     isl_options_set_schedule_serialize_sccs(ctx.get(), wasSerializingSccs);
     isl_options_set_schedule_unit_max_var_coefficient_sum(ctx.get(), wasUnit);
+    isl_options_set_schedule_nonneg_var_coefficient(ctx.get(), wasNonNeg);
   });
 
   return detail::fromIslSchedule(constraints.compute_schedule());
@@ -408,11 +427,13 @@ namespace {
  * Mark the band node at "tree" permutable.
  */
 detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
-  auto band = tree->elemAs<detail::ScheduleTreeElemBand>();
-  CHECK(band);
+  auto band = tree->as<detail::ScheduleTreeBand>();
+  TC_CHECK(band);
   band->permutable_ = true;
   return tree;
 }
+
+} // namespace
 
 /*
  * Return the outermost band in the schedule tree with the given root.
@@ -422,9 +443,10 @@ detail::ScheduleTree* setPermutable(detail::ScheduleTree* tree) {
  * insert the band in the leaf.  If branching is encountered, then
  * insert the band above the branching.
  */
-detail::ScheduleTree* obtainOuterBand(detail::ScheduleTree* root) {
+detail::ScheduleTree* Scop::obtainOuterBand() {
+  auto root = scheduleRoot();
   auto tree = root;
-  while (!tree->elemAs<ScheduleTreeElemBand>()) {
+  while (!tree->as<ScheduleTreeBand>()) {
     auto n = tree->numChildren();
     if (n == 1) {
       tree = tree->child({0});
@@ -440,12 +462,11 @@ detail::ScheduleTree* obtainOuterBand(detail::ScheduleTree* root) {
   }
   return tree;
 }
-} // namespace
 
 detail::ScheduleTree* Scop::tileOuterBand(const TilingView& tileSizes) {
   using namespace tc::polyhedral::detail;
-  auto band = obtainOuterBand(scheduleRoot());
-  auto bandNode = band->elemAs<ScheduleTreeElemBand>();
+  auto band = obtainOuterBand();
+  auto bandNode = band->as<ScheduleTreeBand>();
   std::vector<size_t> sizes = tileSizes.extractVector();
   if (bandNode->nMember() < sizes.size()) {
     sizes.resize(bandNode->nMember());
@@ -490,24 +511,16 @@ const Halide::OutputImageParam& Scop::findArgument(isl::id id) const {
     }
   }
 
-  CHECK(false) << "name \"" << name << "\" not found";
+  TC_CHECK(false) << "name \"" << name << "\" not found";
   return *halide.inputs.begin();
 }
 
-isl::aff Scop::makeIslAffFromStmtExpr(
-    isl::id stmtId,
-    isl::space paramSpace,
-    const Halide::Expr& e) const {
-  auto ctx = stmtId.get_ctx();
-  auto iterators = halide.iterators.at(stmtId);
-  auto space = paramSpace.named_set_from_params_id(stmtId, iterators.size());
-  // Set the names of the set dimensions of "space" for use
-  // by halide2isl::makeIslAffFromExpr.
-  for (size_t i = 0; i < iterators.size(); ++i) {
-    isl::id id(ctx, iterators[i]);
-    space = space.set_dim_id(isl::dim_type::set, i, id);
-  }
-  return halide2isl::makeIslAffFromExpr(space, e);
+isl::aff Scop::makeIslAffFromStmtExpr(isl::id stmtId, const Halide::Expr& e)
+    const {
+  auto domain = halide.domains.at(stmtId);
+  auto aff = halide2isl::makeIslAffFromExpr(domain.paramSpace, e);
+  aff = aff.unbind_params_insert_domain(domain.tuple);
+  return aff;
 }
 
 } // namespace polyhedral

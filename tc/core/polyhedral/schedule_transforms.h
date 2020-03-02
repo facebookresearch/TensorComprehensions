@@ -21,9 +21,11 @@
 #include <unordered_set>
 #include <vector>
 
-#include "tc/core/polyhedral/functional.h"
+#include "tc/core/functional.h"
+#include "tc/core/polyhedral/mapping_types.h"
 #include "tc/core/polyhedral/options.h"
 #include "tc/core/polyhedral/schedule_tree.h"
+#include "tc/core/polyhedral/schedule_tree_elem.h"
 #include "tc/external/isl.h"
 
 namespace tc {
@@ -31,18 +33,6 @@ namespace polyhedral {
 ////////////////////////////////////////////////////////////////////////////////
 //                        Transformation functions, out-of-class
 ////////////////////////////////////////////////////////////////////////////////
-// Starting from the "start" ScheduleTree, iteratively traverse the subtree
-// using the "next" function and collect all nodes along the way.
-// Stop when "next" returns nullptr.
-// The returned vector begins with "start".
-std::vector<detail::ScheduleTree*> collectScheduleTreesPath(
-    std::function<detail::ScheduleTree*(detail::ScheduleTree*)> next,
-    detail::ScheduleTree* start);
-std::vector<const detail::ScheduleTree*> collectScheduleTreesPath(
-    std::function<const detail::ScheduleTree*(const detail::ScheduleTree*)>
-        next,
-    const detail::ScheduleTree* start);
-
 // Joins 2 perfectly nested bands into a single band.
 // This is a structural transformation but it is not necessarily correct
 // semantically. In particular, the user is responsible for setting the
@@ -113,9 +103,13 @@ detail::ScheduleTree* bandScale(
     detail::ScheduleTree* tree,
     const std::vector<size_t>& scales);
 
+// Insert an empty band node below "root" or below the only child of "root" if
+// the child is a context node.
+detail::ScheduleTree* insertTopLevelEmptyBand(detail::ScheduleTree* root);
+
 // Update the top-level context node by intersecting it with "context".  The
 // top-level context node must be located directly under the root of the tree.
-// If there is no such node, insert one with universe context first.
+// If there is no such node, insert one first.
 void updateTopLevelContext(detail::ScheduleTree* root, isl::set context);
 
 // In a tree starting at "root", insert a sequence node with
@@ -262,68 +256,6 @@ void orderAfter(
     detail::ScheduleTree* root,
     detail::ScheduleTree* tree,
     isl::union_set filter);
-
-// Given a schedule defined by the ancestors of the given node,
-// extend it to a schedule that also covers the node itself.
-isl::union_map extendSchedule(
-    const detail::ScheduleTree* node,
-    isl::union_map schedule);
-
-// Get the partial schedule defined by ancestors of the given node and the node
-// itself.
-isl::union_map partialSchedule(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
-
-// Return the schedule defined by the ancestors of the given node.
-isl::union_map prefixSchedule(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
-
-// Return the concatenation of all band node partial schedules
-// from "relativeRoot" (inclusive) to "tree" (exclusive)
-// within a tree rooted at "root".
-// If there are no intermediate band nodes, then return a zero-dimensional
-// function on the universe domain of the schedule tree.
-// Note that this function does not take into account
-// any intermediate filter nodes.
-isl::multi_union_pw_aff infixScheduleMupa(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* relativeRoot,
-    const detail::ScheduleTree* tree);
-
-// Return the concatenation of all outer band node partial schedules.
-// If there are no outer band nodes, then return a zero-dimensional
-// function on the universe domain of the schedule tree.
-// Note that unlike isl_schedule_node_get_prefix_schedule_multi_union_pw_aff,
-// this function does not take into account any intermediate filter nodes.
-isl::multi_union_pw_aff prefixScheduleMupa(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree);
-
-// Return the concatenation of all outer band node partial schedules,
-// including that of the node itself.
-// Note that this function does not take into account
-// any intermediate filter nodes.
-isl::multi_union_pw_aff partialScheduleMupa(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* tree);
-
-// Get the set of domain points active at the given node.  A domain
-// point is active if it was not filtered away on the path from the
-// root to the node.  The root must be a domain element, otherwise no
-// elements would be considered active.
-isl::union_set activeDomainPoints(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
-
-// Get the set of domain points active below the given node.  A domain
-// point is active if it was not filtered away on the path from the
-// root to the node.  The root must be a domain element, otherwise no
-// elements would be considered active.
-isl::union_set activeDomainPointsBelow(
-    const detail::ScheduleTree* root,
-    const detail::ScheduleTree* node);
 
 } // namespace polyhedral
 } // namespace tc

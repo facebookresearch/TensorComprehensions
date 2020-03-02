@@ -32,8 +32,8 @@ using namespace std;
 struct TC2Isl : public ::testing::Test {
   void SetUp() {}
   void Check(const string& tc) {
-    auto halide =
-        tc2halide::translate(isl::with_exceptions::globalIslCtx(), tc);
+    auto halide = tc2halide::translate(
+        isl::with_exceptions::globalIslCtx(), tc, CompilerOptions());
     auto scop = polyhedral::Scop::makeScop(
         isl::with_exceptions::globalIslCtx(), halide);
     auto scheduleHalide = scop->scheduleRoot();
@@ -197,6 +197,29 @@ def foo(float(N) A) -> (B) {
 )TC";
   EXPECT_THROW(Check(tc), ::lang::ErrorReport);
 }
+
+TEST_F(TC2Isl, Types) {
+  for (auto type : {"bool",
+                    "uint8",
+                    "uint16",
+                    "uint32",
+                    "uint64",
+                    "int8",
+                    "int16",
+                    "int32",
+                    "int64",
+                    // NVRTC include transitive dependencies issue
+                    // "float16",
+                    "float32",
+                    "float64",
+                    "float",
+                    "double"}) {
+    string tc = string("def test_type(") + string(type) +
+        string("(N) A) -> (B) { B(k) +=! A(i) where k in 0:1 }");
+    Check(tc);
+  }
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

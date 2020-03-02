@@ -104,15 +104,8 @@ std::vector<at::Tensor> Kronecker::runKronecker3_1(
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
     bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_1_NAME + std::string("_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_1_NAME + std::string("_best") + suffix,
-        tc::TC_Kronecker3_1,
-        tc::TC_Kronecker3_1_NAME,
-        inputs,
-        options);
-    CHECK_GE(bestOptions.size(), 1u);
+        tc::TC_Kronecker3_1, tc::TC_Kronecker3_1_NAME, inputs, options);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   return Check(
       tc::TC_Kronecker3_1, tc::TC_Kronecker3_1_NAME, bestOptions[0], inputs);
@@ -134,15 +127,8 @@ std::vector<at::Tensor> Kronecker::runKronecker3_2(
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
     bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_2_NAME + std::string("_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_2_NAME + std::string("_best") + suffix,
-        tc::TC_Kronecker3_2,
-        tc::TC_Kronecker3_2_NAME,
-        inputs,
-        options);
-    CHECK_GE(bestOptions.size(), 1u);
+        tc::TC_Kronecker3_2, tc::TC_Kronecker3_2_NAME, inputs, options);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   return Check(
       tc::TC_Kronecker3_2, tc::TC_Kronecker3_2_NAME, bestOptions[0], inputs);
@@ -165,15 +151,8 @@ std::vector<at::Tensor> Kronecker::runKronecker3_3(
   std::vector<tc::CudaMappingOptions> bestOptions{options};
   if (FLAGS_autotune) {
     bestOptions = autotune(
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_3_NAME + std::string("_cache") + suffix,
-        FLAGS_save_tuner_proto_prefix + std::string("/") +
-            tc::TC_Kronecker3_3_NAME + std::string("_best") + suffix,
-        tc::TC_Kronecker3_3,
-        tc::TC_Kronecker3_3_NAME,
-        inputs,
-        options);
-    CHECK_GE(bestOptions.size(), 1u);
+        tc::TC_Kronecker3_3, tc::TC_Kronecker3_3_NAME, inputs, options);
+    TC_CHECK_GE(bestOptions.size(), 1u);
   }
   return Check(
       tc::TC_Kronecker3_3, tc::TC_Kronecker3_3_NAME, bestOptions[0], inputs);
@@ -297,7 +276,7 @@ void Kronecker::checkKronecker3Full(
   auto r3 = runKronecker3_3(options3, &W0, &r2[0]);
 
   auto checkFun = makeKronecker3CheckFunction(M, D0, D1, D2, N0, N1, N2);
-  CHECK(checkFun({W0, W1, W2, X}, r3));
+  TC_CHECK(checkFun({W0, W1, W2, X}, r3));
 }
 
 // Generic

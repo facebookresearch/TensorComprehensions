@@ -195,6 +195,8 @@ class CudaMappingOptions {
   CudaMappingOptions& maxSharedMemory(uint64_t size);
   CudaMappingOptions& unrollCopyShared(bool b);
   CudaMappingOptions& useReadOnlyCache(bool b);
+  CudaMappingOptions& privateDepth(uint32_t depth);
+  CudaMappingOptions& sharedDepth(uint32_t depth);
   ///@}
 
   /// Static constructors for predefined strategies.

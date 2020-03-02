@@ -78,7 +78,7 @@ void cpu_kronecker_real_forward(
     const float* W_k = Ws[k];
     if (k > 0) {
       // assert(Ysize[k-1] == M * N);
-      CHECK_EQ(M * N, Ysize[k - 1])
+      TC_CHECK_EQ(M * N, Ysize[k - 1])
           << "@k=" << k - 1 << ": " << M * N << " vs " << Ysize[k - 1];
     }
     cpu_kronecker_real_forward_kernel(M, N, rowk, colk, stride, W_k, X_k, Y_k);
@@ -88,7 +88,7 @@ void cpu_kronecker_real_forward(
     offset += rowk * colk;
     X_k = Y_k;
     // assert(Ysize[k] == M * N);
-    CHECK_EQ(M * N, Ysize[k])
+    TC_CHECK_EQ(M * N, Ysize[k])
         << "@k=" << k << ": " << M * N << " vs " << Ysize[k];
     Y_k += Ysize[k];
   }

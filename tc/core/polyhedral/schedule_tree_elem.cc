@@ -23,6 +23,7 @@
 
 #include <glog/logging.h>
 
+#include "tc/core/check.h"
 #include "tc/core/constants.h"
 #include "tc/core/flags.h"
 #include "tc/core/polyhedral/schedule_isl_conversion.h"
@@ -36,113 +37,186 @@ namespace tc {
 namespace polyhedral {
 namespace detail {
 
-namespace {
-
-std::unique_ptr<ScheduleTreeElemBand> fromIslScheduleNodeBand(
-    isl::schedule_node_band b) {
+std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
+    isl::set context,
+    std::vector<ScheduleTreeUPtr>&& children) {
   auto res =
-      ScheduleTreeElemBand::fromMultiUnionPwAff(b.get_partial_schedule());
-  res->permutable_ = b.get_permutable();
-  for (size_t i = 0; i < b.n_member(); ++i) {
-    res->coincident_[i] = b.member_get_coincident(i);
-  }
+      std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(context));
+  res->appendChildren(std::move(children));
   return res;
 }
 
-} // namespace
-
-std::unique_ptr<ScheduleTreeElemBase> ScheduleTreeElemBase::make(
-    isl::schedule_node node) {
-  if (auto band = node.as<isl::schedule_node_band>()) {
-    return fromIslScheduleNodeBand(band);
-  } else if (auto context = node.as<isl::schedule_node_context>()) {
-    auto c = context.get_context();
-    return std::unique_ptr<ScheduleTreeElemContext>(
-        new ScheduleTreeElemContext(c));
-  } else if (auto domain = node.as<isl::schedule_node_domain>()) {
-    auto c = domain.get_domain();
-    return std::unique_ptr<ScheduleTreeElemDomain>(
-        new ScheduleTreeElemDomain(c));
-  } else if (auto expansion = node.as<isl::schedule_node_expansion>()) {
-    LOG(FATAL) << "expansion nodes not supported";
-    return nullptr;
-  } else if (auto extension = node.as<isl::schedule_node_extension>()) {
-    auto e = extension.get_extension();
-    return std::unique_ptr<ScheduleTreeElemExtension>(
-        new ScheduleTreeElemExtension(e));
-  } else if (auto filter = node.as<isl::schedule_node_filter>()) {
-    auto f = filter.get_filter();
-    return std::unique_ptr<ScheduleTreeElemFilter>(
-        new ScheduleTreeElemFilter(f));
-  } else if (auto guard = node.as<isl::schedule_node_guard>()) {
-    LOG(FATAL) << "guard nodes not supported";
-    return nullptr;
-  } else if (auto mark = node.as<isl::schedule_node_mark>()) {
-    LOG(FATAL) << "mark nodes not supported";
-    return nullptr;
-  } else if (node.isa<isl::schedule_node_leaf>()) {
-    LOG(FATAL) << "ScheduleTreeElemBase::make called on explicit leaf";
-    return nullptr;
-  } else if (node.isa<isl::schedule_node_sequence>()) {
-    return std::unique_ptr<ScheduleTreeElemSequence>(
-        new ScheduleTreeElemSequence());
-  } else if (node.isa<isl::schedule_node_set>()) {
-    return std::unique_ptr<ScheduleTreeElemSet>(new ScheduleTreeElemSet());
-  }
-  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
-             << isl_schedule_node_get_type(node.get());
-  return nullptr;
+std::unique_ptr<ScheduleTreeContext> ScheduleTreeContext::make(
+    const ScheduleTreeContext* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeContext>(new ScheduleTreeContext(*tree));
+  res->appendChildren(std::move(children));
+  return res;
 }
 
-std::unique_ptr<ScheduleTreeElemBase> ScheduleTreeElemBase::make(
-    const ScheduleTree& st) {
-#define ELEM_MAKE_CASE(CLASS)                             \
-  else if (st.type_ == CLASS::NodeType) {                 \
-    return std::unique_ptr<CLASS>(                        \
-        new CLASS(*static_cast<CLASS*>(st.elem_.get()))); \
-  }
-
-  if (st.type_ == detail::ScheduleTreeType::None) {
-    LOG(FATAL) << "Hit Error node!";
-  }
-  ELEM_MAKE_CASE(ScheduleTreeElemBand)
-  ELEM_MAKE_CASE(ScheduleTreeElemContext)
-  ELEM_MAKE_CASE(ScheduleTreeElemDomain)
-  ELEM_MAKE_CASE(ScheduleTreeElemExtension)
-  ELEM_MAKE_CASE(ScheduleTreeElemFilter)
-  ELEM_MAKE_CASE(ScheduleTreeElemMappingFilter)
-  ELEM_MAKE_CASE(ScheduleTreeElemSequence)
-  ELEM_MAKE_CASE(ScheduleTreeElemSet)
-  ELEM_MAKE_CASE(ScheduleTreeElemThreadSpecificMarker)
-
-#undef ELEM_MAKE_CASE
-
-  LOG(FATAL) << "NYI: ScheduleTreeElemBase from type: "
-             << static_cast<int>(st.type_);
-  return nullptr;
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    isl::union_set domain,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(domain));
+  res->appendChildren(std::move(children));
+  return res;
 }
 
-std::unique_ptr<ScheduleTreeElemBand> ScheduleTreeElemBand::fromMultiUnionPwAff(
-    isl::multi_union_pw_aff mupa) {
+std::unique_ptr<ScheduleTreeDomain> ScheduleTreeDomain::make(
+    const ScheduleTreeDomain* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeDomain>(new ScheduleTreeDomain(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
+    isl::union_map extension,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeExtension>(
+      new ScheduleTreeExtension(extension));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeExtension> ScheduleTreeExtension::make(
+    const ScheduleTreeExtension* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeExtension>(new ScheduleTreeExtension(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
+    isl::union_set filter,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(filter));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeFilter> ScheduleTreeFilter::make(
+    const ScheduleTreeFilter* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeFilter>(new ScheduleTreeFilter(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    isl::ctx ctx,
+    const ScheduleTreeMapping::Mapping& mapping,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeMapping>(
+      new ScheduleTreeMapping(ctx, mapping));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeMapping> ScheduleTreeMapping::make(
+    const ScheduleTreeMapping* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeMapping>(new ScheduleTreeMapping(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+ScheduleTreeMapping::ScheduleTreeMapping(
+    isl::ctx ctx,
+    const ScheduleTreeMapping::Mapping& mapping)
+    : ScheduleTree(ctx, {}, NodeType), mapping(mapping) {
+  TC_CHECK_GT(mapping.size(), 0u) << "empty mapping filter";
+
+  auto domain = mapping.cbegin()->second.domain();
+  for (auto& kvp : mapping) {
+    TC_CHECK(domain.is_equal(kvp.second.domain()));
+  }
+  filter_ = domain.universe();
+  for (auto& kvp : mapping) {
+    auto upa = kvp.second;
+    auto id = kvp.first;
+    // Create mapping filter by equating the
+    // parameter mappedIds[i] to the "i"-th affine function.
+    upa = upa.sub(isl::union_pw_aff::param_on_domain(domain.universe(), id));
+    filter_ = filter_.intersect(upa.zero_union_set());
+  }
+}
+
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSequence> ScheduleTreeSequence::make(
+    const ScheduleTreeSequence* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res =
+      std::unique_ptr<ScheduleTreeSequence>(new ScheduleTreeSequence(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeSet> ScheduleTreeSet::make(
+    const ScheduleTreeSet* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeSet>(new ScheduleTreeSet(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
+    isl::multi_union_pw_aff mupa,
+    bool permutable,
+    std::vector<bool> coincident,
+    std::vector<bool> unroll,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), coincident.size());
+  TC_CHECK_EQ(static_cast<size_t>(mupa.size()), unroll.size());
   isl::ctx ctx(mupa.get_ctx());
-  std::unique_ptr<ScheduleTreeElemBand> band(new ScheduleTreeElemBand);
+  std::unique_ptr<ScheduleTreeBand> band(new ScheduleTreeBand(ctx));
+  band->permutable_ = permutable;
   band->mupa_ = mupa.floor();
-  size_t n = band->mupa_.size();
-  band->coincident_ = vector<bool>(n, false);
-  band->unroll_ = vector<bool>(n, false);
+  band->coincident_ = coincident;
+  band->unroll_ = unroll;
+  band->appendChildren(std::move(children));
   return band;
 }
 
-// Return the number of scheduling dimensions in the band
-size_t ScheduleTreeElemBand::nMember() const {
-  size_t res = mupa_.size();
-  CHECK_EQ(res, coincident_.size());
-  CHECK_EQ(res, unroll_.size());
+std::unique_ptr<ScheduleTreeBand> ScheduleTreeBand::make(
+    const ScheduleTreeBand* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeBand>(new ScheduleTreeBand(*tree));
+  res->appendChildren(std::move(children));
   return res;
 }
 
-size_t ScheduleTreeElemBand::nOuterCoincident() const {
-  CHECK_EQ(nMember(), coincident_.size());
+// Return the number of scheduling dimensions in the band
+size_t ScheduleTreeBand::nMember() const {
+  size_t res = mupa_.size();
+  TC_CHECK_EQ(res, coincident_.size());
+  TC_CHECK_EQ(res, unroll_.size());
+  return res;
+}
+
+size_t ScheduleTreeBand::nOuterCoincident() const {
+  TC_CHECK_EQ(nMember(), coincident_.size());
   size_t i;
   for (i = 0; i < nMember(); ++i) {
     if (!coincident_[i]) {
@@ -152,13 +226,17 @@ size_t ScheduleTreeElemBand::nOuterCoincident() const {
   return i;
 }
 
-void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
-  CHECK_LE(0u, n) << "range out of bounds";
-  CHECK_LE(0u, pos) << "range  out of bounds";
-  CHECK_GE(nMember(), pos + n) << "range out of bounds";
+void ScheduleTreeBand::drop(size_t pos, size_t n) {
+  TC_CHECK_LE(0u, n) << "range out of bounds";
+  TC_CHECK_LE(0u, pos) << "range  out of bounds";
+  TC_CHECK_GE(nMember(), pos + n) << "range out of bounds";
   auto nBegin = nMember();
 
-  mupa_ = mupa_.drop_dims(isl::dim_type::set, pos, n);
+  auto list = mupa_.get_union_pw_aff_list();
+  auto space = mupa_.get_space().params();
+  list = list.drop(pos, n);
+  space = space.add_unnamed_tuple_ui(list.size());
+  mupa_ = isl::multi_union_pw_aff(space, list);
 
   std::copy(
       coincident_.begin() + pos + n,
@@ -167,10 +245,41 @@ void ScheduleTreeElemBand::drop(size_t pos, size_t n) {
   coincident_.resize(nBegin - n);
   std::copy(unroll_.begin() + pos + n, unroll_.end(), unroll_.begin() + pos);
   unroll_.resize(nBegin - n);
-  CHECK_EQ(nBegin - n, nMember());
+  TC_CHECK_EQ(nBegin - n, nMember());
 }
 
-bool ScheduleTreeElemBand::operator==(const ScheduleTreeElemBand& other) const {
+isl::multi_union_pw_aff ScheduleTreeBand::memberRange(size_t first, size_t n)
+    const {
+  auto list = mupa_.get_union_pw_aff_list();
+  auto space = mupa_.get_space().params().add_unnamed_tuple_ui(n);
+  auto end = first + n;
+  TC_CHECK_LE(end, nMember());
+  list = list.drop(end, nMember() - end);
+  list = list.drop(0, first);
+  return isl::multi_union_pw_aff(space, list);
+}
+
+std::unique_ptr<ScheduleTreeThreadSpecificMarker>
+ScheduleTreeThreadSpecificMarker::make(
+    isl::ctx ctx,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeThreadSpecificMarker>(
+      new ScheduleTreeThreadSpecificMarker(ctx));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+std::unique_ptr<ScheduleTreeThreadSpecificMarker>
+ScheduleTreeThreadSpecificMarker::make(
+    const ScheduleTreeThreadSpecificMarker* tree,
+    std::vector<ScheduleTreeUPtr>&& children) {
+  auto res = std::unique_ptr<ScheduleTreeThreadSpecificMarker>(
+      new ScheduleTreeThreadSpecificMarker(*tree));
+  res->appendChildren(std::move(children));
+  return res;
+}
+
+bool ScheduleTreeBand::operator==(const ScheduleTreeBand& other) const {
   if (permutable_ != other.permutable_) {
     return false;
   }
@@ -226,53 +335,48 @@ bool ScheduleTreeElemBand::operator==(const ScheduleTreeElemBand& other) const {
   return true;
 }
 
-bool ScheduleTreeElemContext::operator==(
-    const ScheduleTreeElemContext& other) const {
+bool ScheduleTreeContext::operator==(const ScheduleTreeContext& other) const {
   auto res = context_.is_equal(other.context_);
   return res;
 }
 
-bool ScheduleTreeElemDomain::operator==(
-    const ScheduleTreeElemDomain& other) const {
+bool ScheduleTreeDomain::operator==(const ScheduleTreeDomain& other) const {
   auto res = domain_.is_equal(other.domain_);
   if (!res) {
     LOG_IF(INFO, FLAGS_debug_tc_mapper)
-        << "ScheduleTreeElemDomain difference: " << domain_ << " VS "
+        << "ScheduleTreeDomain difference: " << domain_ << " VS "
         << other.domain_ << "\n";
   }
   return res;
 }
 
-bool ScheduleTreeElemExtension::operator==(
-    const ScheduleTreeElemExtension& other) const {
+bool ScheduleTreeExtension::operator==(
+    const ScheduleTreeExtension& other) const {
   auto res = extension_.is_equal(other.extension_);
   return res;
 }
 
-bool ScheduleTreeElemFilter::operator==(
-    const ScheduleTreeElemFilter& other) const {
+bool ScheduleTreeFilter::operator==(const ScheduleTreeFilter& other) const {
   auto res = filter_.is_equal(other.filter_);
   return res;
 }
 
-bool ScheduleTreeElemMappingFilter::operator==(
-    const ScheduleTreeElemMappingFilter& other) const {
+bool ScheduleTreeMapping::operator==(const ScheduleTreeMapping& other) const {
   auto res = filter_.is_equal(other.filter_);
   return res;
 }
 
-bool ScheduleTreeElemSequence::operator==(
-    const ScheduleTreeElemSequence& other) const {
+bool ScheduleTreeSequence::operator==(const ScheduleTreeSequence& other) const {
   return true;
 }
 
-bool ScheduleTreeElemSet::operator==(const ScheduleTreeElemSet& other) const {
+bool ScheduleTreeSet::operator==(const ScheduleTreeSet& other) const {
   return true;
 }
 
 bool elemEquals(
-    const ScheduleTreeElemBase* e1,
-    const ScheduleTreeElemBase* e2,
+    const ScheduleTree* e1,
+    const ScheduleTree* e2,
     detail::ScheduleTreeType type) {
 #define ELEM_EQUALS_CASE(CLASS)                                              \
   else if (type == CLASS::NodeType) {                                        \
@@ -282,16 +386,16 @@ bool elemEquals(
   if (type == detail::ScheduleTreeType::None) {
     LOG(FATAL) << "Hit Error node!";
   }
-  ELEM_EQUALS_CASE(ScheduleTreeElemBand)
-  ELEM_EQUALS_CASE(ScheduleTreeElemContext)
-  ELEM_EQUALS_CASE(ScheduleTreeElemDomain)
-  ELEM_EQUALS_CASE(ScheduleTreeElemExtension)
-  ELEM_EQUALS_CASE(ScheduleTreeElemFilter)
-  ELEM_EQUALS_CASE(ScheduleTreeElemMappingFilter)
-  ELEM_EQUALS_CASE(ScheduleTreeElemSequence)
-  ELEM_EQUALS_CASE(ScheduleTreeElemSet)
+  ELEM_EQUALS_CASE(ScheduleTreeBand)
+  ELEM_EQUALS_CASE(ScheduleTreeContext)
+  ELEM_EQUALS_CASE(ScheduleTreeDomain)
+  ELEM_EQUALS_CASE(ScheduleTreeExtension)
+  ELEM_EQUALS_CASE(ScheduleTreeFilter)
+  ELEM_EQUALS_CASE(ScheduleTreeMapping)
+  ELEM_EQUALS_CASE(ScheduleTreeSequence)
+  ELEM_EQUALS_CASE(ScheduleTreeSet)
   else {
-    LOG(FATAL) << "NYI: ScheduleTreeElemBase::operator== for type: "
+    LOG(FATAL) << "NYI: ScheduleTree::operator== for type: "
                << static_cast<int>(type);
   }
 

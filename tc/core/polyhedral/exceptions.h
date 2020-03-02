@@ -25,8 +25,8 @@ struct EmptyFilterException : public std::runtime_error {
   explicit EmptyFilterException(const std::string& s) : std::runtime_error(s) {}
 };
 
-struct EmptyMappingFilterException : public std::runtime_error {
-  explicit EmptyMappingFilterException(const std::string& s)
+struct EmptyMappingException : public std::runtime_error {
+  explicit EmptyMappingException(const std::string& s)
       : std::runtime_error(s) {}
 };
 
@@ -61,6 +61,10 @@ struct PromotionNYI : public std::logic_error {
 
 struct GroupingError : public std::logic_error {
   explicit GroupingError(const std::string& s) : std::logic_error(s) {}
+};
+
+struct IncorrectScope : public std::logic_error {
+  explicit IncorrectScope(const std::string& s) : std::logic_error(s) {}
 };
 } // namespace promotion
 

@@ -20,6 +20,7 @@
 #include "tc/aten/aten.h"
 
 #include "tc/aten/aten_compiler.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
@@ -631,7 +632,7 @@ TEST_F(TMM_128_1024_1024, TooStrictPrecisionAfterTuner) {
   Check(options);
 }
 
-// This exercises a former MappingFilter leaf with a union_set of > 1 spaces
+// This exercises a former Mapping leaf with a union_set of > 1 spaces
 TEST_F(TMM_128_1024_1024, Tightening) {
   Init();
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions()
@@ -692,10 +693,28 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
 
 // This case was observed when running the autotuner on example_MLP_model
 // (#200).  It calls code generation on a schedule tree containing a
-// disjunctive filter, which results in expression with more than one disjunct
-// that was not handed properly.
-// TODO: the disjunctive filter in the schedule is unexpected and its origin
-// should be identified and explained.
+// disjunctive filter, which results in an expression with more than
+// one disjunct that was not handled properly.
+//
+// A disjunctive filter is introduced by the full/partial tile separation
+// of the reduction detection.  The domain is of the form
+// { S_1[O_s1_b, O_s1_y, O_s1_r_x] :
+//   0 <= O_s1_b <= 127 and 0 <= O_s1_y <= 999 and 0 <= O_s1_r_x <= 1023 }.
+// An outer tiling with size (1, 32, 63) is performed, which means
+// in particular that O_s1_r_x is tiled in blocks of size 63.
+// Within these blocks a full thread mapping tile is of size 2,
+// which means that the final element of the even blocks and
+// the initial element of the odd blocks do not belong to a full tile.
+// In particular, O_s1_r_x = 62 (final element of block 0) and
+// O_s1_r_x = 63 (initial element of block 1) do not belong to a full tile.
+// The constraints
+// -61 + O_s1_r_x <= 126*floor((63 + O_s1_r_x)/126) <= 62 + O_s1_r_x
+// perform this filtering.
+// In the O_s1_y direction, tiles are of size 32, resulting
+// in the constraint O_s1_y <= 991 on full tiles.
+// The partial tiles are described by the complement
+// O_s1_y >= 992 or (63 + O_s1_r_x) mod 126 = 0 or (-62 + O_s1_r_x) mod 126 = 0
+// which is disjunctive.
 TEST(TMM_128_1024_1000, DisjunctiveFilter) {
   at::Tensor I = at::CUDA(at::kFloat).rand({128, 1024});
   at::Tensor W = at::CUDA(at::kFloat).rand({1000, 1024});
@@ -771,7 +790,7 @@ TEST(Convolution, NestedExpressions) {
   auto outputs = tc::aten::prepareOutputs(TC, convolution, inputs);
   tc::aten::run(*pExecutor, inputs, outputs);
   auto B = outputs[0];
-  CHECK_EQ(at::Scalar(B[10]).toFloat(), 1);
+  TC_CHECK_EQ(at::Scalar(B[10]).toFloat(), 1);
 }
 
 // Previous versions of TC would map the reduction in the code below

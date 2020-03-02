@@ -25,14 +25,22 @@
 #include "tc/aten/aten_autotuner.h"
 #include "tc/aten/aten_compiler.h"
 #include "tc/autotuner/genetic_search.h"
+#include "tc/autotuner/options_cache.h"
+#include "tc/core/check.h"
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/cuda/cuda_tc_executor.h"
 #include "tc/core/flags.h"
+#include "tc/core/tensor.h"
 
-DEFINE_string(proto_path, "", "Filename to load and store proto cache ");
+DEFINE_string(
+    options_cache,
+    "",
+    "Filename to load and store best options cache ");
 
 using ATenGeneticCudaTuner =
     tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>;
+
+using tc::autotune::OptionsCache;
 
 TEST(BlockDiagPerm, SimpleAutotune) {
   // 1. Define and setup the TC compilation unit with CUDA memory
@@ -71,15 +79,25 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
 }
   )TC";
 
-  // 1. Allocate and autotune blockdiagperm2dfissioned_1
+  // 1. Allocate and autotune blockdiagperm2dfissioned_1 starting from best
+  // options stored in cache (if any).
   at::Tensor I = at::CUDA(at::kFloat).rand({128, 10, 50});
   at::Tensor W = at::CUDA(at::kFloat).rand({10, 50, 50});
-  auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
+  std::vector<tc::CudaMappingOptions> options =
+      tc::autotune::loadTopKFromCacheFile<tc::CudaBackend>(
+          tc,
+          "blockdiagperm2dfissioned_1",
+          FLAGS_options_cache,
+          extractRawPtrs(tc::aten::makeDLConstTensors({I, W})),
+          1);
+  if (options.size() == 0) {
+    options = {tc::CudaMappingOptions::makeNaiveMappingOptions()};
+  }
 
   ATenGeneticCudaTuner geneticAutotuneATen(tc);
-  auto bestOption = geneticAutotuneATen.tune(
-      "blockdiagperm2dfissioned_1", {I, W}, options, FLAGS_proto_path);
-  CHECK_GT(bestOption.size(), 0u);
+  auto bestOption =
+      geneticAutotuneATen.tune("blockdiagperm2dfissioned_1", {I, W}, options);
+  TC_CHECK_GT(bestOption.size(), 0u);
 
   auto pExecutor = tc::aten::compile<tc::CudaBackend>(
       tc, "blockdiagperm2dfissioned_1", {I, W}, bestOption[0]);
@@ -87,12 +105,22 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
       tc::aten::prepareOutputs(tc, "blockdiagperm2dfissioned_1", {I, W});
   auto timings = tc::aten::profile(*pExecutor, {I, W}, outputs);
 
-  // 2. Allocate and autotune blockdiagperm2dfissioned_2
+  // 2. Allocate and autotune blockdiagperm2dfissioned_2 starting from best
+  // options stored in cache (if any).
   at::Tensor O = outputs[0].clone().resize_({128, 500});
   at::Tensor Idx = at::CPU(at::kInt).randperm({500}).toBackend(at::kCUDA);
+  auto options2 = tc::autotune::loadTopKFromCacheFile<tc::CudaBackend>(
+      tc,
+      "blockdiagperm2dfissioned_2",
+      FLAGS_options_cache,
+      extractRawPtrs(tc::aten::makeDLConstTensors({O, Idx})),
+      1);
+  if (options2.size() == 0) {
+    options2 = {tc::CudaMappingOptions::makeNaiveMappingOptions()};
+  }
   auto bestOption2 = geneticAutotuneATen.tune(
-      "blockdiagperm2dfissioned_2", {O, Idx}, options, FLAGS_proto_path);
-  CHECK_GT(bestOption2.size(), 0u);
+      "blockdiagperm2dfissioned_2", {O, Idx}, options2);
+  TC_CHECK_GT(bestOption2.size(), 0u);
 
   auto pExecutor2 = tc::aten::compile<tc::CudaBackend>(
       tc, "blockdiagperm2dfissioned_2", {O, Idx}, bestOption2[0]);
@@ -115,12 +143,21 @@ def blockdiagperm2dfissioned_2(float(B, N) I, int32(N) Idx) -> (O) {
     tc::aten::uncheckedRun(*pExecutor, {I, W}, outputs);
     tc::aten::uncheckedRun(*pExecutor2, {O, Idx}, outputs2);
   }
+
+  // 5. Explicitly store the best found options in cache so we can reinforce
+  // later if required
+  if (not FLAGS_options_cache.empty()) {
+    tc::autotune::appendTopKToCacheFile(
+        *geneticAutotuneATen.optionsCache,
+        FLAGS_options_cache,
+        tc::FLAGS_tuner_save_best_candidates_count);
+  }
 }
 
-// From root, run with:
+// Run iteratively with the following options to reinforce short tuning runs:
 //   ./build/examples/blockdiagperm --tuner_threads=10 --tuner_gen_pop_size=10
 //   --tuner_gen_generations=3 --tuner_gen_number_elites=4
-//   --proto_path="/tmp/blockdiagperm"
+//   --options_cache="/tmp/blockdiagperm.options"
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);

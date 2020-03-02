@@ -65,7 +65,7 @@ class CudaRTCFunction {
   mutable std::unordered_map<size_t, CUmodule> perGpuModule_;
   mutable std::unordered_map<size_t, CUfunction> perGpuKernel_;
   std::string specializedName;
-  std::vector<char> nvrtc_ptx;
+  std::string ptx;
   bool cleared_;
 };
 

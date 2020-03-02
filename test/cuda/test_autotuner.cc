@@ -35,11 +35,6 @@ DEFINE_bool(
     smoke_check,
     true,
     "launches a mini autotune (true) or a full run (false)");
-DEFINE_string(save_tuner_proto_prefix, "/tmp", "Enable autotuning");
-DEFINE_bool(
-    load_or_store_cache,
-    false,
-    "load options from previously stored cache (or store them)");
 DEFINE_bool(no_memory_promotion, false, "disable memory promotion");
 
 struct ATenCompilationUnitTest : public ::testing::Test {
@@ -70,7 +65,6 @@ struct ATenCompilationUnitTest : public ::testing::Test {
       const std::string& tc,
       const std::string& name,
       const std::vector<at::Tensor> inputs,
-      const std::string& cacheFilename,
       tc::CudaMappingOptions baseMapping) {
     tc::aten::ATenAutotuner<tc::CudaBackend, tc::autotune::GeneticSearch>
         geneticAutotuneATen(tc);
@@ -78,8 +72,8 @@ struct ATenCompilationUnitTest : public ::testing::Test {
     if (FLAGS_no_memory_promotion) {
       fix.fixUseSharedMemory(false).fixUsePrivateMemory(false);
     }
-    auto options =
-        geneticAutotuneATen.tune(name, inputs, baseMapping, cacheFilename, fix);
+    auto options = geneticAutotuneATen.tune(
+        name, inputs, {baseMapping}, std::numeric_limits<size_t>::max(), fix);
     if (options.size() > 0) {
       return options[0];
     }
@@ -106,9 +100,7 @@ def layernorm(float(T, B, C) I) -> (O, mean, centered, var) {
   )TC";
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "layernorm";
-
-  std::string cacheFilename = "";
-  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, options);
 }
 
 TEST_F(ATenCompilationUnitTest, MatmulA) {
@@ -125,8 +117,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
-  std::string cacheFilename = "";
-  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, options);
 }
 
 TEST_F(ATenCompilationUnitTest, MatmulB) {
@@ -143,8 +134,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
-  std::string cacheFilename = "";
-  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, options);
 }
 
 TEST_F(ATenCompilationUnitTest, MatmulC) {
@@ -161,8 +151,7 @@ def matmul(float(M,N) A, float(N,K) B) -> (output) {
   auto options = tc::CudaMappingOptions::makeNaiveMappingOptions();
   auto name = "matmul";
 
-  std::string cacheFilename = "";
-  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
+  auto bestOptions = autotune(TC, name, inputs, options);
 }
 
 TEST_F(ATenCompilationUnitTest, TensorDot) {
@@ -186,13 +175,7 @@ def tensordot(float(N, C1, C2, H, W) I0, float(N, C2, C3, H, W) I1) -> (O) {
       std::string("_H_") + std::to_string(H) + std::string("_W_") +
       std::to_string(W);
 
-  std::string cacheFilename = "";
-  if (FLAGS_load_or_store_cache) {
-    cacheFilename = FLAGS_save_tuner_proto_prefix +
-        std::string("/tensordot_cache") + suffix;
-  }
-  auto bestOptions = autotune(TC, name, inputs, cacheFilename, options);
-
+  auto bestOptions = autotune(TC, name, inputs, options);
   benchmarkKernelOptions(TC, name, inputs, bestOptions);
 }
 

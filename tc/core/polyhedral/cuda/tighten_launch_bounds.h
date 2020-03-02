@@ -16,13 +16,15 @@
 #pragma once
 
 #include "tc/core/cuda/cuda_mapping_options.h"
-#include "tc/core/polyhedral/scop.h"
+#include "tc/core/polyhedral/cuda/mapped_scop.h"
 
 namespace tc {
 namespace polyhedral {
+namespace cuda {
 std::pair<tc::Grid, tc::Block> tightenLaunchBounds(
-    const Scop& scop,
+    const MappedScop& mscop,
     const tc::Grid& grid,
     const tc::Block& block);
+} // namespace cuda
 } // namespace polyhedral
 } // namespace tc

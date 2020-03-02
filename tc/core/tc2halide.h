@@ -20,6 +20,7 @@
 #include "tc/external/isl.h"
 #include "tc/lang/tree.h"
 #include "tc/lang/tree_views.h"
+#include "tc/utils/compiler_options.h"
 
 namespace tc2halide {
 
@@ -44,15 +45,19 @@ struct HalideComponents {
 Halide::Internal::Call::ConstString kReductionUpdate = "ReductionUpdate";
 
 // Translate a TC parse tree into equivalent Halide imperative IR with
-// a naive schedule.
+// a naive schedule.  Additional options, such as how to treat warnings, are
+// passed in as "compilerOptions".
 HalideComponents translate(
     isl::ctx ctx,
     const lang::TreeRef& treeRef,
-    bool throwWarnings = false);
+    const tc::CompilerOptions& compilerOptions);
 
 // Translate TC source into equivalent Halide imperative IR with a
-// naive schedule.
-HalideComponents
-translate(isl::ctx ctx, const std::string& tc, bool throwWarnings = false);
+// naive schedule.  Additional options, such as how to treat warnings, are
+// passed in as "compilerOptions".
+HalideComponents translate(
+    isl::ctx ctx,
+    const std::string& tc,
+    const tc::CompilerOptions& compilerOptions);
 
 } // namespace tc2halide
