@@ -131,7 +131,6 @@ You can find documentation [here](https://facebookresearch.github.io/TensorCompr
 
 * **Email**: tensorcomp@fb.com
 * **GitHub issues**: bug reports, feature requests, install issues, RFCs, thoughts, etc.
-* **Slack**: For discussion around framework integration, build support, collaboration, etc. join our slack channel https://tensorcomprehensions.herokuapp.com/.
 
 # Code of Conduct
 See the [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) file for more details.

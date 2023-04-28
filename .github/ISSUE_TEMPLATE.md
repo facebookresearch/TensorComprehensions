@@ -2,7 +2,7 @@ Tensor Comprehensions Github Issues Guidelines
 ----------------------------------------------
 
 If you have a feature request or a bug report (build issue), please open an issue on Github and fill the template below so we can help you better and faster. If you have some general
-questions about Tensor Comprehensions, please visit our [slack channel](https://tensorcomprehensions.herokuapp.com/) or email us at tensorcomp@fb.com
+questions about Tensor Comprehensions, please email us at tensorcomp@fb.com
 
 For build issues, please add `[Build]` at the beginning of issue title.
 
