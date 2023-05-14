@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
 
@@ -27,14 +28,17 @@ namespace polyhedral {
 
 // Return the union of the reduction update statements
 // that appear in "domain".
-isl::union_set reductionUpdates(isl::union_set domain, const Scop& scop);
+isl::UnionSet<Statement> reductionUpdates(
+    isl::UnionSet<Statement> domain,
+    const Scop& scop);
 
 // Does "prefix" partition "domain" into individual reductions?
 // In particular, do the elements of "domain" access a single tensor
 // element within "prefix"?
+template <typename Prefix>
 bool isSingleReductionWithin(
-    isl::union_set domain,
-    isl::multi_union_pw_aff prefix,
+    isl::UnionSet<Statement> domain,
+    isl::MultiUnionPwAff<Statement, Prefix> prefix,
     const Scop& scop);
 
 } // namespace polyhedral

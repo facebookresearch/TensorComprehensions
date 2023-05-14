@@ -24,6 +24,7 @@
 #include "tc/core/cuda/cuda_mapping_options.h"
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/core/tensor.h"
 #include "tc/external/isl.h"
@@ -150,7 +151,7 @@ class MappedScop {
   template <typename MappingTypeId>
   detail::ScheduleTree* map(
       detail::ScheduleTree* tree,
-      isl::union_pw_aff_list list);
+      isl::UnionPwAffListOn<Statement> list);
   // Map "band" to block identifiers and then scale
   // the band members by "tileSizes".
   void mapToBlocksAndScaleBand(
@@ -171,7 +172,8 @@ class MappedScop {
   // Return the schedule that will be used by mapInnermostBandsToThreads
   // for mapping to thread identifiers, with the last function
   // corresponding to thread identifier x.
-  isl::multi_union_pw_aff reductionMapSchedule(const detail::ScheduleTree* st);
+  isl::MultiUnionPwAff<Statement, ReductionSchedule> reductionMapSchedule(
+      const detail::ScheduleTree* st);
   // Separate out reductions that can be mapped to an entire block.
   // The remaining parts, if any, are no longer considered for replacement
   // by a library call.
@@ -186,8 +188,8 @@ class MappedScop {
   Scop::SyncLevel findBestSync(
       detail::ScheduleTree* st1,
       detail::ScheduleTree* st2,
-      isl::multi_union_pw_aff domainToThread,
-      isl::multi_union_pw_aff domainToWarp);
+      isl::MultiUnionPwAff<Statement, Thread> domainToThread,
+      isl::MultiUnionPwAff<Statement, Warp> domainToWarp);
 
  public:
   // Find best configuration of synchronizations in a sequence, minimizing
@@ -208,14 +210,14 @@ class MappedScop {
   // to the thread identifiers, where all branches in "tree"
   // are assumed to have been mapped to thread identifiers.
   // The result lives in a space of the form block[x, ...].
-  isl::multi_union_pw_aff threadMappingSchedule(
+  isl::MultiUnionPwAff<Statement, Thread> threadMappingSchedule(
       const detail::ScheduleTree* tree) const;
 
   // Extract a mapping from the domain elements active at "tree"
   // to the block identifiers, where all branches in "tree"
   // are assumed to have been mapped to block identifiers.
   // The result lives in a space of the form grid[x, ...].
-  isl::multi_union_pw_aff blockMappingSchedule(
+  isl::MultiUnionPwAff<Statement, Block> blockMappingSchedule(
       const detail::ScheduleTree* tree) const;
 
  private:

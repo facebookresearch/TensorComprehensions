@@ -23,6 +23,7 @@
 #include <Halide.h>
 
 #include "tc/core/polyhedral/body.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/tc2halide.h"
 #include "tc/external/isl.h"
@@ -43,14 +44,14 @@ struct SymbolTable {
 SymbolTable makeSymbolTable(const tc2halide::HalideComponents& components);
 
 /// Make the space of all given parameter values
-isl::space makeParamSpace(isl::ctx ctx, const ParameterVector& params);
+isl::Space<> makeParamSpace(isl::ctx ctx, const ParameterVector& params);
 
 /// Make the parameter set marking all given parameters
 /// as non-negative.
-isl::set makeParamContext(isl::ctx ctx, const ParameterVector& params);
+isl::Set<> makeParamContext(isl::ctx ctx, const ParameterVector& params);
 
 /// Make a constant-valued affine function over a space.
-isl::aff makeIslAffFromInt(isl::space space, int64_t i);
+isl::AffOn<> makeIslAffFromInt(isl::Space<> space, int64_t i);
 
 // Make an affine function over a space from a Halide Expr. Returns a
 // null isl::aff if the expression is not affine. Fails if Variable
@@ -58,17 +59,17 @@ isl::aff makeIslAffFromInt(isl::space space, int64_t i);
 // Note that the input space can be either a parameter space or
 // a set space, but the expression can only reference
 // the parameters in the space.
-isl::aff makeIslAffFromExpr(isl::space space, const Halide::Expr& e);
+isl::AffOn<> makeIslAffFromExpr(isl::Space<> space, const Halide::Expr& e);
 
 // Iteration domain information associated to a statement identifier.
 struct IterationDomain {
   // All parameters active at the point where the iteration domain
   // was created, including those corresponding to outer loop iterators.
-  isl::space paramSpace;
+  isl::Space<> paramSpace;
   // The identifier tuple corresponding to the iteration domain.
   // The identifiers in the tuple are the outer loop iterators,
   // from outermost to innermost.
-  isl::multi_id tuple;
+  isl::MultiId<polyhedral::Statement> tuple;
 };
 
 typedef std::unordered_map<isl::id, IterationDomain, isl::IslIdIslHash>
@@ -102,7 +103,7 @@ struct ScheduleTreeAndAccesses {
 /// Make a schedule tree from a Halide Stmt, along with auxiliary data
 /// structures describing the memory access patterns.
 ScheduleTreeAndAccesses makeScheduleTree(
-    isl::space paramSpace,
+    isl::Space<> paramSpace,
     const Halide::Internal::Stmt& s);
 
 } // namespace halide2isl

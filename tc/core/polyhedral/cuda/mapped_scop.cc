@@ -32,6 +32,7 @@
 #include "tc/core/polyhedral/cuda/mapping_types.h"
 #include "tc/core/polyhedral/cuda/memory_promotion_heuristic.h"
 #include "tc/core/polyhedral/cuda/tighten_launch_bounds.h"
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/exceptions.h"
 #include "tc/core/polyhedral/schedule_transforms.h"
 #include "tc/core/polyhedral/schedule_tree_matcher.h"
@@ -135,7 +136,9 @@ const CudaDim& mappingSize<mapping::ThreadId>(const MappedScop* mscop) {
 // Return a pointer to the updated node (below the inserted filter)
 // for call chaining purposes.
 template <typename MappingTypeId>
-ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
+ScheduleTree* MappedScop::map(
+    ScheduleTree* tree,
+    isl::UnionPwAffListOn<Statement> list) {
   size_t nToMap = list.size();
   const auto& extent = mappingSize<MappingTypeId>(this).view;
   TC_CHECK_LE(nToMap, extent.size()) << "dimension overflow";
@@ -145,7 +148,7 @@ ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
   auto universe = domain.universe();
 
   std::vector<MappingTypeId> idList;
-  auto affList = isl::union_pw_aff_list(list.get_ctx(), 0);
+  auto affList = isl::UnionPwAffListOn<Statement>(list.get_ctx(), 0);
   for (size_t i = 0; i < nToMap; ++i) {
     auto id = MappingTypeId::makeId(i);
     auto upa = list.get_at(i);
@@ -157,8 +160,8 @@ ScheduleTree* MappedScop::map(ScheduleTree* tree, isl::union_pw_aff_list list) {
 
   for (size_t i = nToMap; i < extent.size(); ++i) {
     auto id = MappingTypeId::makeId(i);
-    affList = affList.add(
-        isl::union_pw_aff(universe, isl::val::zero(domain.get_ctx())));
+    affList = affList.add(isl::UnionPwAffOn<Statement>(
+        universe, isl::val::zero(domain.get_ctx())));
     idList.emplace_back(id);
   }
 
@@ -225,7 +228,10 @@ void fixThreadsBelow(MappedScop& mscop, ScheduleTree* tree, size_t begin) {
  * Anything that depends on an update statement is ordered after
  * the update statements.  Anything else is ordered before.
  */
-bool separatedOut(Scop& scop, ScheduleTree* tree, isl::union_set updates) {
+bool separatedOut(
+    Scop& scop,
+    ScheduleTree* tree,
+    isl::UnionSet<Statement> updates) {
   auto domain = activeDomainPoints(scop.scheduleRoot(), tree);
   auto other = domain.subtract(updates);
   if (other.is_empty()) {
@@ -295,8 +301,8 @@ bool MappedScop::detectReductions(ScheduleTree* tree) {
   });
   // The outer (coincident) members, together with the prefix schedule,
   // need to determine a single reduction.
-  auto prefix = prefixScheduleMupa(schedule(), tree);
-  prefix = prefix.range_product(band->memberRange(0, nCoincident));
+  auto prefix = prefixScheduleMupa<Prefix>(schedule(), tree)
+                    .range_product(band->memberRange<Band>(0, nCoincident));
   if (!isSingleReductionWithin(updates, prefix, scop())) {
     return false;
   }
@@ -318,8 +324,8 @@ bool MappedScop::needReductionSeparation(const ScheduleTree* st) {
   return !reductionBandUpdates_.at(st).separated;
 }
 
-isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
-    const ScheduleTree* st) {
+isl::MultiUnionPwAff<Statement, ReductionSchedule>
+MappedScop::reductionMapSchedule(const ScheduleTree* st) {
   TC_CHECK(reductionBandUpdates_.count(st) == 1);
   auto reductionBand = st->as<ScheduleTreeBand>();
   TC_CHECK(reductionBand);
@@ -330,7 +336,7 @@ isl::multi_union_pw_aff MappedScop::reductionMapSchedule(
   TC_CHECK_GE(nMember, reductionDim + 1);
 
   auto first = reductionDim + 1 - nMappedThreads;
-  return reductionBand->memberRange(first, nMappedThreads);
+  return reductionBand->memberRange<ReductionSchedule>(first, nMappedThreads);
 }
 
 ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
@@ -341,10 +347,10 @@ ScheduleTree* MappedScop::separateReduction(ScheduleTree* st) {
 
   auto root = scop_->scheduleRoot();
   auto domain = activeDomainPoints(root, st);
-  auto prefixSchedule = prefixScheduleMupa(root, st);
+  auto prefixSchedule = prefixScheduleMupa<Prefix>(root, st);
   auto reductionSchedule = reductionMapSchedule(st);
   auto space = reductionSchedule.get_space();
-  auto size = isl::multi_val::zero(space);
+  auto size = isl::MultiVal<ReductionSchedule>::zero(space);
   for (size_t i = 0; i < numThreads.view.size(); ++i) {
     auto pos = numThreads.view.size() - 1 - i;
     size = size.set_val(pos, isl::val(st->ctx_, numThreads.view[i]));
@@ -501,18 +507,19 @@ constexpr auto kWarp = "warp";
  * (of size "warpSize") to a warp identifier,
  * based on the thread sizes s_x, s_y up to s_z in "block".
  */
-isl::multi_aff constructThreadToWarp(
+isl::MultiAff<Thread, Warp> constructThreadToWarp(
     isl::ctx ctx,
     const unsigned warpSize,
     const Block& block) {
-  auto space = isl::space(ctx, 0);
+  auto space = isl::Space<>(ctx, 0);
   auto id = isl::id(ctx, kBlock);
-  auto blockSpace = space.add_named_tuple_id_ui(id, block.view.size());
-  auto warpSpace = space.add_named_tuple_id_ui(isl::id(ctx, kWarp), 1);
-  auto aff = isl::aff::zero_on_domain(blockSpace);
+  auto blockSpace = space.add_named_tuple_id_ui<Thread>(id, block.view.size());
+  auto warpSpace = space.add_named_tuple_id_ui<Warp>(isl::id(ctx, kWarp), 1);
+  auto aff = isl::AffOn<Thread>::zero_on_domain(blockSpace);
 
   auto nThread = block.view.size();
-  auto identity = isl::multi_aff::identity(blockSpace.map_from_set());
+  auto identity =
+      isl::MultiAff<Thread, Thread>::identity(blockSpace.map_from_set());
   for (int i = nThread - 1; i >= 0; --i) {
     aff = aff.scale(isl::val(ctx, block.view[i]));
     aff = aff.add(identity.get_aff(i));
@@ -520,35 +527,35 @@ isl::multi_aff constructThreadToWarp(
 
   aff = aff.scale_down(isl::val(ctx, warpSize)).floor();
   auto mapSpace = blockSpace.product(warpSpace).unwrap();
-  return isl::multi_aff(mapSpace, isl::aff_list(aff));
+  return isl::MultiAff<Thread, Warp>(mapSpace, aff.asAffList());
 }
 } // namespace
 
-isl::multi_union_pw_aff MappedScop::threadMappingSchedule(
+isl::MultiUnionPwAff<Statement, Thread> MappedScop::threadMappingSchedule(
     const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numThreads.view.size(); ++i) {
     ids.emplace_back(mapping::ThreadId::makeId(i));
   }
   auto tupleId = isl::id(tree->ctx_, kBlock);
-  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+  return extractDomainToIds<Thread>(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
-isl::multi_union_pw_aff MappedScop::blockMappingSchedule(
+isl::MultiUnionPwAff<Statement, Block> MappedScop::blockMappingSchedule(
     const ScheduleTree* tree) const {
   std::vector<mapping::MappingId> ids;
   for (size_t i = 0; i < numBlocks.view.size(); ++i) {
     ids.emplace_back(mapping::BlockId::makeId(i));
   }
   auto tupleId = isl::id(tree->ctx_, kGrid);
-  return extractDomainToIds(scop_->scheduleRoot(), tree, ids, tupleId);
+  return extractDomainToIds<Block>(scop_->scheduleRoot(), tree, ids, tupleId);
 }
 
 Scop::SyncLevel MappedScop::findBestSync(
     ScheduleTree* st1,
     ScheduleTree* st2,
-    isl::multi_union_pw_aff domainToThread,
-    isl::multi_union_pw_aff domainToWarp) {
+    isl::MultiUnionPwAff<Statement, Thread> domainToThread,
+    isl::MultiUnionPwAff<Statement, Warp> domainToWarp) {
   // Active points in the two schedule trees
   auto stRoot = scop_->scheduleRoot();
   auto activePoints1 = activeDomainPointsBelow(stRoot, st1);
@@ -865,7 +872,8 @@ void MappedScop::insertMappingContext() {
   auto space = scop.domain().get_space();
   auto mappingContext = makeParameterContext(
       space, mappingIdsWithSizes.begin(), mappingIdsWithSizes.end());
-  updateTopLevelContext(scop.scheduleRoot(), mappingContext.from_params());
+  updateTopLevelContext(
+      scop.scheduleRoot(), mappingContext.from_params<Prefix>());
 }
 
 namespace {
@@ -895,7 +903,7 @@ std::unique_ptr<MappedScop> makeSpecializedMappedScop(
   // outer schedule dimensions, so the space of a parameter context code is that
   // of a zero-dimensional space.
   auto root = scop->scheduleRoot();
-  updateTopLevelContext(root, scop->context().from_params());
+  updateTopLevelContext(root, scop->context().from_params<Prefix>());
 
   tc::Grid grid = mappedScop.numBlocks;
   tc::Block block = mappedScop.numThreads;

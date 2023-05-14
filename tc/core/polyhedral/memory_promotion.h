@@ -17,6 +17,7 @@
 
 #include <iostream>
 
+#include "tc/core/polyhedral/domain_types.h"
 #include "tc/core/polyhedral/schedule_tree.h"
 #include "tc/core/polyhedral/scop.h"
 #include "tc/external/isl.h"
@@ -47,21 +48,21 @@ struct ScopedFootprint {
   isl::val size(size_t pos) const {
     return box.get_size().get_val(pos);
   }
-  isl::aff lowerBound(size_t pos) const {
+  isl::AffOn<Prefix> lowerBound(size_t pos) const {
     return box.get_offset().get_aff(pos);
   }
   isl::val stride(size_t pos) const {
     return strideValues.get_val(pos);
   }
-  isl::aff strideOffset(size_t pos) const {
+  isl::AffOn<Prefix> strideOffset(size_t pos) const {
     return strideOffsets.get_aff(pos);
   }
 
-  isl::fixed_box box;
-  isl::multi_val strideValues;
-  isl::multi_aff strideOffsets;
+  isl::FixedBox<Prefix, Tensor> box;
+  isl::MultiVal<Tensor> strideValues;
+  isl::MultiAff<Prefix, Tensor> strideOffsets;
 
-  isl::multi_aff lowerBounds() const;
+  isl::MultiAff<Prefix, Tensor> lowerBounds() const;
 };
 
 // Descriptor of tensor reference in a Scop.
@@ -80,11 +81,11 @@ class TensorReference {
 
  public:
   // Original access relation in terms of the Scop domain.
-  isl::map originalAccess;
+  isl::Map<Statement, Tensor> originalAccess;
 
   // Access relation in terms of partial schedule at the point where the
   // reference group is introduced in the tree.
-  isl::map scopedAccess;
+  isl::Map<Prefix, Tensor> scopedAccess;
 
   // Access direction (read or write).
   AccessType type;
@@ -112,7 +113,7 @@ class TensorReferenceGroup {
 
  public:
   static TensorGroups accessedWithin(
-      isl::union_map outerSchedule,
+      isl::UnionMap<Statement, Prefix> outerSchedule,
       const Body& body);
 
   bool isReadOnly() const;
@@ -125,27 +126,27 @@ class TensorReferenceGroup {
   }
 
   // Access relations in terms of partial schedule of the scoping point.
-  isl::map scopedWrites() const;
-  isl::map scopedReads() const;
-  isl::map scopedAccesses() const {
+  isl::Map<Prefix, Tensor> scopedWrites() const;
+  isl::Map<Prefix, Tensor> scopedReads() const;
+  isl::Map<Prefix, Tensor> scopedAccesses() const {
     return scopedWrites().unite(scopedReads());
   }
 
   // Access relations in terms of Scop domain elements.
   // The resulting union relations have different domain spaces but identical
   // range spaces.
-  isl::union_map originalWrites() const;
-  isl::union_map originalReads() const;
-  isl::union_map originalAccesses() const {
+  isl::UnionMap<Statement, Tensor> originalWrites() const;
+  isl::UnionMap<Statement, Tensor> originalReads() const;
+  isl::UnionMap<Statement, Tensor> originalAccesses() const {
     return originalWrites().unite(originalReads());
   }
 
   // Rectangular overapproximation of the set of tensor elements accessed below
   // and relative to the scoping point.
-  isl::map approximateScopedAccesses() const;
+  isl::Map<Prefix, Tensor> approximateScopedAccesses() const;
 
-  isl::multi_aff promotion() const;
-  isl::set promotedFootprint() const;
+  isl::MultiAff<isl::Pair<Prefix, Tensor>, Tensor> promotion() const;
+  isl::Set<Tensor> promotedFootprint() const;
 
   std::vector<size_t> approximationSizes() const;
 
@@ -155,8 +156,8 @@ class TensorReferenceGroup {
       std::unique_ptr<TensorReferenceGroup>&& g1,
       std::unique_ptr<TensorReferenceGroup>&& g2);
   static std::unique_ptr<TensorReferenceGroup> makeSingleton(
-      isl::map originalAccess,
-      isl::map scopedAccess,
+      isl::Map<isl::Pair<Statement, Tag>, Tensor> originalAccess,
+      isl::Map<isl::Pair<Prefix, Tag>, Tensor> scopedAccess,
       AccessType type);
 
  public:
