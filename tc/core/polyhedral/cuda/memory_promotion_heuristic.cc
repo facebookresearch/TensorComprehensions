@@ -446,6 +446,51 @@ bool isInThreadMappedScope(
   return false;
 }
 
+static std::vector<std::pair<isl::id, TensorGroupsInfo>> sortTensorGroupMap(
+    TensorGroups&& groupMap) {
+  // Prepare groups for sorting, to have specified order necessary for
+  // reproducibility and tests.
+  using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
+  std::vector<TensorGroupList> groupLists(
+      std::make_move_iterator(groupMap.begin()),
+      std::make_move_iterator(groupMap.end()));
+
+  // Computes the total number of references in all groups.
+  auto refsCount = [](const TensorGroupsInfo& info) {
+    size_t refs = 0;
+    for (auto const& group : info) {
+      refs += group->referenceIds().size();
+    }
+    return refs;
+  };
+
+  // Sort by the total number of references, then by name.  Because names are
+  // guarenteed to be unique, the order is total.
+  std::sort(
+      groupLists.begin(),
+      groupLists.end(),
+      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
+        auto r1 = refsCount(l1.second);
+        auto r2 = refsCount(l2.second);
+        return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
+      });
+  return groupLists;
+}
+
+/* Sorts the given vector of tensor groups in place following the number of
+ * references in the group in decreasing order.  This prioritize groups with
+ * more references as they are more likely to benefit from promotion.
+ */
+static void sortTensorGroups(TensorGroupsInfo& tensorGroups) {
+  std::sort(
+      tensorGroups.begin(),
+      tensorGroups.end(),
+      [](const std::unique_ptr<TensorReferenceGroup>& group1,
+         const std::unique_ptr<TensorReferenceGroup>& group2) {
+        return group1->referenceIds().size() > group2->referenceIds().size();
+      });
+}
+
 /*
  * Promote to shared memory in "scop" below "node".  Use at most
  * "remainingMemory" bytes, and update the variable to reflect the amount of
@@ -474,49 +519,14 @@ void promoteToSharedBelow(
   auto partialSched = partialSchedule(root, node);
   auto mapping = collectMappingsTo<mapping::BlockId>(scop);
 
-  auto groupMap = TensorReferenceGroup::accessedWithin(
-      partialSched.intersect_domain(mapping), scop.body);
+  auto groupLists = sortTensorGroupMap(TensorReferenceGroup::accessedWithin(
+      partialSched.intersect_domain(mapping), scop.body));
   // Pure affine schedule without (mapping) filters.
   auto partialSchedMupa = partialScheduleMupa(root, node);
 
-  // Prepare groups for sorting, to have specified order necessary for
-  // reproducibility and tests.
-  using TensorGroupList = std::pair<isl::id, TensorGroupsInfo>;
-  std::vector<TensorGroupList> groupLists(
-      std::make_move_iterator(groupMap.begin()),
-      std::make_move_iterator(groupMap.end()));
-
-  // Computes the total number of references in all groups.
-  auto refsCount = [](const TensorGroupsInfo& info) {
-    size_t refs = 0;
-    for (auto const& group : info) {
-      refs += group->referenceIds().size();
-    }
-    return refs;
-  };
-
-  // Sort by the total number of references, then by name.  Because names are
-  // guarenteed to be unique, the order is total.
-  std::sort(
-      groupLists.begin(),
-      groupLists.end(),
-      [refsCount](const TensorGroupList& l1, const TensorGroupList& l2) {
-        auto r1 = refsCount(l1.second);
-        auto r2 = refsCount(l2.second);
-        return r1 == r2 ? l1.first.get_name() < l2.first.get_name() : r1 < r2;
-      });
   for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
-    // Sort the reference groups to prioritize groups with more references as
-    // they are more likely to benefit from promotion.
-    std::sort(
-        tensorGroups.second.begin(),
-        tensorGroups.second.end(),
-        [refsCount](
-            const std::unique_ptr<TensorReferenceGroup>& group1,
-            const std::unique_ptr<TensorReferenceGroup>& group2) {
-          return group1->referenceIds().size() > group2->referenceIds().size();
-        });
+    sortTensorGroups(tensorGroups.second);
 
     for (auto& group : tensorGroups.second) {
       auto sizes = group->approximationSizes();
@@ -620,8 +630,17 @@ void promoteToSharedAtDepth(
  * of "mscop".  Throw if promotion would violate the well-formedness of the
  * schedule tree, in particular in cases of promotion immediately below
  * a set/sequence node or immediately above a thread-specific marker node.
+ * Promote at most "maxElements" elements per thread and return the difference
+ * between "maxElements" and the number of actuall promoted elements.  Note
+ * that this function does not differentitate types and sizes of the promoted
+ * elements because register allocation cannot be controlled at the CUDA level
+ * anyway.  Instead, the "maxElements" value controls how much register
+ * promotion is performed overall.
  */
-void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
+size_t promoteToRegistersBelow(
+    MappedScop& mscop,
+    detail::ScheduleTree* scope,
+    size_t maxElements) {
   // Cannot promote below a sequence or a set node.  Promotion may insert an
   // extension node, but sequence/set must be followed by filters.
   if (scope->as<detail::ScheduleTreeSequence>() ||
@@ -646,8 +665,8 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   auto mapping =
       collectMappingsTo<mapping::ThreadId>(scop).intersect(blockMapping);
   auto schedule = partialSchedule(scop.scheduleRoot(), scope);
-  auto groupMap = TensorReferenceGroup::accessedWithin(
-      schedule.intersect_domain(mapping), scop.body);
+  auto groupLists = sortTensorGroupMap(TensorReferenceGroup::accessedWithin(
+      schedule.intersect_domain(mapping), scop.body));
 
   auto threadSchedule = mscop.threadMappingSchedule(mscop.schedule());
   auto blockSchedule = mscop.blockMappingSchedule(mscop.schedule());
@@ -663,15 +682,20 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   // identical dimensions without affecting the result of the checks.
   partialSchedMupa = partialSchedMupa.flat_range_product(blockSchedule);
 
-  for (auto& tensorGroups : groupMap) {
+  for (auto& tensorGroups : groupLists) {
     auto tensorId = tensorGroups.first;
-
-    // TODO: sorting of groups and counting the number of promoted elements
+    sortTensorGroups(tensorGroups.second);
 
     for (auto& group : tensorGroups.second) {
       auto sizes = group->approximationSizes();
       // No point in promoting a scalar that will go to a register anyway.
       if (sizes.size() == 0) {
+        continue;
+      }
+      // Do not promote if requires more registers than remaining.
+      auto nElements = std::accumulate(
+          sizes.begin(), sizes.end(), 1u, std::multiplies<size_t>());
+      if (nElements > maxElements) {
         continue;
       }
       if (!isPromotableToRegistersBelow(
@@ -693,13 +717,14 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
           std::move(group),
           scope,
           partialSched);
+      maxElements -= nElements;
     }
   }
 
   // Return immediately if nothing was promoted.
   if (scope->numChildren() == 0 ||
       !matchOne(extension(sequence(any())), scope->child({0}))) {
-    return;
+    return maxElements;
   }
 
   // If promoting above thread mapping, insert synchronizations.
@@ -715,15 +740,19 @@ void promoteToRegistersBelow(MappedScop& mscop, detail::ScheduleTree* scope) {
   if (functional::Filter(isMappingTo<mapping::ThreadId>, ancestors).empty()) {
     scop.insertSyncsAroundSeqChildren(scope->child({0, 0}));
   }
+  return maxElements;
 }
 
 /*
  * Promote to registers below "depth" schedule dimensions.  Split bands if
  * necessary to create promotion scopes.  Do not promote if it would require
  * splitting the band mapped to threads as we assume only one band can be
- * mapped.
+ * mapped.  Use at most "maxElements" per thread in all promoted subtrees.
  */
-void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
+void promoteToRegistersAtDepth(
+    MappedScop& mscop,
+    size_t depth,
+    size_t maxElements) {
   using namespace detail;
 
   auto root = mscop.scop().scheduleRoot();
@@ -757,7 +786,7 @@ void promoteToRegistersAtDepth(MappedScop& mscop, size_t depth) {
   auto scopes = functional::Map(findScope, bands);
 
   for (auto scope : scopes) {
-    promoteToRegistersBelow(mscop, scope);
+    maxElements = promoteToRegistersBelow(mscop, scope, maxElements);
   }
 }
 
